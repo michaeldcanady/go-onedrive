@@ -8,16 +8,21 @@ import (
 	"os"
 
 	"github.com/michaeldcanady/go-onedrive/internal/config"
+	"github.com/michaeldcanady/go-onedrive/internal/logging"
 	msgraphsdkgo "github.com/microsoftgraph/msgraph-sdk-go"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"go.uber.org/zap"
 )
 
 const (
 	configFile = "./config.yaml" //"$HOME/.config/go-onedrive/config.yaml"
 )
 
-var graphClient *msgraphsdkgo.GraphServiceClient
+var (
+	graphClient *msgraphsdkgo.GraphServiceClient
+	logger      logging.Logger
+)
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
@@ -36,7 +41,13 @@ to quickly create a Cobra application.`,
 		if err := readConfig(cmd); err != nil {
 			return fmt.Errorf("failed to read config: %w", err)
 		}
-		return initializeGraphClient()
+		if err := initializeGraphClient(cmd); err != nil {
+			return fmt.Errorf("failed to initialize graph client: %w", err)
+		}
+		if err := initializeLogger(cmd); err != nil {
+			return fmt.Errorf("failed to initialize logger: %w", err)
+		}
+		return nil
 	},
 	PersistentPostRunE: func(cmd *cobra.Command, args []string) error {
 		return writeConfig(cmd)
@@ -81,7 +92,7 @@ func writeConfig(_ *cobra.Command) error {
 	return viper.WriteConfig()
 }
 
-func initializeGraphClient() error {
+func initializeGraphClient(_ *cobra.Command) error {
 	var authConfig config.AuthenticationConfigImpl
 	var localClient *msgraphsdkgo.GraphServiceClient
 	var err error
@@ -97,6 +108,41 @@ func initializeGraphClient() error {
 	}
 
 	graphClient = localClient
+
+	return nil
+}
+
+func initializeLogger(_ *cobra.Command) error {
+	var loggingConfig config.LoggingConfigImpl
+	var localLogger *zap.Logger
+	var err error
+
+	viperConfig := viper.Sub("logging")
+
+	if err = viperConfig.Unmarshal(&loggingConfig); err != nil {
+		return fmt.Errorf("failed to unmarshal logging config: %w", err)
+	}
+
+	cfg := zap.NewProductionConfig()
+	switch loggingConfig.GetLevel() {
+	case "debug":
+		cfg.Level = zap.NewAtomicLevelAt(zap.DebugLevel)
+	case "info":
+		cfg.Level = zap.NewAtomicLevelAt(zap.InfoLevel)
+	case "warn":
+		cfg.Level = zap.NewAtomicLevelAt(zap.WarnLevel)
+	case "error":
+		cfg.Level = zap.NewAtomicLevelAt(zap.ErrorLevel)
+	default:
+		return fmt.Errorf("unknown logging level: %s", loggingConfig.GetLevel())
+	}
+
+	localLogger, err = cfg.Build()
+	if err != nil {
+		return err
+	}
+
+	logger = logging.NewZapLoggerAdapter(localLogger)
 
 	return nil
 }

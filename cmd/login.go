@@ -1,6 +1,3 @@
-/*
-Copyright © 2025 NAME HERE <EMAIL ADDRESS>
-*/
 package cmd
 
 import (
@@ -10,68 +7,112 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
 	"github.com/michaeldcanady/go-onedrive/internal/config"
+	"github.com/michaeldcanady/go-onedrive/internal/logging"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
 
-// loginCmd represents the login command
+const (
+	FilesReadWriteAllScope = "Files.ReadWrite.All"
+	UserReadScope          = "User.Read"
+	SitesReadWriteAllScope = "Sites.ReadWrite.All"
+	OfflineAccessScope     = "offline_access"
+	AuthConfig             = "auth"
+)
+
+// loginCmd authenticates the user using the configured authentication method.
 var loginCmd = &cobra.Command{
 	Use:   "login",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
+	Short: "Authenticate with OneDrive using the configured authentication method",
+	Long: `Authenticate with OneDrive using the authentication settings defined in your configuration.
 
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
-	Run: func(cmd *cobra.Command, args []string) {
-		credential, err := getCredential(cmd)
+This command forces an authentication flow (e.g., interactive browser, device code)
+and stores the resulting token for future CLI operations.`,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		cred, err := loadCredentialFromConfig()
 		if err != nil {
-			fmt.Println("Error getting credential:", err)
-			return
+			logger.Error("Failed to load credential from config", logging.String("error", err.Error()))
+			return fmt.Errorf("failed to initialize credential: %w", err)
 		}
 
-		if authenticator, ok := credential.(Authenticator); ok {
-			record, err := authenticator.Authenticate(context.Background(), &policy.TokenRequestOptions{
-				Scopes: []string{
-					"Files.ReadWrite.All",
-					//"Sites.ReadWrite.All",
-					//"offline_access",
-					"User.Read",
-				},
-			})
-			if err != nil {
-				fmt.Println("Error authenticating:", err)
-				return
-			}
-			fmt.Println(record)
+		authenticator, ok := cred.(Authenticator)
+		if !ok {
+			logger.Error("Configured credential does not support explicit authentication")
+			return fmt.Errorf("configured credential does not support explicit authentication")
 		}
+
+		logger.Info("Starting authentication...")
+
+		options := &policy.TokenRequestOptions{
+			Scopes: []string{
+				FilesReadWriteAllScope,
+				UserReadScope,
+			},
+		}
+		logger.Debug("authentication options", logging.Any("options", *options))
+
+		logger.Info("Sending authentication request...")
+		record, err := authenticator.Authenticate(
+			context.Background(),
+			options,
+		)
+		logger.Debug("authentication record", logging.Any("record", record))
+
+		if err != nil {
+			logger.Error("Authentication failed", logging.String("error", err.Error()))
+			return fmt.Errorf("authentication failed: %w", err)
+		}
+		logger.Info("authentication successful")
+
+		logger.Info("Retrieving access token...")
+		token, err := cred.GetToken(
+			context.Background(),
+			*options,
+		)
+		logger.Debug("access token", logging.Any("token", token))
+
+		if err != nil {
+			logger.Error("Failed to retrieve token", logging.String("error", err.Error()))
+			return fmt.Errorf("failed to retrieve token: %w", err)
+		}
+		logger.Info("Access token retrieved successfully")
+
+		if showToken, _ := cmd.Flags().GetBool("show-token"); showToken {
+			fmt.Printf("Access Token: %s\n", token.Token)
+			return nil
+		}
+
+		// TODO: Securely store the token for future use.
+
+		logger.Info("Login complete.")
+		return nil
 	},
 }
 
 func init() {
 	authCmd.AddCommand(loginCmd)
 
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// loginCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// loginCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	// Optional flag to show token (safer default)
+	loginCmd.Flags().Bool("show-token", false, "Display the access token after login")
 }
 
-func getCredential(_ *cobra.Command) (azcore.TokenCredential, error) {
-	var authConfig config.AuthenticationConfigImpl
-	var err error
+// loadCredentialFromConfig reads the auth config and constructs the appropriate credential.
+func loadCredentialFromConfig() (azcore.TokenCredential, error) {
+	var authCfg config.AuthenticationConfigImpl
 
-	viperConfig := viper.Sub("auth")
-
-	if err = viperConfig.Unmarshal(&authConfig); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal auth config: %w", err)
+	sub := viper.Sub(AuthConfig)
+	if sub == nil {
+		return nil, fmt.Errorf("missing '%s' section in configuration", AuthConfig)
 	}
 
-	return CredentialFactory(&authConfig)
+	if err := sub.Unmarshal(&authCfg); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal '%s' config: %w", AuthConfig, err)
+	}
+
+	cred, err := CredentialFactory(&authCfg)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create credential: %w", err)
+	}
+
+	return cred, nil
 }
