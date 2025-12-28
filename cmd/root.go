@@ -4,6 +4,7 @@ Copyright © 2025 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"os"
 
@@ -16,49 +17,47 @@ import (
 )
 
 const (
-	configFile = "./config.yaml" //"$HOME/.config/go-onedrive/config.yaml"
+	configFile = "./config.yaml"
 )
 
 var (
 	graphClient *msgraphsdkgo.GraphServiceClient
 	logger      logging.Logger
+
+	ErrMissingAuthConfig    = errors.New("missing 'auth' config section")
+	ErrMissingLoggingConfig = errors.New("missing 'logging' config section")
+	ErrUnmarshalAuthConfig  = errors.New("unable to unmarshal auth config")
+	ErrUnmarshalLogConfig   = errors.New("unable to unmarshal logging config")
 )
 
-// rootCmd represents the base command when called without any subcommands
+// rootCmd is the base command for the CLI.
 var rootCmd = &cobra.Command{
 	Use:   "go-onedrive",
-	Short: "A brief description of your application",
-	Long: `A longer description that spans multiple lines and likely contains
-examples and usage of using your application. For example:
+	Short: "A OneDrive CLI client",
+	Long: `A command-line interface for interacting with Microsoft OneDrive.
 
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
-	// Uncomment the following line if your bare application
-	// has an action associated with it:
-	// Run: func(cmd *cobra.Command, args []string) { },
+This tool supports authentication, file operations, and integration with
+Microsoft Graph APIs.`,
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-		if err := readConfig(cmd); err != nil {
+		if err := readConfig(); err != nil {
 			return fmt.Errorf("failed to read config: %w", err)
 		}
-		if err := initializeGraphClient(cmd); err != nil {
-			return fmt.Errorf("failed to initialize graph client: %w", err)
-		}
-		if err := initializeLogger(cmd); err != nil {
+		if err := initializeLogger(); err != nil {
 			return fmt.Errorf("failed to initialize logger: %w", err)
+		}
+		if err := initializeGraphClient(); err != nil {
+			return fmt.Errorf("failed to initialize graph client: %w", err)
 		}
 		return nil
 	},
 	PersistentPostRunE: func(cmd *cobra.Command, args []string) error {
-		return writeConfig(cmd)
+		return writeConfig()
 	},
 }
 
-// Execute adds all child commands to the root command and sets flags appropriately.
-// This is called by main.main(). It only needs to happen once to the rootCmd.
+// Execute runs the root command.
 func Execute() {
-	err := rootCmd.Execute()
-	if err != nil {
+	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)
 	}
 }
@@ -74,57 +73,59 @@ func init() {
 	// when this action is called directly.
 }
 
-func readConfig(_ *cobra.Command) error {
-
+func readConfig() error {
 	viper.SetConfigFile(configFile)
 	viper.SetConfigType("yaml")
 
 	if err := viper.ReadInConfig(); err != nil {
-		// It's okay if there isn't a config file
-		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
-			return err
+		// Missing config file is allowed
+		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
+			return nil
 		}
+		return err
 	}
 	return nil
 }
 
-func writeConfig(_ *cobra.Command) error {
+func writeConfig() error {
 	return viper.WriteConfig()
 }
 
-func initializeGraphClient(_ *cobra.Command) error {
-	var authConfig config.AuthenticationConfigImpl
-	var localClient *msgraphsdkgo.GraphServiceClient
-	var err error
-
-	viperConfig := viper.Sub("auth")
-
-	if err = viperConfig.Unmarshal(&authConfig); err != nil {
-		return fmt.Errorf("failed to unmarshal auth config: %w", err)
+func initializeGraphClient() error {
+	sub := viper.Sub("auth")
+	if sub == nil {
+		return ErrMissingAuthConfig
 	}
 
-	if localClient, err = ClientFactory(&authConfig); err != nil {
+	var authCfg config.AuthenticationConfigImpl
+	if err := sub.Unmarshal(&authCfg); err != nil {
+		return errors.Join(ErrUnmarshalAuthConfig, err)
+	}
+
+	client, err := ClientFactory(&authCfg)
+	if err != nil {
 		return fmt.Errorf("failed to create graph client: %w", err)
 	}
 
-	graphClient = localClient
-
+	graphClient = client
 	return nil
 }
 
-func initializeLogger(_ *cobra.Command) error {
-	var loggingConfig config.LoggingConfigImpl
-	var localLogger *zap.Logger
-	var err error
+func initializeLogger() error {
+	sub := viper.Sub("logging")
+	if sub == nil {
+		// TODO: apply default logger config
+		return ErrMissingLoggingConfig
+	}
 
-	viperConfig := viper.Sub("logging")
-
-	if err = viperConfig.Unmarshal(&loggingConfig); err != nil {
-		return fmt.Errorf("failed to unmarshal logging config: %w", err)
+	var logCfg config.LoggingConfigImpl
+	if err := sub.Unmarshal(&logCfg); err != nil {
+		return errors.Join(ErrUnmarshalLogConfig, err)
 	}
 
 	cfg := zap.NewProductionConfig()
-	switch loggingConfig.GetLevel() {
+
+	switch logCfg.GetLevel() {
 	case "debug":
 		cfg.Level = zap.NewAtomicLevelAt(zap.DebugLevel)
 	case "info":
@@ -134,15 +135,14 @@ func initializeLogger(_ *cobra.Command) error {
 	case "error":
 		cfg.Level = zap.NewAtomicLevelAt(zap.ErrorLevel)
 	default:
-		return fmt.Errorf("unknown logging level: %s", loggingConfig.GetLevel())
+		return fmt.Errorf("unknown logging level: %s", logCfg.GetLevel())
 	}
 
-	localLogger, err = cfg.Build()
+	zapLogger, err := cfg.Build()
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to build zap logger: %w", err)
 	}
 
-	logger = logging.NewZapLoggerAdapter(localLogger)
-
+	logger = logging.NewZapLoggerAdapter(zapLogger)
 	return nil
 }

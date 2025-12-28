@@ -2,11 +2,13 @@ package cmd
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
+	"github.com/Azure/azure-sdk-for-go/sdk/azidentity/cache"
 	"github.com/michaeldcanady/go-onedrive/internal/config"
 	msgraphsdkgo "github.com/microsoftgraph/msgraph-sdk-go"
 )
@@ -16,12 +18,24 @@ type Authenticator interface {
 }
 
 func InteractiveBrowserCredentialFactory(authConfig config.AuthenticationConfig) (*azidentity.InteractiveBrowserCredential, error) {
+	var authRecord azidentity.AuthenticationRecord
+	if tempRecord := authConfig.GetAuthenticationRecord(); tempRecord != nil {
+		authRecord = *tempRecord
+	}
+
+	cache, err := cache.New(nil)
+	if err != nil {
+		return nil, errors.Join(errors.New("unable to initialize interactive browser authentication"), err)
+	}
+
 	return azidentity.NewInteractiveBrowserCredential(&azidentity.InteractiveBrowserCredentialOptions{
 		TenantID: authConfig.GetTenantID(),
 		ClientID: authConfig.GetClientID(),
 		// Force users to use login command and authenticate that way.
 		DisableAutomaticAuthentication: true,
 		RedirectURL:                    authConfig.GetRedirectURI(),
+		AuthenticationRecord:           authRecord,
+		Cache:                          cache,
 	})
 }
 
