@@ -6,6 +6,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 )
 
+// ProfileService service to load/save a user's OneDrive profile.
 type ProfileService interface {
 	// Load loads the profile from storage, or returns (nil, nil) if not found.
 	Load(context.Context) (*azidentity.AuthenticationRecord, error)
