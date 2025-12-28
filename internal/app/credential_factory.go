@@ -1,4 +1,4 @@
-package cmd
+package app
 
 import (
 	"context"
@@ -10,7 +10,6 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity/cache"
 	"github.com/michaeldcanady/go-onedrive/internal/config"
-	msgraphsdkgo "github.com/microsoftgraph/msgraph-sdk-go"
 )
 
 type Authenticator interface {
@@ -46,13 +45,4 @@ func CredentialFactory(authConfig config.AuthenticationConfig) (azcore.TokenCred
 	default:
 		return nil, fmt.Errorf("Unsupported authentication type: %s", authConfig.GetAuthenticationType())
 	}
-}
-
-func ClientFactory(config config.AuthenticationConfig) (*msgraphsdkgo.GraphServiceClient, error) {
-	credential, err := CredentialFactory(config)
-	if err != nil {
-		return nil, fmt.Errorf("Failed to create client: %w", err)
-	}
-
-	return msgraphsdkgo.NewGraphServiceClientWithCredentials(credential, []string{"Files.ReadWrite"})
 }

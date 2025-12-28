@@ -5,16 +5,11 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/michaeldcanady/go-onedrive/internal/app"
-	"github.com/michaeldcanady/go-onedrive/internal/cache/fsstore"
-	jsoncodec "github.com/michaeldcanady/go-onedrive/internal/cache/json_codex"
-	"github.com/michaeldcanady/go-onedrive/internal/config"
 	"github.com/michaeldcanady/go-onedrive/internal/logging"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 )
 
 const (
@@ -24,8 +19,6 @@ const (
 	OfflineAccessScope     = "offline_access"
 	AuthConfig             = "auth"
 )
-
-var profileService *app.ProfileServiceImpl
 
 // loginCmd authenticates the user using the configured authentication method.
 var loginCmd = &cobra.Command{
@@ -48,13 +41,13 @@ and stores the resulting token for future CLI operations.`,
 		}
 
 		// Load credential from config (may use cached profile)
-		cred, err := loadCredentialFromConfig(profile)
+		cred, err := credentialService.LoadCredential(ctx)
 		if err != nil {
 			logger.Error("Failed to load credential from config", logging.String("error", err.Error()))
 			return fmt.Errorf("failed to initialize credential: %w", err)
 		}
 
-		authenticator, ok := cred.(Authenticator)
+		authenticator, ok := cred.(app.Authenticator)
 		if !ok {
 			logger.Error("Configured credential does not support explicit authentication")
 			return fmt.Errorf("configured credential does not support explicit authentication")
@@ -119,32 +112,4 @@ func init() {
 
 	// Optional flag to show token (safer default)
 	loginCmd.Flags().Bool("show-token", false, "Display the access token after login")
-
-	store := fsstore.New(".")
-	codec := jsoncodec.New()
-
-	profileService = app.NewProfileService(store, codec)
-}
-
-// loadCredentialFromConfig reads the auth config and constructs the appropriate credential.
-func loadCredentialFromConfig(record *azidentity.AuthenticationRecord) (azcore.TokenCredential, error) {
-	sub := viper.Sub(AuthConfig)
-	if sub == nil {
-		// TODO: In the future, you can fall back to defaults here.
-		return nil, ErrMissingConfigSection
-	}
-
-	var authCfg config.AuthenticationConfigImpl
-	if err := sub.Unmarshal(&authCfg); err != nil {
-		return nil, errors.Join(ErrUnmarshalConfig, err)
-	}
-
-	authCfg.AuthenticationRecord = record
-
-	cred, err := CredentialFactory(&authCfg)
-	if err != nil {
-		return nil, errors.Join(ErrCreateCredential, err)
-	}
-
-	return cred, nil
 }
