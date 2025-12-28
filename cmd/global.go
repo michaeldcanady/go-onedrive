@@ -1,6 +1,7 @@
 package cmd
 
 var (
-	credentialService CredentialService
-	profileService    ProfileService
+	credentialService  CredentialService
+	profileService     ProfileService
+	graphClientService ClientService
 )

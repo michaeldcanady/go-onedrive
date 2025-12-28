@@ -43,6 +43,11 @@ var rootCmd = &cobra.Command{
 This tool supports authentication, file operations, and integration with
 Microsoft Graph APIs.`,
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+		ctx := cmd.Context()
+		if ctx == nil {
+			ctx = context.Background()
+		}
+
 		if err := readConfig(); err != nil {
 			return fmt.Errorf("failed to read config: %w", err)
 		}
@@ -55,8 +60,8 @@ Microsoft Graph APIs.`,
 		if err := initializeCredentialService(); err != nil {
 			return fmt.Errorf("failed to initialize credential service: %w", err)
 		}
-		if err := initializeGraphClient(); err != nil {
-			return fmt.Errorf("failed to initialize graph client: %w", err)
+		if err := initializeGraphService(ctx); err != nil {
+			return fmt.Errorf("failed to initialize graph service: %w", err)
 		}
 		return nil
 	},
@@ -101,7 +106,7 @@ func writeConfig() error {
 	return viper.WriteConfig()
 }
 
-func initializeGraphClient() error {
+func initializeGraphService(ctx context.Context) error {
 	sub := viper.Sub("auth")
 	if sub == nil {
 		return ErrMissingAuthConfig
@@ -112,7 +117,9 @@ func initializeGraphClient() error {
 		return errors.Join(ErrUnmarshalAuthConfig, err)
 	}
 
-	client, err := ClientFactory(context.Background())
+	graphClientService = app.NewGraphClientService(credentialService)
+
+	client, err := graphClientService.Client(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to create graph client: %w", err)
 	}
