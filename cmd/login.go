@@ -20,8 +20,6 @@ const (
 	AuthConfig             = "auth"
 )
 
-var profileService app.ProfileService
-
 // loginCmd authenticates the user using the configured authentication method.
 var loginCmd = &cobra.Command{
 	Use:   "login",
