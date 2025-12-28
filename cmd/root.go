@@ -4,10 +4,14 @@ Copyright © 2025 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os"
 
+	"github.com/michaeldcanady/go-onedrive/internal/app"
+	"github.com/michaeldcanady/go-onedrive/internal/cache/fsstore"
+	jsoncodec "github.com/michaeldcanady/go-onedrive/internal/cache/json_codex"
 	"github.com/michaeldcanady/go-onedrive/internal/config"
 	"github.com/michaeldcanady/go-onedrive/internal/logging"
 	msgraphsdkgo "github.com/microsoftgraph/msgraph-sdk-go"
@@ -44,6 +48,12 @@ Microsoft Graph APIs.`,
 		}
 		if err := initializeLogger(); err != nil {
 			return fmt.Errorf("failed to initialize logger: %w", err)
+		}
+		if err := initializeProfileService(); err != nil {
+			return fmt.Errorf("failed to initialize profile service: %w", err)
+		}
+		if err := initializeCredentialService(); err != nil {
+			return fmt.Errorf("failed to initialize credential service: %w", err)
 		}
 		if err := initializeGraphClient(); err != nil {
 			return fmt.Errorf("failed to initialize graph client: %w", err)
@@ -102,7 +112,7 @@ func initializeGraphClient() error {
 		return errors.Join(ErrUnmarshalAuthConfig, err)
 	}
 
-	client, err := ClientFactory(&authCfg)
+	client, err := ClientFactory(context.Background())
 	if err != nil {
 		return fmt.Errorf("failed to create graph client: %w", err)
 	}
@@ -144,5 +154,22 @@ func initializeLogger() error {
 	}
 
 	logger = logging.NewZapLoggerAdapter(zapLogger)
+	return nil
+}
+
+func initializeProfileService() error {
+	store := fsstore.New(".")
+	codec := jsoncodec.New()
+
+	profileService = app.NewProfileService(store, codec)
+	return nil
+}
+
+func initializeCredentialService() error {
+	if profileService == nil {
+		return errors.New("profile service is nil")
+	}
+
+	credentialService = app.NewCredentialService(profileService)
 	return nil
 }
