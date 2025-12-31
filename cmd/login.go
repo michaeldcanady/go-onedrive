@@ -59,6 +59,7 @@ and stores the resulting token for future CLI operations.`,
 				FilesReadWriteAllScope,
 				UserReadScope,
 			},
+			EnableCAE: true,
 		}
 		logger.Debug("Authentication options", logging.Any("options", *options))
 
