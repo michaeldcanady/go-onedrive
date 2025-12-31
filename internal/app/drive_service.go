@@ -82,20 +82,20 @@ func (s *DriveService) getChildren(ctx context.Context, folderPath string) (mode
 		Get(ctx, nil)
 }
 
-func (s *DriveService) ChildrenIterator(ctx context.Context, folderPath string) iter.Seq2[string, error] {
+func (s *DriveService) ChildrenIterator(ctx context.Context, folderPath string) iter.Seq2[models.DriveItemable, error] {
 	// Retrieve the first page of children
 	resp, err := s.getChildren(ctx, folderPath)
 	if err != nil {
-		return func(yield func(string, error) bool) {
-			yield("", fmt.Errorf("unable to retrieve children: %w", err))
+		return func(yield func(models.DriveItemable, error) bool) {
+			yield(nil, fmt.Errorf("unable to retrieve children: %w", err))
 		}
 	}
 
 	// Get the Graph client (needed for paging)
 	client, err := s.graph.Client(ctx)
 	if err != nil {
-		return func(yield func(string, error) bool) {
-			yield("", err)
+		return func(yield func(models.DriveItemable, error) bool) {
+			yield(nil, err)
 		}
 	}
 
@@ -106,23 +106,19 @@ func (s *DriveService) ChildrenIterator(ctx context.Context, folderPath string) 
 		models.CreateDriveItemFromDiscriminatorValue,
 	)
 	if err != nil {
-		return func(yield func(string, error) bool) {
-			yield("", fmt.Errorf("unable to create page iterator: %w", err))
+		return func(yield func(models.DriveItemable, error) bool) {
+			yield(nil, fmt.Errorf("unable to create page iterator: %w", err))
 		}
 	}
 
 	// Return the iterator function
-	return func(yield func(string, error) bool) {
+	return func(yield func(models.DriveItemable, error) bool) {
 		iterErr := pageIterator.Iterate(ctx, func(item models.DriveItemable) bool {
-			var name string
-			if item.GetName() != nil {
-				name = *item.GetName()
-			}
-			return yield(name, nil)
+			return yield(item, nil)
 		})
 
 		if iterErr != nil {
-			yield("", iterErr)
+			yield(nil, iterErr)
 		}
 	}
 }
