@@ -7,7 +7,6 @@ import (
 	"iter"
 	"path"
 
-	msgraphsdkgo "github.com/microsoftgraph/msgraph-sdk-go"
 	msgraphcore "github.com/microsoftgraph/msgraph-sdk-go-core"
 	"github.com/microsoftgraph/msgraph-sdk-go/drives"
 	"github.com/microsoftgraph/msgraph-sdk-go/models"
@@ -17,10 +16,6 @@ const (
 	rootChildrenURITemplate         = "https://graph.microsoft.com/v1.0/drives/%s/root/children"
 	rootRelativeChildrenURITemplate = "https://graph.microsoft.com/v1.0/drives/%s/root:%s:/children"
 )
-
-type Clienter interface {
-	Client(context.Context) (*msgraphsdkgo.GraphServiceClient, error)
-}
 
 type DriveService struct {
 	graph Clienter
