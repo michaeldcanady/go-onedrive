@@ -177,6 +177,6 @@ func initializeCredentialService() error {
 		return errors.New("profile service is nil")
 	}
 
-	credentialService = app.NewCredentialService(profileService)
+	credentialService = app.NewCredentialService(profileService, logger)
 	return nil
 }
