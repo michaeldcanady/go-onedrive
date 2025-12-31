@@ -8,6 +8,11 @@ import (
 	msgraphsdkgo "github.com/microsoftgraph/msgraph-sdk-go"
 )
 
+const (
+	FilesReadWriteAllScope = "Files.ReadWrite.All"
+	UserReadScope          = "User.Read"
+)
+
 type GraphClientService struct {
 	credentialService CredentialService
 	client            *msgraphsdkgo.GraphServiceClient
@@ -30,7 +35,8 @@ func (s *GraphClientService) Client(ctx context.Context) (*msgraphsdkgo.GraphSer
 		return nil, fmt.Errorf("failed to load credential: %w", err)
 	}
 
-	client, err := msgraphsdkgo.NewGraphServiceClientWithCredentials(cred, []string{"Files.ReadWrite"})
+	client, err := msgraphsdkgo.NewGraphServiceClientWithCredentials(cred, []string{FilesReadWriteAllScope,
+		UserReadScope})
 	if err != nil {
 		return nil, errors.Join(errors.New("unable to initialize client"), err)
 	}
