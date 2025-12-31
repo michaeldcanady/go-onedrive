@@ -2,9 +2,14 @@
     "cSpell.words": [
         "azcore",
         "azidentity",
+        "Itemable",
         "mapstructure",
         "michaeldcanady",
+        "microsoftgraph",
+        "msgraph",
+        "msgraphcore",
         "msgraphsdkgo",
-        "onedrive"
+        "onedrive",
+        "Responseable"
     ]
 }

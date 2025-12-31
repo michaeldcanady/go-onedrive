@@ -4,23 +4,42 @@ Copyright © 2025 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
+	"context"
 	"fmt"
 
+	"github.com/michaeldcanady/go-onedrive/internal/app"
 	"github.com/spf13/cobra"
 )
 
-// lsCmd represents the ls command
 var lsCmd = &cobra.Command{
-	Use:   "ls",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
+	Use:   "ls [path]",
+	Short: "List drives or items in a OneDrive path",
+	Args:  cobra.MaximumNArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		ctx := cmd.Context()
+		if ctx == nil {
+			ctx = context.Background()
+		}
 
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
-	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("ls called")
+		path := ""
+		if len(args) == 1 {
+			path = args[0]
+		}
+
+		// Has CAE? - creates second cache
+		driveSvc := app.NewDriveService(graphClientService)
+
+		var cmdErr error
+		driveSvc.ChildrenIterator(ctx, path)(func(name string, err error) bool {
+			if err != nil {
+				cmdErr = err
+				return false
+			}
+			fmt.Println(name)
+			return true
+		})
+
+		return cmdErr
 	},
 }
 
