@@ -12,6 +12,7 @@ import (
 	"github.com/michaeldcanady/go-onedrive/internal/app"
 	"github.com/michaeldcanady/go-onedrive/internal/cache/fsstore"
 	jsoncodec "github.com/michaeldcanady/go-onedrive/internal/cache/json_codex"
+	"github.com/michaeldcanady/go-onedrive/internal/cmd/ls"
 	"github.com/michaeldcanady/go-onedrive/internal/config"
 	"github.com/michaeldcanady/go-onedrive/internal/logging"
 	msgraphsdkgo "github.com/microsoftgraph/msgraph-sdk-go"
@@ -48,21 +49,6 @@ Microsoft Graph APIs.`,
 			ctx = context.Background()
 		}
 
-		if err := readConfig(); err != nil {
-			return fmt.Errorf("failed to read config: %w", err)
-		}
-		if err := initializeLogger(); err != nil {
-			return fmt.Errorf("failed to initialize logger: %w", err)
-		}
-		if err := initializeProfileService(); err != nil {
-			return fmt.Errorf("failed to initialize profile service: %w", err)
-		}
-		if err := initializeCredentialService(); err != nil {
-			return fmt.Errorf("failed to initialize credential service: %w", err)
-		}
-		if err := initializeGraphService(ctx); err != nil {
-			return fmt.Errorf("failed to initialize graph service: %w", err)
-		}
 		return nil
 	},
 	PersistentPostRunE: func(cmd *cobra.Command, args []string) error {
@@ -86,6 +72,22 @@ func init() {
 
 	// Cobra also supports local flags, which will only run
 	// when this action is called directly.
+	if err := readConfig(); err != nil {
+	}
+	if err := initializeLogger(); err != nil {
+	}
+	if err := initializeProfileService(); err != nil {
+	}
+	if err := initializeCredentialService(); err != nil {
+	}
+	if err := initializeGraphService(context.Background()); err != nil {
+	}
+
+	driveSvc := app.NewDriveService(graphClientService)
+
+	lsCmd := ls.CreateLSCmd(driveSvc)
+
+	rootCmd.AddCommand(lsCmd)
 }
 
 func readConfig() error {
