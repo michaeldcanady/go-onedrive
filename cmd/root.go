@@ -12,6 +12,7 @@ import (
 	"github.com/michaeldcanady/go-onedrive/internal/app"
 	"github.com/michaeldcanady/go-onedrive/internal/cache/fsstore"
 	jsoncodec "github.com/michaeldcanady/go-onedrive/internal/cache/json_codex"
+	"github.com/michaeldcanady/go-onedrive/internal/cmd/auth"
 	"github.com/michaeldcanady/go-onedrive/internal/cmd/ls"
 	"github.com/michaeldcanady/go-onedrive/internal/config"
 	"github.com/michaeldcanady/go-onedrive/internal/logging"
@@ -88,6 +89,8 @@ func init() {
 	lsCmd := ls.CreateLSCmd(driveSvc)
 
 	rootCmd.AddCommand(lsCmd)
+
+	rootCmd.AddCommand(auth.CreateAuthCmd(logger, credentialService, profileService))
 }
 
 func readConfig() error {
