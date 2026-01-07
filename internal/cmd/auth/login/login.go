@@ -8,6 +8,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/michaeldcanady/go-onedrive/internal/app"
+	"github.com/michaeldcanady/go-onedrive/internal/di"
 	"github.com/michaeldcanady/go-onedrive/internal/logging"
 	"github.com/spf13/cobra"
 )
@@ -20,7 +21,7 @@ const (
 	AuthConfig             = "auth"
 )
 
-func CreateLoginCmd(logger logging.Logger, credentialService credentialService, profileService ProfileService) *cobra.Command {
+func CreateLoginCmd(container *di.Container) *cobra.Command {
 
 	// loginCmd authenticates the user using the configured authentication method.
 	var loginCmd = &cobra.Command{
@@ -36,22 +37,22 @@ and stores the resulting token for future CLI operations.`,
 				ctx = context.Background()
 			}
 
-			logger.Info("Loading cached profile...")
-			profile, err := profileService.Load(ctx)
+			container.Logger.Info("Loading cached profile...")
+			profile, err := container.ProfileService.Load(ctx)
 			if err != nil {
-				logger.Error("Unable to load profile", logging.String("error", err.Error()))
+				container.Logger.Error("Unable to load profile", logging.String("error", err.Error()))
 			}
 
 			// Load credential from config (may use cached profile)
-			cred, err := credentialService.LoadCredential(ctx)
+			cred, err := container.CredentialService.LoadCredential(ctx)
 			if err != nil {
-				logger.Error("Failed to load credential from config", logging.String("error", err.Error()))
+				container.Logger.Error("Failed to load credential from config", logging.String("error", err.Error()))
 				return fmt.Errorf("failed to initialize credential: %w", err)
 			}
 
 			authenticator, ok := cred.(app.Authenticator)
 			if !ok {
-				logger.Error("Configured credential does not support explicit authentication")
+				container.Logger.Error("Configured credential does not support explicit authentication")
 				return fmt.Errorf("configured credential does not support explicit authentication")
 			}
 
@@ -63,34 +64,34 @@ and stores the resulting token for future CLI operations.`,
 				},
 				EnableCAE: true,
 			}
-			logger.Debug("Authentication options", logging.Any("options", *options))
+			container.Logger.Debug("Authentication options", logging.Any("options", *options))
 
 			// Determine if we need to authenticate
 			needsAuth := profile == nil || *profile == (azidentity.AuthenticationRecord{})
 
 			if needsAuth {
-				logger.Warn("No valid profile found. Starting authentication flow...")
+				container.Logger.Warn("No valid profile found. Starting authentication flow...")
 
 				record, err := authenticator.Authenticate(ctx, options)
 				if err != nil {
-					logger.Error("Authentication failed", logging.String("error", err.Error()))
+					container.Logger.Error("Authentication failed", logging.String("error", err.Error()))
 					return fmt.Errorf("authentication failed: %w", err)
 				}
 
 				profile = &record
-				logger.Info("Authentication successful")
-				logger.Debug("Authentication record", logging.Any("profile", profile))
+				container.Logger.Info("Authentication successful")
+				container.Logger.Debug("Authentication record", logging.Any("profile", profile))
 			}
 
 			// Retrieve access token
-			logger.Info("Retrieving access token...")
+			container.Logger.Info("Retrieving access token...")
 			token, err := cred.GetToken(ctx, *options)
 			if err != nil {
-				logger.Error("Failed to retrieve token", logging.String("error", err.Error()))
+				container.Logger.Error("Failed to retrieve token", logging.String("error", err.Error()))
 				return fmt.Errorf("failed to retrieve token: %w", err)
 			}
-			logger.Info("Access token retrieved successfully")
-			logger.Debug("Access token", logging.Any("token", token))
+			container.Logger.Info("Access token retrieved successfully")
+			container.Logger.Debug("Access token", logging.Any("token", token))
 
 			// Optional flag to show token
 			if showToken, _ := cmd.Flags().GetBool("show-token"); showToken {
@@ -99,13 +100,13 @@ and stores the resulting token for future CLI operations.`,
 			}
 
 			// Save updated profile
-			logger.Info("Saving authentication profile...")
-			if err := profileService.Save(ctx, profile); err != nil {
-				logger.Error("Unable to save profile", logging.String("error", err.Error()))
+			container.Logger.Info("Saving authentication profile...")
+			if err := container.ProfileService.Save(ctx, profile); err != nil {
+				container.Logger.Error("Unable to save profile", logging.String("error", err.Error()))
 				return errors.Join(errors.New("unable to save profile"), err)
 			}
 
-			logger.Info("Login complete.")
+			container.Logger.Info("Login complete.")
 			return nil
 		},
 	}

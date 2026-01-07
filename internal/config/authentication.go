@@ -10,13 +10,16 @@ type AuthenticationConfig interface {
 	GetTenantID() string
 	GetRedirectURI() string
 	GetAuthenticationRecord() *azidentity.AuthenticationRecord
+	GetProfileCache() string
 }
 
 type AuthenticationConfigImpl struct {
-	Type                 string `mapstructure:"type"`
-	ClientID             string `mapstructure:"client_id"`
-	TenantID             string `mapstructure:"tenant_id"`
-	RedirectURI          string `mapstructure:"redirect_uri"`
+	Type         string `mapstructure:"type"`
+	ClientID     string `mapstructure:"client_id"`
+	TenantID     string `mapstructure:"tenant_id"`
+	RedirectURI  string `mapstructure:"redirect_uri"`
+	ProfileCache string `mapstructure:"profile_cache"`
+	// TODO: move some where else
 	AuthenticationRecord *azidentity.AuthenticationRecord
 }
 
@@ -39,4 +42,8 @@ func (a *AuthenticationConfigImpl) GetTenantID() string {
 
 func (a *AuthenticationConfigImpl) GetRedirectURI() string {
 	return a.RedirectURI
+}
+
+func (a *AuthenticationConfigImpl) GetProfileCache() string {
+	return a.ProfileCache
 }

@@ -3,22 +3,39 @@ package ls
 import (
 	"cmp"
 	"context"
+	"fmt"
 	"os"
 	"slices"
+	"time"
 
 	"github.com/microsoftgraph/msgraph-sdk-go/models"
-	"github.com/olekukonko/tablewriter"
-	"github.com/olekukonko/tablewriter/renderer"
-	"github.com/olekukonko/tablewriter/tw"
 	"github.com/spf13/cobra"
 	"golang.org/x/term"
+
+	"github.com/michaeldcanady/go-onedrive/internal/logging"
 )
 
-func CreateLSCmd(driveChildIterator driveChildIterator) *cobra.Command {
-	var lsCmd = &cobra.Command{
-		Use:   "ls [path]",
-		Short: "List drives or items in a OneDrive path",
-		Args:  cobra.MaximumNArgs(1),
+const (
+	longLongArg  = "long"
+	longShortArg = "l"
+	longArgUsage = "use long listing format"
+
+	allLongArg  = "all"
+	allShortArg = "a"
+	allArgUsage = "show hidden items (names starting with '.')"
+)
+
+func CreateLSCmd(iter driveChildIterator, logger logging.Logger) *cobra.Command {
+	var long bool
+	var all bool
+	var format string
+
+	lsCmd := &cobra.Command{
+		Use:          "ls [path]",
+		Short:        "List items in a OneDrive path",
+		Args:         cobra.MaximumNArgs(1),
+		SilenceUsage: true,
+
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 			if ctx == nil {
@@ -30,114 +47,120 @@ func CreateLSCmd(driveChildIterator driveChildIterator) *cobra.Command {
 				path = args[0]
 			}
 
-			var cmdErr error
-			items := make([]string, 0)
+			logger.Debug("ls command invoked",
+				logging.String("path", path),
+				logging.Any("long", long),
+				logging.Any("all", all),
+			)
 
-			// Collect items
-			driveChildIterator.ChildrenIterator(ctx, path)(func(item models.DriveItemable, err error) bool {
+			var items []models.DriveItemable
+			var cmdErr error
+
+			iter.ChildrenIterator(ctx, path)(func(item models.DriveItemable, err error) bool {
 				if err != nil {
+					logger.Error("iterator returned error", logging.Any("error", err))
 					cmdErr = err
 					return false
 				}
-				name := ""
-				if item.GetName() != nil {
-					name = *item.GetName()
-				}
-
-				if item.GetFolder() != nil {
-					name = name + "/"
-				}
-
-				items = appendSorted(items, name)
+				items = append(items, item)
 				return true
 			})
-
 			if cmdErr != nil {
+				logger.Error("failed to iterate children", logging.Any("error", cmdErr))
 				return cmdErr
 			}
 
-			printColumns2(items)
+			logger.Debug("items retrieved", logging.Int("count", len(items)))
+
+			// Filter hidden items unless --all is set
+			if !all {
+				before := len(items)
+				filtered := items[:0]
+				for _, it := range items {
+					if !isHidden(safeName(it)) {
+						filtered = append(filtered, it)
+					}
+				}
+				items = filtered
+				logger.Debug("filtered hidden items",
+					logging.Int("before", before),
+					logging.Int("after", len(items)),
+				)
+			}
+
+			// Sort by name
+			slices.SortFunc(items, func(a, b models.DriveItemable) int {
+				return cmp.Compare(safeName(a), safeName(b))
+			})
+
+			// Convert to LSItem
+			structured := make([]Item, len(items))
+			for i, it := range items {
+				structured[i] = toItem(it)
+			}
+
+			switch format {
+			case "":
+				if long {
+					printLong(structured)
+				} else {
+					printShort(structured)
+				}
+			case "json":
+				return printJSON(structured)
+			case "yaml", "yml":
+				return printYAML(structured)
+			default:
+				return fmt.Errorf("invalid output format: %s (expected json|yaml)", format)
+			}
 
 			return nil
-
 		},
 	}
+
+	lsCmd.Flags().BoolVarP(&long, longLongArg, longShortArg, false, longArgUsage)
+	lsCmd.Flags().BoolVarP(&all, allLongArg, allShortArg, false, allArgUsage)
+	lsCmd.Flags().StringVarP(&format, "format", "f", "", "output format: json|yaml")
 
 	return lsCmd
 }
 
-// Source - https://stackoverflow.com/a
-// Posted by Andrew W. Phillips, modified by community. See post 'Timeline' for change history
-// Retrieved 2026-01-01, License - CC BY-SA 4.0
-
-func appendSorted[T cmp.Ordered](ts []T, t T) []T {
-	i, _ := slices.BinarySearch(ts, t)
-	return slices.Insert(ts, i, t)
+func safeName(item models.DriveItemable) string {
+	name := ""
+	if item.GetName() != nil {
+		name = *item.GetName()
+	}
+	if item.GetFolder() != nil {
+		name += "/"
+	}
+	return name
 }
 
-func printColumns2(names []string) {
-	if len(names) == 0 {
-		return
+func isHidden(name string) bool {
+	return len(name) > 0 && name[0] == '.'
+}
+
+func detectTerminalWidth() int {
+	w, _, err := term.GetSize(int(os.Stdout.Fd()))
+	if err != nil {
+		return 80
 	}
+	return w
+}
 
-	// Determine terminal width
-	width := 80 // fallback
-	if w, _, err := term.GetSize(int(os.Stdout.Fd())); err == nil {
-		width = w
+func getSize(it models.DriveItemable) int64 {
+	if it.GetFolder() != nil {
+		return 0
 	}
-
-	// Determine max item width
-	maxLen := 0
-	for _, n := range names {
-		if len(n) > maxLen {
-			maxLen = len(n)
-		}
+	if it.GetSize() != nil {
+		return *it.GetSize()
 	}
+	return 0
+}
 
-	colWidth := maxLen + 2
-	cols := width / colWidth
-	if cols < 1 {
-		cols = 1
+func getModifiedTime(it models.DriveItemable) time.Time {
+	if it.GetLastModifiedDateTime() != nil {
+		return *it.GetLastModifiedDateTime()
 	}
-
-	// Chunk into rows
-	rows := make([][]string, 0)
-	for i := 0; i < len(names); i += cols {
-		end := i + cols
-		if end > len(names) {
-			end = len(names)
-		}
-
-		row := names[i:end]
-
-		// pad row to full width
-		for len(row) < cols {
-			row = append(row, "")
-		}
-
-		rows = append(rows, row)
-	}
-
-	symbols := tw.NewSymbolCustom("linux").
-		WithRow(" ").
-		WithColumn(" ").
-		WithTopLeft(" ").
-		WithTopMid(" ").
-		WithTopRight(" ").
-		WithMidLeft(" ").
-		WithCenter(" ").
-		WithMidRight(" ").
-		WithBottomLeft(" ").
-		WithBottomMid(" ").
-		WithBottomRight(" ")
-
-	// Render table
-	table := tablewriter.NewTable(os.Stdout, tablewriter.WithRenderer(renderer.NewBlueprint(tw.Rendition{Symbols: symbols})))
-	table.Header([]string{})
-
-	for _, row := range rows {
-		table.Append(row)
-	}
-
-	table.Render()
+	return time.Time{}
 }

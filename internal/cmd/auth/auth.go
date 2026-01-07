@@ -3,11 +3,11 @@ package auth
 import (
 	"github.com/michaeldcanady/go-onedrive/internal/cmd/auth/login"
 	"github.com/michaeldcanady/go-onedrive/internal/cmd/auth/logout"
-	"github.com/michaeldcanady/go-onedrive/internal/logging"
+	"github.com/michaeldcanady/go-onedrive/internal/di"
 	"github.com/spf13/cobra"
 )
 
-func CreateAuthCmd(logger logging.Logger, credentialService credentialService, profileService ProfileService) *cobra.Command {
+func CreateAuthCmd(container *di.Container) *cobra.Command {
 	// authCmd represents the auth command
 	var authCmd = &cobra.Command{
 		Use:   "auth",
@@ -20,7 +20,7 @@ This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	}
 
-	authCmd.AddCommand(login.CreateLoginCmd(logger, credentialService, profileService))
+	authCmd.AddCommand(login.CreateLoginCmd(container))
 	authCmd.AddCommand(logout.CreateLogoutCmd())
 
 	return authCmd
