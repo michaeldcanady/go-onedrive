@@ -11,24 +11,20 @@ import (
 	"github.com/spf13/viper"
 )
 
-type CredentialService interface {
-	LoadCredential(ctx context.Context) (azcore.TokenCredential, error)
-}
-
-type CredentialServiceImpl struct {
+type CredentialService struct {
 	profileService ProfileService
 	credential     azcore.TokenCredential
 	logger         logging.Logger
 }
 
-func NewCredentialService(profileSvc ProfileService, logger logging.Logger) *CredentialServiceImpl {
-	return &CredentialServiceImpl{
+func NewCredentialService(profileSvc ProfileService, logger logging.Logger) *CredentialService {
+	return &CredentialService{
 		profileService: profileSvc,
 		logger:         logger,
 	}
 }
 
-func (s *CredentialServiceImpl) LoadCredential(ctx context.Context) (azcore.TokenCredential, error) {
+func (s *CredentialService) LoadCredential(ctx context.Context) (azcore.TokenCredential, error) {
 	sub := viper.Sub("auth")
 	if sub == nil {
 		s.logger.Error("missing 'auth' config section")

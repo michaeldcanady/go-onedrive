@@ -1,4 +1,4 @@
-package cmd
+package login
 
 import (
 	"context"
@@ -6,6 +6,6 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 )
 
-type CredentialService interface {
+type credentialService interface {
 	LoadCredential(ctx context.Context) (azcore.TokenCredential, error)
 }

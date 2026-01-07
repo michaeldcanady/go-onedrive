@@ -14,11 +14,11 @@ const (
 )
 
 type GraphClientService struct {
-	credentialService CredentialService
+	credentialService credentialLoader
 	client            *msgraphsdkgo.GraphServiceClient
 }
 
-func NewGraphClientService(credSvc CredentialService) *GraphClientService {
+func NewGraphClientService(credSvc credentialLoader) *GraphClientService {
 	return &GraphClientService{
 		credentialService: credSvc,
 	}
