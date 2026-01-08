@@ -36,7 +36,7 @@ func CreateRootCmd() (*cobra.Command, error) {
 
 	// 3. Build root command
 	rootCmd := &cobra.Command{
-		Use:   "go-onedrive",
+		Use:   "odc",
 		Short: "A OneDrive CLI client",
 		Long:  "A command-line interface for interacting with Microsoft OneDrive.",
 		PersistentPostRunE: func(cmd *cobra.Command, args []string) error {
