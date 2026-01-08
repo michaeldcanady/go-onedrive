@@ -1,0 +1,72 @@
+repo_url: https://github.com/michaeldcanady/servicenow-sdk-go
+site_name: Service-Now SDK for Go Docs
+markdown_extensions:
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.details
+  - pymdownx.highlight
+  - admonition
+  - toc:
+      permalink: true
+
+plugins:
+  - include-markdown
+
+nav:
+  - index.md
+  - getting-started.md
+  - APIs:
+      - apis/index.md
+      - Attachment:
+          - Overview: apis/attachment/index.md
+          - File:
+              - Overview: apis/attachment/file/index.md
+              - Get: apis/attachment/file/get.md
+              - Create: apis/attachment/file/create.md
+          - Upload:
+              - Overview: apis/attachment/upload/index.md
+              - Create: apis/attachment/upload/create.md
+          - List: apis/attachment/list.md
+          - Get: apis/attachment/get.md
+          - Delete: apis/attachment/delete.md
+      - Table:
+          - Overview: apis/tables/index.md
+          - List: apis/tables/list.md
+          - Create: apis/tables/create.md
+          - Get: apis/tables/get.md
+          - Update: apis/tables/update.md
+          - Delete: apis/tables/delete.md
+      - Batch:
+          - Overview: apis/batch/index.md
+          - Create: apis/batch/create.md
+  - Contributing:
+      - contributing/index.md
+      - Architecture:
+          - contributing/architecture/index.md
+          - contributing/architecture/core-concepts.md
+      - contributing/quick-start.md
+  - Releases ⧉: https://github.com/michaeldcanady/servicenow-sdk-go/releases
+  - Roadmap ⧉: https://github.com/users/michaeldcanady/projects/7/views/9
+
+theme:
+  font:
+    text: Work Sans
+  logo: assets/logo.png
+  favicon: assets/favicon.png
+  name: material
+  features:
+    - content.code.copy
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      primary: teal
+      scheme: default
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      primary: teal
+      scheme: slate
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
