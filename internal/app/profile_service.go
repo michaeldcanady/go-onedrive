@@ -16,6 +16,8 @@ type ProfileService interface {
 
 	// Save persists the given profile. A nil profile could mean "delete/clear".
 	Save(context.Context, *azidentity.AuthenticationRecord) error
+
+	Clear(context.Context) error
 }
 
 type ProfileServiceImpl struct {
@@ -64,6 +66,13 @@ func (c *ProfileServiceImpl) Save(ctx context.Context, p *azidentity.Authenticat
 	}
 	if err := c.store.SaveBytes(ctx, profileKey, data); err != nil {
 		return fmt.Errorf("save profile bytes: %w", err)
+	}
+	return nil
+}
+
+func (c *ProfileServiceImpl) Clear(ctx context.Context) error {
+	if err := c.store.Delete(ctx, profileKey); err != nil {
+		return fmt.Errorf("delete profile: %w", err)
 	}
 	return nil
 }

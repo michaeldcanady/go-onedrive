@@ -75,3 +75,22 @@ func (s *FSStore) SaveBytes(ctx context.Context, key string, data []byte) error 
 
 	return nil
 }
+
+func (s *FSStore) Delete(ctx context.Context, key string) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	if err := s.ensureDir(); err != nil {
+		return fmt.Errorf("unable to ensure dir: %w", err)
+	}
+
+	path := s.filePathForKey(key)
+	if err := os.Remove(path); err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			// already gone
+			return nil
+		}
+		return fmt.Errorf("unable to remove file %s: %w", path, err)
+	}
+	return nil
+}
