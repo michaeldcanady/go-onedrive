@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/michaeldcanady/go-onedrive/internal/app"
+	profileservice "github.com/michaeldcanady/go-onedrive/internal/app/profile_service"
 	"github.com/michaeldcanady/go-onedrive/internal/cache/fsstore"
 	jsoncodec "github.com/michaeldcanady/go-onedrive/internal/cache/json_codex"
 	"github.com/michaeldcanady/go-onedrive/internal/config"
@@ -64,7 +65,7 @@ func NewContainer(ctx context.Context, cfg config.Config) (*Container, error) {
 	// profile + credentials
 	store := fsstore.New(cfg.GetAuthenticationConfig().GetProfileCache())
 	codec := jsoncodec.New()
-	c.ProfileService = app.NewProfileService(store, codec)
+	c.ProfileService = profileservice.New(store, codec, nil, c.Logger)
 	c.CredentialService = app.NewCredentialService(c.ProfileService, c.Logger)
 
 	// graph client
