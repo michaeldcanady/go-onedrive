@@ -9,4 +9,7 @@ type Store interface {
 
 	// SaveBytes persists the raw bytes for the given key.
 	SaveBytes(ctx context.Context, key string, data []byte) error
+
+	// Delete removes the data for the given key.
+	Delete(ctx context.Context, key string) error
 }
