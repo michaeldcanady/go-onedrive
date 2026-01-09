@@ -1,20 +1,14 @@
 package credentialservice
 
 import (
-	"context"
 	"errors"
 	"fmt"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
-	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity/cache"
 	"github.com/michaeldcanady/go-onedrive/internal/config"
 )
-
-type Authenticator interface {
-	Authenticate(ctx context.Context, opts *policy.TokenRequestOptions) (azidentity.AuthenticationRecord, error)
-}
 
 func InteractiveBrowserCredentialFactory(authConfig config.AuthenticationConfig) (*azidentity.InteractiveBrowserCredential, error) {
 	var authRecord azidentity.AuthenticationRecord

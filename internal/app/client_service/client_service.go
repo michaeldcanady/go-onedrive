@@ -3,7 +3,6 @@ package clientservice
 import (
 	"context"
 	"errors"
-	"fmt"
 
 	"github.com/michaeldcanady/go-onedrive/internal/event"
 	"github.com/michaeldcanady/go-onedrive/internal/logging"
@@ -38,16 +37,10 @@ func (s *GraphClientService) Client(ctx context.Context) (*msgraphsdkgo.GraphSer
 		return s.client, nil
 	}
 
-	cred, err := s.credentialService.LoadCredential(ctx)
-	if err != nil {
-		s.logger.Error("failed to load credential", logging.Any("error", err))
-		return nil, fmt.Errorf("failed to load credential: %w", err)
-	}
-
 	s.logger.Info("credential loaded successfully for graph client")
 
 	client, err := msgraphsdkgo.NewGraphServiceClientWithCredentials(
-		cred,
+		s.credentialService,
 		[]string{
 			FilesReadWriteAllScope,
 			UserReadScope,

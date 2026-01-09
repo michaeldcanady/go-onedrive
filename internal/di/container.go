@@ -84,22 +84,30 @@ func NewContainer(ctx context.Context, cfg config.Config) (*Container, error) {
 	// wiring listeners
 	bus.Subscribe(profileservice.ProfileClearedTopic,
 		event.ListenerFunc(func(ctx context.Context, evt event.Topicer) error {
-			_, err := c.CredentialService.LoadCredential(ctx)
+			_, err := c.CredentialService.LoadCredential(ctx, nil)
 			return err
 		}),
 	)
 
 	bus.Subscribe(profileservice2.ProfileDeletedEventTopic,
 		event.ListenerFunc(func(ctx context.Context, evt event.Topicer) error {
-			_, err := c.CredentialService.LoadCredential(ctx)
+			_, err := c.CredentialService.LoadCredential(ctx, nil)
 			return err
 		}),
 	)
 
 	bus.Subscribe(profileservice2.ProfileUpdatedEventTopic,
 		event.ListenerFunc(func(ctx context.Context, evt event.Topicer) error {
-			_, err := c.CredentialService.LoadCredential(ctx)
-			return err
+			evt2, ok := evt.(*profileservice2.ProfileEvent)
+			if !ok {
+				return fmt.Errorf("unexpected event type: %T", evt)
+			}
+
+			if evt2.Old() != evt2.Profile() {
+				_, err := c.CredentialService.LoadCredential(ctx, evt2.Profile())
+				return err
+			}
+			return nil
 		}),
 	)
 

@@ -27,6 +27,10 @@ func (e *ProfileEvent) Topic() string {
 	return e.topic
 }
 
+func (e *ProfileEvent) Old() *azidentity.AuthenticationRecord {
+	return e.old
+}
+
 // Profile returns the authentication profile associated with the event.
 func (e *ProfileEvent) Profile() *azidentity.AuthenticationRecord {
 	return e.new
