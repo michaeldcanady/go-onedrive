@@ -104,8 +104,14 @@ func (s *Service) getChildren(ctx context.Context, folderPath string) (models.Dr
 	// Extract items for event publishing
 	items := resp.GetValue()
 
-	// Publish event
-	_ = s.publisher.Publish(ctx, newDriveChildrenLoadedEvent(normalized, items))
+	if s.publisher == nil {
+		s.logger.Warn("no event publisher configured; skipping drive.children.loaded event")
+	} else {
+		s.logger.Debug("publishing drive.children.loaded event")
+		if err := s.publisher.Publish(ctx, newDriveChildrenLoadedEvent(normalized, items)); err != nil {
+			s.logger.Error("failed to publish drive.children.loaded event", logging.Any("error", err))
+		}
+	}
 
 	s.logger.Info("retrieved drive children successfully", logging.String("path", normalized))
 	s.logger.Debug("children_count", logging.Any("count", len(items)))
