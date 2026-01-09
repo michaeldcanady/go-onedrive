@@ -101,6 +101,28 @@ func (c *Service) Save(ctx context.Context, p *azidentity.AuthenticationRecord) 
 	return nil
 }
 
+func (s *Service) Clear(ctx context.Context) error {
+	// Save an empty profile
+	err := s.Save(ctx, nil)
+	if err != nil {
+		s.logger.Error("failed to clear profile", logging.Any("error", err))
+		return err
+	}
+
+	s.logger.Info("profile cleared")
+	if s.publisher == nil {
+		s.logger.Warn("no event publisher configured; skipping profile.cleared event")
+	} else {
+		s.logger.Debug("publishing profile.cleared event")
+		if err := s.publisher.Publish(ctx, newProfileClearedEvent()); err != nil {
+			s.logger.Warn("failed to publish profile.cleared event", logging.Any("error", err))
+			return fmt.Errorf("unable to publish profile.cleared event: %w", err)
+		}
+	}
+
+	return nil
+}
+
 func isZeroProfile(p *azidentity.AuthenticationRecord) bool {
 	return p == nil
 }
