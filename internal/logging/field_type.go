@@ -10,4 +10,6 @@ const (
 	FieldTypeInt
 	// FieldTypeAny represents a field with an arbitrary value.
 	FieldTypeAny
+	// FieldTypeBool represents a field with a boolean value.
+	FieldTypeBool
 )

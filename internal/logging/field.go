@@ -24,3 +24,8 @@ func Int(key string, val int) Field {
 func Any(key string, val any) Field {
 	return Field{key: key, fieldType: FieldTypeAny, value: val}
 }
+
+// Bool creates a Field with a boolean value.
+func Bool(key string, val bool) Field {
+	return Field{key: key, fieldType: FieldTypeBool, value: val}
+}

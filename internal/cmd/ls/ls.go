@@ -26,13 +26,35 @@ const (
 )
 
 func CreateLSCmd(iter driveChildIterator, logger logging.Logger) *cobra.Command {
-	var long bool
-	var all bool
-	var format string
+	var (
+		long   bool
+		all    bool
+		format string
+	)
 
-	lsCmd := &cobra.Command{
-		Use:          "ls [path]",
-		Short:        "List items in a OneDrive path",
+	cmd := &cobra.Command{
+		Use:   "ls [path]",
+		Short: "List items in a OneDrive path",
+		Long: `List files and folders stored in your OneDrive.
+
+By default, hidden items (names beginning with '.') are not shown.
+Use --all to include them, or --long for a detailed listing.`,
+		Example: `
+  # List items in the current directory
+  go-onedrive ls
+
+  # List items in a specific path
+  go-onedrive ls Documents/Projects
+
+  # Long listing format
+  go-onedrive ls -l
+
+  # Show hidden items
+  go-onedrive ls -a
+
+  # Output JSON
+  go-onedrive ls --format json
+`,
 		Args:         cobra.MaximumNArgs(1),
 		SilenceUsage: true,
 
@@ -49,51 +71,22 @@ func CreateLSCmd(iter driveChildIterator, logger logging.Logger) *cobra.Command 
 
 			logger.Debug("ls command invoked",
 				logging.String("path", path),
-				logging.Any("long", long),
-				logging.Any("all", all),
+				logging.Bool("long", long),
+				logging.Bool("all", all),
+				logging.String("format", format),
 			)
 
-			var items []models.DriveItemable
-			var cmdErr error
-
-			iter.ChildrenIterator(ctx, path)(func(item models.DriveItemable, err error) bool {
-				if err != nil {
-					logger.Error("iterator returned error", logging.Any("error", err))
-					cmdErr = err
-					return false
-				}
-				items = append(items, item)
-				return true
-			})
-			if cmdErr != nil {
-				logger.Error("failed to iterate children", logging.Any("error", cmdErr))
-				return cmdErr
+			items, err := collectItems(ctx, iter, path, logger)
+			if err != nil {
+				return err
 			}
 
-			logger.Debug("items retrieved", logging.Int("count", len(items)))
-
-			// Filter hidden items unless --all is set
 			if !all {
-				before := len(items)
-				filtered := items[:0]
-				for _, it := range items {
-					if !isHidden(safeName(it)) {
-						filtered = append(filtered, it)
-					}
-				}
-				items = filtered
-				logger.Debug("filtered hidden items",
-					logging.Int("before", before),
-					logging.Int("after", len(items)),
-				)
+				items = filterHidden(items)
 			}
 
-			// Sort by name
-			slices.SortFunc(items, func(a, b models.DriveItemable) int {
-				return cmp.Compare(safeName(a), safeName(b))
-			})
+			sortItems(items)
 
-			// Convert to LSItem
 			structured := make([]Item, len(items))
 			for i, it := range items {
 				structured[i] = toItem(it)
@@ -118,11 +111,62 @@ func CreateLSCmd(iter driveChildIterator, logger logging.Logger) *cobra.Command 
 		},
 	}
 
-	lsCmd.Flags().BoolVarP(&long, longLongArg, longShortArg, false, longArgUsage)
-	lsCmd.Flags().BoolVarP(&all, allLongArg, allShortArg, false, allArgUsage)
-	lsCmd.Flags().StringVarP(&format, "format", "f", "", "output format: json|yaml")
+	cmd.Flags().BoolVarP(&long, longLongArg, longShortArg, false, longArgUsage)
+	cmd.Flags().BoolVarP(&all, allLongArg, allShortArg, false, allArgUsage)
+	cmd.Flags().StringVarP(&format, "format", "f", "", "output format: json|yaml")
 
-	return lsCmd
+	return cmd
+}
+
+//
+// Helpers
+//
+
+func collectItems(
+	ctx context.Context,
+	iter driveChildIterator,
+	path string,
+	logger logging.Logger,
+) ([]models.DriveItemable, error) {
+
+	var (
+		items   []models.DriveItemable
+		iterErr error
+	)
+
+	iter.ChildrenIterator(ctx, path)(func(item models.DriveItemable, err error) bool {
+		if err != nil {
+			logger.Error("iterator returned error", logging.Any("error", err))
+			iterErr = err
+			return false
+		}
+		items = append(items, item)
+		return true
+	})
+
+	if iterErr != nil {
+		logger.Error("failed to iterate children", logging.Any("error", iterErr))
+		return nil, iterErr
+	}
+
+	logger.Debug("items retrieved", logging.Int("count", len(items)))
+	return items, nil
+}
+
+func filterHidden(items []models.DriveItemable) []models.DriveItemable {
+	out := items[:0]
+	for _, it := range items {
+		if !isHidden(safeName(it)) {
+			out = append(out, it)
+		}
+	}
+	return out
+}
+
+func sortItems(items []models.DriveItemable) {
+	slices.SortFunc(items, func(a, b models.DriveItemable) int {
+		return cmp.Compare(safeName(a), safeName(b))
+	})
 }
 
 func safeName(item models.DriveItemable) string {

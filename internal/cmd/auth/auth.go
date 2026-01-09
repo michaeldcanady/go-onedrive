@@ -7,21 +7,24 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// CreateAuthCmd constructs the `auth` parent command, which groups all
+// authentication-related subcommands (login, logout, token mgmt, etc).
 func CreateAuthCmd(container *di.Container) *cobra.Command {
-	// authCmd represents the auth command
-	var authCmd = &cobra.Command{
+	authCmd := &cobra.Command{
 		Use:   "auth",
-		Short: "A brief description of your command",
-		Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
+		Short: "Manage authentication for OneDrive",
+		Long: `Authentication commands for managing your OneDrive session.
 
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+Use these commands to log in, log out, refresh tokens, or inspect your
+current authentication state.
+`,
 	}
 
-	authCmd.AddCommand(login.CreateLoginCmd(container))
-	authCmd.AddCommand(logout.CreateLogoutCmd())
+	// Subcommands
+	authCmd.AddCommand(
+		login.CreateLoginCmd(container),
+		logout.CreateLogoutCmd(),
+	)
 
 	return authCmd
 }
