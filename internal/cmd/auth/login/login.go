@@ -7,7 +7,6 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
-	"github.com/michaeldcanady/go-onedrive/internal/app"
 	"github.com/michaeldcanady/go-onedrive/internal/di"
 	"github.com/michaeldcanady/go-onedrive/internal/logging"
 	"github.com/spf13/cobra"
@@ -58,7 +57,7 @@ and stores the resulting authentication record for future CLI operations.`,
 				return fmt.Errorf("failed to initialize credential: %w", err)
 			}
 
-			authenticator, ok := cred.(app.Authenticator)
+			authenticator, ok := cred.(Authenticator)
 			if !ok {
 				logger.Error("Configured credential does not support explicit authentication")
 				return fmt.Errorf("configured credential does not support explicit authentication")

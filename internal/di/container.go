@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/michaeldcanady/go-onedrive/internal/app"
+	credentialservice "github.com/michaeldcanady/go-onedrive/internal/app/credential_service"
 	profileservice "github.com/michaeldcanady/go-onedrive/internal/app/profile_service"
 	"github.com/michaeldcanady/go-onedrive/internal/cache/fsstore"
 	jsoncodec "github.com/michaeldcanady/go-onedrive/internal/cache/json_codex"
@@ -17,8 +18,8 @@ type Container struct {
 	Ctx                context.Context
 	Config             config.Config
 	Logger             logging.Logger
-	ProfileService     app.ProfileService
-	CredentialService  *app.CredentialService
+	ProfileService     ProfileService
+	CredentialService  CredentialService
 	GraphClientService *app.GraphClientService
 	DriveService       *app.DriveService
 }
@@ -66,7 +67,7 @@ func NewContainer(ctx context.Context, cfg config.Config) (*Container, error) {
 	store := fsstore.New(cfg.GetAuthenticationConfig().GetProfileCache())
 	codec := jsoncodec.New()
 	c.ProfileService = profileservice.New(store, codec, nil, c.Logger)
-	c.CredentialService = app.NewCredentialService(c.ProfileService, c.Logger)
+	c.CredentialService = credentialservice.New(c.ProfileService, nil, c.Logger)
 
 	// graph client
 	c.GraphClientService = app.NewGraphClientService(c.CredentialService)
