@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/michaeldcanady/go-onedrive/internal/app"
 	clientservice "github.com/michaeldcanady/go-onedrive/internal/app/client_service"
 	credentialservice "github.com/michaeldcanady/go-onedrive/internal/app/credential_service"
+	driveservice "github.com/michaeldcanady/go-onedrive/internal/app/drive_service"
 	profileservice "github.com/michaeldcanady/go-onedrive/internal/app/profile_service"
 	"github.com/michaeldcanady/go-onedrive/internal/cache/fsstore"
 	jsoncodec "github.com/michaeldcanady/go-onedrive/internal/cache/json_codex"
@@ -22,7 +22,7 @@ type Container struct {
 	ProfileService     ProfileService
 	CredentialService  CredentialService
 	GraphClientService Clienter
-	DriveService       *app.DriveService
+	DriveService       ChildrenIterator
 }
 
 func initializeLogger(logCfg config.LoggingConfig) (logging.Logger, error) {
@@ -74,7 +74,7 @@ func NewContainer(ctx context.Context, cfg config.Config) (*Container, error) {
 	c.GraphClientService = clientservice.New(c.CredentialService, nil, c.Logger)
 
 	// drive
-	c.DriveService = app.NewDriveService(c.GraphClientService)
+	c.DriveService = driveservice.New(c.GraphClientService, nil, c.Logger)
 
 	return c, nil
 }

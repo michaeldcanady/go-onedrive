@@ -1,4 +1,4 @@
-package app
+package driveservice
 
 import (
 	"context"
@@ -6,6 +6,6 @@ import (
 	msgraphsdkgo "github.com/microsoftgraph/msgraph-sdk-go"
 )
 
-type Clienter interface {
+type clienter interface {
 	Client(context.Context) (*msgraphsdkgo.GraphServiceClient, error)
 }
