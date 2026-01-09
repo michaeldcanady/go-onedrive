@@ -21,9 +21,21 @@ const (
 	AuthConfig             = "auth"
 
 	maxAuthAttempts = 3
+
+	showTokenLongFlag = "show-token"
+	showTokenUsage    = "Display the access token after login"
+
+	forceLongFlag  = "force"
+	forceShortFlag = "f"
+	forceUsage     = "Force re-authentication even if a valid profile exists"
 )
 
 func CreateLoginCmd(container *di.Container) *cobra.Command {
+	var (
+		showToken bool
+		force     bool
+	)
+
 	cmd := &cobra.Command{
 		Use:   "login",
 		Short: "Authenticate with OneDrive",
@@ -65,7 +77,7 @@ func CreateLoginCmd(container *di.Container) *cobra.Command {
 			var success bool
 
 			for range maxAuthAttempts {
-				needsAuth := profile == nil || isEmptyRecord(*profile)
+				needsAuth := (profile == nil || isEmptyRecord(*profile)) || force
 				if needsAuth {
 					logger.Info("Starting authentication flow...")
 
@@ -106,7 +118,7 @@ func CreateLoginCmd(container *di.Container) *cobra.Command {
 				return fmt.Errorf("authentication failed after %d attempts", maxAuthAttempts)
 			}
 
-			if showToken, _ := cmd.Flags().GetBool("show-token"); showToken {
+			if showToken {
 				fmt.Printf("Access Token:\n%s\n", token.Token)
 			}
 
@@ -115,7 +127,8 @@ func CreateLoginCmd(container *di.Container) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().Bool("show-token", false, "Display the access token after login")
+	cmd.Flags().BoolVar(&showToken, showTokenLongFlag, false, showTokenUsage)
+	cmd.Flags().BoolVarP(&force, forceLongFlag, forceShortFlag, false, forceUsage)
 	return cmd
 }
 
