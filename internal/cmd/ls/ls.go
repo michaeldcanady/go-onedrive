@@ -16,13 +16,17 @@ import (
 )
 
 const (
-	longLongArg  = "long"
-	longShortArg = "l"
-	longArgUsage = "use long listing format"
+	longLongFlag  = "long"
+	longShortFlag = "l"
+	longUsage     = "use long listing format"
 
-	allLongArg  = "all"
-	allShortArg = "a"
-	allArgUsage = "show hidden items (names starting with '.')"
+	allLongFlag  = "all"
+	allShortFlag = "a"
+	allUsage     = "show hidden items (names starting with '.')"
+
+	formatLongFlag  = "format"
+	formatShortFlag = "f"
+	formatUsage     = "output format: json|yaml"
 )
 
 func CreateLSCmd(iter driveChildIterator, logger logging.Logger) *cobra.Command {
@@ -111,16 +115,12 @@ Use --all to include them, or --long for a detailed listing.`,
 		},
 	}
 
-	cmd.Flags().BoolVarP(&long, longLongArg, longShortArg, false, longArgUsage)
-	cmd.Flags().BoolVarP(&all, allLongArg, allShortArg, false, allArgUsage)
-	cmd.Flags().StringVarP(&format, "format", "f", "", "output format: json|yaml")
+	cmd.Flags().BoolVarP(&long, longLongFlag, longShortFlag, false, longUsage)
+	cmd.Flags().BoolVarP(&all, allLongFlag, allShortFlag, false, allUsage)
+	cmd.Flags().StringVarP(&format, formatLongFlag, formatShortFlag, "", formatUsage)
 
 	return cmd
 }
-
-//
-// Helpers
-//
 
 func collectItems(
 	ctx context.Context,

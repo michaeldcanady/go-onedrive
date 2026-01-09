@@ -1,4 +1,4 @@
-package app
+package credentialservice
 
 import (
 	"context"
