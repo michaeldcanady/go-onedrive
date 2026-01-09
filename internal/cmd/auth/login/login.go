@@ -45,12 +45,10 @@ func CreateLoginCmd(container *di.Container) *cobra.Command {
 				ctx = context.Background()
 			}
 
-			logger := container.Logger
-
 			// Load existing profile
 			profile, err := container.ProfileService.Load(ctx)
 			if err != nil {
-				logger.Warn("Unable to load profile", logging.String("error", err.Error()))
+				container.Logger.Warn("Unable to load profile", logging.String("error", err.Error()))
 			}
 
 			// Load credential provider (reactive chain starts here)
@@ -61,7 +59,7 @@ func CreateLoginCmd(container *di.Container) *cobra.Command {
 
 			authenticator, ok := cred.(Authenticator)
 			if !ok {
-				return fmt.Errorf("configured credential does not support explicit authentication")
+				return errors.New("configured credential does not support explicit authentication")
 			}
 
 			options := &policy.TokenRequestOptions{
@@ -79,11 +77,11 @@ func CreateLoginCmd(container *di.Container) *cobra.Command {
 			for range maxAuthAttempts {
 				needsAuth := (profile == nil || isEmptyRecord(*profile)) || force
 				if needsAuth {
-					logger.Info("Starting authentication flow...")
+					container.Logger.Info("Starting authentication flow...")
 
 					record, err := authenticator.Authenticate(ctx, options)
 					if err != nil {
-						logger.Error("authentication failed", logging.String("error", err.Error()))
+						container.Logger.Error("authentication failed", logging.String("error", err.Error()))
 						return fmt.Errorf("authentication failed: %w", err)
 					}
 
@@ -102,7 +100,7 @@ func CreateLoginCmd(container *di.Container) *cobra.Command {
 				token, err = cred.GetToken(ctx, *options)
 				if err != nil {
 					if isAuthRequired(err) {
-						logger.Warn("Authentication required to obtain access token; clearing cached profile",
+						container.Logger.Warn("Authentication required to obtain access token; clearing cached profile",
 							logging.String("error", err.Error()))
 						profile = nil
 						continue
@@ -122,7 +120,7 @@ func CreateLoginCmd(container *di.Container) *cobra.Command {
 				fmt.Printf("Access Token:\n%s\n", token.Token)
 			}
 
-			logger.Info("Login complete.")
+			container.Logger.Info("Login complete.")
 			return nil
 		},
 	}

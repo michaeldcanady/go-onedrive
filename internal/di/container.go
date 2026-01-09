@@ -8,6 +8,7 @@ import (
 	credentialservice "github.com/michaeldcanady/go-onedrive/internal/app/credential_service"
 	driveservice "github.com/michaeldcanady/go-onedrive/internal/app/drive_service"
 	profileservice "github.com/michaeldcanady/go-onedrive/internal/app/profile_service"
+	profileservice2 "github.com/michaeldcanady/go-onedrive/internal/app/profile_service2"
 	"github.com/michaeldcanady/go-onedrive/internal/cache/fsstore"
 	jsoncodec "github.com/michaeldcanady/go-onedrive/internal/cache/json_codex"
 	"github.com/michaeldcanady/go-onedrive/internal/config"
@@ -17,10 +18,13 @@ import (
 )
 
 type Container struct {
-	Ctx                context.Context
-	Config             config.Config
-	Logger             logging.Logger
+	Ctx    context.Context
+	Config config.Config
+	Logger logging.Logger
+	// Deprecated: use ProfileService2 instead.
+	// ProfileService is the profile service.
 	ProfileService     ProfileService
+	ProfileService2    ProfileService2
 	CredentialService  CredentialService
 	GraphClientService Clienter
 	DriveService       ChildrenIterator
@@ -72,12 +76,27 @@ func NewContainer(ctx context.Context, cfg config.Config) (*Container, error) {
 	codec := jsoncodec.New()
 
 	c.ProfileService = profileservice.New(store, codec, bus, logger)
+	c.ProfileService2 = profileservice2.New(store, bus, logger)
 	c.CredentialService = credentialservice.New(c.ProfileService, bus, logger)
 	c.GraphClientService = clientservice.New(c.CredentialService, bus, logger)
 	c.DriveService = driveservice.New(c.GraphClientService, bus, logger)
 
 	// wiring listeners
 	bus.Subscribe(profileservice.ProfileClearedTopic,
+		event.ListenerFunc(func(ctx context.Context, evt event.Topicer) error {
+			_, err := c.CredentialService.LoadCredential(ctx)
+			return err
+		}),
+	)
+
+	bus.Subscribe(profileservice2.ProfileDeletedEventTopic,
+		event.ListenerFunc(func(ctx context.Context, evt event.Topicer) error {
+			_, err := c.CredentialService.LoadCredential(ctx)
+			return err
+		}),
+	)
+
+	bus.Subscribe(profileservice2.ProfileUpdatedEventTopic,
 		event.ListenerFunc(func(ctx context.Context, evt event.Topicer) error {
 			_, err := c.CredentialService.LoadCredential(ctx)
 			return err

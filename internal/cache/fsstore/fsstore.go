@@ -16,6 +16,27 @@ type FSStore struct {
 	filePerm fs.FileMode
 }
 
+// Clear implements cacheservice.Cache.
+func (s *FSStore) Clear(ctx context.Context) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	if err := s.ensureDir(); err != nil {
+		return fmt.Errorf("unable ensure dir: %w", err)
+	}
+	return os.RemoveAll(s.baseDir)
+}
+
+// Get implements cacheservice.Cache.
+func (s *FSStore) Get(ctx context.Context, key string) ([]byte, error) {
+	return s.LoadBytes(ctx, key)
+}
+
+// Put implements cacheservice.Cache.
+func (s *FSStore) Put(ctx context.Context, key string, data []byte) error {
+	return s.SaveBytes(ctx, key, data)
+}
+
 func New(baseDir string) *FSStore {
 	return &FSStore{
 		baseDir:  baseDir,

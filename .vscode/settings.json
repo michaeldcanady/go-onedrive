@@ -3,6 +3,7 @@
         "azcore",
         "azidentity",
         "coreutils",
+        "credentialservice",
         "Itemable",
         "mapstructure",
         "michaeldcanady",
@@ -11,6 +12,7 @@
         "msgraphcore",
         "msgraphsdkgo",
         "onedrive",
+        "profileservice",
         "Responseable",
         "tablewriter",
         "Topicer"
