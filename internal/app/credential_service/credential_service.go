@@ -20,14 +20,22 @@ type Service struct {
 }
 
 func New(profileSvc ProfileService, publisher event.Publisher, logger logging.Logger) *Service {
-	return &Service{
+	s := &Service{
 		profileService: profileSvc,
 		publisher:      publisher,
 		logger:         logger,
 	}
+
+	return s
 }
 
 func (s *Service) LoadCredential(ctx context.Context) (azcore.TokenCredential, error) {
+	// If already loaded, return cached credential
+	if s.credential != nil {
+		s.logger.Debug("credential already loaded; returning cached instance")
+		return s.credential, nil
+	}
+
 	sub := viper.Sub("auth")
 	if sub == nil {
 		err := fmt.Errorf("missing 'auth' config section")
@@ -68,16 +76,13 @@ func (s *Service) LoadCredential(ctx context.Context) (azcore.TokenCredential, e
 	s.logger.Info("credential created successfully")
 	s.logger.Debug("credential instance", logging.Any("credential", s.credential))
 
-	if s.publisher == nil {
-		s.logger.Warn("no event publisher configured; skipping credential.loaded event")
-	} else {
+	// Publish event
+	if s.publisher != nil {
 		s.logger.Debug("publishing credential.loaded event")
 		if err := s.publisher.Publish(ctx, newCredentialLoadedEvent(s.credential)); err != nil {
 			s.logger.Error("failed to publish credential.loaded event", logging.Any("error", err))
 		}
 	}
-
-	s.logger.Info("credential loaded successfully")
 
 	return s.credential, nil
 }

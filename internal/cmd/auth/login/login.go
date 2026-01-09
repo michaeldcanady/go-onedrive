@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/michaeldcanady/go-onedrive/internal/di"
@@ -18,23 +19,14 @@ const (
 	SitesReadWriteAllScope = "Sites.ReadWrite.All"
 	OfflineAccessScope     = "offline_access"
 	AuthConfig             = "auth"
+
+	maxAuthAttempts = 3
 )
 
 func CreateLoginCmd(container *di.Container) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "login",
-		Short: "Authenticate with OneDrive using the configured authentication method",
-		Long: `Authenticate with OneDrive using the authentication settings defined in your configuration.
-
-This command initiates an authentication flow (browser, device code, etc.)
-and stores the resulting authentication record for future CLI operations.`,
-		Example: `
-  # Perform interactive login
-  go-onedrive auth login
-
-  # Login and display the access token
-  go-onedrive auth login --show-token
-`,
+		Short: "Authenticate with OneDrive",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 			if ctx == nil {
@@ -44,72 +36,78 @@ and stores the resulting authentication record for future CLI operations.`,
 			logger := container.Logger
 
 			// Load existing profile
-			logger.Info("Loading cached authentication profile...")
 			profile, err := container.ProfileService.Load(ctx)
 			if err != nil {
 				logger.Warn("Unable to load profile", logging.String("error", err.Error()))
 			}
 
-			// Load credential provider
+			// Load credential provider (reactive chain starts here)
 			cred, err := container.CredentialService.LoadCredential(ctx)
 			if err != nil {
-				logger.Error("Failed to load credential from config", logging.String("error", err.Error()))
 				return fmt.Errorf("failed to initialize credential: %w", err)
 			}
 
 			authenticator, ok := cred.(Authenticator)
 			if !ok {
-				logger.Error("Configured credential does not support explicit authentication")
 				return fmt.Errorf("configured credential does not support explicit authentication")
 			}
 
-			// Token request options
 			options := &policy.TokenRequestOptions{
 				Scopes: []string{
 					FilesReadWriteAllScope,
 					UserReadScope,
-					OfflineAccessScope,
+					//OfflineAccessScope,
 				},
 				EnableCAE: true,
 			}
-			logger.Debug("Authentication options", logging.Any("options", *options))
 
-			// Determine if authentication is required
-			needsAuth := profile == nil || isEmptyRecord(*profile)
-			if needsAuth {
-				logger.Warn("No valid authentication profile found. Starting login flow...")
+			var token azcore.AccessToken
+			var success bool
 
-				record, err := authenticator.Authenticate(ctx, options)
-				if err != nil {
-					logger.Error("Authentication failed", logging.String("error", err.Error()))
-					return fmt.Errorf("authentication failed: %w", err)
+			for range maxAuthAttempts {
+				needsAuth := profile == nil || isEmptyRecord(*profile)
+				if needsAuth {
+					logger.Info("Starting authentication flow...")
+
+					record, err := authenticator.Authenticate(ctx, options)
+					if err != nil {
+						logger.Error("authentication failed", logging.String("error", err.Error()))
+						return fmt.Errorf("authentication failed: %w", err)
+					}
+
+					if err := container.ProfileService.Save(ctx, &record); err != nil {
+						return fmt.Errorf("unable to save profile: %w", err)
+					}
+
+					profile = &record
+
+					cred, err = container.CredentialService.LoadCredential(ctx)
+					if err != nil {
+						return fmt.Errorf("failed to reload credential: %w", err)
+					}
 				}
 
-				profile = &record
-				logger.Info("Authentication successful")
-				logger.Debug("Authentication record", logging.Any("profile", profile))
+				token, err = cred.GetToken(ctx, *options)
+				if err != nil {
+					if isAuthRequired(err) {
+						logger.Warn("Authentication required to obtain access token; clearing cached profile",
+							logging.String("error", err.Error()))
+						profile = nil
+						continue
+					}
+					return fmt.Errorf("failed to retrieve token: %w", err)
+				}
+
+				success = true
+				break
 			}
 
-			// Retrieve access token
-			logger.Info("Retrieving access token...")
-			token, err := cred.GetToken(ctx, *options)
-			if err != nil {
-				logger.Error("Failed to retrieve token", logging.String("error", err.Error()))
-				return fmt.Errorf("failed to retrieve token: %w", err)
+			if !success {
+				return fmt.Errorf("authentication failed after %d attempts", maxAuthAttempts)
 			}
-			logger.Info("Access token retrieved successfully")
 
-			// Optional: show token
 			if showToken, _ := cmd.Flags().GetBool("show-token"); showToken {
 				fmt.Printf("Access Token:\n%s\n", token.Token)
-				return nil
-			}
-
-			// Save updated profile
-			logger.Info("Saving authentication profile...")
-			if err := container.ProfileService.Save(ctx, profile); err != nil {
-				logger.Error("Unable to save profile", logging.String("error", err.Error()))
-				return errors.Join(errors.New("unable to save profile"), err)
 			}
 
 			logger.Info("Login complete.")
@@ -118,7 +116,6 @@ and stores the resulting authentication record for future CLI operations.`,
 	}
 
 	cmd.Flags().Bool("show-token", false, "Display the access token after login")
-
 	return cmd
 }
 
@@ -128,4 +125,9 @@ func isEmptyRecord(r azidentity.AuthenticationRecord) bool {
 		r.TenantID == "" &&
 		r.HomeAccountID == "" &&
 		r.Username == ""
+}
+
+func isAuthRequired(err error) bool {
+	var authErr *azidentity.AuthenticationRequiredError
+	return errors.As(err, &authErr)
 }

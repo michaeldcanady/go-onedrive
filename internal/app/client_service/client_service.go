@@ -13,6 +13,7 @@ import (
 const (
 	FilesReadWriteAllScope = "Files.ReadWrite.All"
 	UserReadScope          = "User.Read"
+	OfflineAccessScope     = "offline_access"
 )
 
 type GraphClientService struct {
@@ -50,6 +51,7 @@ func (s *GraphClientService) Client(ctx context.Context) (*msgraphsdkgo.GraphSer
 		[]string{
 			FilesReadWriteAllScope,
 			UserReadScope,
+			//OfflineAccessScope,
 		},
 	)
 	if err != nil {
@@ -62,8 +64,14 @@ func (s *GraphClientService) Client(ctx context.Context) (*msgraphsdkgo.GraphSer
 	s.logger.Info("graph client initialized successfully")
 	s.logger.Debug("graph client instance", logging.Any("client", client))
 
-	// 🔥 Publish event
-	_ = s.publisher.Publish(ctx, newGraphClientInitializedEvent())
+	if s.publisher == nil {
+		s.logger.Warn("event publisher is nil; skipping graph client initialized event publish")
+	} else {
+		s.logger.Debug("publishing graph client initialized event")
+		if err := s.publisher.Publish(ctx, newGraphClientInitializedEvent()); err != nil {
+			s.logger.Warn("failed to publish graph client initialized event", logging.Any("error", err))
+		}
+	}
 
 	return client, nil
 }

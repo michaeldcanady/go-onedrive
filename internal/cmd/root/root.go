@@ -13,10 +13,9 @@ import (
 )
 
 const (
-	defaultConfigFile     = "./config.yaml"
-	loggingLevelFlagLong  = "level"
-	loggingLevelFlagShort = "l"
-	loggingLevelUsage     = "set the logging level (e.g., debug, info, warn, error)"
+	defaultConfigFile    = "./config.yaml"
+	loggingLevelFlagLong = "level"
+	loggingLevelUsage    = "set the logging level (e.g., debug, info, warn, error)"
 )
 
 // CreateRootCmd constructs the root command for the CLI application.
@@ -66,7 +65,7 @@ Examples:
 		// TODO: Log that config file was not found, using defaults.
 	}
 
-	rootCmd.PersistentFlags().BoolP(loggingLevelFlagLong, loggingLevelFlagShort, false, loggingLevelUsage)
+	rootCmd.PersistentFlags().Bool(loggingLevelFlagLong, false, loggingLevelUsage)
 	if err := viper.BindPFlag("logging.level", rootCmd.PersistentFlags().Lookup(loggingLevelFlagLong)); err != nil {
 		return nil, fmt.Errorf("failed to bind logging level flag: %w", err)
 	}
