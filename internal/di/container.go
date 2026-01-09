@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/michaeldcanady/go-onedrive/internal/app"
+	clientservice "github.com/michaeldcanady/go-onedrive/internal/app/client_service"
 	credentialservice "github.com/michaeldcanady/go-onedrive/internal/app/credential_service"
 	profileservice "github.com/michaeldcanady/go-onedrive/internal/app/profile_service"
 	"github.com/michaeldcanady/go-onedrive/internal/cache/fsstore"
@@ -20,7 +21,7 @@ type Container struct {
 	Logger             logging.Logger
 	ProfileService     ProfileService
 	CredentialService  CredentialService
-	GraphClientService *app.GraphClientService
+	GraphClientService Clienter
 	DriveService       *app.DriveService
 }
 
@@ -70,7 +71,7 @@ func NewContainer(ctx context.Context, cfg config.Config) (*Container, error) {
 	c.CredentialService = credentialservice.New(c.ProfileService, nil, c.Logger)
 
 	// graph client
-	c.GraphClientService = app.NewGraphClientService(c.CredentialService)
+	c.GraphClientService = clientservice.New(c.CredentialService, nil, c.Logger)
 
 	// drive
 	c.DriveService = app.NewDriveService(c.GraphClientService)
