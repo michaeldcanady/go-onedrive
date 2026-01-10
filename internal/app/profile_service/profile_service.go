@@ -62,9 +62,6 @@ func (s *Service) Load(ctx context.Context) (*azidentity.AuthenticationRecord, e
 	s.cached = &p
 	s.logger.Info("profile loaded successfully")
 
-	// ❌ DO NOT publish profile.loaded here anymore
-	// Load() is not a state change
-
 	return &p, nil
 }
 

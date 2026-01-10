@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	clientservice "github.com/michaeldcanady/go-onedrive/internal/app/client_service"
+	configurationservice "github.com/michaeldcanady/go-onedrive/internal/app/configuration_service.go"
 	credentialservice "github.com/michaeldcanady/go-onedrive/internal/app/credential_service"
 	driveservice "github.com/michaeldcanady/go-onedrive/internal/app/drive_service"
 	profileservice "github.com/michaeldcanady/go-onedrive/internal/app/profile_service"
@@ -23,12 +24,13 @@ type Container struct {
 	Logger logging.Logger
 	// Deprecated: use ProfileService2 instead.
 	// ProfileService is the profile service.
-	ProfileService     ProfileService
-	ProfileService2    ProfileService2
-	CredentialService  CredentialService
-	GraphClientService Clienter
-	DriveService       ChildrenIterator
-	EventBus           *event.InMemoryBus
+	ProfileService       ProfileService
+	ProfileService2      ProfileService2
+	CredentialService    CredentialService
+	GraphClientService   Clienter
+	DriveService         ChildrenIterator
+	EventBus             EventBus
+	ConfigurationService ConfigurationService
 }
 
 func initializeLogger(logCfg config.LoggingConfig) (logging.Logger, error) {
@@ -60,11 +62,13 @@ func initializeLogger(logCfg config.LoggingConfig) (logging.Logger, error) {
 	return logging.NewZapLoggerAdapter(zapLogger), nil
 }
 
-func NewContainer(ctx context.Context, cfg config.Config) (*Container, error) {
-	c := &Container{Ctx: ctx, Config: cfg}
+func NewContainer(ctx context.Context) (*Container, error) {
+	c := &Container{Ctx: ctx}
 
 	// logger
-	logger, _ := initializeLogger(cfg.GetLoggingConfig())
+	logger, _ := initializeLogger(&config.LoggingConfigImpl{
+		Level: "debug",
+	})
 	c.Logger = logger
 
 	// event bus
@@ -72,12 +76,14 @@ func NewContainer(ctx context.Context, cfg config.Config) (*Container, error) {
 	c.EventBus = bus
 
 	// services
-	store := fsstore.New(cfg.GetAuthenticationConfig().GetProfileCache())
+	c.ConfigurationService = configurationservice.New("", bus, logger)
+
+	store := fsstore.New(".")
 	codec := jsoncodec.New()
 
 	c.ProfileService = profileservice.New(store, codec, bus, logger)
 	c.ProfileService2 = profileservice2.New(store, bus, logger)
-	c.CredentialService = credentialservice.New(c.ProfileService, bus, logger)
+	c.CredentialService = credentialservice.New(c.ProfileService, c.ConfigurationService, bus, logger)
 	c.GraphClientService = clientservice.New(c.CredentialService, bus, logger)
 	c.DriveService = driveservice.New(c.GraphClientService, bus, logger)
 

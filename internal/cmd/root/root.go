@@ -6,7 +6,6 @@ import (
 
 	"github.com/michaeldcanady/go-onedrive/internal/cmd/auth"
 	"github.com/michaeldcanady/go-onedrive/internal/cmd/ls"
-	"github.com/michaeldcanady/go-onedrive/internal/config"
 	"github.com/michaeldcanady/go-onedrive/internal/di"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -40,9 +39,7 @@ Examples:
 
 		// Persist config changes only if something modified Viper state.
 		PersistentPostRunE: func(cmd *cobra.Command, args []string) error {
-			if err := viper.WriteConfig(); err != nil {
-				return fmt.Errorf("failed to write config: %w", err)
-			}
+			// TODO: add configservice.WriteConfig()
 			return nil
 		},
 	}
@@ -53,34 +50,19 @@ Examples:
 		return nil, fmt.Errorf("failed to get config flag: %w", err)
 	}
 
-	viper.SetConfigFile(configPath)
-	viper.SetConfigType("yaml")
-
-	// Missing config file is fine; other errors are not.
-	if err := viper.ReadInConfig(); err != nil {
-		// Only warn if the file is missing; fail on parse errors.
-		if _, notFound := err.(viper.ConfigFileNotFoundError); !notFound {
-			return nil, fmt.Errorf("failed to read config: %w", err)
-		}
-		// TODO: Log that config file was not found, using defaults.
-	}
-
 	rootCmd.PersistentFlags().Bool(loggingLevelFlagLong, false, loggingLevelUsage)
+	// TODO: how to handle with config service?
 	if err := viper.BindPFlag("logging.level", rootCmd.PersistentFlags().Lookup(loggingLevelFlagLong)); err != nil {
 		return nil, fmt.Errorf("failed to bind logging level flag: %w", err)
 	}
 
-	var cfg config.ConfigImpl
-	if err := viper.Unmarshal(&cfg); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal config: %w", err)
-	}
-
 	ctx := context.Background()
-	container, err := di.NewContainer(ctx, &cfg)
+	container, err := di.NewContainer(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize container: %w", err)
 	}
 
+	container.ConfigurationService.SetConfigFile(ctx, configPath)
 	rootCmd.AddCommand(
 		ls.CreateLSCmd(container.DriveService, container.Logger),
 		auth.CreateAuthCmd(container),

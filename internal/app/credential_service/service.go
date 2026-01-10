@@ -11,7 +11,6 @@ import (
 	"github.com/michaeldcanady/go-onedrive/internal/config"
 	"github.com/michaeldcanady/go-onedrive/internal/event"
 	"github.com/michaeldcanady/go-onedrive/internal/logging"
-	"github.com/spf13/viper"
 )
 
 const (
@@ -19,17 +18,19 @@ const (
 )
 
 type Service struct {
-	profileService ProfileService
-	credential     azcore.TokenCredential
-	logger         logging.Logger
-	publisher      event.Publisher
+	profileService       ProfileService
+	configurationService ConfigurationService
+	credential           azcore.TokenCredential
+	logger               logging.Logger
+	publisher            event.Publisher
 }
 
-func New(profileSvc ProfileService, publisher event.Publisher, logger logging.Logger) *Service {
+func New(profileSvc ProfileService, configurationService ConfigurationService, publisher event.Publisher, logger logging.Logger) *Service {
 	s := &Service{
-		profileService: profileSvc,
-		publisher:      publisher,
-		logger:         logger,
+		profileService:       profileSvc,
+		configurationService: configurationService,
+		publisher:            publisher,
+		logger:               logger,
 	}
 
 	return s
@@ -42,19 +43,35 @@ func (s *Service) LoadCredential(ctx context.Context, profile *azidentity.Authen
 		return s.credential, nil
 	}
 
-	sub := viper.Sub("auth")
-	if sub == nil {
-		err := fmt.Errorf("missing 'auth' config section")
-		s.logger.Error(err.Error())
-		return nil, err
+	authType, err := s.configurationService.GetString(ctx, "auth.type")
+	if err != nil {
+		s.logger.Error("unable to get auth.type", logging.Any("error", err))
+		return nil, errors.Join(errors.New("unable to get auth.type"), err)
+	}
+	clientID, err := s.configurationService.GetString(ctx, "auth.client_id")
+	if err != nil {
+		s.logger.Error("unable to get auth.client_id", logging.Any("error", err))
+		return nil, errors.Join(errors.New("unable to get auth.client_id"), err)
+	}
+	tenantID, err := s.configurationService.GetString(ctx, "auth.tenant_id")
+	if err != nil {
+		s.logger.Error("unable to get auth.tenant_id", logging.Any("error", err))
+		return nil, errors.Join(errors.New("unable to get auth.tenant_id"), err)
+	}
+	redirectURI, err := s.configurationService.GetString(ctx, "auth.redirect_uri")
+	if err != nil {
+		s.logger.Error("unable to get auth.redirect_uri", logging.Any("error", err))
+		return nil, errors.Join(errors.New("unable to get auth.redirect_uri"), err)
 	}
 
-	var authCfg config.AuthenticationConfigImpl
-	var err error
-	if err := sub.Unmarshal(&authCfg); err != nil {
-		s.logger.Error("unable to unmarshal auth config", logging.Any("error", err))
-		return nil, errors.Join(errors.New("unable to unmarshal auth config"), err)
+	authCfg := config.AuthenticationConfigImpl{
+		Type:                 authType,
+		ClientID:             clientID,
+		TenantID:             tenantID,
+		RedirectURI:          redirectURI,
+		AuthenticationRecord: profile,
 	}
+
 	s.logger.Debug("authentication config loaded", logging.Any("config", authCfg))
 
 	if profile == nil {
