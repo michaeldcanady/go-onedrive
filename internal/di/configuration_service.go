@@ -11,4 +11,7 @@ type ConfigurationService interface {
 
 	// SetConfigFile sets the configuration file path.
 	SetConfigFile(ctx context.Context, path string)
+
+	// WriteConfiguration writes the current configuration to file.
+	WriteConfiguration(ctx context.Context) error
 }

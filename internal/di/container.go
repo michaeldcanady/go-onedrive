@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	clientservice "github.com/michaeldcanady/go-onedrive/internal/app/client_service"
-	configurationservice "github.com/michaeldcanady/go-onedrive/internal/app/configuration_service.go"
+	configurationservice "github.com/michaeldcanady/go-onedrive/internal/app/configuration_service"
 	credentialservice "github.com/michaeldcanady/go-onedrive/internal/app/credential_service"
 	driveservice "github.com/michaeldcanady/go-onedrive/internal/app/drive_service"
 	profileservice "github.com/michaeldcanady/go-onedrive/internal/app/profile_service"

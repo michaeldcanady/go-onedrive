@@ -56,6 +56,30 @@ func (s *Service) LoadConfiguration(ctx context.Context) error {
 	return nil
 }
 
+func (s *Service) WriteConfiguration(ctx context.Context) error {
+	if ctx.Err() != nil {
+		return ctx.Err()
+	}
+
+	s.lock.RLock()
+	defer s.lock.RUnlock()
+
+	if s.path == "" {
+		s.logger.Warn("configuration file path is empty; cannot write configuration")
+		return fmt.Errorf("configuration file path is empty")
+	}
+
+	s.logger.Info("writing configuration to file", logging.String("path", s.path))
+	if err := s.config.WriteConfig(); err != nil {
+		s.logger.Error("failed to write configuration", logging.Any("error", err))
+		return fmt.Errorf("failed to write configuration: %w", err)
+	}
+
+	s.logger.Info("configuration written successfully")
+
+	return nil
+}
+
 func (s *Service) SetConfigFile(ctx context.Context, path string) {
 	if ctx.Err() != nil {
 		return

@@ -19,6 +19,8 @@ const (
 
 // CreateRootCmd constructs the root command for the CLI application.
 func CreateRootCmd() (*cobra.Command, error) {
+	var container *di.Container
+
 	rootCmd := &cobra.Command{
 		Use:   "odc",
 		Short: "A OneDrive CLI client",
@@ -39,7 +41,7 @@ Examples:
 
 		// Persist config changes only if something modified Viper state.
 		PersistentPostRunE: func(cmd *cobra.Command, args []string) error {
-			// TODO: add configservice.WriteConfig()
+			container.ConfigurationService.WriteConfiguration(context.Background())
 			return nil
 		},
 	}
@@ -57,7 +59,7 @@ Examples:
 	}
 
 	ctx := context.Background()
-	container, err := di.NewContainer(ctx)
+	container, err = di.NewContainer(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize container: %w", err)
 	}

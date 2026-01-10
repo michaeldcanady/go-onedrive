@@ -6,4 +6,5 @@ type Configuration2 interface {
 	Set(string, interface{})
 	SetConfigFile(path string)
 	ReadInConfig() error
+	WriteConfig() error
 }

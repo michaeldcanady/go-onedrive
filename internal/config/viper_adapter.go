@@ -31,3 +31,7 @@ func (v *ViperAdapter) Get(key string) interface{} {
 func (v *ViperAdapter) Set(key string, value interface{}) {
 	v.base.Set(key, value)
 }
+
+func (v *ViperAdapter) WriteConfig() error {
+	return v.base.WriteConfig()
+}
