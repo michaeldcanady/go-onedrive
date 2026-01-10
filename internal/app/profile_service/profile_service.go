@@ -30,6 +30,7 @@ func New(store abstractions.Store, codec abstractions.Codec, publisher event.Pub
 	}
 }
 
+// Load loads the currently cached authentication record. Returns nil, nil if no record exists.
 func (s *Service) Load(ctx context.Context) (*azidentity.AuthenticationRecord, error) {
 	// Return cached profile if available
 	if s.cached != nil {

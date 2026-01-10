@@ -8,6 +8,7 @@ import (
 	configurationservice "github.com/michaeldcanady/go-onedrive/internal/app/configuration_service"
 	credentialservice "github.com/michaeldcanady/go-onedrive/internal/app/credential_service"
 	driveservice "github.com/michaeldcanady/go-onedrive/internal/app/drive_service"
+	loggingservice "github.com/michaeldcanady/go-onedrive/internal/app/logging_service"
 	profileservice "github.com/michaeldcanady/go-onedrive/internal/app/profile_service"
 	profileservice2 "github.com/michaeldcanady/go-onedrive/internal/app/profile_service2"
 	"github.com/michaeldcanady/go-onedrive/internal/cache/fsstore"
@@ -19,9 +20,10 @@ import (
 )
 
 type Container struct {
-	Ctx    context.Context
-	Config config.Config
-	Logger logging.Logger
+	Ctx     context.Context
+	Config  config.Config
+	Logger  logging.Logger
+	Logger2 LoggingService
 	// Deprecated: use ProfileService2 instead.
 	// ProfileService is the profile service.
 	ProfileService       ProfileService
@@ -76,6 +78,8 @@ func NewContainer(ctx context.Context) (*Container, error) {
 	c.EventBus = bus
 
 	// services
+	//TODO: wire everything to use logger 2
+	c.Logger2 = loggingservice.New(c.ConfigurationService, bus)
 	c.ConfigurationService = configurationservice.New("", bus, logger)
 
 	store := fsstore.New(".")

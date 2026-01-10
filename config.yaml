@@ -4,5 +4,3 @@ auth:
     redirect_uri: http://localhost:8400
     tenant_id: common
     type: interactiveBrowser
-logging:
-    level: debug
