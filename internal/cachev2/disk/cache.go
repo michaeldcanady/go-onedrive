@@ -14,7 +14,7 @@ import (
 
 var _ abstractions.Cache[any, any] = (*Cache[any, any])(nil)
 
-type Cache[K, V any] struct {
+type Cache[K comparable, V any] struct {
 	path            string
 	keySerializer   abstractions.SerializerDeserializer[K]
 	valueSerializer abstractions.SerializerDeserializer[V]
@@ -24,7 +24,7 @@ type Cache[K, V any] struct {
 }
 
 // New creates a new disk cache and loads the index.
-func New[K, V any](
+func New[K comparable, V any](
 	path string,
 	ks abstractions.SerializerDeserializer[K],
 	vs abstractions.SerializerDeserializer[V],
@@ -281,4 +281,8 @@ func (c *Cache[K, V]) rewriteFile() error {
 
 	c.index = newIndex
 	return nil
+}
+
+func (c *Cache[K, V]) KeySerializer() abstractions.Serializer[K] {
+	return c.keySerializer
 }

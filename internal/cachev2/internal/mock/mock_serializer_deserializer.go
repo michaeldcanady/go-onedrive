@@ -4,6 +4,7 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
+// MockSerializerDeserializer
 type SerializerMock[T any] struct {
 	mock.Mock
 }
