@@ -5,7 +5,7 @@ go 1.25.3
 require (
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.21.0
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.13.1
-	github.com/Azure/azure-sdk-for-go/sdk/azidentity/cache v0.3.2
+	github.com/Azure/azure-sdk-for-go/sdk/azidentity/cache v0.4.0
 	github.com/gofrs/flock v0.13.0
 	github.com/google/uuid v1.6.0
 	github.com/microsoftgraph/msgraph-sdk-go v1.92.0
