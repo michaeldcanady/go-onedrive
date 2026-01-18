@@ -9,6 +9,7 @@ import (
 	clientservice "github.com/michaeldcanady/go-onedrive/internal/app/client_service"
 	credentialservice "github.com/michaeldcanady/go-onedrive/internal/app/credential_service"
 	driveservice "github.com/michaeldcanady/go-onedrive/internal/app/drive_service"
+	environmentservice "github.com/michaeldcanady/go-onedrive/internal/app/environment_service"
 	"github.com/michaeldcanady/go-onedrive/internal/config"
 	"github.com/michaeldcanady/go-onedrive/internal/event"
 	"github.com/michaeldcanady/go-onedrive/internal/logging"
@@ -21,6 +22,7 @@ type Container struct {
 	Logger             logging.Logger
 	CacheService       CacheService
 	CredentialService  CredentialService
+	EnvironmentService EnvironmentService
 	GraphClientService Clienter
 	DriveService       ChildrenIterator
 	EventBus           *event.InMemoryBus
@@ -69,6 +71,7 @@ func NewContainer(ctx context.Context, cfg config.Config) (*Container, error) {
 	c.EventBus = bus
 
 	// services
+	c.EnvironmentService = environmentservice.New("odc")
 	if c.CacheService, err = cacheservice.New(cfg.GetAuthenticationConfig().GetProfileCache(), logger); err != nil {
 		return nil, errors.Join(errors.New("unable to initialize container"), err)
 	}
