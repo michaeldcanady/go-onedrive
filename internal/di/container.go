@@ -17,11 +17,9 @@ import (
 )
 
 type Container struct {
-	Ctx    context.Context
-	Config config.Config
-	Logger logging.Logger
-	// DEPRECATED use CacheService instead
-	ProfileService     ProfileService
+	Ctx                context.Context
+	Config             config.Config
+	Logger             logging.Logger
 	CacheService       CacheService
 	CredentialService  CredentialService
 	GraphClientService Clienter
