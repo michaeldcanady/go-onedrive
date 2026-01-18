@@ -4,6 +4,7 @@
         "azidentity",
         "cachev",
         "coreutils",
+        "credentialservice",
         "Itemable",
         "mapstructure",
         "michaeldcanady",
