@@ -4,12 +4,12 @@ import (
 	"context"
 	"encoding/binary"
 	"errors"
-	"fmt"
 	"io"
 	"os"
 	"sync"
 
 	"github.com/michaeldcanady/go-onedrive/internal/cachev2/abstractions"
+	"github.com/michaeldcanady/go-onedrive/internal/cachev2/core"
 )
 
 var _ abstractions.Cache[any, any] = (*Cache[any, any])(nil)
@@ -120,7 +120,7 @@ func (c *Cache[K, V]) GetEntry(ctx context.Context, key K) (*abstractions.Entry[
 
 	offset, ok := c.index[string(serializedKey)]
 	if !ok {
-		return nil, fmt.Errorf("key not found")
+		return nil, core.ErrKeyNotFound
 	}
 
 	f, err := os.Open(c.path)
