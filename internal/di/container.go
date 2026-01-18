@@ -9,7 +9,6 @@ import (
 	clientservice "github.com/michaeldcanady/go-onedrive/internal/app/client_service"
 	credentialservice "github.com/michaeldcanady/go-onedrive/internal/app/credential_service"
 	driveservice "github.com/michaeldcanady/go-onedrive/internal/app/drive_service"
-	profileservice "github.com/michaeldcanady/go-onedrive/internal/app/profile_service"
 	"github.com/michaeldcanady/go-onedrive/internal/config"
 	"github.com/michaeldcanady/go-onedrive/internal/event"
 	"github.com/michaeldcanady/go-onedrive/internal/logging"
@@ -78,13 +77,6 @@ func NewContainer(ctx context.Context, cfg config.Config) (*Container, error) {
 	c.DriveService = driveservice.New(c.GraphClientService, bus, logger)
 
 	// wiring listeners
-	bus.Subscribe(profileservice.ProfileClearedTopic,
-		event.ListenerFunc(func(ctx context.Context, evt event.Topicer) error {
-			_, err := c.CredentialService.LoadCredential(ctx)
-			return err
-		}),
-	)
-
 	bus.Subscribe(credentialservice.CredentialLoadedTopic,
 		event.ListenerFunc(func(ctx context.Context, evt event.Topicer) error {
 			_, err := c.GraphClientService.Client(ctx)
