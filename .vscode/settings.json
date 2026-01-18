@@ -2,7 +2,9 @@
     "cSpell.words": [
         "azcore",
         "azidentity",
+        "cachev",
         "coreutils",
+        "credentialservice",
         "Itemable",
         "mapstructure",
         "michaeldcanady",
@@ -12,6 +14,7 @@
         "msgraphsdkgo",
         "onedrive",
         "Responseable",
+        "stretchr",
         "tablewriter",
         "Topicer"
     ]

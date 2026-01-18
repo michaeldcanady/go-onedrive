@@ -2,14 +2,13 @@ package di
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
+	cacheservice "github.com/michaeldcanady/go-onedrive/internal/app/cache_service"
 	clientservice "github.com/michaeldcanady/go-onedrive/internal/app/client_service"
 	credentialservice "github.com/michaeldcanady/go-onedrive/internal/app/credential_service"
 	driveservice "github.com/michaeldcanady/go-onedrive/internal/app/drive_service"
-	profileservice "github.com/michaeldcanady/go-onedrive/internal/app/profile_service"
-	"github.com/michaeldcanady/go-onedrive/internal/cache/fsstore"
-	jsoncodec "github.com/michaeldcanady/go-onedrive/internal/cache/json_codex"
 	"github.com/michaeldcanady/go-onedrive/internal/config"
 	"github.com/michaeldcanady/go-onedrive/internal/event"
 	"github.com/michaeldcanady/go-onedrive/internal/logging"
@@ -20,7 +19,7 @@ type Container struct {
 	Ctx                context.Context
 	Config             config.Config
 	Logger             logging.Logger
-	ProfileService     ProfileService
+	CacheService       CacheService
 	CredentialService  CredentialService
 	GraphClientService Clienter
 	DriveService       ChildrenIterator
@@ -57,6 +56,8 @@ func initializeLogger(logCfg config.LoggingConfig) (logging.Logger, error) {
 }
 
 func NewContainer(ctx context.Context, cfg config.Config) (*Container, error) {
+	var err error
+
 	c := &Container{Ctx: ctx, Config: cfg}
 
 	// logger
@@ -68,22 +69,14 @@ func NewContainer(ctx context.Context, cfg config.Config) (*Container, error) {
 	c.EventBus = bus
 
 	// services
-	store := fsstore.New(cfg.GetAuthenticationConfig().GetProfileCache())
-	codec := jsoncodec.New()
-
-	c.ProfileService = profileservice.New(store, codec, bus, logger)
-	c.CredentialService = credentialservice.New(c.ProfileService, bus, logger)
+	if c.CacheService, err = cacheservice.New(cfg.GetAuthenticationConfig().GetProfileCache(), logger); err != nil {
+		return nil, errors.Join(errors.New("unable to initialize container"), err)
+	}
+	c.CredentialService = credentialservice.New(c.CacheService, bus, logger)
 	c.GraphClientService = clientservice.New(c.CredentialService, bus, logger)
 	c.DriveService = driveservice.New(c.GraphClientService, bus, logger)
 
 	// wiring listeners
-	bus.Subscribe(profileservice.ProfileClearedTopic,
-		event.ListenerFunc(func(ctx context.Context, evt event.Topicer) error {
-			_, err := c.CredentialService.LoadCredential(ctx)
-			return err
-		}),
-	)
-
 	bus.Subscribe(credentialservice.CredentialLoadedTopic,
 		event.ListenerFunc(func(ctx context.Context, evt event.Topicer) error {
 			_, err := c.GraphClientService.Client(ctx)

@@ -6,24 +6,29 @@ import (
 	"fmt"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
+	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/michaeldcanady/go-onedrive/internal/config"
 	"github.com/michaeldcanady/go-onedrive/internal/event"
 	"github.com/michaeldcanady/go-onedrive/internal/logging"
 	"github.com/spf13/viper"
 )
 
+const (
+	defaultProfileKey = "default"
+)
+
 type Service struct {
-	profileService ProfileService
-	credential     azcore.TokenCredential
-	logger         logging.Logger
-	publisher      event.Publisher
+	cacheService CacheService
+	credential   azcore.TokenCredential
+	logger       logging.Logger
+	publisher    event.Publisher
 }
 
-func New(profileSvc ProfileService, publisher event.Publisher, logger logging.Logger) *Service {
+func New(cacheService CacheService, publisher event.Publisher, logger logging.Logger) *Service {
 	s := &Service{
-		profileService: profileSvc,
-		publisher:      publisher,
-		logger:         logger,
+		cacheService: cacheService,
+		publisher:    publisher,
+		logger:       logger,
 	}
 
 	return s
@@ -51,22 +56,22 @@ func (s *Service) LoadCredential(ctx context.Context) (azcore.TokenCredential, e
 	s.logger.Debug("authentication config loaded", logging.Any("config", authCfg))
 
 	// Load cached profile
-	record, err := s.profileService.Load(ctx)
+	record, err := s.cacheService.GetProfile(ctx, defaultProfileKey)
 	if err != nil {
 		s.logger.Error("unable to load cached authentication record", logging.Any("error", err))
 		return nil, errors.Join(errors.New("unable to load cached authentication record"), err)
 	}
 
-	if record == nil {
+	if record == (azidentity.AuthenticationRecord{}) {
 		s.logger.Info("no cached authentication record found")
+		authCfg.AuthenticationRecord = nil
 	} else {
 		s.logger.Info("loaded cached authentication record")
 		s.logger.Debug("cached authentication record", logging.Any("record", record))
+		authCfg.AuthenticationRecord = &record
 	}
 
-	authCfg.AuthenticationRecord = record
-
-	// Create credential
+	// TODO: never gets updated profile back
 	s.credential, err = CredentialFactory(&authCfg)
 	if err != nil {
 		s.logger.Error("unable to create credential", logging.Any("error", err))

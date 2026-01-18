@@ -48,10 +48,11 @@ func CreateLoginCmd(container *di.Container) *cobra.Command {
 			logger := container.Logger
 
 			// Load existing profile
-			profile, err := container.ProfileService.Load(ctx)
+			record, err := container.CacheService.GetProfile(ctx, "default")
 			if err != nil {
 				logger.Warn("Unable to load profile", logging.String("error", err.Error()))
 			}
+			profile := &record
 
 			// Load credential provider (reactive chain starts here)
 			cred, err := container.CredentialService.LoadCredential(ctx)
@@ -87,7 +88,7 @@ func CreateLoginCmd(container *di.Container) *cobra.Command {
 						return fmt.Errorf("authentication failed: %w", err)
 					}
 
-					if err := container.ProfileService.Save(ctx, &record); err != nil {
+					if err := container.CacheService.SetProfile(ctx, "default", record); err != nil {
 						return fmt.Errorf("unable to save profile: %w", err)
 					}
 
