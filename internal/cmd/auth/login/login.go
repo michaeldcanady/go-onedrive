@@ -30,7 +30,7 @@ const (
 	forceUsage     = "Force re-authentication even if a valid profile exists"
 )
 
-func CreateLoginCmd(container *di.Container) *cobra.Command {
+func CreateLoginCmd(container *di.Container, logger logging.Logger) *cobra.Command {
 	var (
 		showToken bool
 		force     bool
@@ -44,8 +44,6 @@ func CreateLoginCmd(container *di.Container) *cobra.Command {
 			if ctx == nil {
 				ctx = context.Background()
 			}
-
-			logger := container.Logger
 
 			// Load existing profile
 			record, err := container.CacheService.GetProfile(ctx, "default")

@@ -3,81 +3,80 @@ package di
 import (
 	"context"
 	"errors"
-	"fmt"
+	"path/filepath"
 
 	cacheservice "github.com/michaeldcanady/go-onedrive/internal/app/cache_service"
 	clientservice "github.com/michaeldcanady/go-onedrive/internal/app/client_service"
 	credentialservice "github.com/michaeldcanady/go-onedrive/internal/app/credential_service"
 	driveservice "github.com/michaeldcanady/go-onedrive/internal/app/drive_service"
 	environmentservice "github.com/michaeldcanady/go-onedrive/internal/app/environment_service"
-	"github.com/michaeldcanady/go-onedrive/internal/config"
+	loggerservice "github.com/michaeldcanady/go-onedrive/internal/app/logger_service"
 	"github.com/michaeldcanady/go-onedrive/internal/event"
-	"github.com/michaeldcanady/go-onedrive/internal/logging"
-	"go.uber.org/zap"
 )
 
 type Container struct {
 	Ctx                context.Context
-	Config             config.Config
-	Logger             logging.Logger
 	CacheService       CacheService
 	CredentialService  CredentialService
 	EnvironmentService EnvironmentService
 	GraphClientService Clienter
 	DriveService       ChildrenIterator
 	EventBus           *event.InMemoryBus
+	LoggerService      LoggerService
 }
 
-func initializeLogger(logCfg config.LoggingConfig) (logging.Logger, error) {
-	if logCfg == nil {
-		// TODO: apply default logger config
-		return nil, ErrMissingLoggingConfig
-	}
-
-	cfg := zap.NewProductionConfig()
-
-	switch logCfg.GetLevel() {
-	case "debug":
-		cfg.Level = zap.NewAtomicLevelAt(zap.DebugLevel)
-	case "info":
-		cfg.Level = zap.NewAtomicLevelAt(zap.InfoLevel)
-	case "warn":
-		cfg.Level = zap.NewAtomicLevelAt(zap.WarnLevel)
-	case "error":
-		cfg.Level = zap.NewAtomicLevelAt(zap.ErrorLevel)
-	default:
-		return nil, fmt.Errorf("unknown logging level: %s", logCfg.GetLevel())
-	}
-
-	zapLogger, err := cfg.Build()
-	if err != nil {
-		return nil, fmt.Errorf("failed to build zap logger: %w", err)
-	}
-
-	return logging.NewZapLoggerAdapter(zapLogger), nil
-}
-
-func NewContainer(ctx context.Context, cfg config.Config) (*Container, error) {
+func NewContainer(ctx context.Context) (*Container, error) {
 	var err error
 
-	c := &Container{Ctx: ctx, Config: cfg}
+	c := &Container{Ctx: ctx}
 
 	// logger
-	logger, _ := initializeLogger(cfg.GetLoggingConfig())
-	c.Logger = logger
+	c.EnvironmentService = environmentservice.New("odc")
+	logDir, err := c.EnvironmentService.LogDir(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if c.LoggerService, err = loggerservice.New("debug", logDir); err != nil {
+		return nil, err
+	}
 
 	// event bus
-	bus := event.NewInMemoryBus(logger)
+	busLogger, err := c.LoggerService.CreateLogger("bus")
+	if err != nil {
+		return nil, err
+	}
+	bus := event.NewInMemoryBus(busLogger)
 	c.EventBus = bus
 
 	// services
-	c.EnvironmentService = environmentservice.New("odc")
-	if c.CacheService, err = cacheservice.New(cfg.GetAuthenticationConfig().GetProfileCache(), logger); err != nil {
+	cacheLogger, err := c.LoggerService.CreateLogger("cache")
+	if err != nil {
+		return nil, err
+	}
+
+	cacheDir, err := c.EnvironmentService.CacheDir(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	if c.CacheService, err = cacheservice.New(filepath.Join(cacheDir, "profile.cache"), cacheLogger); err != nil {
 		return nil, errors.Join(errors.New("unable to initialize container"), err)
 	}
-	c.CredentialService = credentialservice.New(c.CacheService, bus, logger)
-	c.GraphClientService = clientservice.New(c.CredentialService, bus, logger)
-	c.DriveService = driveservice.New(c.GraphClientService, bus, logger)
+	credentialLogger, err := c.LoggerService.CreateLogger("credential")
+	if err != nil {
+		return nil, err
+	}
+	c.CredentialService = credentialservice.New(c.CacheService, bus, credentialLogger)
+	graphLogger, err := c.LoggerService.CreateLogger("graph")
+	if err != nil {
+		return nil, err
+	}
+	c.GraphClientService = clientservice.New(c.CredentialService, bus, graphLogger)
+	driveLogger, err := c.LoggerService.CreateLogger("drive")
+	if err != nil {
+		return nil, err
+	}
+	c.DriveService = driveservice.New(c.GraphClientService, bus, driveLogger)
 
 	// wiring listeners
 	bus.Subscribe(credentialservice.CredentialLoadedTopic,

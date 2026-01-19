@@ -3,6 +3,8 @@ package cacheservice
 import (
 	"context"
 	"errors"
+	"os"
+	"path/filepath"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/michaeldcanady/go-onedrive/internal/cachev2/abstractions"
@@ -17,6 +19,11 @@ type Service struct {
 }
 
 func New(cachePath string, logger logging.Logger) (*Service, error) {
+	parent, _ := filepath.Split(cachePath)
+	if err := os.MkdirAll(parent, os.ModePerm); err != nil {
+		return nil, err
+	}
+
 	profileCache, err := disk.New(cachePath, &JSONSerializerDeserializer[string]{}, &JSONSerializerDeserializer[azidentity.AuthenticationRecord]{})
 	if err != nil {
 		return nil, err

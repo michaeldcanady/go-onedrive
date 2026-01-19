@@ -9,6 +9,7 @@
         "driveservice",
         "environmentservice",
         "Itemable",
+        "loggerservice",
         "mapstructure",
         "michaeldcanady",
         "microsoftgraph",

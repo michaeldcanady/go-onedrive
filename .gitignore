@@ -2,3 +2,4 @@ output/**
 .test
 profile.json
 config.yaml
+profile.cache
