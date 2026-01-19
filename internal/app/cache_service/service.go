@@ -10,12 +10,14 @@ import (
 	"github.com/michaeldcanady/go-onedrive/internal/cachev2/abstractions"
 	"github.com/michaeldcanady/go-onedrive/internal/cachev2/core"
 	"github.com/michaeldcanady/go-onedrive/internal/cachev2/disk"
+	"github.com/michaeldcanady/go-onedrive/internal/config"
 	"github.com/michaeldcanady/go-onedrive/internal/logging"
 )
 
 type Service struct {
-	profileCache abstractions.Cache[string, azidentity.AuthenticationRecord]
-	logger       logging.Logger
+	profileCache       abstractions.Cache[string, azidentity.AuthenticationRecord]
+	configurationCache abstractions.Cache[string, config.Configuration2]
+	logger             logging.Logger
 }
 
 func New(cachePath string, logger logging.Logger) (*Service, error) {
@@ -28,6 +30,8 @@ func New(cachePath string, logger logging.Logger) (*Service, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	configurationCache, err := 
 
 	return &Service{
 		profileCache: profileCache,
@@ -88,4 +92,18 @@ func (s *Service) SetProfile(ctx context.Context, name string, record azidentity
 	entry.SetValue(record)
 
 	return s.profileCache.SetEntry(ctx, entry)
+}
+
+func (s *Service) GetConfiguration(ctx context.Context, name string) (config.Configuration2, error) {
+	if err := ctx.Err(); err != nil {
+		return record, err
+	}
+
+	if s.profileCache == nil {
+		return record, errors.New("configuration cache is nil")
+	}
+}
+
+func (s *Service) SetConfiguration(ctx context.Context, name string, configuration config.Configuration2) error {
+
 }
