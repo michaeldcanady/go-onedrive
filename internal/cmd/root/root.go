@@ -81,9 +81,14 @@ Examples:
 		return nil, fmt.Errorf("failed to initialize container: %w", err)
 	}
 
+	cliLogger, err := container.LoggerService.CreateLogger("cli")
+	if err != nil {
+		return nil, err
+	}
+
 	rootCmd.AddCommand(
-		ls.CreateLSCmd(container.DriveService, container.Logger),
-		auth.CreateAuthCmd(container),
+		ls.CreateLSCmd(container.DriveService, cliLogger),
+		auth.CreateAuthCmd(container, cliLogger),
 	)
 
 	return rootCmd, nil

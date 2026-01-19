@@ -10,4 +10,7 @@ type Logger interface {
 	Error(msg string, kv ...Field)
 	// Debug logs a message at DebugLevel. The message includes any fields passed at the log site, as well as any fields accumulated on the logger.
 	Debug(msg string, kv ...Field)
+
+	// SetLevel Change the level of the logger.
+	SetLevel(level string)
 }
