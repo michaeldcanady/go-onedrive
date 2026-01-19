@@ -4,6 +4,7 @@
         "azidentity",
         "cachev",
         "Clienter",
+        "configurationservice",
         "coreutils",
         "credentialservice",
         "driveservice",
