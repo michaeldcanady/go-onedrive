@@ -8,12 +8,19 @@ import (
 	"github.com/michaeldcanady/go-onedrive/internal/cachev2/core"
 )
 
-type Cache[Entry abstractions.Entry[K, V], K comparable, V any] struct {
+type Cache[K comparable, V any] struct {
 	mu    sync.RWMutex
-	store map[K]*Entry
+	store map[K]*abstractions.Entry[K, V]
 }
 
-func (c *Cache[Entry, K, V]) GetEntry(ctx context.Context, key K) (*Entry, error) {
+func New[Entry *abstractions.Entry[K, V], K comparable, V any]() *Cache[K, V] {
+	return &Cache[K, V]{
+		mu:    sync.RWMutex{},
+		store: map[K]*abstractions.Entry[K, V]{},
+	}
+}
+
+func (c *Cache[K, V]) GetEntry(ctx context.Context, key K) (*abstractions.Entry[K, V], error) {
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}
@@ -29,7 +36,7 @@ func (c *Cache[Entry, K, V]) GetEntry(ctx context.Context, key K) (*Entry, error
 	return entry, nil
 }
 
-func (c *Cache[K, V]) NewEntry(ctx context.Context, key K) (*Entry, error) {
+func (c *Cache[K, V]) NewEntry(ctx context.Context, key K) (*abstractions.Entry[K, V], error) {
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}
@@ -42,21 +49,33 @@ func (c *Cache[K, V]) Remove(key K) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
+	delete(c.store, key)
+
+	return nil
 }
 
-func (c *Cache[K, V]) SetEntry(ctx context.Context, entry *Entry) error {
+func (c *Cache[K, V]) SetEntry(ctx context.Context, entry *abstractions.Entry[K, V]) error {
 	if err := ctx.Err(); err != nil {
-		return nil, err
+		return err
 	}
 
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	c.store[key] = entry
+	c.store[entry.GetKey()] = entry
 
 	return nil
 }
 
 func (c *Cache[K, V]) KeySerializer() abstractions.Serializer[K] {
+	return nil
+}
+
+func (c *Cache[K, V]) Clear(ctx context.Context) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+
+	c.store = map[K]*abstractions.Entry[K, V]{}
 	return nil
 }
