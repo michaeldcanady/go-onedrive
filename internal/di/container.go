@@ -11,7 +11,6 @@ import (
 	driveservice "github.com/michaeldcanady/go-onedrive/internal/app/drive_service"
 	environmentservice "github.com/michaeldcanady/go-onedrive/internal/app/environment_service"
 	loggerservice "github.com/michaeldcanady/go-onedrive/internal/app/logger_service"
-	"github.com/michaeldcanady/go-onedrive/internal/config"
 	"github.com/michaeldcanady/go-onedrive/internal/event"
 )
 
@@ -26,7 +25,7 @@ type Container struct {
 	LoggerService      LoggerService
 }
 
-func NewContainer(ctx context.Context, _ config.Config) (*Container, error) {
+func NewContainer(ctx context.Context) (*Container, error) {
 	var err error
 
 	c := &Container{Ctx: ctx}

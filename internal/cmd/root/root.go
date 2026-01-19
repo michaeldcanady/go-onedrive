@@ -6,7 +6,6 @@ import (
 
 	"github.com/michaeldcanady/go-onedrive/internal/cmd/auth"
 	"github.com/michaeldcanady/go-onedrive/internal/cmd/ls"
-	"github.com/michaeldcanady/go-onedrive/internal/config"
 	"github.com/michaeldcanady/go-onedrive/internal/di"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -70,13 +69,8 @@ Examples:
 		return nil, fmt.Errorf("failed to bind logging level flag: %w", err)
 	}
 
-	var cfg config.ConfigImpl
-	if err := viper.Unmarshal(&cfg); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal config: %w", err)
-	}
-
 	ctx := context.Background()
-	container, err := di.NewContainer(ctx, &cfg)
+	container, err := di.NewContainer(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize container: %w", err)
 	}
