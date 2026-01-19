@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/michaeldcanady/go-onedrive/internal/cachev2/abstractions"
 	"github.com/michaeldcanady/go-onedrive/internal/config"
 	"github.com/michaeldcanady/go-onedrive/internal/event"
 	"github.com/michaeldcanady/go-onedrive/internal/logging"
@@ -12,15 +13,16 @@ import (
 )
 
 type Service struct {
-	config    config.Configuration2
-	path      string
-	lock      sync.RWMutex
-	publisher event.Publisher
-	logger    logging.Logger
+	config       config.Configuration2
+	cacheService abstractions.Cache[string, config.Configuration2]
+	path         string
+	lock         sync.RWMutex
+	publisher    event.Publisher
+	logger       logging.Logger
 }
 
 // New creates a new ConfigurationService instance.
-func New(path string, publisher event.Publisher, logger logging.Logger) *Service {
+func New(path string, publisher event.Publisher, cache abstractions.Cache[string, config.Configuration2], logger logging.Logger) *Service {
 	return &Service{
 		config:    nil,
 		path:      path,
