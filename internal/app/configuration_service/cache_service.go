@@ -1,15 +1,17 @@
-package di
+package configurationservice
 
 import (
 	"context"
 
-	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/michaeldcanady/go-onedrive/internal/config"
 )
 
+// CacheService defines the interface used by the configuration Service
+// to store and retrieve cached configuration data.
+//
+// Implementations must return core.ErrKeyNotFound when a configuration
+// is not present in the cache.
 type CacheService interface {
-	GetProfile(context.Context, string) (azidentity.AuthenticationRecord, error)
-	SetProfile(ctx context.Context, name string, record azidentity.AuthenticationRecord) error
 	GetConfiguration(ctx context.Context, name string) (config.Configuration3, error)
 	SetConfiguration(ctx context.Context, name string, record config.Configuration3) error
 }

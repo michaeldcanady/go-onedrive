@@ -19,7 +19,7 @@ type Service struct {
 	// due to golang's runtime generics there is no type safe way to manage these caches.
 	// this is our work around until a better solution is possible.
 	profileCache       abstractions.Cache[string, azidentity.AuthenticationRecord]
-	configurationCache abstractions.Cache[string, config.Configuration2]
+	configurationCache abstractions.Cache[string, config.Configuration3]
 	logger             logging.Logger
 }
 
@@ -34,7 +34,7 @@ func New(cachePath string, logger logging.Logger) (*Service, error) {
 		return nil, err
 	}
 
-	configurationCache := memory.New[*abstractions.Entry[string, config.Configuration2], string, config.Configuration2]()
+	configurationCache := memory.New[*abstractions.Entry[string, config.Configuration3], string, config.Configuration3]()
 
 	return &Service{
 		profileCache:       profileCache,
@@ -98,8 +98,8 @@ func (s *Service) SetProfile(ctx context.Context, name string, record azidentity
 	return s.profileCache.SetEntry(ctx, entry)
 }
 
-func (s *Service) GetConfiguration(ctx context.Context, name string) (config.Configuration2, error) {
-	var record config.Configuration2
+func (s *Service) GetConfiguration(ctx context.Context, name string) (config.Configuration3, error) {
+	var record config.Configuration3
 
 	if err := ctx.Err(); err != nil {
 		return record, err
@@ -121,7 +121,7 @@ func (s *Service) GetConfiguration(ctx context.Context, name string) (config.Con
 	return record, nil
 }
 
-func (s *Service) SetConfiguration(ctx context.Context, name string, record config.Configuration2) error {
+func (s *Service) SetConfiguration(ctx context.Context, name string, record config.Configuration3) error {
 	if err := ctx.Err(); err != nil {
 		return err
 	}

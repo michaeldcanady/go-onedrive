@@ -7,6 +7,7 @@ import (
 
 	cacheservice "github.com/michaeldcanady/go-onedrive/internal/app/cache_service"
 	clientservice "github.com/michaeldcanady/go-onedrive/internal/app/client_service"
+	configurationservice "github.com/michaeldcanady/go-onedrive/internal/app/configuration_service"
 	credentialservice "github.com/michaeldcanady/go-onedrive/internal/app/credential_service"
 	driveservice "github.com/michaeldcanady/go-onedrive/internal/app/drive_service"
 	environmentservice "github.com/michaeldcanady/go-onedrive/internal/app/environment_service"
@@ -14,15 +15,20 @@ import (
 	"github.com/michaeldcanady/go-onedrive/internal/event"
 )
 
+const (
+	defaultProfileName = "default"
+)
+
 type Container struct {
-	Ctx                context.Context
-	CacheService       CacheService
-	CredentialService  CredentialService
-	EnvironmentService EnvironmentService
-	GraphClientService Clienter
-	DriveService       ChildrenIterator
-	EventBus           *event.InMemoryBus
-	LoggerService      LoggerService
+	Ctx                  context.Context
+	CacheService         CacheService
+	ConfigurationService ConfigurationService
+	CredentialService    CredentialService
+	EnvironmentService   EnvironmentService
+	GraphClientService   Clienter
+	DriveService         ChildrenIterator
+	EventBus             EventBus
+	LoggerService        LoggerService
 }
 
 func NewContainer(ctx context.Context) (*Container, error) {
@@ -62,6 +68,20 @@ func NewContainer(ctx context.Context) (*Container, error) {
 	if c.CacheService, err = cacheservice.New(filepath.Join(cacheDir, "profile.cache"), cacheLogger); err != nil {
 		return nil, errors.Join(errors.New("unable to initialize container"), err)
 	}
+
+	configurationLogger, err := c.LoggerService.CreateLogger("configuration")
+	if err != nil {
+		return nil, err
+	}
+
+	c.ConfigurationService = configurationservice.New2(c.CacheService, JSONLoader{}, configurationLogger)
+	// TODO: if user specifies config path, don't load from environment.
+	configPath, err := c.EnvironmentService.ConfigDir(ctx)
+	if err != nil {
+		return nil, err
+	}
+	c.ConfigurationService.AddPath(defaultProfileName, configPath)
+
 	credentialLogger, err := c.LoggerService.CreateLogger("credential")
 	if err != nil {
 		return nil, err
