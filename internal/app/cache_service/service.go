@@ -10,12 +10,17 @@ import (
 	"github.com/michaeldcanady/go-onedrive/internal/cachev2/abstractions"
 	"github.com/michaeldcanady/go-onedrive/internal/cachev2/core"
 	"github.com/michaeldcanady/go-onedrive/internal/cachev2/disk"
+	"github.com/michaeldcanady/go-onedrive/internal/cachev2/memory"
+	"github.com/michaeldcanady/go-onedrive/internal/config"
 	"github.com/michaeldcanady/go-onedrive/internal/logging"
 )
 
 type Service struct {
-	profileCache abstractions.Cache[string, azidentity.AuthenticationRecord]
-	logger       logging.Logger
+	// due to golang's runtime generics there is no type safe way to manage these caches.
+	// this is our work around until a better solution is possible.
+	profileCache       abstractions.Cache[string, azidentity.AuthenticationRecord]
+	configurationCache abstractions.Cache[string, config.Configuration3]
+	logger             logging.Logger
 }
 
 func New(cachePath string, logger logging.Logger) (*Service, error) {
@@ -29,9 +34,12 @@ func New(cachePath string, logger logging.Logger) (*Service, error) {
 		return nil, err
 	}
 
+	configurationCache := memory.New[*abstractions.Entry[string, config.Configuration3], string, config.Configuration3]()
+
 	return &Service{
-		profileCache: profileCache,
-		logger:       logger,
+		profileCache:       profileCache,
+		configurationCache: configurationCache,
+		logger:             logger,
 	}, nil
 }
 
@@ -88,4 +96,56 @@ func (s *Service) SetProfile(ctx context.Context, name string, record azidentity
 	entry.SetValue(record)
 
 	return s.profileCache.SetEntry(ctx, entry)
+}
+
+func (s *Service) GetConfiguration(ctx context.Context, name string) (config.Configuration3, error) {
+	var record config.Configuration3
+
+	if err := ctx.Err(); err != nil {
+		return record, err
+	}
+
+	if s.configurationCache == nil {
+		return record, errors.New("configuration cache is nil")
+	}
+
+	entry, err := s.configurationCache.GetEntry(ctx, name)
+	if err != nil {
+		return record, err
+	}
+
+	if entry != nil {
+		record = entry.GetValue()
+	}
+
+	return record, nil
+}
+
+func (s *Service) SetConfiguration(ctx context.Context, name string, record config.Configuration3) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+
+	if s.configurationCache == nil {
+		return errors.New("configuration cache is nil")
+	}
+
+	entry, err := s.configurationCache.GetEntry(ctx, name)
+	if err != nil {
+		// ok if key isn't found as that means no configuration cached previously
+		if !errors.Is(err, core.ErrKeyNotFound) {
+			return err
+		}
+		if entry, err = s.configurationCache.NewEntry(ctx, name); err != nil {
+			return err
+		}
+	}
+	if entry == nil {
+		if entry, err = s.configurationCache.NewEntry(ctx, name); err != nil {
+			return err
+		}
+	}
+	entry.SetValue(record)
+
+	return s.configurationCache.SetEntry(ctx, entry)
 }
