@@ -25,10 +25,5 @@ func newZapLogger(logLevel string, logsHome string) (logging.Logger, error) {
 
 	cfg.OutputPaths = append(cfg.OutputPaths, logsHome)
 
-	zapLogger, err := cfg.Build()
-	if err != nil {
-		return nil, fmt.Errorf("failed to build zap logger: %w", err)
-	}
-
-	return logging.NewZapLoggerAdapter(zapLogger), nil
+	return logging.NewZapLogger(cfg), nil
 }
