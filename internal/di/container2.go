@@ -115,8 +115,9 @@ func (c *Container1) CacheService(ctx context.Context) (CacheService, error) {
 		}
 
 		profilePath := filepath.Join(cacheDir, "profile.cache")
+		drivePath := filepath.Join(cacheDir, "drive.cache")
 		filePath := filepath.Join(cacheDir, "file.cache")
-		c.cacheService, c.cacheErr = cacheservice.New(profilePath, filePath, logger)
+		c.cacheService, c.cacheErr = cacheservice.New(profilePath, drivePath, filePath, logger)
 	})
 	return c.cacheService, c.cacheErr
 }

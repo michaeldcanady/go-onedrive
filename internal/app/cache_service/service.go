@@ -22,11 +22,12 @@ type Service struct {
 	// this is our work around until a better solution is possible.
 	profileCache       abstractions.Cache[string, azidentity.AuthenticationRecord]
 	configurationCache abstractions.Cache[string, config.Configuration3]
-	fileCache          abstractions.Cache[string, *driveservice.CachedChildren]
+	driveCache         abstractions.Cache[string, *driveservice.CachedChildren]
+	fileCache          abstractions.Cache[string, *driveservice.CachedItem]
 	logger             logging.Logger
 }
 
-func New(profileCachePath, fileCachePath string, logger logging.Logger) (*Service, error) {
+func New(profileCachePath, driveCachePath, fileCachePath string, logger logging.Logger) (*Service, error) {
 	parent, _ := filepath.Split(profileCachePath)
 	if err := os.MkdirAll(parent, os.ModePerm); err != nil {
 		return nil, err
@@ -39,7 +40,12 @@ func New(profileCachePath, fileCachePath string, logger logging.Logger) (*Servic
 
 	configurationCache := memory.New[*abstractions.Entry[string, config.Configuration3], string, config.Configuration3]()
 
-	fileCache, err := disk.New(fileCachePath, &JSONSerializerDeserializer[string]{}, NewKiotaJSONSerializerDeserializer[*driveservice.CachedChildren](driveservice.CreateCachedChildrenFromDiscriminatorValue))
+	driveCache, err := disk.New(driveCachePath, &JSONSerializerDeserializer[string]{}, NewKiotaJSONSerializerDeserializer[*driveservice.CachedChildren](driveservice.CreateCachedChildrenFromDiscriminatorValue))
+	if err != nil {
+		return nil, err
+	}
+
+	fileCache, err := disk.New(fileCachePath, &JSONSerializerDeserializer[string]{}, NewKiotaJSONSerializerDeserializer[*driveservice.CachedItem](driveservice.CreateCachedChildrenFromDiscriminatorValue))
 	if err != nil {
 		return nil, err
 	}
@@ -48,6 +54,7 @@ func New(profileCachePath, fileCachePath string, logger logging.Logger) (*Servic
 		profileCache:       profileCache,
 		configurationCache: configurationCache,
 		logger:             logger,
+		driveCache:         driveCache,
 		fileCache:          fileCache,
 	}, nil
 }
@@ -182,6 +189,62 @@ func (s *Service) GetDrive(ctx context.Context, name string) (driveservice.Cache
 		return record, err
 	}
 
+	if s.driveCache == nil {
+		return record, errors.New("profile cache is nil")
+	}
+
+	entry, err := s.driveCache.GetEntry(ctx, name)
+	if err != nil {
+		// ok if key isn't found as that means no profile cached
+		if !errors.Is(err, core.ErrKeyNotFound) {
+			return record, errors.Join(errors.New("unable to retrieve profile"), err)
+		}
+	}
+	if entry != nil {
+		val := entry.GetValue()
+		if val != nil {
+			record = *val
+		}
+	}
+
+	return record, nil
+}
+
+func (s *Service) SetDrive(ctx context.Context, name string, record driveservice.CachedChildren) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+
+	if s.driveCache == nil {
+		return errors.New("profile cache is nil")
+	}
+
+	entry, err := s.driveCache.GetEntry(ctx, name)
+	if err != nil {
+		// ok if key isn't found as that means no profile cached previously
+		if !errors.Is(err, core.ErrKeyNotFound) {
+			return err
+		}
+		if entry, err = s.driveCache.NewEntry(ctx, name); err != nil {
+			return err
+		}
+	}
+	if entry == nil {
+		if entry, err = s.driveCache.NewEntry(ctx, name); err != nil {
+			return err
+		}
+	}
+	entry.SetValue(&record)
+
+	return s.driveCache.SetEntry(ctx, entry)
+}
+
+func (s *Service) GetItem(ctx context.Context, name string) (driveservice.CachedItem, error) {
+	var record driveservice.CachedItem
+	if err := ctx.Err(); err != nil {
+		return record, err
+	}
+
 	if s.fileCache == nil {
 		return record, errors.New("profile cache is nil")
 	}
@@ -203,7 +266,7 @@ func (s *Service) GetDrive(ctx context.Context, name string) (driveservice.Cache
 	return record, nil
 }
 
-func (s *Service) SetDrive(ctx context.Context, name string, record driveservice.CachedChildren) error {
+func (s *Service) SetItem(ctx context.Context, name string, record driveservice.CachedItem) error {
 	if err := ctx.Err(); err != nil {
 		return err
 	}

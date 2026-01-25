@@ -16,6 +16,5 @@ type CacheService interface {
 	SetConfiguration(ctx context.Context, name string, record config.Configuration3) error
 	GetCLIProfile(ctx context.Context, name string) (cliprofileservicego.Profile, error)
 	SetCLIProfile(ctx context.Context, name string, profile cliprofileservicego.Profile) error
-	GetDrive(ctx context.Context, name string) (driveservice.CachedChildren, error)
-	SetDrive(ctx context.Context, name string, record driveservice.CachedChildren) error
+	driveservice.CacheService
 }

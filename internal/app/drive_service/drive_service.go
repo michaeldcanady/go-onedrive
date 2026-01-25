@@ -78,7 +78,7 @@ func (s *Service) getUserDriveID(ctx context.Context) (string, error) {
 }
 
 // getDriveRoot fetches the DriveItem for the given path, using ETag caching.
-func (s *Service) getDriveRoot(ctx context.Context, driveID, normalizedPath string) (models.Driveable, error) {
+func (s *Service) getDriveRoot(ctx context.Context, driveID, normalizedPath string) (models.DriveItemable, error) {
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}
@@ -99,7 +99,7 @@ func (s *Service) getDriveRoot(ctx context.Context, driveID, normalizedPath stri
 	headers := abstractions.NewRequestHeaders()
 	headers.Add("If-None-Match", fmt.Sprintf("\"%s\"", cached.ETag))
 
-	config := &drives.DriveItemRequestBuilderGetRequestConfiguration{
+	config := &drives.ItemRootRequestBuilderGetRequestConfiguration{
 		Headers: headers,
 	}
 
@@ -107,7 +107,7 @@ func (s *Service) getDriveRoot(ctx context.Context, driveID, normalizedPath stri
 }
 
 // getChildren retrieves folder children, using ETag caching and event publishing.
-func (s *Service) getChildren(ctx context.Context, folderPath string) (models.DriveItemCollectionResponseable, error) {
+func (s *Service) getChildren(ctx context.Context, driveID, folderPath string) (models.DriveItemCollectionResponseable, error) {
 	client, err := s.graph.Client(ctx)
 	if err != nil {
 		s.logger.Error("unable to instantiate graph client", logging.Any("error", err))
@@ -116,11 +116,6 @@ func (s *Service) getChildren(ctx context.Context, folderPath string) (models.Dr
 
 	normalized := normalizePath(folderPath)
 	s.logger.Debug("normalized folder path", logging.String("path", normalized))
-
-	driveID, err := s.getUserDriveID(ctx)
-	if err != nil {
-		return nil, err
-	}
 
 	// Check root/folder metadata with ETag
 	driveItem, err := s.getDriveRoot(ctx, driveID, normalized)
@@ -176,7 +171,15 @@ func (s *Service) getChildren(ctx context.Context, folderPath string) (models.Dr
 
 // ChildrenIterator returns an iterator over DriveItem children.
 func (s *Service) ChildrenIterator(ctx context.Context, folderPath string) iter.Seq2[models.DriveItemable, error] {
-	resp, err := s.getChildren(ctx, folderPath)
+	driveID, err := s.getUserDriveID(ctx)
+	if err != nil {
+		s.logger.Error("unable to fetch user drive id", logging.Any("error", err))
+		return func(yield func(models.DriveItemable, error) bool) {
+			yield(nil, err)
+		}
+	}
+
+	resp, err := s.getChildren(ctx, driveID, folderPath)
 	if err != nil {
 		s.logger.Error("unable to retrieve children", logging.String("path", folderPath), logging.Any("error", err))
 		return func(yield func(models.DriveItemable, error) bool) {
@@ -208,6 +211,12 @@ func (s *Service) ChildrenIterator(ctx context.Context, folderPath string) iter.
 
 	return func(yield func(models.DriveItemable, error) bool) {
 		if iterErr := pageIterator.Iterate(ctx, func(item models.DriveItemable) bool {
+
+			etag := item.GetETag()
+			if etag != nil && *etag != "" {
+				s.cache.SetItem(ctx, s.cacheKey(driveID, folderPath), CachedItem{ETag: *etag, Item: item})
+			}
+
 			return yield(item, nil)
 		}); iterErr != nil {
 			s.logger.Error("error during children iteration", logging.Any("error", iterErr))
@@ -216,11 +225,11 @@ func (s *Service) ChildrenIterator(ctx context.Context, folderPath string) iter.
 	}
 }
 
-func (s *Service) driveItemBuilder(client *msgraphsdkgo.GraphServiceClient, driveID, normalizedPath string) *drives.DriveItemRequestBuilder {
+func (s *Service) driveItemBuilder(client *msgraphsdkgo.GraphServiceClient, driveID, normalizedPath string) *drives.ItemRootRequestBuilder {
 	if normalizedPath == "" {
-		return drives.NewDriveItemRequestBuilder(fmt.Sprintf(rootURITemplate, driveID), client.RequestAdapter)
+		return drives.NewItemRootRequestBuilder(fmt.Sprintf(rootURITemplate, driveID), client.RequestAdapter)
 	}
-	return drives.NewDriveItemRequestBuilder(fmt.Sprintf(rootRelativeURITemplate, driveID, normalizedPath), client.RequestAdapter)
+	return drives.NewItemRootRequestBuilder(fmt.Sprintf(rootRelativeURITemplate, driveID, normalizedPath), client.RequestAdapter)
 }
 
 func (s *Service) childrenBuilder(client *msgraphsdkgo.GraphServiceClient, driveID, normalizedPath string) *drives.ItemItemsRequestBuilder {
@@ -229,4 +238,29 @@ func (s *Service) childrenBuilder(client *msgraphsdkgo.GraphServiceClient, drive
 	}
 
 	return drives.NewItemItemsRequestBuilder(fmt.Sprintf(rootChildrenURITemplate, driveID), client.RequestAdapter)
+}
+
+func (s *Service) Resolve(ctx context.Context, path string) (models.DriveItemable, error) {
+	normalized := normalizePath(path)
+
+	driveID, err := s.getUserDriveID(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	item, err := s.getDriveRoot(ctx, driveID, normalized)
+	if err != nil {
+		return nil, err
+	}
+
+	// 304 Not Modified → load from item cache
+	if item == nil {
+		cached, err := s.cache.GetItem(ctx, s.cacheKey(driveID, normalized))
+		if err != nil {
+			return nil, err
+		}
+		return cached.Item, nil
+	}
+
+	return item, nil
 }
