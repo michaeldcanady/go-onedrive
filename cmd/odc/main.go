@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"github.com/michaeldcanady/go-onedrive/internal/cmd/root"
+	"github.com/michaeldcanady/go-onedrive/internal/di"
 )
 
 func main() {
@@ -16,7 +17,14 @@ func main() {
 func realMain() int {
 	ctx := context.Background()
 
-	rootCmd, err := root.CreateRootCmd()
+	// Create lightweight container (no heavy services yet)
+	container, err := di.NewContainer1()
+	if err != nil {
+		fmt.Print("ERROR: failed to initialize container")
+		return 1
+	}
+
+	rootCmd, err := root.CreateRootCmd(container)
 	if err != nil {
 		fmt.Printf("ERROR: %s\n", err)
 		return 1

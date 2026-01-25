@@ -12,6 +12,7 @@ import (
 	"github.com/spf13/cobra"
 	"golang.org/x/term"
 
+	"github.com/michaeldcanady/go-onedrive/internal/di"
 	"github.com/michaeldcanady/go-onedrive/internal/logging"
 )
 
@@ -29,7 +30,7 @@ const (
 	formatUsage     = "output format: json|yaml"
 )
 
-func CreateLSCmd(iter driveChildIterator, logger logging.Logger) *cobra.Command {
+func CreateLSCmd(c *di.Container1) *cobra.Command {
 	var (
 		long   bool
 		all    bool
@@ -43,29 +44,21 @@ func CreateLSCmd(iter driveChildIterator, logger logging.Logger) *cobra.Command 
 
 By default, hidden items (names beginning with '.') are not shown.
 Use --all to include them, or --long for a detailed listing.`,
-		Example: `
-  # List items in the current directory
-  go-onedrive ls
-
-  # List items in a specific path
-  go-onedrive ls Documents/Projects
-
-  # Long listing format
-  go-onedrive ls -l
-
-  # Show hidden items
-  go-onedrive ls -a
-
-  # Output JSON
-  go-onedrive ls --format json
-`,
 		Args:         cobra.MaximumNArgs(1),
 		SilenceUsage: true,
 
 		RunE: func(cmd *cobra.Command, args []string) error {
+			logger, err := c.LoggerService.GetLogger("cli")
+
 			ctx := cmd.Context()
 			if ctx == nil {
 				ctx = context.Background()
+			}
+
+			// 🔥 Lazy-load the DriveService here
+			drive, err := c.DriveService(ctx)
+			if err != nil {
+				return fmt.Errorf("failed to initialize drive service: %w", err)
 			}
 
 			path := ""
@@ -80,7 +73,8 @@ Use --all to include them, or --long for a detailed listing.`,
 				logging.String("format", format),
 			)
 
-			items, err := collectItems(ctx, iter, path, logger)
+			// 🔥 Use the drive service directly
+			items, err := collectItems(ctx, drive, path, logger)
 			if err != nil {
 				return err
 			}

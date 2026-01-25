@@ -20,6 +20,10 @@ func (s *Service) OS() string {
 	return runtime.GOOS
 }
 
+func (s *Service) Name() string {
+	return s.appName
+}
+
 func (s *Service) IsWindows() bool { return runtime.GOOS == "windows" }
 func (s *Service) IsMac() bool     { return runtime.GOOS == "darwin" }
 func (s *Service) IsLinux() bool   { return runtime.GOOS == "linux" }

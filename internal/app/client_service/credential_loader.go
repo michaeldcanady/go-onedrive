@@ -8,5 +8,5 @@ import (
 
 // credentialLoader loads a token credential
 type credentialLoader interface {
-	LoadCredential(ctx context.Context) (azcore.TokenCredential, error)
+	LoadCredential(ctx context.Context, name string) (azcore.TokenCredential, error)
 }

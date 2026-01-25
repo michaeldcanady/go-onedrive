@@ -14,11 +14,11 @@ type AuthenticationConfig interface {
 }
 
 type AuthenticationConfigImpl struct {
-	Type         string `mapstructure:"type"`
-	ClientID     string `mapstructure:"client_id"`
-	TenantID     string `mapstructure:"tenant_id"`
-	RedirectURI  string `mapstructure:"redirect_uri"`
-	ProfileCache string `mapstructure:"profile_cache"`
+	Type         string `mapstructure:"type" yaml:"type"`
+	ClientID     string `mapstructure:"client_id" yaml:"client_id"`
+	TenantID     string `mapstructure:"tenant_id" yaml:"tenant_id"`
+	RedirectURI  string `mapstructure:"redirect_uri" yaml:"redirect_uri"`
+	ProfileCache string `mapstructure:"profile_cache" yaml:"profile_cache"`
 	// TODO: move some where else
 	AuthenticationRecord *azidentity.AuthenticationRecord
 }

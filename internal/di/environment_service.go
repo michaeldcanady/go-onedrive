@@ -13,4 +13,5 @@ type EnvironmentService interface {
 	InstallDir(context.Context) (string, error)
 	TempDir(context.Context) (string, error)
 	EnsureAll(context.Context) error
+	Name() string
 }

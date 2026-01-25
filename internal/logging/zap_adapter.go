@@ -14,7 +14,7 @@ var _ Logger = (*ZapLogAdapter)(nil)
 // ZapLogAdapter wraps a zap.Logger and exposes a dynamic log level.
 type ZapLogAdapter struct {
 	logger *zap.Logger
-	level  zap.AtomicLevel
+	level  *zap.AtomicLevel
 }
 
 // convertFieldsToZap converts a slice of custom Field types to zap.Fields.
@@ -70,7 +70,7 @@ func NewZapLogger(cfg zap.Config) *ZapLogAdapter {
 
 	return &ZapLogAdapter{
 		logger: logger,
-		level:  atomicLevel,
+		level:  &atomicLevel,
 	}
 }
 
@@ -86,7 +86,7 @@ func NewZapLoggerAdapter(logger *zap.Logger) *ZapLogAdapter {
 
 // SetLevel changes the logger's level at runtime.
 func (z *ZapLogAdapter) SetLevel(level string) {
-	if z.level == (zap.AtomicLevel{}) {
+	if z.level == nil {
 		z.logger.Sugar().Errorf("failed to set log level %s: %w", level, errors.New("atomicLevel empty"))
 		return
 	}

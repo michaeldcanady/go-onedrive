@@ -7,5 +7,5 @@ import (
 )
 
 type CredentialService interface {
-	LoadCredential(ctx context.Context) (azcore.TokenCredential, error)
+	LoadCredential(ctx context.Context, profile string) (azcore.TokenCredential, error)
 }
