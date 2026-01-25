@@ -30,7 +30,7 @@ const (
 	formatUsage     = "output format: json|yaml"
 )
 
-func CreateLSCmd(c *di.Container1, logger logging.Logger) *cobra.Command {
+func CreateLSCmd(c *di.Container1) *cobra.Command {
 	var (
 		long   bool
 		all    bool
@@ -48,13 +48,15 @@ Use --all to include them, or --long for a detailed listing.`,
 		SilenceUsage: true,
 
 		RunE: func(cmd *cobra.Command, args []string) error {
+			logger, err := c.LoggerService.GetLogger("cli")
+
 			ctx := cmd.Context()
 			if ctx == nil {
 				ctx = context.Background()
 			}
 
 			// 🔥 Lazy-load the DriveService here
-			drive, err := c.DriveService()
+			drive, err := c.DriveService(ctx)
 			if err != nil {
 				return fmt.Errorf("failed to initialize drive service: %w", err)
 			}

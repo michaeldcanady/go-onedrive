@@ -20,7 +20,6 @@ import (
 )
 
 type Container1 struct {
-	Ctx     context.Context
 	Options RuntimeOptions
 
 	// static
@@ -54,14 +53,14 @@ type Container1 struct {
 	profileErr     error
 }
 
-func NewContainer1(ctx context.Context) (*Container1, error) {
-	c := &Container1{Ctx: ctx}
+func NewContainer1() (*Container1, error) {
+	c := &Container1{}
 
 	// environment
 	c.EnvironmentService = environmentservice.New("odc")
 
 	// base logger (level may be overridden later via flags)
-	logDir, err := c.EnvironmentService.LogDir(ctx)
+	logDir, err := c.EnvironmentService.LogDir(context.Background())
 	if err != nil {
 		return nil, err
 	}
@@ -79,16 +78,16 @@ func NewContainer1(ctx context.Context) (*Container1, error) {
 	return c, nil
 }
 
-func (c *Container1) ProfileService() (CLIProfileService, error) {
+func (c *Container1) ProfileService(ctx context.Context) (CLIProfileService, error) {
 	c.profileOnce.Do(func() {
 		logger, _ := c.LoggerService.CreateLogger("profile")
 
-		cache, err := c.CacheService()
+		cache, err := c.CacheService(ctx)
 		if err != nil {
 			c.configErr = err
 			return
 		}
-		configDir, err := c.EnvironmentService.ConfigDir(c.Ctx)
+		configDir, err := c.EnvironmentService.ConfigDir(ctx)
 		if err != nil {
 			c.cacheErr = err
 			return
@@ -101,11 +100,11 @@ func (c *Container1) ProfileService() (CLIProfileService, error) {
 }
 
 // CacheService is lazy and flag‑aware if needed.
-func (c *Container1) CacheService() (CacheService, error) {
+func (c *Container1) CacheService(ctx context.Context) (CacheService, error) {
 	c.cacheOnce.Do(func() {
 		logger, _ := c.LoggerService.CreateLogger("cache")
 
-		cacheDir, err := c.EnvironmentService.CacheDir(c.Ctx)
+		cacheDir, err := c.EnvironmentService.CacheDir(ctx)
 		if err != nil {
 			c.cacheErr = err
 			return
@@ -117,9 +116,9 @@ func (c *Container1) CacheService() (CacheService, error) {
 	return c.cacheService, c.cacheErr
 }
 
-func (c *Container1) ConfigurationService() (ConfigurationService, error) {
+func (c *Container1) ConfigurationService(ctx context.Context) (ConfigurationService, error) {
 	c.configOnce.Do(func() {
-		cache, err := c.CacheService()
+		cache, err := c.CacheService(ctx)
 		if err != nil {
 			c.configErr = err
 			return
@@ -134,7 +133,7 @@ func (c *Container1) ConfigurationService() (ConfigurationService, error) {
 		configDir := c.Options.ConfigPath
 		profileName := defaultProfileName
 		if configDir == "" {
-			profileService, err := c.ProfileService()
+			profileService, err := c.ProfileService(ctx)
 			if err != nil {
 				c.configErr = err
 				return
@@ -154,15 +153,15 @@ func (c *Container1) ConfigurationService() (ConfigurationService, error) {
 	return c.configService, c.configErr
 }
 
-func (c *Container1) CredentialService() (CredentialService, error) {
+func (c *Container1) CredentialService(ctx context.Context) (CredentialService, error) {
 	c.credOnce.Do(func() {
-		cache, err := c.CacheService()
+		cache, err := c.CacheService(ctx)
 		if err != nil {
 			c.credErr = err
 			return
 		}
 
-		configService, err := c.ConfigurationService()
+		configService, err := c.ConfigurationService(ctx)
 		if err != nil {
 			c.credErr = err
 			return
@@ -174,9 +173,9 @@ func (c *Container1) CredentialService() (CredentialService, error) {
 	return c.credService, c.credErr
 }
 
-func (c *Container1) GraphClientService() (Clienter, error) {
+func (c *Container1) GraphClientService(ctx context.Context) (Clienter, error) {
 	c.graphOnce.Do(func() {
-		cred, err := c.CredentialService()
+		cred, err := c.CredentialService(ctx)
 		if err != nil {
 			c.graphErr = err
 			return
@@ -188,9 +187,9 @@ func (c *Container1) GraphClientService() (Clienter, error) {
 	return c.graphService, c.graphErr
 }
 
-func (c *Container1) DriveService() (ChildrenIterator, error) {
+func (c *Container1) DriveService(ctx context.Context) (ChildrenIterator, error) {
 	c.driveOnce.Do(func() {
-		graph, err := c.GraphClientService()
+		graph, err := c.GraphClientService(ctx)
 		if err != nil {
 			c.driveErr = err
 			return

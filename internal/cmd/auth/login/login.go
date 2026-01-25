@@ -30,7 +30,7 @@ const (
 	forceUsage     = "Force re-authentication even if a valid profile exists"
 )
 
-func CreateLoginCmd(container *di.Container1, logger logging.Logger) *cobra.Command {
+func CreateLoginCmd(container *di.Container1) *cobra.Command {
 	var (
 		showToken bool
 		force     bool
@@ -40,18 +40,20 @@ func CreateLoginCmd(container *di.Container1, logger logging.Logger) *cobra.Comm
 		Use:   "login",
 		Short: "Authenticate with OneDrive",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			logger, err := container.LoggerService.GetLogger("cli")
+
 			ctx := cmd.Context()
 			if ctx == nil {
 				ctx = context.Background()
 			}
 
-			credentialService, err := container.CredentialService()
+			credentialService, err := container.CredentialService(ctx)
 			if err != nil {
 				logger.Error("unable to initialize credential service", logging.String("error", err.Error()))
 				return errors.Join(errors.New("unable to initialize credential service"), err)
 			}
 
-			cacheService, err := container.CacheService()
+			cacheService, err := container.CacheService(ctx)
 			if err != nil {
 				logger.Error("unable to initialize cache service", logging.String("error", err.Error()))
 			}
@@ -59,7 +61,7 @@ func CreateLoginCmd(container *di.Container1, logger logging.Logger) *cobra.Comm
 			var profile *azidentity.AuthenticationRecord
 			if cacheService != nil {
 				// Load existing profile
-				record, err := cacheService.GetProfile(ctx, "default")
+				record, err := cacheService.GetProfile(ctx, container.Options.ProfileName)
 				if err != nil {
 					logger.Warn("Unable to load profile", logging.String("error", err.Error()))
 				}
@@ -69,7 +71,7 @@ func CreateLoginCmd(container *di.Container1, logger logging.Logger) *cobra.Comm
 			}
 
 			// Load credential provider (reactive chain starts here)
-			cred, err := credentialService.LoadCredential(ctx, "default")
+			cred, err := credentialService.LoadCredential(ctx, container.Options.ProfileName)
 			if err != nil {
 				return fmt.Errorf("failed to initialize credential: %w", err)
 			}
@@ -103,7 +105,7 @@ func CreateLoginCmd(container *di.Container1, logger logging.Logger) *cobra.Comm
 					}
 
 					if cacheService != nil {
-						if err := cacheService.SetProfile(ctx, "default", record); err != nil {
+						if err := cacheService.SetProfile(ctx, container.Options.ProfileName, record); err != nil {
 							return fmt.Errorf("unable to save profile: %w", err)
 						}
 					} else {
@@ -112,7 +114,7 @@ func CreateLoginCmd(container *di.Container1, logger logging.Logger) *cobra.Comm
 
 					profile = &record
 
-					cred, err = credentialService.LoadCredential(ctx, "default")
+					cred, err = credentialService.LoadCredential(ctx, container.Options.ProfileName)
 					if err != nil {
 						return fmt.Errorf("failed to reload credential: %w", err)
 					}

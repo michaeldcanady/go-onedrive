@@ -1,7 +1,6 @@
 package root
 
 import (
-	"context"
 	"fmt"
 
 	"github.com/michaeldcanady/go-onedrive/internal/cmd/auth"
@@ -36,26 +35,12 @@ Examples:
 `
 )
 
-func CreateRootCmd() (*cobra.Command, error) {
+func CreateRootCmd(container *di.Container1) (*cobra.Command, error) {
 	var (
 		level   string
 		config  string
 		profile string
 	)
-
-	ctx := context.Background()
-
-	// Create lightweight container (no heavy services yet)
-	container, err := di.NewContainer1(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to initialize container: %w", err)
-	}
-
-	// CLI logger (safe to create early)
-	cliLogger, err := container.LoggerService.CreateLogger("cli")
-	if err != nil {
-		return nil, fmt.Errorf("failed to initialize cli logger: %w", err)
-	}
 
 	rootCmd := &cobra.Command{
 		Use:           container.EnvironmentService.Name(),
@@ -65,6 +50,12 @@ func CreateRootCmd() (*cobra.Command, error) {
 		SilenceErrors: true,
 
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+			// CLI logger (safe to create early)
+			cliLogger, err := container.LoggerService.CreateLogger("cli")
+			if err != nil {
+				return fmt.Errorf("failed to initialize cli logger: %w", err)
+			}
+
 			container.LoggerService.SetAllLevel(level)
 			cliLogger.Info("updated all logger level", logging.String("level", level))
 			cliLogger.Info("updated config path", logging.String("path", config))
@@ -92,8 +83,8 @@ func CreateRootCmd() (*cobra.Command, error) {
 	// ────────────────────────────────────────────────
 	//
 	rootCmd.AddCommand(
-		ls.CreateLSCmd(container, cliLogger),
-		auth.CreateAuthCmd(container, cliLogger),
+		ls.CreateLSCmd(container),
+		auth.CreateAuthCmd(container),
 	)
 
 	return rootCmd, nil
