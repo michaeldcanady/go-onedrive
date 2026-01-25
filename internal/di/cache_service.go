@@ -5,6 +5,7 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	cliprofileservicego "github.com/michaeldcanady/go-onedrive/internal/app/cli_profile_service.go"
+	driveservice "github.com/michaeldcanady/go-onedrive/internal/app/drive_service"
 	"github.com/michaeldcanady/go-onedrive/internal/config"
 )
 
@@ -15,4 +16,5 @@ type CacheService interface {
 	SetConfiguration(ctx context.Context, name string, record config.Configuration3) error
 	GetCLIProfile(ctx context.Context, name string) (cliprofileservicego.Profile, error)
 	SetCLIProfile(ctx context.Context, name string, profile cliprofileservicego.Profile) error
+	driveservice.CacheService
 }

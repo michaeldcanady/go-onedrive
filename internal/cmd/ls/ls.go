@@ -55,7 +55,6 @@ Use --all to include them, or --long for a detailed listing.`,
 				ctx = context.Background()
 			}
 
-			// 🔥 Lazy-load the DriveService here
 			drive, err := c.DriveService(ctx)
 			if err != nil {
 				return fmt.Errorf("failed to initialize drive service: %w", err)
@@ -76,7 +75,7 @@ Use --all to include them, or --long for a detailed listing.`,
 			// 🔥 Use the drive service directly
 			items, err := collectItems(ctx, drive, path, logger)
 			if err != nil {
-				return err
+				return fmt.Errorf("cannot access '%s': %w", path, err)
 			}
 
 			if !all {
@@ -127,6 +126,16 @@ func collectItems(
 		items   []models.DriveItemable
 		iterErr error
 	)
+
+	item, err := iter.Resolve(ctx, path)
+	if err != nil {
+		logger.Error("failed to resolve path", logging.String("path", path), logging.String("err", err.Error()))
+		return nil, err
+	}
+
+	if file := item.GetFile(); file != nil {
+		return []models.DriveItemable{item}, nil
+	}
 
 	iter.ChildrenIterator(ctx, path)(func(item models.DriveItemable, err error) bool {
 		if err != nil {

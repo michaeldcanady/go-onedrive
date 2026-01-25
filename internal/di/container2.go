@@ -19,6 +19,10 @@ import (
 	"github.com/spf13/viper"
 )
 
+const (
+	defaultProfileName = "default"
+)
+
 type Container1 struct {
 	Options RuntimeOptions
 
@@ -110,8 +114,10 @@ func (c *Container1) CacheService(ctx context.Context) (CacheService, error) {
 			return
 		}
 
-		path := filepath.Join(cacheDir, "profile.cache")
-		c.cacheService, c.cacheErr = cacheservice.New(path, logger)
+		profilePath := filepath.Join(cacheDir, "profile.cache")
+		drivePath := filepath.Join(cacheDir, "drive.cache")
+		filePath := filepath.Join(cacheDir, "file.cache")
+		c.cacheService, c.cacheErr = cacheservice.New(profilePath, drivePath, filePath, logger)
 	})
 	return c.cacheService, c.cacheErr
 }
@@ -189,6 +195,12 @@ func (c *Container1) GraphClientService(ctx context.Context) (Clienter, error) {
 
 func (c *Container1) DriveService(ctx context.Context) (ChildrenIterator, error) {
 	c.driveOnce.Do(func() {
+		cache, err := c.CacheService(ctx)
+		if err != nil {
+			c.driveErr = err
+			return
+		}
+
 		graph, err := c.GraphClientService(ctx)
 		if err != nil {
 			c.driveErr = err
@@ -204,7 +216,7 @@ func (c *Container1) DriveService(ctx context.Context) (ChildrenIterator, error)
 			logger.SetLevel(lvl)
 		}
 
-		c.driveService = driveservice.New(graph, c.EventBus, logger)
+		c.driveService = driveservice.New(graph, c.EventBus, logger, cache)
 	})
 	return c.driveService, c.driveErr
 }
