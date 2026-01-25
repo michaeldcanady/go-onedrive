@@ -86,7 +86,7 @@ func NewContainer(ctx context.Context) (*Container, error) {
 	if err != nil {
 		return nil, err
 	}
-	c.CredentialService = credentialservice.New(c.CacheService, bus, credentialLogger)
+	c.CredentialService = credentialservice.New(c.CacheService, bus, credentialLogger, c.ConfigurationService)
 	graphLogger, err := c.LoggerService.CreateLogger("graph")
 	if err != nil {
 		return nil, err

@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
+	cliprofileservicego "github.com/michaeldcanady/go-onedrive/internal/app/cli_profile_service.go"
 	"github.com/michaeldcanady/go-onedrive/internal/cachev2/abstractions"
 	"github.com/michaeldcanady/go-onedrive/internal/cachev2/core"
 	"github.com/michaeldcanady/go-onedrive/internal/cachev2/disk"
@@ -148,4 +149,20 @@ func (s *Service) SetConfiguration(ctx context.Context, name string, record conf
 	entry.SetValue(record)
 
 	return s.configurationCache.SetEntry(ctx, entry)
+}
+
+func (s *Service) GetCLIProfile(ctx context.Context, name string) (cliprofileservicego.Profile, error) {
+	var profile cliprofileservicego.Profile
+	if err := ctx.Err(); err != nil {
+		return profile, err
+	}
+
+	return profile, nil
+}
+func (s *Service) SetCLIProfile(ctx context.Context, name string, profile cliprofileservicego.Profile) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+
+	return nil
 }

@@ -38,7 +38,7 @@ func (s *GraphClientService) Client(ctx context.Context) (*msgraphsdkgo.GraphSer
 		return s.client, nil
 	}
 
-	cred, err := s.credentialService.LoadCredential(ctx)
+	cred, err := s.credentialService.LoadCredential(ctx, "default")
 	if err != nil {
 		s.logger.Error("failed to load credential", logging.Any("error", err))
 		return nil, fmt.Errorf("failed to load credential: %w", err)

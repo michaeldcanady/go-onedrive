@@ -9,14 +9,20 @@ import (
 	"github.com/michaeldcanady/go-onedrive/internal/di"
 	"github.com/michaeldcanady/go-onedrive/internal/logging"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 )
 
 const (
-	defaultConfigFile    = "./config.yaml"
-	loggingLevelFlagLong = "level"
-	loggingLevelUsage    = "set the logging level (e.g., debug, info, warn, error)"
-	rootLongDescription  = `A command-line interface for interacting with Microsoft OneDrive.
+	profileNameFlagLong     = "profile"
+	profileNameFlagDefault  = "default"
+	profileNameFlagUsage    = "name of profile"
+	configFileFlagLong      = "config"
+	configFileFlagUsage     = "path to config file"
+	configFileFlagDefault   = "./config.yaml"
+	loggingLevelFlagLong    = "level"
+	loggingLevelFlagUsage   = "set the logging level (e.g., debug, info, warn, error)"
+	loggingLevelFlagDefault = "info"
+	rootShortDescription    = "A OneDrive CLI client"
+	rootLongDescription     = `A command-line interface for interacting with Microsoft OneDrive.
 
 Examples:
   # List files in your OneDrive root
@@ -31,65 +37,62 @@ Examples:
 )
 
 func CreateRootCmd() (*cobra.Command, error) {
+	var (
+		level   string
+		config  string
+		profile string
+	)
+
 	ctx := context.Background()
 
-	container, err := di.NewContainer(ctx)
+	// Create lightweight container (no heavy services yet)
+	container, err := di.NewContainer1(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize container: %w", err)
 	}
 
+	// CLI logger (safe to create early)
 	cliLogger, err := container.LoggerService.CreateLogger("cli")
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize cli logger: %w", err)
 	}
 
 	rootCmd := &cobra.Command{
-		Use:           "odc",
-		Short:         "A OneDrive CLI client",
+		Use:           container.EnvironmentService.Name(),
+		Short:         rootShortDescription,
 		Long:          rootLongDescription,
 		SilenceUsage:  true,
 		SilenceErrors: true,
 
-		// Persist config changes only if something modified Viper state.
-		PersistentPostRunE: func(cmd *cobra.Command, args []string) error {
-			if err := viper.WriteConfig(); err != nil {
-				cliLogger.Error("failed to write config", logging.String("error", err.Error()))
-				return fmt.Errorf("failed to write config: %w", err)
+		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+			container.LoggerService.SetAllLevel(level)
+			cliLogger.Info("updated all logger level", logging.String("level", level))
+			cliLogger.Info("updated config path", logging.String("path", config))
+			container.Options = di.RuntimeOptions{
+				LogLevel:    level,
+				ConfigPath:  config,
+				ProfileName: profile,
 			}
+
 			return nil
 		},
 	}
 
-	// Global flags
-	rootCmd.PersistentFlags().String("config", defaultConfigFile, "path to config file")
-	rootCmd.PersistentFlags().Bool(loggingLevelFlagLong, false, loggingLevelUsage)
-
-	// Bind flags to Viper
-	if err := viper.BindPFlag("logging.level", rootCmd.PersistentFlags().Lookup(loggingLevelFlagLong)); err != nil {
-		cliLogger.Error("failed to bind logging level flag", logging.String("error", err.Error()))
-		return nil, fmt.Errorf("failed to bind logging level flag: %w", err)
-	}
-
-	configPath, err := rootCmd.PersistentFlags().GetString("config")
-	if err != nil {
-		return nil, fmt.Errorf("failed to get config flag: %w", err)
-	}
-
-	viper.SetConfigFile(configPath)
-	viper.SetConfigType("yaml")
-
-	// Missing config file is fine; other errors are not.
-	if err := viper.ReadInConfig(); err != nil {
-		// Only warn if the file is missing; fail on parse errors.
-		if _, notFound := err.(viper.ConfigFileNotFoundError); !notFound {
-			return nil, fmt.Errorf("failed to read config: %w", err)
-		}
-		// TODO: Log that config file was not found, using defaults.
-	}
-
-	// Subcommands
+	//
+	// ────────────────────────────────────────────────
+	// Global Flags
+	// ────────────────────────────────────────────────
+	//
+	rootCmd.PersistentFlags().StringVar(&config, configFileFlagLong, configFileFlagDefault, configFileFlagUsage)
+	rootCmd.PersistentFlags().StringVar(&level, loggingLevelFlagLong, loggingLevelFlagDefault, loggingLevelFlagUsage)
+	rootCmd.PersistentFlags().StringVar(&profile, profileNameFlagLong, profileNameFlagDefault, profileNameFlagUsage)
+	//
+	// ────────────────────────────────────────────────
+	// Subcommands (DI container passed directly)
+	// ────────────────────────────────────────────────
+	//
 	rootCmd.AddCommand(
-		ls.CreateLSCmd(container.DriveService, cliLogger),
+		ls.CreateLSCmd(container, cliLogger),
 		auth.CreateAuthCmd(container, cliLogger),
 	)
 

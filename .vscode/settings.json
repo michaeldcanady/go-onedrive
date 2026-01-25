@@ -4,6 +4,7 @@
         "azidentity",
         "cachev",
         "Clienter",
+        "cliprofileservicego",
         "configurationservice",
         "coreutils",
         "credentialservice",

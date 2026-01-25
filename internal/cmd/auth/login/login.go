@@ -30,7 +30,7 @@ const (
 	forceUsage     = "Force re-authentication even if a valid profile exists"
 )
 
-func CreateLoginCmd(container *di.Container, logger logging.Logger) *cobra.Command {
+func CreateLoginCmd(container *di.Container1, logger logging.Logger) *cobra.Command {
 	var (
 		showToken bool
 		force     bool
@@ -45,15 +45,31 @@ func CreateLoginCmd(container *di.Container, logger logging.Logger) *cobra.Comma
 				ctx = context.Background()
 			}
 
-			// Load existing profile
-			record, err := container.CacheService.GetProfile(ctx, "default")
+			credentialService, err := container.CredentialService()
 			if err != nil {
-				logger.Warn("Unable to load profile", logging.String("error", err.Error()))
+				logger.Error("unable to initialize credential service", logging.String("error", err.Error()))
+				return errors.Join(errors.New("unable to initialize credential service"), err)
 			}
-			profile := &record
+
+			cacheService, err := container.CacheService()
+			if err != nil {
+				logger.Error("unable to initialize cache service", logging.String("error", err.Error()))
+			}
+
+			var profile *azidentity.AuthenticationRecord
+			if cacheService != nil {
+				// Load existing profile
+				record, err := cacheService.GetProfile(ctx, "default")
+				if err != nil {
+					logger.Warn("Unable to load profile", logging.String("error", err.Error()))
+				}
+				profile = &record
+			} else {
+				logger.Warn("any authentication records will not be cached")
+			}
 
 			// Load credential provider (reactive chain starts here)
-			cred, err := container.CredentialService.LoadCredential(ctx)
+			cred, err := credentialService.LoadCredential(ctx, "default")
 			if err != nil {
 				return fmt.Errorf("failed to initialize credential: %w", err)
 			}
@@ -86,13 +102,17 @@ func CreateLoginCmd(container *di.Container, logger logging.Logger) *cobra.Comma
 						return fmt.Errorf("authentication failed: %w", err)
 					}
 
-					if err := container.CacheService.SetProfile(ctx, "default", record); err != nil {
-						return fmt.Errorf("unable to save profile: %w", err)
+					if cacheService != nil {
+						if err := cacheService.SetProfile(ctx, "default", record); err != nil {
+							return fmt.Errorf("unable to save profile: %w", err)
+						}
+					} else {
+						logger.Warn("authentication record not cached")
 					}
 
 					profile = &record
 
-					cred, err = container.CredentialService.LoadCredential(ctx)
+					cred, err = credentialService.LoadCredential(ctx, "default")
 					if err != nil {
 						return fmt.Errorf("failed to reload credential: %w", err)
 					}

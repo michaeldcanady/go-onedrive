@@ -44,6 +44,7 @@ func (s *Service) CreateLogger(id string) (logging.Logger, error) {
 }
 
 func (s *Service) SetAllLevel(level string) {
+	s.logLevel = level
 	maps.Keys(s.loggers)(func(key string) bool {
 		s.SetLevel(key, level)
 		return true
