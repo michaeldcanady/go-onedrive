@@ -1,17 +1,11 @@
 package ls
 
 import (
-	"cmp"
-	"context"
 	"fmt"
-	"os"
-	"slices"
-	"time"
 
-	"github.com/microsoftgraph/msgraph-sdk-go/models"
 	"github.com/spf13/cobra"
-	"golang.org/x/term"
 
+	driveservice "github.com/michaeldcanady/go-onedrive/internal/app/drive_service"
 	"github.com/michaeldcanady/go-onedrive/internal/di"
 	"github.com/michaeldcanady/go-onedrive/internal/logging"
 )
@@ -21,9 +15,9 @@ const (
 	longShortFlag = "l"
 	longUsage     = "use long listing format"
 
-	allLongFlag  = "all"
-	allShortFlag = "a"
-	allUsage     = "show hidden items (names starting with '.')"
+	allFlagLong  = "all"
+	allFlagShort = "a"
+	allFlagUsage = "show hidden items (names starting with '.')"
 
 	formatLongFlag  = "format"
 	formatShortFlag = "f"
@@ -40,24 +34,28 @@ func CreateLSCmd(c *di.Container1) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "ls [path]",
 		Short: "List items in a OneDrive path",
-		Long: `List files and folders stored in your OneDrive.
-
-By default, hidden items (names beginning with '.') are not shown.
-Use --all to include them, or --long for a detailed listing.`,
-		Args:         cobra.MaximumNArgs(1),
-		SilenceUsage: true,
-
+		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			logger, err := c.LoggerService.GetLogger("cli")
-
+			logger, _ := c.LoggerService.GetLogger("cli")
 			ctx := cmd.Context()
-			if ctx == nil {
-				ctx = context.Background()
+
+			fs, err := c.FileService(ctx)
+			if err != nil {
+				return fmt.Errorf("failed to initialize filesystem service: %w", err)
 			}
 
-			drive, err := c.DriveService(ctx)
+			ds, err := c.DriveService2(ctx)
 			if err != nil {
-				return fmt.Errorf("failed to initialize drive service: %w", err)
+				return fmt.Errorf("failed to initialize driveservice service: %w", err)
+			}
+
+			// for now only supports user's personal drive
+			drive, err := ds.ResolvePersonalDrive(ctx)
+			if err != nil {
+				return fmt.Errorf("failed to resolve drive %s: %w", "OneDrive", err)
+			}
+			if drive == nil {
+				return fmt.Errorf("no working drive selected")
 			}
 
 			path := ""
@@ -65,43 +63,49 @@ Use --all to include them, or --long for a detailed listing.`,
 				path = args[0]
 			}
 
-			logger.Debug("ls command invoked",
+			logger.Debug("ls invoked",
+				logging.String("drive", drive.ID),
 				logging.String("path", path),
 				logging.Bool("long", long),
 				logging.Bool("all", all),
-				logging.String("format", format),
 			)
 
-			// 🔥 Use the drive service directly
-			items, err := collectItems(ctx, drive, path, logger)
+			var items []*driveservice.DriveItem
+
+			item, err := fs.ResolveItem(ctx, drive.ID, path)
 			if err != nil {
-				return fmt.Errorf("cannot access '%s': %w", path, err)
+				return handleDomainError("ls", path, err)
+			}
+
+			if !item.IsFolder {
+				items = []*driveservice.DriveItem{item}
+			} else {
+				items, err = fs.ListChildren(ctx, drive.ID, path)
+				if err != nil {
+					return handleDomainError("ls", path, err)
+				}
 			}
 
 			if !all {
-				items = filterHidden(items)
+				logger.Debug("filtering items")
+				items = filterHiddenDomain(items)
 			}
 
-			sortItems(items)
-
-			structured := make([]Item, len(items))
-			for i, it := range items {
-				structured[i] = toItem(it)
-			}
+			sortDomainItems(items)
 
 			switch format {
 			case "":
 				if long {
-					printLong(structured)
+					printLongDomain(items)
 				} else {
-					printShort(structured)
+					printShortDomain(items)
 				}
 			case "json":
-				return printJSON(structured)
+				return printJSON(items)
 			case "yaml", "yml":
-				return printYAML(structured)
+				return printYAML(items)
 			default:
-				return fmt.Errorf("invalid output format: %s (expected json|yaml)", format)
+				return fmt.Errorf("invalid format: %s", format)
 			}
 
 			return nil
@@ -109,105 +113,8 @@ Use --all to include them, or --long for a detailed listing.`,
 	}
 
 	cmd.Flags().BoolVarP(&long, longLongFlag, longShortFlag, false, longUsage)
-	cmd.Flags().BoolVarP(&all, allLongFlag, allShortFlag, false, allUsage)
+	cmd.Flags().BoolVarP(&all, allFlagLong, allFlagShort, false, allFlagUsage)
 	cmd.Flags().StringVarP(&format, formatLongFlag, formatShortFlag, "", formatUsage)
 
 	return cmd
-}
-
-func collectItems(
-	ctx context.Context,
-	iter driveChildIterator,
-	path string,
-	logger logging.Logger,
-) ([]models.DriveItemable, error) {
-
-	var (
-		items   []models.DriveItemable
-		iterErr error
-	)
-
-	item, err := iter.Resolve(ctx, path)
-	if err != nil {
-		logger.Error("failed to resolve path", logging.String("path", path), logging.String("err", err.Error()))
-		return nil, err
-	}
-
-	if file := item.GetFile(); file != nil {
-		return []models.DriveItemable{item}, nil
-	}
-
-	iter.ChildrenIterator(ctx, path)(func(item models.DriveItemable, err error) bool {
-		if err != nil {
-			logger.Error("iterator returned error", logging.Any("error", err))
-			iterErr = err
-			return false
-		}
-		items = append(items, item)
-		return true
-	})
-
-	if iterErr != nil {
-		logger.Error("failed to iterate children", logging.Any("error", iterErr))
-		return nil, iterErr
-	}
-
-	logger.Debug("items retrieved", logging.Int("count", len(items)))
-	return items, nil
-}
-
-func filterHidden(items []models.DriveItemable) []models.DriveItemable {
-	out := items[:0]
-	for _, it := range items {
-		if !isHidden(safeName(it)) {
-			out = append(out, it)
-		}
-	}
-	return out
-}
-
-func sortItems(items []models.DriveItemable) {
-	slices.SortFunc(items, func(a, b models.DriveItemable) int {
-		return cmp.Compare(safeName(a), safeName(b))
-	})
-}
-
-func safeName(item models.DriveItemable) string {
-	name := ""
-	if item.GetName() != nil {
-		name = *item.GetName()
-	}
-	if item.GetFolder() != nil {
-		name += "/"
-	}
-	return name
-}
-
-func isHidden(name string) bool {
-	return len(name) > 0 && name[0] == '.'
-}
-
-func detectTerminalWidth() int {
-	w, _, err := term.GetSize(int(os.Stdout.Fd()))
-	if err != nil {
-		return 80
-	}
-	return w
-}
-
-func getSize(it models.DriveItemable) int64 {
-	if it.GetFolder() != nil {
-		return 0
-	}
-	if it.GetSize() != nil {
-		return *it.GetSize()
-	}
-	return 0
-}
-
-func getModifiedTime(it models.DriveItemable) time.Time {
-	if it.GetLastModifiedDateTime() != nil {
-		return *it.GetLastModifiedDateTime()
-	}
-	return time.Time{}
 }

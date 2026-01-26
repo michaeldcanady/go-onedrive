@@ -32,9 +32,9 @@ func realMain() int {
 
 	if _, err := rootCmd.ExecuteContextC(ctx); err != nil {
 		if isAuthRequired(err) {
-			err = errors.New("authentication required. Run `go-onedrive auth login`")
+			err = errors.New("authentication required. Run `odc auth login`")
 		}
-		fmt.Printf("ERROR: %s\n", err)
+		fmt.Println(err)
 		return 1
 	}
 

@@ -5,16 +5,17 @@ import (
 	"fmt"
 	"os"
 
+	driveservice "github.com/michaeldcanady/go-onedrive/internal/app/drive_service"
 	"go.yaml.in/yaml/v3"
 )
 
-func printJSON(items []Item) error {
+func printJSON(items []*driveservice.DriveItem) error {
 	enc := json.NewEncoder(os.Stdout)
 	enc.SetIndent("", "  ")
 	return enc.Encode(items)
 }
 
-func printYAML(items []Item) error {
+func printYAML(items []*driveservice.DriveItem) error {
 	out, err := yaml.Marshal(items)
 	if err != nil {
 		return err
@@ -23,46 +24,53 @@ func printYAML(items []Item) error {
 	return nil
 }
 
-func printLong(items []Item) {
+func printLongDomain(items []*driveservice.DriveItem) {
 	for _, it := range items {
-		kind := "-"
-		if it.IsFolder {
-			kind = "d"
+		mod := it.Modified.Format("2006-01-02 15:04")
+
+		size := "-"
+		if !it.IsFolder {
+			size = fmt.Sprintf("%d", it.Size)
 		}
 
-		fmt.Printf("%1s %10d %s %s\n",
-			kind,
-			it.Size,
-			it.ModifiedTime.Format("2006-01-02 15:04"),
-			it.Name,
-		)
+		name := it.Name
+		if it.IsFolder {
+			name += "/"
+		}
+
+		fmt.Printf("%-20s %10s  %s\n", mod, size, name)
 	}
 }
 
-func printShort(items []Item) {
-	if len(items) == 0 {
-		return
-	}
-
+func printShortDomain(items []*driveservice.DriveItem) {
 	width := detectTerminalWidth()
-	maxLen := 0
+	colWidth := 0
+
+	// Determine widest name
 	for _, it := range items {
-		if len(it.Name) > maxLen {
-			maxLen = len(it.Name)
+		if len(it.Name) > colWidth {
+			colWidth = len(it.Name)
 		}
 	}
+	colWidth += 2 // spacing
 
-	colWidth := maxLen + 2
 	cols := width / colWidth
 	if cols < 1 {
 		cols = 1
 	}
 
 	for i, it := range items {
-		fmt.Printf("%-*s", colWidth, it.Name)
+		name := it.Name
+		if it.IsFolder {
+			name += "/"
+		}
+
+		fmt.Printf("%-*s", colWidth, name)
+
 		if (i+1)%cols == 0 {
 			fmt.Println()
 		}
 	}
+
 	fmt.Println()
 }
