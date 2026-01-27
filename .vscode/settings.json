@@ -9,6 +9,7 @@
         "configurationservice",
         "coreutils",
         "credentialservice",
+        "derr",
         "Driveable",
         "driveservice",
         "environmentservice",

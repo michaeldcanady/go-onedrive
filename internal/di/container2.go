@@ -12,6 +12,7 @@ import (
 	configurationservice "github.com/michaeldcanady/go-onedrive/internal/app/configuration_service"
 	credentialservice "github.com/michaeldcanady/go-onedrive/internal/app/credential_service"
 	driveservice "github.com/michaeldcanady/go-onedrive/internal/app/drive_service"
+	driveservice2 "github.com/michaeldcanady/go-onedrive/internal/app/drive_service2"
 	environmentservice "github.com/michaeldcanady/go-onedrive/internal/app/environment_service"
 	loggerservice "github.com/michaeldcanady/go-onedrive/internal/app/logger_service"
 	"github.com/michaeldcanady/go-onedrive/internal/event"
@@ -48,9 +49,20 @@ type Container1 struct {
 	graphService Clienter
 	graphErr     error
 
-	driveOnce    sync.Once
+	//DEPRECATED
+	driveOnce sync.Once
+	//DEPRECATED
 	driveService ChildrenIterator
-	driveErr     error
+	//DEPRECATED
+	driveErr error
+
+	driveService2 DriveService
+	driveOnce2    sync.Once
+	driveErr2     error
+
+	fileOnce    sync.Once
+	fileService FileSystemService
+	fileErr     error
 
 	profileOnce    sync.Once
 	profileService CLIProfileService
@@ -219,4 +231,47 @@ func (c *Container1) DriveService(ctx context.Context) (ChildrenIterator, error)
 		c.driveService = driveservice.New(graph, c.EventBus, logger, cache)
 	})
 	return c.driveService, c.driveErr
+}
+
+func (c *Container1) FileService(ctx context.Context) (FileSystemService, error) {
+	c.fileOnce.Do(func() {
+		cache, err := c.CacheService(ctx)
+		if err != nil {
+			c.driveErr = err
+			return
+		}
+
+		graph, err := c.GraphClientService(ctx)
+		if err != nil {
+			c.driveErr = err
+			return
+		}
+
+		logger, _ := c.LoggerService.CreateLogger("file")
+
+		c.fileService = driveservice.New2(graph, c.EventBus, logger, cache)
+	})
+	return c.fileService, c.fileErr
+}
+
+func (c *Container1) DriveService2(ctx context.Context) (DriveService, error) {
+	c.driveOnce2.Do(func() {
+		graph, err := c.GraphClientService(ctx)
+		if err != nil {
+			c.driveErr = err
+			return
+		}
+
+		logger, _ := c.LoggerService.CreateLogger("drive2")
+
+		// example: use --debug or logging.level
+		if viper.GetBool("debug") {
+			logger.SetLevel("debug")
+		} else if lvl := viper.GetString("logging.level"); lvl != "" {
+			logger.SetLevel(lvl)
+		}
+
+		c.driveService2 = driveservice2.NewDriveService(graph, logger)
+	})
+	return c.driveService2, c.driveErr2
 }
