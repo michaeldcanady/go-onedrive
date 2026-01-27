@@ -70,7 +70,7 @@ func NewContainer() (*Container, error) {
 		return nil, err
 	}
 
-	c.LoggerService, err = loggerservice.New("info", logDir, newZapLogger)
+	c.LoggerService, err = loggerservice.New("info", logDir, &loggerProvider{})
 	if err != nil {
 		return nil, err
 	}

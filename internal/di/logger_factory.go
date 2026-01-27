@@ -7,8 +7,16 @@ import (
 	"go.uber.org/zap"
 )
 
-// TODO: Make LoggerProvider
-// TODO: FIGURE OUT WHY IT'S LOGGING TO STANDARD OUT!
+type loggerProvider struct{}
+
+func (p *loggerProvider) Logger(logLevel string, logsHome string) (logging.Logger, error) {
+	return p.createZapLogger(logLevel, logsHome)
+}
+
+func (p *loggerProvider) createZapLogger(logLevel, logsHome string) (logging.Logger, error) {
+	return newZapLogger(logLevel, logsHome)
+}
+
 func newZapLogger(logLevel string, logsHome string) (logging.Logger, error) {
 	cfg := zap.NewProductionConfig()
 
@@ -25,7 +33,10 @@ func newZapLogger(logLevel string, logsHome string) (logging.Logger, error) {
 		return nil, fmt.Errorf("unknown logging level: %s", logLevel)
 	}
 
-	cfg.OutputPaths = append(cfg.OutputPaths, logsHome)
+	// Logs to stdout
+	//cfg.OutputPaths = append(cfg.OutputPaths, logsHome)
+	// only log to file
+	cfg.OutputPaths = []string{logsHome}
 
 	return logging.NewZapLogger(cfg), nil
 }

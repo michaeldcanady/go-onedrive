@@ -15,10 +15,10 @@ type Service struct {
 	loggers  map[string]logging.Logger
 	logLevel string
 	logsHome string
-	factory  loggerFactory
+	factory  LoggerProvider
 }
 
-func New(logLevel string, logsHome string, factory loggerFactory) (*Service, error) {
+func New(logLevel string, logsHome string, factory LoggerProvider) (*Service, error) {
 
 	if err := os.MkdirAll(logsHome, os.ModePerm); err != nil {
 		return nil, err
@@ -34,7 +34,7 @@ func New(logLevel string, logsHome string, factory loggerFactory) (*Service, err
 
 // createLogger creates a new logger using the current factory.
 func (s *Service) CreateLogger(id string) (logging.Logger, error) {
-	logger, err := s.factory(s.logLevel, s.toPath(id))
+	logger, err := s.factory.Logger(s.logLevel, s.toPath(id))
 	if err != nil {
 		return nil, err
 	}
