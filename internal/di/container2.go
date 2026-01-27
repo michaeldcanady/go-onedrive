@@ -205,34 +205,6 @@ func (c *Container1) GraphClientService(ctx context.Context) (Clienter, error) {
 	return c.graphService, c.graphErr
 }
 
-func (c *Container1) DriveService(ctx context.Context) (ChildrenIterator, error) {
-	c.driveOnce.Do(func() {
-		cache, err := c.CacheService(ctx)
-		if err != nil {
-			c.driveErr = err
-			return
-		}
-
-		graph, err := c.GraphClientService(ctx)
-		if err != nil {
-			c.driveErr = err
-			return
-		}
-
-		logger, _ := c.LoggerService.CreateLogger("drive")
-
-		// example: use --debug or logging.level
-		if viper.GetBool("debug") {
-			logger.SetLevel("debug")
-		} else if lvl := viper.GetString("logging.level"); lvl != "" {
-			logger.SetLevel(lvl)
-		}
-
-		c.driveService = driveservice.New(graph, c.EventBus, logger, cache)
-	})
-	return c.driveService, c.driveErr
-}
-
 func (c *Container1) FileService(ctx context.Context) (FileSystemService, error) {
 	c.fileOnce.Do(func() {
 		cache, err := c.CacheService(ctx)

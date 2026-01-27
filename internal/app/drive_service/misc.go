@@ -2,6 +2,7 @@ package driveservice
 
 import (
 	"errors"
+	"path"
 	"time"
 
 	"github.com/microsoftgraph/msgraph-sdk-go/models"
@@ -48,6 +49,7 @@ func toDomainItem(driveID string, it models.DriveItemable) *DriveItem {
 	}
 }
 
+// mapGraphError converts MS Graph OData error to domain error
 func mapGraphError(err error) error {
 	if err == nil {
 		return nil
@@ -99,4 +101,12 @@ func mapGraphError(err error) error {
 
 	// Fallback
 	return &DomainError{Kind: ErrInternal, Err: err}
+}
+
+// normalizePath ensures paths like "Documents", "/Documents", "Documents/" all become "/Documents"
+func normalizePath(p string) string {
+	if p == "" || p == "/" || p == "." {
+		return ""
+	}
+	return path.Clean("/" + p)
 }
