@@ -8,7 +8,7 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	cliprofileservicego "github.com/michaeldcanady/go-onedrive/internal/app/cli_profile_service.go"
-	driveservice "github.com/michaeldcanady/go-onedrive/internal/app/drive_service"
+	driveservice "github.com/michaeldcanady/go-onedrive/internal/app/file_service"
 	"github.com/michaeldcanady/go-onedrive/internal/cachev2/abstractions"
 	"github.com/michaeldcanady/go-onedrive/internal/cachev2/core"
 	"github.com/michaeldcanady/go-onedrive/internal/cachev2/disk"

@@ -5,28 +5,23 @@ import (
 
 	"github.com/spf13/cobra"
 
-	driveservice "github.com/michaeldcanady/go-onedrive/internal/app/drive_service"
+	driveservice "github.com/michaeldcanady/go-onedrive/internal/app/file_service"
 	"github.com/michaeldcanady/go-onedrive/internal/di"
 	"github.com/michaeldcanady/go-onedrive/internal/logging"
 )
 
 const (
-	longLongFlag  = "long"
-	longShortFlag = "l"
-	longUsage     = "use long listing format"
-
 	allFlagLong  = "all"
 	allFlagShort = "a"
 	allFlagUsage = "show hidden items (names starting with '.')"
 
 	formatLongFlag  = "format"
 	formatShortFlag = "f"
-	formatUsage     = "output format: json|yaml"
+	formatUsage     = "output format: json|yaml|long|short"
 )
 
-func CreateLSCmd(c *di.Container1) *cobra.Command {
+func CreateLSCmd(c *di.Container) *cobra.Command {
 	var (
-		long   bool
 		all    bool
 		format string
 	)
@@ -35,29 +30,32 @@ func CreateLSCmd(c *di.Container1) *cobra.Command {
 		Use:   "ls [path]",
 		Short: "List items in a OneDrive path",
 		Args:  cobra.MaximumNArgs(1),
+
 		RunE: func(cmd *cobra.Command, args []string) error {
 			logger, _ := c.LoggerService.GetLogger("cli")
 			ctx := cmd.Context()
 
-			fs, err := c.FileService(ctx)
+			// Load services
+			fs, err := c.FileSystemService(ctx)
 			if err != nil {
 				return fmt.Errorf("failed to initialize filesystem service: %w", err)
 			}
 
-			ds, err := c.DriveService2(ctx)
+			ds, err := c.DriveService(ctx)
 			if err != nil {
-				return fmt.Errorf("failed to initialize driveservice service: %w", err)
+				return fmt.Errorf("failed to initialize drive service: %w", err)
 			}
 
-			// for now only supports user's personal drive
+			// Resolve working drive (for now: personal drive)
 			drive, err := ds.ResolvePersonalDrive(ctx)
 			if err != nil {
-				return fmt.Errorf("failed to resolve drive %s: %w", "OneDrive", err)
+				return fmt.Errorf("failed to resolve personal drive: %w", err)
 			}
 			if drive == nil {
 				return fmt.Errorf("no working drive selected")
 			}
 
+			// Determine path
 			path := ""
 			if len(args) == 1 {
 				path = args[0]
@@ -66,16 +64,17 @@ func CreateLSCmd(c *di.Container1) *cobra.Command {
 			logger.Debug("ls invoked",
 				logging.String("drive", drive.ID),
 				logging.String("path", path),
-				logging.Bool("long", long),
+				logging.String("format", format),
 				logging.Bool("all", all),
 			)
 
-			var items []*driveservice.DriveItem
-
+			// Resolve item
 			item, err := fs.ResolveItem(ctx, drive.ID, path)
 			if err != nil {
 				return handleDomainError("ls", path, err)
 			}
+
+			var items []*driveservice.DriveItem
 
 			if !item.IsFolder {
 				items = []*driveservice.DriveItem{item}
@@ -86,33 +85,23 @@ func CreateLSCmd(c *di.Container1) *cobra.Command {
 				}
 			}
 
+			// Filter hidden
 			if !all {
-				logger.Debug("filtering items")
 				items = filterHiddenDomain(items)
 			}
 
+			// Sort
 			sortDomainItems(items)
 
-			switch format {
-			case "":
-				if long {
-					printLongDomain(items)
-				} else {
-					printShortDomain(items)
-				}
-			case "json":
-				return printJSON(items)
-			case "yaml", "yml":
-				return printYAML(items)
-			default:
-				return fmt.Errorf("invalid format: %s", format)
+			formatter, err := NewFormatterFactory().Create(format)
+			if err != nil {
+				return err
 			}
 
-			return nil
+			return formatter.Format(items)
 		},
 	}
 
-	cmd.Flags().BoolVarP(&long, longLongFlag, longShortFlag, false, longUsage)
 	cmd.Flags().BoolVarP(&all, allFlagLong, allFlagShort, false, allFlagUsage)
 	cmd.Flags().StringVarP(&format, formatLongFlag, formatShortFlag, "", formatUsage)
 

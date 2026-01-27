@@ -35,7 +35,7 @@ Examples:
 `
 )
 
-func CreateRootCmd(container *di.Container1) (*cobra.Command, error) {
+func CreateRootCmd(container *di.Container) (*cobra.Command, error) {
 	var (
 		level   string
 		config  string

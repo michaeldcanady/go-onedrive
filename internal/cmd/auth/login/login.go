@@ -16,9 +16,7 @@ import (
 const (
 	FilesReadWriteAllScope = "Files.ReadWrite.All"
 	UserReadScope          = "User.Read"
-	SitesReadWriteAllScope = "Sites.ReadWrite.All"
 	OfflineAccessScope     = "offline_access"
-	AuthConfig             = "auth"
 
 	maxAuthAttempts = 3
 
@@ -30,7 +28,7 @@ const (
 	forceUsage     = "Force re-authentication even if a valid profile exists"
 )
 
-func CreateLoginCmd(container *di.Container1) *cobra.Command {
+func CreateLoginCmd(container *di.Container) *cobra.Command {
 	var (
 		showToken bool
 		force     bool
@@ -40,52 +38,58 @@ func CreateLoginCmd(container *di.Container1) *cobra.Command {
 		Use:   "login",
 		Short: "Authenticate with OneDrive",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			logger, err := container.LoggerService.GetLogger("cli")
+			logger, _ := container.LoggerService.GetLogger("cli")
 
 			ctx := cmd.Context()
 			if ctx == nil {
 				ctx = context.Background()
 			}
 
-			credentialService, err := container.CredentialService(ctx)
+			// Load providers
+			credProvider, err := container.CredentialProvider(ctx)
 			if err != nil {
-				logger.Error("unable to initialize credential service", logging.String("error", err.Error()))
-				return errors.Join(errors.New("unable to initialize credential service"), err)
+				logger.Error("failed to initialize credential provider", logging.String("error", err.Error()))
+				return fmt.Errorf("failed to initialize credential provider: %w", err)
 			}
 
 			cacheService, err := container.CacheService(ctx)
 			if err != nil {
-				logger.Error("unable to initialize cache service", logging.String("error", err.Error()))
+				logger.Warn("cache service unavailable", logging.String("error", err.Error()))
 			}
 
-			var profile *azidentity.AuthenticationRecord
+			profileName := container.Options.ProfileName
+
+			// Load cached authentication record (if any)
+			var record azidentity.AuthenticationRecord
 			if cacheService != nil {
-				// Load existing profile
-				record, err := cacheService.GetProfile(ctx, container.Options.ProfileName)
-				if err != nil {
-					logger.Warn("Unable to load profile", logging.String("error", err.Error()))
+				rec, err := cacheService.GetProfile(ctx, profileName)
+				if err == nil {
+					record = rec
+				} else {
+					logger.Warn("no cached authentication record found", logging.String("error", err.Error()))
 				}
-				profile = &record
-			} else {
-				logger.Warn("any authentication records will not be cached")
 			}
 
-			// Load credential provider (reactive chain starts here)
-			cred, err := credentialService.LoadCredential(ctx, container.Options.ProfileName)
+			// Create credential (may include cached record)
+			cred, err := credProvider.Credential(ctx, profileName)
 			if err != nil {
-				return fmt.Errorf("failed to initialize credential: %w", err)
+				logger.Error("failed to create credential", logging.String("error", err.Error()))
+				return fmt.Errorf("failed to create credential: %w", err)
 			}
 
-			authenticator, ok := cred.(Authenticator)
+			// Ensure credential supports explicit authentication
+			authenticator, ok := cred.(interface {
+				Authenticate(context.Context, *policy.TokenRequestOptions) (azidentity.AuthenticationRecord, error)
+			})
 			if !ok {
+				logger.Error("configured credential does not support explicit authentication")
 				return fmt.Errorf("configured credential does not support explicit authentication")
 			}
 
-			options := &policy.TokenRequestOptions{
+			tokenOpts := &policy.TokenRequestOptions{
 				Scopes: []string{
 					FilesReadWriteAllScope,
 					UserReadScope,
-					//OfflineAccessScope,
 				},
 				EnableCAE: true,
 			}
@@ -93,41 +97,43 @@ func CreateLoginCmd(container *di.Container1) *cobra.Command {
 			var token azcore.AccessToken
 			var success bool
 
-			for range maxAuthAttempts {
-				needsAuth := (profile == nil || isEmptyRecord(*profile)) || force
+			for attempt := 0; attempt < maxAuthAttempts; attempt++ {
+				needsAuth := force || isEmptyRecord(record)
+
 				if needsAuth {
 					logger.Info("Starting authentication flow...")
 
-					record, err := authenticator.Authenticate(ctx, options)
+					newRecord, err := authenticator.Authenticate(ctx, tokenOpts)
 					if err != nil {
-						logger.Error("authentication failed", logging.String("error", err.Error()))
+						logger.Error("failed authentication", logging.String("error", err.Error()))
 						return fmt.Errorf("authentication failed: %w", err)
 					}
 
+					record = newRecord
+
+					// Save updated record
 					if cacheService != nil {
-						if err := cacheService.SetProfile(ctx, container.Options.ProfileName, record); err != nil {
-							return fmt.Errorf("unable to save profile: %w", err)
+						if err := cacheService.SetProfile(ctx, profileName, record); err != nil {
+							logger.Warn("failed to cache authentication record", logging.String("error", err.Error()))
 						}
-					} else {
-						logger.Warn("authentication record not cached")
 					}
 
-					profile = &record
-
-					cred, err = credentialService.LoadCredential(ctx, container.Options.ProfileName)
+					// Reload credential with updated record
+					cred, err = credProvider.Credential(ctx, profileName)
 					if err != nil {
+						logger.Error("failed to reload credential", logging.String("error", err.Error()))
 						return fmt.Errorf("failed to reload credential: %w", err)
 					}
 				}
 
-				token, err = cred.GetToken(ctx, *options)
+				token, err = cred.GetToken(ctx, *tokenOpts)
 				if err != nil {
 					if isAuthRequired(err) {
-						logger.Warn("Authentication required to obtain access token; clearing cached profile",
-							logging.String("error", err.Error()))
-						profile = nil
+						logger.Warn("token request requires authentication; retrying")
+						record = azidentity.AuthenticationRecord{} // force re-auth
 						continue
 					}
+					logger.Error("failed to retrieve token", logging.String("error", err.Error()))
 					return fmt.Errorf("failed to retrieve token: %w", err)
 				}
 
@@ -136,6 +142,7 @@ func CreateLoginCmd(container *di.Container1) *cobra.Command {
 			}
 
 			if !success {
+				logger.Error("authentication failed after max attempts", logging.Int("attempts", maxAuthAttempts))
 				return fmt.Errorf("authentication failed after %d attempts", maxAuthAttempts)
 			}
 
@@ -150,10 +157,10 @@ func CreateLoginCmd(container *di.Container1) *cobra.Command {
 
 	cmd.Flags().BoolVar(&showToken, showTokenLongFlag, false, showTokenUsage)
 	cmd.Flags().BoolVarP(&force, forceLongFlag, forceShortFlag, false, forceUsage)
+
 	return cmd
 }
 
-// isEmptyRecord checks whether an AuthenticationRecord is effectively empty.
 func isEmptyRecord(r azidentity.AuthenticationRecord) bool {
 	return r.ClientID == "" &&
 		r.TenantID == "" &&

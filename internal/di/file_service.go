@@ -3,7 +3,7 @@ package di
 import (
 	"context"
 
-	driveservice "github.com/michaeldcanady/go-onedrive/internal/app/drive_service"
+	driveservice "github.com/michaeldcanady/go-onedrive/internal/app/file_service"
 )
 
 type FileSystemService interface {

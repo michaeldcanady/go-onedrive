@@ -9,16 +9,16 @@ import (
 	"github.com/michaeldcanady/go-onedrive/internal/logging"
 )
 
-type driveService struct {
+type Service struct {
 	graph  clienter
 	logger logging.Logger
 }
 
-func NewDriveService(graph clienter, log logging.Logger) *driveService {
-	return &driveService{graph: graph, logger: log}
+func NewDriveService(graph clienter, log logging.Logger) *Service {
+	return &Service{graph: graph, logger: log}
 }
 
-func (s *driveService) ListDrives(ctx context.Context) ([]*Drive, error) {
+func (s *Service) ListDrives(ctx context.Context) ([]*Drive, error) {
 	client, err := s.graph.Client(ctx)
 	if err != nil {
 		return nil, err
@@ -38,7 +38,7 @@ func (s *driveService) ListDrives(ctx context.Context) ([]*Drive, error) {
 	return out, nil
 }
 
-func (s *driveService) ResolveDrive(ctx context.Context, driveRef string) (*Drive, error) {
+func (s *Service) ResolveDrive(ctx context.Context, driveRef string) (*Drive, error) {
 	drives, err := s.ListDrives(ctx)
 	if err != nil {
 		return nil, err
@@ -53,7 +53,7 @@ func (s *driveService) ResolveDrive(ctx context.Context, driveRef string) (*Driv
 	return nil, errors.New("not found")
 }
 
-func (s *driveService) ResolvePersonalDrive(ctx context.Context) (*Drive, error) {
+func (s *Service) ResolvePersonalDrive(ctx context.Context) (*Drive, error) {
 	client, err := s.graph.Client(ctx)
 	if err != nil {
 		return nil, err

@@ -11,9 +11,9 @@ import (
 	clientservice "github.com/michaeldcanady/go-onedrive/internal/app/client_service"
 	configurationservice "github.com/michaeldcanady/go-onedrive/internal/app/configuration_service"
 	credentialservice "github.com/michaeldcanady/go-onedrive/internal/app/credential_service"
-	driveservice "github.com/michaeldcanady/go-onedrive/internal/app/drive_service"
 	driveservice2 "github.com/michaeldcanady/go-onedrive/internal/app/drive_service2"
 	environmentservice "github.com/michaeldcanady/go-onedrive/internal/app/environment_service"
+	driveservice "github.com/michaeldcanady/go-onedrive/internal/app/file_service"
 	loggerservice "github.com/michaeldcanady/go-onedrive/internal/app/logger_service"
 	"github.com/michaeldcanady/go-onedrive/internal/event"
 

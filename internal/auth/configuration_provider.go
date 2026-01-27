@@ -7,5 +7,5 @@ import (
 )
 
 type ConfigProvider interface {
-	GetConfiguration(ctx context.Context, profile string) (*config.Configuration3, error)
+	GetConfiguration(ctx context.Context, profile string) (config.Configuration3, error)
 }

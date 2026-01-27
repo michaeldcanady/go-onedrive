@@ -4,33 +4,29 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/michaeldcanady/go-onedrive/internal/auth"
 	"github.com/michaeldcanady/go-onedrive/internal/logging"
 	msgraphsdkgo "github.com/microsoftgraph/msgraph-sdk-go"
 )
 
 type GraphClientProvider struct {
-	creds  auth.CredentialProvider
+	creds  CredentialProvider
 	client *msgraphsdkgo.GraphServiceClient
 	log    logging.Logger
 }
 
-func NewGraphClientProvider(
-	creds auth.CredentialProvider,
-	log logging.Logger,
-) *GraphClientProvider {
+func NewGraphClientProvider(creds CredentialProvider, log logging.Logger) *GraphClientProvider {
 	return &GraphClientProvider{
 		creds: creds,
 		log:   log,
 	}
 }
 
-func (p *GraphClientProvider) Client(ctx context.Context) (*msgraphsdkgo.GraphServiceClient, error) {
+func (p *GraphClientProvider) ProfileClient(ctx context.Context, profileName string) (*msgraphsdkgo.GraphServiceClient, error) {
 	if p.client != nil {
 		return p.client, nil
 	}
 
-	cred, err := p.creds.Credential(ctx, "default")
+	cred, err := p.creds.Credential(ctx, profileName)
 	if err != nil {
 		return nil, fmt.Errorf("load credential: %w", err)
 	}
@@ -48,4 +44,8 @@ func (p *GraphClientProvider) Client(ctx context.Context) (*msgraphsdkgo.GraphSe
 
 	p.client = client
 	return client, nil
+}
+
+func (p *GraphClientProvider) Client(ctx context.Context) (*msgraphsdkgo.GraphServiceClient, error) {
+	return p.ProfileClient(ctx, "default")
 }

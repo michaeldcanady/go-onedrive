@@ -8,7 +8,7 @@ import (
 	"slices"
 	"strings"
 
-	driveservice "github.com/michaeldcanady/go-onedrive/internal/app/drive_service"
+	driveservice "github.com/michaeldcanady/go-onedrive/internal/app/file_service"
 	"golang.org/x/term"
 )
 

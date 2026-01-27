@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	driveservice "github.com/michaeldcanady/go-onedrive/internal/app/drive_service"
+	driveservice "github.com/michaeldcanady/go-onedrive/internal/app/file_service"
 	"go.yaml.in/yaml/v3"
 )
 
