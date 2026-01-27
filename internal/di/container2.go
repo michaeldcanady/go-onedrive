@@ -82,7 +82,7 @@ func NewContainer1() (*Container1, error) {
 	}
 
 	// default level; can be refined using viper in lazy paths
-	c.LoggerService, err = loggerservice.New("info", logDir)
+	c.LoggerService, err = loggerservice.New("info", logDir, newZapLogger)
 	if err != nil {
 		return nil, err
 	}

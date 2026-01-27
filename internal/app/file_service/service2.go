@@ -11,6 +11,7 @@ import (
 	msgraphsdkgo "github.com/microsoftgraph/msgraph-sdk-go"
 	"github.com/microsoftgraph/msgraph-sdk-go/drives"
 	"github.com/microsoftgraph/msgraph-sdk-go/models"
+	"github.com/microsoftgraph/msgraph-sdk-go/models/odataerrors"
 )
 
 type Service2 struct {
@@ -39,6 +40,21 @@ func (s *Service2) ResolveItem(ctx context.Context, driveID, path string) (*Driv
 	// Internally calls your existing getDriveRoot logic
 	item, err := s.getDriveRoot(ctx, driveID, normalizePath(path))
 	if err != nil {
+		var odataErr odataerrors.ODataErrorable
+		errors.As(err, &odataErr)
+		mainErr := odataErr.GetErrorEscaped()
+		errDetails := mainErr.GetDetails()
+		details := make([]logging.Field, len(errDetails)+1)
+		details[0] = logging.String("msg", *mainErr.GetMessage())
+		for i, errDetail := range errDetails {
+			i = i + 1
+			detail := logging.String(fmt.Sprintf("detail[%d]", i), *errDetail.GetMessage())
+			details[i] = detail
+		}
+
+		s.logger.Error("failed to get drive root",
+			details...,
+		)
 		return nil, mapGraphError(err)
 	}
 

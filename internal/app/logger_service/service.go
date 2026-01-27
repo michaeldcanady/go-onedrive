@@ -1,6 +1,7 @@
 package loggerservice
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"maps"
@@ -17,7 +18,7 @@ type Service struct {
 	factory  loggerFactory
 }
 
-func New(logLevel string, logsHome string) (*Service, error) {
+func New(logLevel string, logsHome string, factory loggerFactory) (*Service, error) {
 
 	if err := os.MkdirAll(logsHome, os.ModePerm); err != nil {
 		return nil, err
@@ -27,7 +28,7 @@ func New(logLevel string, logsHome string) (*Service, error) {
 		loggers:  map[string]logging.Logger{},
 		logLevel: logLevel,
 		logsHome: logsHome,
-		factory:  newZapLogger,
+		factory:  factory,
 	}, nil
 }
 
@@ -41,6 +42,14 @@ func (s *Service) CreateLogger(id string) (logging.Logger, error) {
 	s.loggers[id] = logger
 
 	return logger, nil
+}
+
+func (s *Service) GetContextLogger(ctx context.Context, name string) (logging.Logger, error) {
+	l, err := s.GetLogger(name)
+	if err != nil {
+		return nil, err
+	}
+	return l.WithContext(ctx), nil
 }
 
 func (s *Service) SetAllLevel(level string) {

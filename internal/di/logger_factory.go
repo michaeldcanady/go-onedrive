@@ -1,4 +1,4 @@
-package loggerservice
+package di
 
 import (
 	"fmt"
@@ -7,6 +7,8 @@ import (
 	"go.uber.org/zap"
 )
 
+// TODO: Make LoggerProvider
+// TODO: FIGURE OUT WHY IT'S LOGGING TO STANDARD OUT!
 func newZapLogger(logLevel string, logsHome string) (logging.Logger, error) {
 	cfg := zap.NewProductionConfig()
 

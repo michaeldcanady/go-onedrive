@@ -1,8 +1,10 @@
 package logging
 
 import (
+	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -15,23 +17,26 @@ var _ Logger = (*ZapLogAdapter)(nil)
 type ZapLogAdapter struct {
 	logger *zap.Logger
 	level  *zap.AtomicLevel
+	fields []Field
 }
 
 // convertFieldsToZap converts a slice of custom Field types to zap.Fields.
 func convertFieldsToZap(fields ...Field) ([]zap.Field, error) {
 	zapFields := make([]zap.Field, len(fields))
 	for index, field := range fields {
-		switch field.fieldType {
+		switch field.FieldType {
 		case FieldTypeString:
-			zapFields[index] = zap.String(field.key, field.value.(string))
+			zapFields[index] = zap.String(field.Key, field.Value.(string))
 		case FieldTypeInt:
-			zapFields[index] = zap.Int(field.key, field.value.(int))
+			zapFields[index] = zap.Int(field.Key, field.Value.(int))
 		case FieldTypeAny:
-			zapFields[index] = zap.Any(field.key, field.value)
+			zapFields[index] = zap.Any(field.Key, field.Value)
 		case FieldTypeBool:
-			zapFields[index] = zap.Bool(field.key, field.value.(bool))
+			zapFields[index] = zap.Bool(field.Key, field.Value.(bool))
+		case FieldTypeDuration:
+			zapFields[index] = zap.Duration(field.Key, field.Value.(time.Duration))
 		default:
-			return nil, fmt.Errorf("unknown field type: %v", field.fieldType)
+			return nil, fmt.Errorf("unknown field type: %v", field.FieldType)
 		}
 	}
 	return zapFields, nil
@@ -136,4 +141,57 @@ func (z *ZapLogAdapter) safeConvert(kv ...Field) []zap.Field {
 	}
 
 	return fields
+}
+
+func (z *ZapLogAdapter) WithContext(ctx context.Context) Logger {
+	ctxFields := FromContextFields(ctx)
+	if len(ctxFields) == 0 {
+		return z
+	}
+
+	// Convert map → []Field
+	newFields := make([]Field, 0, len(ctxFields))
+	for k, v := range ctxFields {
+		newFields = append(newFields, Any(k, v))
+	}
+
+	// Reuse the dedupe logic in With()
+	return z.With(newFields...)
+}
+
+func (z *ZapLogAdapter) With(fields ...Field) Logger {
+	if len(fields) == 0 {
+		return z
+	}
+
+	// Deduplicate against existing fields
+	newFields := make([]Field, 0, len(fields))
+	existing := make(map[string]bool)
+
+	for _, f := range z.fields {
+		existing[f.Key] = true
+	}
+
+	for _, f := range fields {
+		if !existing[f.Key] {
+			newFields = append(newFields, f)
+		}
+	}
+
+	// Convert to zap fields
+	zapFields, err := convertFieldsToZap(newFields...)
+	if err != nil {
+		z.logger.Sugar().Errorf("failed to convert fields in With: %v", err)
+		return z
+	}
+
+	// Build new logger
+	newZap := z.logger.With(zapFields...)
+
+	// Return new adapter with merged fields
+	return &ZapLogAdapter{
+		logger: newZap,
+		level:  z.level,
+		fields: append(z.fields, newFields...),
+	}
 }

@@ -1,31 +1,68 @@
 package logging
 
+import (
+	"context"
+	"time"
+)
+
 // Field represents a key-value pair to be logged, along with its type.
 type Field struct {
-	// key is the name of the field.
-	key string
-	// fieldType indicates the type of the field.
-	fieldType FieldType
-	// value holds the actual value of the field.
-	value any
+	// Key is the name of the field.
+	Key string
+	// FieldType indicates the type of the field.
+	FieldType FieldType
+	// Value holds the actual Value of the field.
+	Value any
 }
 
 // String creates a Field with a string value.
 func String(key, val string) Field {
-	return Field{key: key, fieldType: FieldTypeString, value: val}
+	return Field{Key: key, FieldType: FieldTypeString, Value: val}
 }
 
 // Int creates a Field with an integer value.
 func Int(key string, val int) Field {
-	return Field{key: key, fieldType: FieldTypeInt, value: val}
+	return Field{Key: key, FieldType: FieldTypeInt, Value: val}
 }
 
 // Any creates a Field with an arbitrary value.
 func Any(key string, val any) Field {
-	return Field{key: key, fieldType: FieldTypeAny, value: val}
+	return Field{Key: key, FieldType: FieldTypeAny, Value: val}
 }
 
 // Bool creates a Field with a boolean value.
 func Bool(key string, val bool) Field {
-	return Field{key: key, fieldType: FieldTypeBool, value: val}
+	return Field{Key: key, FieldType: FieldTypeBool, Value: val}
+}
+
+// Duration creates a Field with a boolean value.
+func Duration(key string, val time.Duration) Field {
+	return Field{Key: key, FieldType: FieldTypeDuration, Value: val}
+}
+
+type ctxKey struct{}
+
+type Fields map[string]any
+
+func WithFields(ctx context.Context, fields ...Field) context.Context {
+	existing := FromContextFields(ctx)
+	merged := make(Fields, len(existing)+len(fields))
+
+	for k, v := range existing {
+		merged[k] = v
+	}
+	for _, f := range fields {
+		merged[f.Key] = f.Value
+	}
+
+	return context.WithValue(ctx, ctxKey{}, merged)
+}
+
+func FromContextFields(ctx context.Context) Fields {
+	if v := ctx.Value(ctxKey{}); v != nil {
+		if f, ok := v.(Fields); ok {
+			return f
+		}
+	}
+	return Fields{}
 }

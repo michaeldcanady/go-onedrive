@@ -70,7 +70,7 @@ func NewContainer() (*Container, error) {
 		return nil, err
 	}
 
-	c.LoggerService, err = loggerservice.New("info", logDir)
+	c.LoggerService, err = loggerservice.New("info", logDir, newZapLogger)
 	if err != nil {
 		return nil, err
 	}
@@ -84,7 +84,7 @@ func NewContainer() (*Container, error) {
 
 func (c *Container) CacheService(ctx context.Context) (CacheService, error) {
 	c.cacheOnce.Do(func() {
-		logger, _ := c.LoggerService.CreateLogger("cache")
+		logger, _ := c.LoggerService.GetLogger("cache")
 
 		cacheDir, err := c.EnvironmentService.CacheDir(ctx)
 		if err != nil {

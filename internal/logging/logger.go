@@ -1,5 +1,7 @@
 package logging
 
+import "context"
+
 // Logger is an interface for logging messages with various severity levels.
 type Logger interface {
 	// Info logs a message at InfoLevel. The message includes any fields passed at the log site, as well as any fields accumulated on the logger.
@@ -13,4 +15,7 @@ type Logger interface {
 
 	// SetLevel Change the level of the logger.
 	SetLevel(level string)
+
+	With(fields ...Field) Logger
+	WithContext(ctx context.Context) Logger
 }
