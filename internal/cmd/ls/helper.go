@@ -6,24 +6,14 @@ import (
 	"fmt"
 	"os"
 	"slices"
-	"strings"
 
 	driveservice "github.com/michaeldcanady/go-onedrive/internal/app/file_service"
+	"github.com/michaeldcanady/go-onedrive/internal/fs"
 	"golang.org/x/term"
 )
 
-func filterHiddenDomain(items []*driveservice.DriveItem) []*driveservice.DriveItem {
-	out := items[:0]
-	for _, it := range items {
-		if !strings.HasPrefix(it.Name, ".") {
-			out = append(out, it)
-		}
-	}
-	return out
-}
-
-func sortDomainItems(items []*driveservice.DriveItem) {
-	slices.SortFunc(items, func(a, b *driveservice.DriveItem) int {
+func sortDomainItems(items []fs.Item) {
+	slices.SortFunc(items, func(a, b fs.Item) int {
 		return cmp.Compare(a.Name, b.Name)
 	})
 }

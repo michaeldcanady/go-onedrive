@@ -6,6 +6,7 @@ import (
 	"github.com/michaeldcanady/go-onedrive/internal/cmd/auth"
 	"github.com/michaeldcanady/go-onedrive/internal/cmd/ls"
 	"github.com/michaeldcanady/go-onedrive/internal/di"
+	"github.com/michaeldcanady/go-onedrive/internal/di2"
 	"github.com/michaeldcanady/go-onedrive/internal/logging"
 	"github.com/spf13/cobra"
 )
@@ -35,7 +36,7 @@ Examples:
 `
 )
 
-func CreateRootCmd(container *di.Container) (*cobra.Command, error) {
+func CreateRootCmd(container *di2.Container) (*cobra.Command, error) {
 	var (
 		level   string
 		config  string

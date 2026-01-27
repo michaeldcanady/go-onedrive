@@ -11,6 +11,7 @@ import (
 	driveservice2 "github.com/michaeldcanady/go-onedrive/internal/app/drive_service2"
 	environmentservice "github.com/michaeldcanady/go-onedrive/internal/app/environment_service"
 	loggerservice "github.com/michaeldcanady/go-onedrive/internal/app/logger_service"
+	"github.com/michaeldcanady/go-onedrive/internal/fs"
 
 	fileservice "github.com/michaeldcanady/go-onedrive/internal/app/file_service"
 	"github.com/michaeldcanady/go-onedrive/internal/auth"
@@ -56,6 +57,11 @@ type Container struct {
 	profileOnce sync.Once
 	profileSvc  CLIProfileService
 	profileErr  error
+
+	fileSystemOnce sync.Once
+	// TODO: make an interface
+	fileSystemSvc fs.Service
+	fileSystemErr error
 }
 
 func NewContainer() (*Container, error) {
@@ -234,4 +240,12 @@ func (c *Container) ProfileService(ctx context.Context) (CLIProfileService, erro
 		c.profileSvc = cliprofileservicego.New(cache, logger, configDir)
 	})
 	return c.profileSvc, c.profileErr
+}
+
+func (c *Container) FileService() (fs.Service, error) {
+	c.fileSystemOnce.Do(func() {
+
+	})
+
+	return c.fileSystemSvc, c.fileSystemErr
 }
