@@ -18,7 +18,7 @@ func realMain() int {
 	ctx := context.Background()
 
 	// Create lightweight container (no heavy services yet)
-	container, err := di.NewContainer1()
+	container, err := di.NewContainer()
 	if err != nil {
 		fmt.Print("ERROR: failed to initialize container")
 		return 1
