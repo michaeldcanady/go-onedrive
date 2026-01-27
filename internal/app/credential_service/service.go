@@ -11,10 +11,6 @@ import (
 	"github.com/michaeldcanady/go-onedrive/internal/logging"
 )
 
-const (
-	defaultProfileKey = "default"
-)
-
 type Service struct {
 	cacheService  CacheService
 	credential    azcore.TokenCredential
