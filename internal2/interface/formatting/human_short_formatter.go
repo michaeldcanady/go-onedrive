@@ -3,7 +3,6 @@ package formatting
 import (
 	"fmt"
 	"io"
-	"sort"
 
 	"github.com/michaeldcanady/go-onedrive/internal2/domain/fs"
 )
@@ -13,9 +12,10 @@ type HumanShortFormatter struct {
 }
 
 func (f *HumanShortFormatter) Format(w io.Writer, items []fs.Item) error {
-	sort.Slice(items, func(i, j int) bool { return items[i].Name < items[j].Name })
-
-	width := f.term.Width()
+	var width = 30
+	if f.term != nil {
+		width = f.term.Width()
+	}
 	colWidth := 0
 
 	for _, it := range items {

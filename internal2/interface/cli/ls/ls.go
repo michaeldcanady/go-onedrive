@@ -1,14 +1,12 @@
 package ls
 
 import (
-	"cmp"
 	"os"
-	"slices"
 
 	"github.com/michaeldcanady/go-onedrive/internal2/domain/di"
-	"github.com/michaeldcanady/go-onedrive/internal2/domain/fs"
 	domainfs "github.com/michaeldcanady/go-onedrive/internal2/domain/fs"
 	"github.com/michaeldcanady/go-onedrive/internal2/interface/formatting"
+	"github.com/michaeldcanady/go-onedrive/internal2/interface/sorting"
 	"github.com/spf13/cobra"
 )
 
@@ -26,6 +24,10 @@ func CreateLSCmd(c di.Container) *cobra.Command {
 	var (
 		format string
 		all    bool
+
+		sortType     string            = "property"
+		sortProperty string            = "Name"
+		sortOrder    sorting.Direction = sorting.DirectionAscending
 	)
 
 	cmd := &cobra.Command{
@@ -46,9 +48,16 @@ func CreateLSCmd(c di.Container) *cobra.Command {
 				return err
 			}
 
-			slices.SortFunc(fsItems, func(a, b fs.Item) int {
-				return cmp.Compare(a.Name, b.Name)
-			})
+			sortingOpts := []sorting.SortingOption{sorting.WithDirection(sortOrder), sorting.WithField(sortProperty)}
+
+			sorter, err := sorting.NewSorterFactory().Create(sortType, sortingOpts...)
+			if err != nil {
+				return err
+			}
+			fsItems, err = sorter.Sort(fsItems)
+			if err != nil {
+				return err
+			}
 
 			formatter, err := formatting.NewFormatterFactory().Create(format)
 			if err != nil {

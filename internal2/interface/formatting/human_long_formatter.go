@@ -3,20 +3,22 @@ package formatting
 import (
 	"fmt"
 	"io"
-	"sort"
 
 	domainfs "github.com/michaeldcanady/go-onedrive/internal2/domain/fs"
+)
+
+const (
+	dateFormat = "2006-01-02 15:04"
+	emptySize  = "-"
 )
 
 type HumanLongFormatter struct{}
 
 func (f *HumanLongFormatter) Format(w io.Writer, items []domainfs.Item) error {
-	sort.Slice(items, func(i, j int) bool { return items[i].Name < items[j].Name })
-
 	for _, it := range items {
-		mod := it.Modified.Format("2006-01-02 15:04")
+		mod := it.Modified.Format(dateFormat)
 
-		size := "-"
+		size := emptySize
 		if it.Type == domainfs.ItemTypeFile {
 			size = fmt.Sprintf("%d", it.Size)
 		}
