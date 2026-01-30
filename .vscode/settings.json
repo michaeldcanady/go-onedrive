@@ -1,5 +1,6 @@
 {
     "cSpell.words": [
+        "applogging",
         "azcore",
         "azidentity",
         "cacheabstractions",
@@ -25,6 +26,7 @@
         "infraauth",
         "infracommon",
         "infrafile",
+        "infralogging",
         "Itemable",
         "jsonserialization",
         "Kiota",

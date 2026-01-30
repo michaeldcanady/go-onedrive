@@ -64,7 +64,7 @@ func (s *LoggerService) SetAllLevel(level string) {
 func (s *LoggerService) GetLogger(id string) (logging.Logger, error) {
 	logger, ok := s.loggers[id]
 	if !ok {
-		return nil, errors.New("unknown logger id")
+		return nil, ErrUnknownLogger
 	}
 	return logger, nil
 }
