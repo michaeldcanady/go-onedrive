@@ -1,0 +1,158 @@
+package di
+
+import (
+	"path/filepath"
+	"sync"
+
+	"github.com/michaeldcanady/go-onedrive/internal2/app/auth"
+	"github.com/michaeldcanady/go-onedrive/internal2/app/cache"
+	"github.com/michaeldcanady/go-onedrive/internal2/app/config"
+	"github.com/michaeldcanady/go-onedrive/internal2/app/drive"
+	"github.com/michaeldcanady/go-onedrive/internal2/app/fs"
+
+	"github.com/michaeldcanady/go-onedrive/internal2/app/common/environment"
+	"github.com/michaeldcanady/go-onedrive/internal2/app/common/logging"
+	domainauth "github.com/michaeldcanady/go-onedrive/internal2/domain/auth"
+	domaincache "github.com/michaeldcanady/go-onedrive/internal2/domain/cache"
+	domainenv "github.com/michaeldcanady/go-onedrive/internal2/domain/common/environment"
+	domaingraph "github.com/michaeldcanady/go-onedrive/internal2/domain/common/graph"
+	domainlogger "github.com/michaeldcanady/go-onedrive/internal2/domain/common/logger"
+	domainconfig "github.com/michaeldcanady/go-onedrive/internal2/domain/config"
+	"github.com/michaeldcanady/go-onedrive/internal2/domain/di"
+	domainfile "github.com/michaeldcanady/go-onedrive/internal2/domain/file"
+	domainfs "github.com/michaeldcanady/go-onedrive/internal2/domain/fs"
+	domainprofile "github.com/michaeldcanady/go-onedrive/internal2/domain/profile"
+	infraauth "github.com/michaeldcanady/go-onedrive/internal2/infra/auth"
+	"github.com/michaeldcanady/go-onedrive/internal2/infra/common/graph"
+	"github.com/michaeldcanady/go-onedrive/internal2/infra/file"
+)
+
+var _ di.Container = (*Container)(nil)
+
+type Container struct {
+	authOnce    sync.Once
+	authService domainauth.AuthService
+
+	environmentOnce    sync.Once
+	environmentService domainenv.EnvironmentService
+
+	fsOnce    sync.Once
+	fsService domainfs.Service
+
+	loggerOnce    sync.Once
+	loggerService domainlogger.LoggerService
+
+	profileOnce    sync.Once
+	profileService domainprofile.ProfileService
+
+	cacheOnce    sync.Once
+	cacheService domaincache.CacheService
+
+	configOnce    sync.Once
+	configService domainconfig.ConfigService
+
+	fileOnce    sync.Once
+	fileService domainfile.FileService
+
+	clientOnce    sync.Once
+	clientProvide clienter
+}
+
+func NewContainer() *Container {
+	return &Container{}
+}
+
+// File implements [di.Container].
+func (c *Container) File() domainfile.FileService {
+	c.fileOnce.Do(func() {
+		loggerService := c.Logger()
+		logger, _ := loggerService.CreateLogger("file")
+
+		c.fileService = file.New2(c.clientProvider(), logger, c.CacheService())
+	})
+	return c.fileService
+}
+
+// Config implements [di.Container].
+func (c *Container) Config() domainconfig.ConfigService {
+	c.configOnce.Do(func() {
+		loggerService := c.Logger()
+		logger, _ := loggerService.CreateLogger("config")
+
+		c.configService = config.New2(c.CacheService(), config.NewYAMLLoader(), logger)
+	})
+	return c.configService
+}
+
+func (c *Container) CacheService() domaincache.CacheService {
+	c.cacheOnce.Do(func() {
+		environmentService := c.EnvironmentService()
+		cachePath, _ := environmentService.CacheDir()
+
+		loggerService := c.Logger()
+		logger, _ := loggerService.CreateLogger("cache")
+
+		c.cacheService, _ = cache.New(filepath.Join(cachePath, "profile.cache"), filepath.Join(cachePath, "drive.cache"), filepath.Join(cachePath, "file.cache"), logger)
+	})
+	return c.cacheService
+}
+
+// Auth implements [di.Container].
+func (c *Container) Auth() domainauth.AuthService {
+	c.authOnce.Do(func() {
+		credentialFactory := infraauth.NewDefaultCredentialFactory()
+
+		loggerService := c.Logger()
+		logger, _ := loggerService.CreateLogger("auth")
+
+		c.authService = auth.NewService(credentialFactory, c.CacheService(), c.Config(), logger)
+	})
+
+	return c.authService
+}
+
+func (c *Container) clientProvider() domaingraph.ClientProvider {
+	c.clientOnce.Do(func() {
+		loggerService := c.Logger()
+		graphLogger, _ := loggerService.CreateLogger("graph")
+		c.clientProvide = graph.New(c.Auth(), graphLogger)
+	})
+
+	return c.clientProvide
+}
+
+// EnvironmentService implements [di.Container].
+func (c *Container) EnvironmentService() domainenv.EnvironmentService {
+	c.environmentOnce.Do(func() {
+		c.environmentService = environment.New2("odc")
+	})
+	return c.environmentService
+}
+
+// FS implements [di.Container].
+func (c *Container) FS() domainfs.Service {
+	c.fsOnce.Do(func() {
+		loggerService := c.Logger()
+		logger, _ := loggerService.CreateLogger("filesystem")
+
+		resolver := drive.NewDriverResolverAdapter(drive.NewDriveService(c.clientProvider(), logger))
+
+		c.fsService = fs.NewService(c.File(), resolver)
+	})
+	return c.fsService
+}
+
+// Logger implements [di.Container].
+func (c *Container) Logger() domainlogger.LoggerService {
+	c.loggerOnce.Do(func() {
+
+		logHome, _ := c.EnvironmentService().LogDir()
+		c.loggerService, _ = logging.NewLoggerService("info", logHome, logging.NewLoggerProvider())
+	})
+	return c.loggerService
+}
+
+// Profile implements [di.Container].
+func (c *Container) Profile() domainprofile.ProfileService {
+	panic("unimplemented")
+}

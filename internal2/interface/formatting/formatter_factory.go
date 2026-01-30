@@ -16,7 +16,7 @@ func (f *FormatterFactory) Create(format string) (domainformatting.OutputFormatt
 	}
 	switch format {
 	case "short", "":
-		return &HumanShortFormatter{}, nil
+		return &HumanShortFormatter{term: Terminal{}}, nil
 	case "long":
 		return &HumanLongFormatter{}, nil
 	case "json":

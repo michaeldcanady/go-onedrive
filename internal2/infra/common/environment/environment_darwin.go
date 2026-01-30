@@ -1,6 +1,6 @@
 //go:build darwin
 
-package environmentservice
+package environment
 
 import (
 	"os"

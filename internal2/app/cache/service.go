@@ -7,13 +7,13 @@ import (
 	"path/filepath"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
-	"github.com/michaeldcanady/go-onedrive/internal/logging"
 	domaincache "github.com/michaeldcanady/go-onedrive/internal2/domain/cache"
 	domainprofile "github.com/michaeldcanady/go-onedrive/internal2/domain/profile"
 	"github.com/michaeldcanady/go-onedrive/internal2/infra/cache/abstractions"
 	"github.com/michaeldcanady/go-onedrive/internal2/infra/cache/core"
 	"github.com/michaeldcanady/go-onedrive/internal2/infra/cache/disk"
 	"github.com/michaeldcanady/go-onedrive/internal2/infra/cache/memory"
+	"github.com/michaeldcanady/go-onedrive/internal2/infra/common/logging"
 	"github.com/michaeldcanady/go-onedrive/internal2/infra/config"
 )
 

@@ -6,9 +6,10 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
-	"github.com/michaeldcanady/go-onedrive/internal/event"
-	"github.com/michaeldcanady/go-onedrive/internal/logging"
+
 	"github.com/michaeldcanady/go-onedrive/internal2/infra/cache/core"
+	"github.com/michaeldcanady/go-onedrive/internal2/infra/common/event"
+	"github.com/michaeldcanady/go-onedrive/internal2/infra/common/logging"
 )
 
 type Service struct {

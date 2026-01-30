@@ -1,12 +1,12 @@
-package clientservice
+package graph
 
 import (
 	"context"
 	"errors"
-	"fmt"
 
-	"github.com/michaeldcanady/go-onedrive/internal/event"
-	"github.com/michaeldcanady/go-onedrive/internal/logging"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
+	"github.com/michaeldcanady/go-onedrive/internal2/infra/common/logging"
+
 	msgraphsdkgo "github.com/microsoftgraph/msgraph-sdk-go"
 )
 
@@ -17,16 +17,14 @@ const (
 )
 
 type GraphClientService struct {
-	credentialService credentialLoader
+	credentialService azcore.TokenCredential
 	client            *msgraphsdkgo.GraphServiceClient
-	publisher         event.Publisher
 	logger            logging.Logger
 }
 
-func New(credSvc credentialLoader, publisher event.Publisher, logger logging.Logger) *GraphClientService {
+func New(credSvc azcore.TokenCredential, logger logging.Logger) *GraphClientService {
 	return &GraphClientService{
 		credentialService: credSvc,
-		publisher:         publisher,
 		logger:            logger,
 	}
 }
@@ -38,16 +36,10 @@ func (s *GraphClientService) Client(ctx context.Context) (*msgraphsdkgo.GraphSer
 		return s.client, nil
 	}
 
-	cred, err := s.credentialService.LoadCredential(ctx, "default")
-	if err != nil {
-		s.logger.Error("failed to load credential", logging.Any("error", err))
-		return nil, fmt.Errorf("failed to load credential: %w", err)
-	}
-
 	s.logger.Info("credential loaded successfully for graph client")
 
 	client, err := msgraphsdkgo.NewGraphServiceClientWithCredentials(
-		cred,
+		s.credentialService,
 		[]string{
 			FilesReadWriteAllScope,
 			UserReadScope,
@@ -63,15 +55,6 @@ func (s *GraphClientService) Client(ctx context.Context) (*msgraphsdkgo.GraphSer
 
 	s.logger.Info("graph client initialized successfully")
 	s.logger.Debug("graph client instance", logging.Any("client", client))
-
-	if s.publisher == nil {
-		s.logger.Warn("event publisher is nil; skipping graph client initialized event publish")
-	} else {
-		s.logger.Debug("publishing graph client initialized event")
-		if err := s.publisher.Publish(ctx, newGraphClientInitializedEvent()); err != nil {
-			s.logger.Warn("failed to publish graph client initialized event", logging.Any("error", err))
-		}
-	}
 
 	return client, nil
 }

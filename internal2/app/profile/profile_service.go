@@ -6,9 +6,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/michaeldcanady/go-onedrive/internal/logging"
 	domainprofile "github.com/michaeldcanady/go-onedrive/internal2/domain/profile"
 	"github.com/michaeldcanady/go-onedrive/internal2/infra/cache/core"
+	"github.com/michaeldcanady/go-onedrive/internal2/infra/common/logging"
 )
 
 type ProfileService struct {

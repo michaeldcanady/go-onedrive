@@ -5,8 +5,8 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/michaeldcanady/go-onedrive/internal/logging"
 	"github.com/michaeldcanady/go-onedrive/internal2/infra/cache/core"
+	"github.com/michaeldcanady/go-onedrive/internal2/infra/common/logging"
 	"github.com/michaeldcanady/go-onedrive/internal2/infra/config"
 )
 
@@ -83,7 +83,7 @@ func (s *ConfigService) GetConfiguration(ctx context.Context, name string) (conf
 		return config.Configuration3{}, err
 	}
 
-	s.logger.Info("config not already cached", logging.String("name", name))
+	s.logger.Info("config not cached", logging.String("name", name))
 	path, ok := s.paths[name]
 	if !ok {
 		return config.Configuration3{}, ErrNotRegistered

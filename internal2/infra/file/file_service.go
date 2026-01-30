@@ -5,8 +5,8 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/michaeldcanady/go-onedrive/internal/logging"
 	domaincache "github.com/michaeldcanady/go-onedrive/internal2/domain/cache"
+	"github.com/michaeldcanady/go-onedrive/internal2/infra/common/logging"
 	abstractions "github.com/microsoft/kiota-abstractions-go"
 	msgraphsdkgo "github.com/microsoftgraph/msgraph-sdk-go"
 	"github.com/microsoftgraph/msgraph-sdk-go/drives"
@@ -134,7 +134,7 @@ func (s *Service2) getChildren(ctx context.Context, driveID, folderPath string) 
 
 	items := resp.GetValue()
 
-	s.logger.Info("retrieved drive children successfully", logging.String("path", normalized))
+	s.logger.Info("retrieved drive children successfully", logging.String("path", normalized), logging.Int("count", len(items)))
 	s.logger.Debug("children_count", logging.Any("count", len(items)))
 
 	// Cache updated children
