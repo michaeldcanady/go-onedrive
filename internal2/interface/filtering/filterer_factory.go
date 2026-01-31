@@ -1,20 +1,16 @@
 package filtering
 
-import "errors"
-
 type FilterFactory struct{}
 
 func NewFilterFactory() *FilterFactory {
 	return &FilterFactory{}
 }
 
-func (f *FilterFactory) Create(filterType string) (Filterer, error) {
-	switch filterType {
-	case "hidden":
-		return NewHiddenFilterer(), nil
-	case "none":
-		return NewNoOpFilter(), nil
+func (f *FilterFactory) Create(opts ...FilterOption) (Filterer, error) {
+	config := NewFilterOptions()
+	if err := config.Apply(opts); err != nil {
+		return nil, err
 	}
 
-	return nil, errors.New("invalid filterType")
+	return NewOptionsFilterer(*config), nil
 }

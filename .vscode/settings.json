@@ -28,6 +28,7 @@
         "infrafile",
         "infralogging",
         "Itemable",
+        "itemtype",
         "jsonserialization",
         "Kiota",
         "loggerservice",

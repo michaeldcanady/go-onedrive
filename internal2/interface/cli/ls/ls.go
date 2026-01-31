@@ -31,16 +31,41 @@ func CreateLSCmd(c di.Container) *cobra.Command {
 	var (
 		format       string
 		includeAll   bool
-		sortType     = "property"
+		foldersOnly  bool
+		filesOnly    bool
 		sortProperty = "Name"
 		sortOrder    = sorting.DirectionAscending
+		sortOpts     = []sorting.SortingOption{sorting.WithDirection(sortOrder)}
+		filterOpts   = []filtering.FilterOption{}
 	)
 
 	cmd := &cobra.Command{
 		Use:   fmt.Sprintf("%s [path]", commandName),
 		Short: "List items in a OneDrive path",
 		Args:  cobra.MaximumNArgs(1),
+		PreRunE: func(_ *cobra.Command, _ []string) error {
+			if foldersOnly && filesOnly {
+				return NewCommandErrorWithNameWithMessage(commandName, "can't use --folders-only and --files-only together")
+			}
 
+			if includeAll {
+				filterOpts = append(filterOpts, filtering.IncludeAll())
+			} else {
+				filterOpts = append(filterOpts, filtering.ExcludeAll())
+			}
+
+			if filesOnly {
+				filterOpts = append(filterOpts, filtering.WithItemType(domainfs.ItemTypeFile))
+			} else if foldersOnly {
+				filterOpts = append(filterOpts, filtering.WithItemType(domainfs.ItemTypeFolder))
+			}
+
+			if sortProperty != "" {
+				sortOpts = append(sortOpts, sorting.WithField(sortProperty))
+			}
+
+			return nil
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			logger, err := ensureLogger(c)
 			if err != nil {
@@ -64,12 +89,8 @@ func CreateLSCmd(c di.Container) *cobra.Command {
 			}
 
 			// Filtering
-			filterType := "hidden"
-			if includeAll {
-				filterType = "none"
-			}
 
-			filterer, err := filtering.NewFilterFactory().Create(filterType)
+			filterer, err := filtering.NewFilterFactory().Create(filterOpts...)
 			if err != nil {
 				return NewCommandError(commandName, "failed to initialize filter", err)
 			}
@@ -80,11 +101,7 @@ func CreateLSCmd(c di.Container) *cobra.Command {
 			}
 
 			// Sorting
-			sorter, err := sorting.NewSorterFactory().Create(
-				sortType,
-				sorting.WithField(sortProperty),
-				sorting.WithDirection(sortOrder),
-			)
+			sorter, err := sorting.NewSorterFactory().Create()
 			if err != nil {
 				return NewCommandError(commandName, "failed to initialize sorter", err)
 			}
@@ -110,6 +127,8 @@ func CreateLSCmd(c di.Container) *cobra.Command {
 
 	cmd.Flags().BoolVarP(&includeAll, allFlagLong, allFlagShort, false, allFlagUsage)
 	cmd.Flags().StringVarP(&format, formatLongFlag, formatShortFlag, "", formatUsage)
+	cmd.Flags().BoolVar(&foldersOnly, "folders-only", false, "show only folders")
+	cmd.Flags().BoolVar(&filesOnly, "files-only", false, "show only files")
 
 	return cmd
 }

@@ -3,6 +3,7 @@ package fs
 type ItemType int
 
 const (
-	ItemTypeFile ItemType = iota
+	ItemTypeUnknown ItemType = iota - 1
+	ItemTypeFile
 	ItemTypeFolder
 )

@@ -11,5 +11,6 @@ func NewNoOpFilter() *NoOpFilter {
 func (f *NoOpFilter) Filter(items []domainfs.Item) ([]domainfs.Item, error) {
 	out := make([]domainfs.Item, len(items))
 	copy(out, items)
+
 	return out, nil
 }
