@@ -42,9 +42,11 @@ func (c *CommandError) Error() string {
 	builder := &strings.Builder{}
 	builder.Write([]byte(c.CommandName))
 	if strings.TrimSpace(c.Message) == "" {
+		builder.Write([]byte(" "))
 		builder.Write([]byte(c.Message))
 	}
 	if c.NestedError != nil {
+		builder.Write([]byte(" "))
 		builder.Write([]byte(c.NestedError.Error()))
 	}
 	return builder.String()

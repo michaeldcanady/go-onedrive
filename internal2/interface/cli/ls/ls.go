@@ -3,6 +3,8 @@ package ls
 import (
 	"fmt"
 	"os"
+	"slices"
+	"time"
 
 	applogging "github.com/michaeldcanady/go-onedrive/internal2/app/common/logging"
 	"github.com/michaeldcanady/go-onedrive/internal2/domain/di"
@@ -15,16 +17,32 @@ import (
 )
 
 const (
-	allFlagLong  = "all"
+	allFlagLon   = "all"
 	allFlagShort = "a"
 	allFlagUsage = "show hidden items (names starting with '.')"
 
-	formatLongFlag  = "format"
-	formatShortFlag = "f"
-	formatUsage     = "output format: json|yaml|long|short"
+	formatFlagLong    = "format"
+	formatFlagShort   = "f"
+	formatFlagUsage   = "output format: json|yaml|long|short"
+	formatFlagDefault = "short"
 
 	loggerID    = "cli"
 	commandName = "ls"
+
+	filesOnlyFlagLong  = "files-only"
+	filesOnlyFlagUsage = "show only files"
+
+	foldersOnlyFlagLong  = "folders-only"
+	foldersOnlyFlagUsage = "show only folders"
+
+	sortFlagLong    = "sort"
+	sortFlagUsage   = "sorts files by the specified field: name, size, modified"
+	sortFlagDefault = "name"
+)
+
+var (
+	supportedFormats    = []string{"json", "yaml", "yml", "long", "short"}
+	supportedProperties = []string{"name", "size", "modified"}
 )
 
 func CreateLSCmd(c di.Container) *cobra.Command {
@@ -33,7 +51,7 @@ func CreateLSCmd(c di.Container) *cobra.Command {
 		includeAll   bool
 		foldersOnly  bool
 		filesOnly    bool
-		sortProperty = "Name"
+		sortProperty string
 		sortOrder    = sorting.DirectionAscending
 		sortOpts     = []sorting.SortingOption{sorting.WithDirection(sortOrder)}
 		filterOpts   = []filtering.FilterOption{}
@@ -43,15 +61,26 @@ func CreateLSCmd(c di.Container) *cobra.Command {
 		Use:   fmt.Sprintf("%s [path]", commandName),
 		Short: "List items in a OneDrive path",
 		Args:  cobra.MaximumNArgs(1),
+
 		PreRunE: func(_ *cobra.Command, _ []string) error {
+			// Validate flags
 			if foldersOnly && filesOnly {
 				return NewCommandErrorWithNameWithMessage(commandName, "can't use --folders-only and --files-only together")
 			}
 
+			if !slices.Contains(supportedFormats, format) {
+				return NewCommandErrorWithNameWithMessage(commandName, fmt.Sprintf("unsupported format: %s; only supports: json, yaml/yml, long, or short", format))
+			}
+
+			if !slices.Contains(supportedProperties, sortProperty) {
+				return NewCommandErrorWithNameWithMessage(commandName, fmt.Sprintf("unsupported property: %s; only supports: name, size, or modified", sortProperty))
+			}
+
+			// Build filter options
 			if includeAll {
 				filterOpts = append(filterOpts, filtering.IncludeAll())
 			} else {
-				filterOpts = append(filterOpts, filtering.ExcludeAll())
+				filterOpts = append(filterOpts, filtering.ExcludeHidden())
 			}
 
 			if filesOnly {
@@ -60,75 +89,112 @@ func CreateLSCmd(c di.Container) *cobra.Command {
 				filterOpts = append(filterOpts, filtering.WithItemType(domainfs.ItemTypeFolder))
 			}
 
+			// Build sort options
 			if sortProperty != "" {
 				sortOpts = append(sortOpts, sorting.WithField(sortProperty))
 			}
 
 			return nil
 		},
+
 		RunE: func(cmd *cobra.Command, args []string) error {
+			start := time.Now()
+
 			logger, err := ensureLogger(c)
 			if err != nil {
 				return NewCommandErrorWithNameWithError(commandName, err)
 			}
 
+			logger.Info("starting ls command",
+				infralogging.String("format", format),
+				infralogging.Bool("includeAll", includeAll),
+				infralogging.Bool("foldersOnly", foldersOnly),
+				infralogging.Bool("filesOnly", filesOnly),
+				infralogging.String("sortProperty", sortProperty),
+				infralogging.String("sortDirection", sortOrder.String()),
+			)
+
+			// Resolve path
 			path := ""
 			if len(args) > 0 {
 				path = args[0]
 			}
 			logger.Debug("path resolved", infralogging.String("path", path))
 
+			// Filesystem service
 			fsSvc := c.FS()
 			if fsSvc == nil {
+				logger.Error("filesystem service is nil")
 				return NewCommandErrorWithNameWithMessage(commandName, "filesystem service is nil")
 			}
 
+			logger.Debug("listing items from filesystem")
 			items, err := fsSvc.List(cmd.Context(), path, domainfs.ListOptions{})
 			if err != nil {
+				logger.Error("failed to list items", infralogging.String("error", err.Error()))
 				return NewCommandErrorWithNameWithError(commandName, err)
 			}
+			logger.Info("items retrieved", infralogging.Int("count", len(items)))
 
 			// Filtering
-
+			logger.Debug("initializing filterer")
 			filterer, err := filtering.NewFilterFactory().Create(filterOpts...)
 			if err != nil {
+				logger.Error("failed to initialize filterer", infralogging.String("error", err.Error()))
 				return NewCommandError(commandName, "failed to initialize filter", err)
 			}
 
+			logger.Debug("applying filters")
 			items, err = filterer.Filter(items)
 			if err != nil {
+				logger.Error("failed to filter items", infralogging.String("error", err.Error()))
 				return NewCommandError(commandName, "failed to filter items", err)
 			}
+			logger.Info("items after filtering", infralogging.Int("count", len(items)))
 
 			// Sorting
-			sorter, err := sorting.NewSorterFactory().Create()
+			logger.Debug("initializing sorter")
+			sorter, err := sorting.NewSorterFactory().Create(sortOpts...)
 			if err != nil {
+				logger.Error("failed to initialize sorter", infralogging.String("error", err.Error()))
 				return NewCommandError(commandName, "failed to initialize sorter", err)
 			}
 
+			logger.Debug("sorting items")
 			items, err = sorter.Sort(items)
 			if err != nil {
+				logger.Error("failed to sort items", infralogging.String("error", err.Error()))
 				return NewCommandError(commandName, "failed to sort items", err)
 			}
 
 			// Formatting
+			logger.Debug("initializing formatter", infralogging.String("format", format))
 			formatter, err := formatting.NewFormatterFactory().Create(format)
 			if err != nil {
+				logger.Error("failed to initialize formatter", infralogging.String("error", err.Error()))
 				return NewCommandError(commandName, "failed to initialize formatter", err)
 			}
 
+			logger.Debug("formatting output")
 			if err := formatter.Format(os.Stdout, items); err != nil {
+				logger.Error("failed to format items", infralogging.String("error", err.Error()))
 				return NewCommandError(commandName, "failed to format items", err)
 			}
+
+			logger.Info("ls command completed",
+				infralogging.Duration("duration", time.Since(start)),
+				infralogging.Int("finalItemCount", len(items)),
+			)
 
 			return nil
 		},
 	}
 
-	cmd.Flags().BoolVarP(&includeAll, allFlagLong, allFlagShort, false, allFlagUsage)
-	cmd.Flags().StringVarP(&format, formatLongFlag, formatShortFlag, "", formatUsage)
-	cmd.Flags().BoolVar(&foldersOnly, "folders-only", false, "show only folders")
-	cmd.Flags().BoolVar(&filesOnly, "files-only", false, "show only files")
+	cmd.Flags().BoolVarP(&includeAll, allFlagLon, allFlagShort, false, allFlagUsage)
+	cmd.Flags().StringVarP(&format, formatFlagLong, formatFlagShort, formatFlagDefault, formatFlagUsage)
+	cmd.Flags().StringVar(&sortProperty, sortFlagLong, sortFlagDefault, sortFlagUsage)
+	cmd.Flags().BoolVar(&foldersOnly, foldersOnlyFlagLong, false, foldersOnlyFlagUsage)
+	cmd.Flags().BoolVar(&filesOnly, filesOnlyFlagLong, false, filesOnlyFlagUsage)
 
 	return cmd
 }

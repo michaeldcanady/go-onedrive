@@ -51,7 +51,7 @@ func IncludeAll() FilterOption {
 	}
 }
 
-func ExcludeAll() FilterOption {
+func ExcludeHidden() FilterOption {
 	return func(config *FilterOptions) error {
 		config.IncludeAll = false
 		return nil
