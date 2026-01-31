@@ -3,6 +3,7 @@ package file
 import (
 	"errors"
 	"path"
+	"strings"
 
 	"github.com/microsoftgraph/msgraph-sdk-go/models"
 	"github.com/microsoftgraph/msgraph-sdk-go/models/odataerrors"
@@ -32,15 +33,16 @@ func toDomainItem(driveID string, it models.DriveItemable) *DriveItem {
 	}
 
 	return &DriveItem{
-		DriveID:  driveID,
-		ID:       deref(it.GetId()),
-		Name:     deref(it.GetName()),
-		Path:     deref(it.GetParentReference().GetPath()),
-		IsFolder: it.GetFolder() != nil,
-		Size:     deref(it.GetSize()),
-		ETag:     deref(it.GetETag()),
-		MimeType: mimeType,
-		Modified: deref(it.GetLastModifiedDateTime()),
+		DriveID:          driveID,
+		ID:               deref(it.GetId()),
+		Name:             deref(it.GetName()),
+		Path:             deref(it.GetParentReference().GetPath()),
+		PathWithoutDrive: strings.Split(deref(it.GetParentReference().GetPath()), ":")[1],
+		IsFolder:         it.GetFolder() != nil,
+		Size:             deref(it.GetSize()),
+		ETag:             deref(it.GetETag()),
+		MimeType:         mimeType,
+		Modified:         deref(it.GetLastModifiedDateTime()),
 	}
 }
 

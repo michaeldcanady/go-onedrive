@@ -38,6 +38,10 @@ const (
 	sortFlagLong    = "sort"
 	sortFlagUsage   = "sorts files by the specified field: name, size, modified"
 	sortFlagDefault = "name"
+
+	recursiveFlagLong  = "recursive"
+	recursiveFlagShort = "r"
+	recursiveFlagUsage = ""
 )
 
 var (
@@ -51,6 +55,7 @@ func CreateLSCmd(c di.Container) *cobra.Command {
 		includeAll   bool
 		foldersOnly  bool
 		filesOnly    bool
+		recursive    bool
 		sortProperty string
 		sortOrder    = sorting.DirectionAscending
 		sortOpts     = []sorting.SortingOption{sorting.WithDirection(sortOrder)}
@@ -129,7 +134,9 @@ func CreateLSCmd(c di.Container) *cobra.Command {
 			}
 
 			logger.Debug("listing items from filesystem")
-			items, err := fsSvc.List(cmd.Context(), path, domainfs.ListOptions{})
+			items, err := fsSvc.List(cmd.Context(), path, domainfs.ListOptions{
+				Recursive: recursive,
+			})
 			if err != nil {
 				logger.Error("failed to list items", infralogging.String("error", err.Error()))
 				return NewCommandErrorWithNameWithError(commandName, err)
@@ -195,6 +202,7 @@ func CreateLSCmd(c di.Container) *cobra.Command {
 	cmd.Flags().StringVar(&sortProperty, sortFlagLong, sortFlagDefault, sortFlagUsage)
 	cmd.Flags().BoolVar(&foldersOnly, foldersOnlyFlagLong, false, foldersOnlyFlagUsage)
 	cmd.Flags().BoolVar(&filesOnly, filesOnlyFlagLong, false, filesOnlyFlagUsage)
+	cmd.Flags().BoolVarP(&recursive, recursiveFlagLong, recursiveFlagShort, false, recursiveFlagUsage)
 
 	return cmd
 }
