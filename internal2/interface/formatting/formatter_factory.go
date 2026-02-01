@@ -23,6 +23,8 @@ func (f *FormatterFactory) Create(format string) (domainformatting.OutputFormatt
 		return &JSONFormatter{}, nil
 	case "yaml", "yml":
 		return &YAMLFormatter{}, nil
+	case "tree":
+		return NewTreeFormatter(), nil
 	}
 	return nil, fmt.Errorf("invalid format: %s", format)
 }

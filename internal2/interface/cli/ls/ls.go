@@ -23,7 +23,7 @@ const (
 
 	formatFlagLong    = "format"
 	formatFlagShort   = "f"
-	formatFlagUsage   = "output format: json|yaml|long|short"
+	formatFlagUsage   = "output format (e.g., json, yaml, long, short, tree)"
 	formatFlagDefault = "short"
 
 	loggerID    = "cli"
@@ -36,16 +36,16 @@ const (
 	foldersOnlyFlagUsage = "show only folders"
 
 	sortFlagLong    = "sort"
-	sortFlagUsage   = "sorts files by the specified field: name, size, modified"
+	sortFlagUsage   = "sorts files by the specified field (e.g., name, size, modified)"
 	sortFlagDefault = "name"
 
 	recursiveFlagLong  = "recursive"
-	recursiveFlagShort = "r"
+	recursiveFlagShort = "R"
 	recursiveFlagUsage = ""
 )
 
 var (
-	supportedFormats    = []string{"json", "yaml", "yml", "long", "short"}
+	supportedFormats    = []string{"json", "yaml", "yml", "long", "short", "tree"}
 	supportedProperties = []string{"name", "size", "modified"}
 )
 
@@ -79,6 +79,10 @@ func CreateLSCmd(c di.Container) *cobra.Command {
 
 			if !slices.Contains(supportedProperties, sortProperty) {
 				return NewCommandErrorWithNameWithMessage(commandName, fmt.Sprintf("unsupported property: %s; only supports: name, size, or modified", sortProperty))
+			}
+
+			if format == "tree" && sortProperty != "" {
+				// TODO: warn user that sort can't be used with tree format
 			}
 
 			// Build filter options
@@ -159,19 +163,21 @@ func CreateLSCmd(c di.Container) *cobra.Command {
 			}
 			logger.Info("items after filtering", infralogging.Int("count", len(items)))
 
-			// Sorting
-			logger.Debug("initializing sorter")
-			sorter, err := sorting.NewSorterFactory().Create(sortOpts...)
-			if err != nil {
-				logger.Error("failed to initialize sorter", infralogging.String("error", err.Error()))
-				return NewCommandError(commandName, "failed to initialize sorter", err)
-			}
+			if format != "tree" {
+				// Sorting
+				logger.Debug("initializing sorter")
+				sorter, err := sorting.NewSorterFactory().Create(sortOpts...)
+				if err != nil {
+					logger.Error("failed to initialize sorter", infralogging.String("error", err.Error()))
+					return NewCommandError(commandName, "failed to initialize sorter", err)
+				}
 
-			logger.Debug("sorting items")
-			items, err = sorter.Sort(items)
-			if err != nil {
-				logger.Error("failed to sort items", infralogging.String("error", err.Error()))
-				return NewCommandError(commandName, "failed to sort items", err)
+				logger.Debug("sorting items")
+				items, err = sorter.Sort(items)
+				if err != nil {
+					logger.Error("failed to sort items", infralogging.String("error", err.Error()))
+					return NewCommandError(commandName, "failed to sort items", err)
+				}
 			}
 
 			// Formatting

@@ -5,14 +5,15 @@ import (
 	infrafile "github.com/michaeldcanady/go-onedrive/internal2/infra/file"
 )
 
-func mapToFSItem(src *infrafile.DriveItem, path string) domainfs.Item {
+func mapToFSItem(src *infrafile.DriveItem) domainfs.Item {
 	t := domainfs.ItemTypeFile
 	if src.IsFolder {
 		t = domainfs.ItemTypeFolder
 	}
+
 	return domainfs.Item{
 		ID:       src.ID,
-		Path:     path,
+		Path:     src.PathWithoutDrive,
 		Name:     src.Name,
 		Type:     t,
 		Size:     src.Size,
@@ -20,10 +21,10 @@ func mapToFSItem(src *infrafile.DriveItem, path string) domainfs.Item {
 	}
 }
 
-func mapToFSItems(src []*infrafile.DriveItem, path string) []domainfs.Item {
+func mapToFSItems(src []*infrafile.DriveItem) []domainfs.Item {
 	result := make([]domainfs.Item, len(src))
 	for i, elem := range src {
-		result[i] = mapToFSItem(elem, path)
+		result[i] = mapToFSItem(elem)
 	}
 	return result
 }

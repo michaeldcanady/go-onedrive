@@ -20,6 +20,8 @@ const (
 	forceLongFlag  = "force"
 	forceShortFlag = "f"
 	forceUsage     = "Force re-authentication even if a valid profile exists"
+
+	commandName = "login"
 )
 
 func CreateLoginCmd(container di.Container) *cobra.Command {
@@ -50,7 +52,7 @@ func CreateLoginCmd(container di.Container) *cobra.Command {
 
 			result, err := authService.Login(ctx, "default", opts)
 			if err != nil {
-				return fmt.Errorf("authentication failed: %w", err)
+				return NewCommandError(commandName, "failed authentication", err)
 			}
 
 			if showToken {

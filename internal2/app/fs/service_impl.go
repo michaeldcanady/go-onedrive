@@ -100,14 +100,14 @@ func (s *Service) List(ctx context.Context, p string, opts domainfs.ListOptions)
 		return nil, err
 	}
 	if !item.IsFolder {
-		return []domainfs.Item{mapToFSItem(item, p)}, nil
+		return []domainfs.Item{mapToFSItem(item)}, nil
 	}
 
 	children, err := s.listChildren(ctx, p, opts.Recursive)
 	if err != nil {
 		return nil, err
 	}
-	return mapToFSItems(children, p), nil
+	return mapToFSItems(children), nil
 }
 
 func (s *Service) Stat(ctx context.Context, p string, opts domainfs.StatOptions) (domainfs.Item, error) {
@@ -115,5 +115,5 @@ func (s *Service) Stat(ctx context.Context, p string, opts domainfs.StatOptions)
 	if err != nil {
 		return domainfs.Item{}, err
 	}
-	return mapToFSItem(item, p), nil
+	return mapToFSItem(item), nil
 }
