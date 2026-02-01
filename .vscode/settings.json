@@ -1,6 +1,7 @@
 {
     "cSpell.words": [
         "applogging",
+        "appprofile",
         "authinfra",
         "azcore",
         "azidentity",
@@ -28,6 +29,7 @@
         "infracommon",
         "infrafile",
         "infralogging",
+        "infraprofile",
         "Itemable",
         "itemtype",
         "jsonserialization",
@@ -42,6 +44,7 @@
         "nethttplibrary",
         "odataerrors",
         "onedrive",
+        "profilecmd",
         "Responseable",
         "stretchr",
         "tablewriter",

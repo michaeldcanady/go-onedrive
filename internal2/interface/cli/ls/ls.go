@@ -2,7 +2,6 @@ package ls
 
 import (
 	"fmt"
-	"os"
 	"slices"
 	"time"
 
@@ -189,7 +188,7 @@ func CreateLSCmd(c di.Container) *cobra.Command {
 			}
 
 			logger.Debug("formatting output")
-			if err := formatter.Format(os.Stdout, items); err != nil {
+			if err := formatter.Format(cmd.OutOrStdout(), items); err != nil {
 				logger.Error("failed to format items", infralogging.String("error", err.Error()))
 				return NewCommandError(commandName, "failed to format items", err)
 			}

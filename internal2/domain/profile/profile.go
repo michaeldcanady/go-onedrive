@@ -2,6 +2,6 @@ package profile
 
 type Profile struct {
 	Name              string
-	Directory         string
+	Path              string
 	ConfigurationPath string
 }

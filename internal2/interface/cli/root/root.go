@@ -7,6 +7,7 @@ import (
 	"github.com/michaeldcanady/go-onedrive/internal2/infra/common/logging"
 	"github.com/michaeldcanady/go-onedrive/internal2/interface/cli/auth"
 	"github.com/michaeldcanady/go-onedrive/internal2/interface/cli/ls"
+	profilecmd "github.com/michaeldcanady/go-onedrive/internal2/interface/cli/profile"
 	"github.com/spf13/cobra"
 )
 
@@ -73,22 +74,14 @@ func CreateRootCmd(container di.Container) (*cobra.Command, error) {
 		},
 	}
 
-	//
-	// ────────────────────────────────────────────────
-	// Global Flags
-	// ────────────────────────────────────────────────
-	//
 	rootCmd.PersistentFlags().StringVar(&config, configFileFlagLong, configFileFlagDefault, configFileFlagUsage)
 	rootCmd.PersistentFlags().StringVar(&level, loggingLevelFlagLong, loggingLevelFlagDefault, loggingLevelFlagUsage)
 	rootCmd.PersistentFlags().StringVar(&profile, profileNameFlagLong, profileNameFlagDefault, profileNameFlagUsage)
-	//
-	// ────────────────────────────────────────────────
-	// Subcommands (DI container passed directly)
-	// ────────────────────────────────────────────────
-	//
+
 	rootCmd.AddCommand(
 		ls.CreateLSCmd(container),
 		auth.CreateAuthCmd(container),
+		profilecmd.CreateProfileCmd(container),
 	)
 
 	return rootCmd, nil

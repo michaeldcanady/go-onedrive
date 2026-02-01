@@ -29,7 +29,7 @@ func (v *TreeNodeVisitor) VisitNode(node *treeNode) error {
 func (v *TreeNodeVisitor) VisitFolder(node *treeNode) error {
 	childrenCount := len(node.Children)
 
-	v.builder.WriteString(v.prefix + v.connector + node.Item.Name + fmt.Sprintf("(%d)", node.Item.Type))
+	v.builder.WriteString(v.prefix + v.connector + node.Item.Name)
 
 	for i, child := range node.Children {
 		v.builder.WriteString("\n")
@@ -69,7 +69,7 @@ func (v *TreeNodeVisitor) VisitFolder(node *treeNode) error {
 }
 
 func (v *TreeNodeVisitor) VisitFile(node *treeNode) {
-	v.builder.WriteString(v.prefix + v.connector + node.Item.Name + fmt.Sprintf("(%d)", node.Item.Type))
+	v.builder.WriteString(v.prefix + v.connector + node.Item.Name)
 }
 
 func (v *TreeNodeVisitor) String() string {

@@ -9,6 +9,7 @@ import (
 	"github.com/michaeldcanady/go-onedrive/internal2/app/config"
 	"github.com/michaeldcanady/go-onedrive/internal2/app/drive"
 	"github.com/michaeldcanady/go-onedrive/internal2/app/fs"
+	appprofile "github.com/michaeldcanady/go-onedrive/internal2/app/profile"
 
 	"github.com/michaeldcanady/go-onedrive/internal2/app/common/environment"
 	"github.com/michaeldcanady/go-onedrive/internal2/app/common/logging"
@@ -25,6 +26,7 @@ import (
 	infraauth "github.com/michaeldcanady/go-onedrive/internal2/infra/auth"
 	"github.com/michaeldcanady/go-onedrive/internal2/infra/common/graph"
 	"github.com/michaeldcanady/go-onedrive/internal2/infra/file"
+	infraprofile "github.com/michaeldcanady/go-onedrive/internal2/infra/profile"
 )
 
 var _ di.Container = (*Container)(nil)
@@ -125,6 +127,8 @@ func (c *Container) clientProvider() domaingraph.ClientProvider {
 func (c *Container) EnvironmentService() domainenv.EnvironmentService {
 	c.environmentOnce.Do(func() {
 		c.environmentService = environment.New2("odc")
+
+		_ = c.environmentService.EnsureAll()
 	})
 	return c.environmentService
 }
@@ -154,5 +158,25 @@ func (c *Container) Logger() domainlogger.LoggerService {
 
 // Profile implements [di.Container].
 func (c *Container) Profile() domainprofile.ProfileService {
-	panic("unimplemented")
+	c.profileOnce.Do(func() {
+		env := c.EnvironmentService()
+
+		// ~/.config/odc
+		profileBaseDir, _ := env.ConfigDir()
+
+		loggerService := c.Logger()
+		logger, _ := loggerService.CreateLogger("profile")
+
+		// Infra repository
+		repo := infraprofile.NewFSProfileService(profileBaseDir)
+
+		// App service (cache + repo)
+		c.profileService = appprofile.New(
+			c.CacheService(),
+			logger,
+			repo,
+		)
+	})
+
+	return c.profileService
 }
