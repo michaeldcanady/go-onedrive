@@ -118,6 +118,18 @@ func (s *Service) SetProfile(ctx context.Context, name string, record azidentity
 	return s.authCache.SetEntry(ctx, entry)
 }
 
+func (s *Service) DeleteProfile(ctx context.Context, name string) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+
+	if s.authCache == nil {
+		return errors.New("profile cache is nil")
+	}
+
+	return s.authCache.Remove(name)
+}
+
 func (s *Service) GetConfiguration(ctx context.Context, name string) (config.Configuration3, error) {
 	var record config.Configuration3
 

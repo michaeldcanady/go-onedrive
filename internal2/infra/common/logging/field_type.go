@@ -14,4 +14,6 @@ const (
 	FieldTypeBool
 
 	FieldTypeDuration
+	FieldTypeStrings
+	FieldTypeError
 )

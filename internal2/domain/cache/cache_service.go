@@ -14,6 +14,7 @@ type CacheService interface {
 	GetProfile(ctx context.Context, name string) (azidentity.AuthenticationRecord, error)
 	// SetProfile caches the provided profile by name.
 	SetProfile(ctx context.Context, name string, record azidentity.AuthenticationRecord) error
+	DeleteProfile(ctx context.Context, name string) error
 
 	GetConfiguration(ctx context.Context, name string) (config.Configuration3, error)
 	SetConfiguration(ctx context.Context, name string, record config.Configuration3) error

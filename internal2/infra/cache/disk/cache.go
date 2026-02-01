@@ -8,6 +8,7 @@ import (
 	"os"
 	"sync"
 
+	"github.com/gofrs/flock"
 	"github.com/michaeldcanady/go-onedrive/internal2/infra/cache/abstractions"
 	"github.com/michaeldcanady/go-onedrive/internal2/infra/cache/core"
 )
@@ -16,6 +17,7 @@ var _ abstractions.Cache[any, any] = (*Cache[any, any])(nil)
 
 type Cache[K comparable, V any] struct {
 	path            string
+	lock            *flock.Flock
 	keySerializer   abstractions.SerializerDeserializer[K]
 	valueSerializer abstractions.SerializerDeserializer[V]
 
@@ -32,6 +34,7 @@ func New[K comparable, V any](
 
 	c := &Cache[K, V]{
 		path:            path,
+		lock:            flock.New(path + ".lock"),
 		keySerializer:   ks,
 		valueSerializer: vs,
 		index:           make(map[string]int64),
@@ -94,6 +97,11 @@ func (c *Cache[K, V]) Clear(ctx context.Context) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
+	if err := c.lock.Lock(); err != nil {
+		return err
+	}
+	defer c.lock.Unlock()
+
 	if err := os.Remove(c.path); err != nil && !errors.Is(err, os.ErrNotExist) {
 		return err
 	}
@@ -110,6 +118,12 @@ func (c *Cache[K, V]) Clear(ctx context.Context) error {
 //
 // If the key does not exist, an error is returned.
 func (c *Cache[K, V]) GetEntry(ctx context.Context, key K) (*abstractions.Entry[K, V], error) {
+	// Shared cross-process lock
+	if err := c.lock.RLock(); err != nil {
+		return nil, err
+	}
+	defer c.lock.Unlock()
+
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 
@@ -123,36 +137,7 @@ func (c *Cache[K, V]) GetEntry(ctx context.Context, key K) (*abstractions.Entry[
 		return nil, core.ErrKeyNotFound
 	}
 
-	f, err := os.Open(c.path)
-	if err != nil {
-		return nil, err
-	}
-	defer f.Close()
-
-	if _, err := f.Seek(offset, io.SeekStart); err != nil {
-		return nil, err
-	}
-
-	// Skip key
-	var keyLen uint32
-	binary.Read(f, binary.LittleEndian, &keyLen)
-	f.Seek(int64(keyLen), io.SeekCurrent)
-
-	// Read value
-	var valLen uint32
-	binary.Read(f, binary.LittleEndian, &valLen)
-
-	valBytes := make([]byte, valLen)
-	if _, err := f.Read(valBytes); err != nil {
-		return nil, err
-	}
-
-	value, err := c.valueSerializer.Deserialize(valBytes)
-	if err != nil {
-		return nil, err
-	}
-
-	return abstractions.NewEntry(key, value), nil
+	return c.readEntryAtOffset(offset, key)
 }
 
 // NewEntry creates a new cache entry for the given key with a zero‑value value.
@@ -194,6 +179,12 @@ func (c *Cache[K, V]) SetEntry(ctx context.Context, entry *abstractions.Entry[K,
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
+	// Exclusive cross-process lock
+	if err := c.lock.Lock(); err != nil {
+		return err
+	}
+	defer c.lock.Unlock()
+
 	serializedKey, err := c.keySerializer.Serialize(entry.GetKey())
 	if err != nil {
 		return err
@@ -204,6 +195,7 @@ func (c *Cache[K, V]) SetEntry(ctx context.Context, entry *abstractions.Entry[K,
 		return err
 	}
 
+	// Append new record
 	f, err := os.OpenFile(c.path, os.O_CREATE|os.O_RDWR|os.O_APPEND, 0644)
 	if err != nil {
 		return err
@@ -231,7 +223,7 @@ func (c *Cache[K, V]) SetEntry(ctx context.Context, entry *abstractions.Entry[K,
 	// Update index
 	c.index[string(serializedKey)] = offset
 
-	// Rewrite file to remove stale entries
+	// Compact file
 	return c.rewriteFile()
 }
 
@@ -273,6 +265,47 @@ func (c *Cache[K, V]) readValueAtOffset(offset int64) (V, error) {
 	return c.valueSerializer.Deserialize(valBytes)
 }
 
+func (c *Cache[K, V]) readEntryAtOffset(offset int64, key K) (*abstractions.Entry[K, V], error) {
+	f, err := os.Open(c.path)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+
+	if _, err := f.Seek(offset, io.SeekStart); err != nil {
+		return nil, err
+	}
+
+	// Read key length
+	var keyLen uint32
+	if err := binary.Read(f, binary.LittleEndian, &keyLen); err != nil {
+		return nil, err
+	}
+
+	// Skip key bytes
+	if _, err := f.Seek(int64(keyLen), io.SeekCurrent); err != nil {
+		return nil, err
+	}
+
+	// Read value length
+	var valLen uint32
+	if err := binary.Read(f, binary.LittleEndian, &valLen); err != nil {
+		return nil, err
+	}
+
+	valBytes := make([]byte, valLen)
+	if _, err := f.Read(valBytes); err != nil {
+		return nil, err
+	}
+
+	value, err := c.valueSerializer.Deserialize(valBytes)
+	if err != nil {
+		return nil, err
+	}
+
+	return abstractions.NewEntry(key, value), nil
+}
+
 // rewriteFile compacts the file by rewriting only live entries.
 func (c *Cache[K, V]) rewriteFile() error {
 	tmp := c.path + ".tmp"
@@ -289,19 +322,19 @@ func (c *Cache[K, V]) rewriteFile() error {
 		offset, _ := f.Seek(0, io.SeekEnd)
 
 		// Deserialize key
-		_, err := c.keySerializer.Deserialize([]byte(keyStr))
+		key, err := c.keySerializer.Deserialize([]byte(keyStr))
 		if err != nil {
 			return err
 		}
 
-		// Read value directly from disk (no GetEntry)
-		val, err := c.readValueAtOffset(oldOffset)
+		// Read value directly from disk
+		entry, err := c.readEntryAtOffset(oldOffset, key)
 		if err != nil {
 			return err
 		}
 
 		keyBytes := []byte(keyStr)
-		valBytes, err := c.valueSerializer.Serialize(val)
+		valBytes, err := c.valueSerializer.Serialize(entry.GetValue())
 		if err != nil {
 			return err
 		}
@@ -325,7 +358,7 @@ func (c *Cache[K, V]) rewriteFile() error {
 		newIndex[keyStr] = offset
 	}
 
-	// Replace old file
+	// Atomic replace
 	if err := os.Rename(tmp, c.path); err != nil {
 		return err
 	}

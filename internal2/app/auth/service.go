@@ -7,20 +7,21 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 
+	"github.com/michaeldcanady/go-onedrive/internal2/domain/cache"
 	"github.com/michaeldcanady/go-onedrive/internal2/infra/cache/core"
 	"github.com/michaeldcanady/go-onedrive/internal2/infra/common/event"
 	"github.com/michaeldcanady/go-onedrive/internal2/infra/common/logging"
 )
 
 type Service struct {
-	cacheService  CacheService
+	cacheService  cache.CacheService
 	credential    azcore.TokenCredential
 	logger        logging.Logger
 	publisher     event.Publisher
 	configService ConfigurationService
 }
 
-func New(cacheService CacheService, publisher event.Publisher, logger logging.Logger, configService ConfigurationService) *Service {
+func New(cacheService cache.CacheService, publisher event.Publisher, logger logging.Logger, configService ConfigurationService) *Service {
 	s := &Service{
 		cacheService:  cacheService,
 		publisher:     publisher,

@@ -10,6 +10,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 
 	authdomain "github.com/michaeldcanady/go-onedrive/internal2/domain/auth"
+	"github.com/michaeldcanady/go-onedrive/internal2/domain/cache"
 	"github.com/michaeldcanady/go-onedrive/internal2/domain/state"
 	authinfra "github.com/michaeldcanady/go-onedrive/internal2/infra/auth"
 	"github.com/michaeldcanady/go-onedrive/internal2/infra/common/logging"
@@ -18,7 +19,7 @@ import (
 var _ authdomain.AuthService = (*AuthService)(nil)
 
 type AuthService struct {
-	cache   CacheService
+	cache   cache.CacheService
 	factory authinfra.CredentialFactory
 	config  ConfigurationService
 	state   state.Service
@@ -27,7 +28,7 @@ type AuthService struct {
 
 func NewService(
 	factory authinfra.CredentialFactory,
-	cache CacheService,
+	cache cache.CacheService,
 	config ConfigurationService,
 	state state.Service,
 	logger logging.Logger,
@@ -196,4 +197,60 @@ func (s *AuthService) Login(ctx context.Context, profileName string, opts authdo
 		AccessToken: token.Token,
 		RecordSaved: (record != azidentity.AuthenticationRecord{}),
 	}, nil
+}
+
+// Logout removes the cached authentication record for the given profile.
+// If force is true, logout proceeds even if no record exists.
+func (s *AuthService) Logout(ctx context.Context, profileName string, force bool) error {
+	s.logger.Info("starting logout flow",
+		logging.String("profile", profileName),
+		logging.Bool("force", force),
+	)
+
+	// Attempt to load cached record
+	record, err := s.cache.GetProfile(ctx, profileName)
+	if err != nil {
+		if force {
+			s.logger.Warn("failed to load cached record, but force=true; continuing",
+				logging.String("profile", profileName),
+				logging.Error(err),
+			)
+		} else {
+			s.logger.Error("failed to load cached record",
+				logging.String("profile", profileName),
+				logging.Error(err),
+			)
+			return fmt.Errorf("failed to load cached authentication record: %w", err)
+		}
+	}
+
+	// If no record exists and not forced → nothing to do
+	if record == (azidentity.AuthenticationRecord{}) && !force {
+		s.logger.Info("no authentication record found; nothing to do",
+			logging.String("profile", profileName),
+		)
+		return nil
+	}
+
+	// Delete cached record
+	if err := s.cache.DeleteProfile(ctx, profileName); err != nil {
+		s.logger.Error("failed to delete authentication record",
+			logging.String("profile", profileName),
+			logging.Error(err),
+		)
+		return fmt.Errorf("failed to delete authentication record: %w", err)
+	}
+
+	s.logger.Info("authentication record deleted",
+		logging.String("profile", profileName),
+	)
+
+	// Optionally: clear CAE session or other state here
+	// (Azure Identity does not expose explicit logout APIs.)
+
+	s.logger.Info("logout successful",
+		logging.String("profile", profileName),
+	)
+
+	return nil
 }

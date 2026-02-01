@@ -40,6 +40,14 @@ func Duration(key string, val time.Duration) Field {
 	return Field{Key: key, FieldType: FieldTypeDuration, Value: val}
 }
 
+func Strings(key string, val []string) Field {
+	return Field{Key: key, FieldType: FieldTypeStrings, Value: val}
+}
+
+func Error(val error) Field {
+	return Field{Key: "error", FieldType: FieldTypeError, Value: val}
+}
+
 type ctxKey struct{}
 
 type Fields map[string]any

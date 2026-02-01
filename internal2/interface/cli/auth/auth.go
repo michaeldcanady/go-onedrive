@@ -3,6 +3,7 @@ package auth
 import (
 	"github.com/michaeldcanady/go-onedrive/internal2/domain/di"
 	"github.com/michaeldcanady/go-onedrive/internal2/interface/cli/auth/login"
+	"github.com/michaeldcanady/go-onedrive/internal2/interface/cli/auth/logout"
 	"github.com/spf13/cobra"
 )
 
@@ -22,7 +23,7 @@ current authentication state.
 	// Subcommands
 	authCmd.AddCommand(
 		login.CreateLoginCmd(container),
-	//logout.CreateLogoutCmd(),
+		logout.CreateLogoutCmd(container),
 	)
 
 	return authCmd
