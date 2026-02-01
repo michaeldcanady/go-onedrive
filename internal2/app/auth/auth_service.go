@@ -10,6 +10,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 
 	authdomain "github.com/michaeldcanady/go-onedrive/internal2/domain/auth"
+	"github.com/michaeldcanady/go-onedrive/internal2/domain/state"
 	authinfra "github.com/michaeldcanady/go-onedrive/internal2/infra/auth"
 	"github.com/michaeldcanady/go-onedrive/internal2/infra/common/logging"
 )
@@ -20,6 +21,7 @@ type AuthService struct {
 	cache   CacheService
 	factory authinfra.CredentialFactory
 	config  ConfigurationService
+	state   state.Service
 	logger  logging.Logger
 }
 
@@ -27,6 +29,7 @@ func NewService(
 	factory authinfra.CredentialFactory,
 	cache CacheService,
 	config ConfigurationService,
+	state state.Service,
 	logger logging.Logger,
 ) *AuthService {
 	return &AuthService{
@@ -34,6 +37,7 @@ func NewService(
 		cache:   cache,
 		config:  config,
 		logger:  logger,
+		state:   state,
 	}
 }
 
@@ -43,14 +47,19 @@ func NewService(
 func (s *AuthService) GetToken(ctx context.Context, options policy.TokenRequestOptions) (azcore.AccessToken, error) {
 	s.logger.Debug("attempting silent token acquisition")
 
+	profileName, err := s.state.GetCurrentProfile()
+	if err != nil {
+		return azcore.AccessToken{}, err
+	}
+
 	// Load cached record
-	record, err := s.cache.GetProfile(ctx, "default")
+	record, err := s.cache.GetProfile(ctx, profileName)
 	if err != nil {
 		return azcore.AccessToken{}, fmt.Errorf("failed to load cached authentication record: %w", err)
 	}
 
 	// Load profile configuration
-	cfg, err := s.config.GetConfiguration(ctx, "default")
+	cfg, err := s.config.GetConfiguration(ctx, profileName)
 	if err != nil {
 		return azcore.AccessToken{}, fmt.Errorf("failed to load configuration: %w", err)
 	}

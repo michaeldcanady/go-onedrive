@@ -2,10 +2,10 @@ package root
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/michaeldcanady/go-onedrive/internal2/domain/di"
 	"github.com/michaeldcanady/go-onedrive/internal2/infra/common/logging"
-	infraprofile "github.com/michaeldcanady/go-onedrive/internal2/infra/profile"
 	"github.com/michaeldcanady/go-onedrive/internal2/interface/cli/auth"
 	"github.com/michaeldcanady/go-onedrive/internal2/interface/cli/ls"
 	profilecmd "github.com/michaeldcanady/go-onedrive/internal2/interface/cli/profile"
@@ -57,6 +57,10 @@ func CreateRootCmd(container di.Container) (*cobra.Command, error) {
 				return fmt.Errorf("failed to initialize cli logger: %w", err)
 			}
 
+			if strings.TrimSpace(profile) != "" {
+				container.State().SetSessionProfile(profile)
+			}
+
 			profileName, err := container.State().GetCurrentProfile()
 			if err != nil {
 				return fmt.Errorf("failed to get current profile: %w", err)
@@ -76,7 +80,7 @@ func CreateRootCmd(container di.Container) (*cobra.Command, error) {
 
 	rootCmd.PersistentFlags().StringVar(&config, configFileFlagLong, configFileFlagDefault, configFileFlagUsage)
 	rootCmd.PersistentFlags().StringVar(&level, loggingLevelFlagLong, loggingLevelFlagDefault, loggingLevelFlagUsage)
-	rootCmd.PersistentFlags().StringVar(&profile, profileNameFlagLong, infraprofile.DefaultProfileName, profileNameFlagUsage)
+	rootCmd.PersistentFlags().StringVar(&profile, profileNameFlagLong, "", profileNameFlagUsage)
 
 	rootCmd.AddCommand(
 		ls.CreateLSCmd(container),

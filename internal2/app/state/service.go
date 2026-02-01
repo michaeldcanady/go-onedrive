@@ -8,7 +8,9 @@ import (
 var _ domainstate.Service = (*Service)(nil)
 
 type Service struct {
-	repo domainstate.Repository
+	repo            domainstate.Repository
+	sessionOverride string
+	hasSession      bool
 }
 
 func NewService(repo domainstate.Repository) *Service {
@@ -19,11 +21,23 @@ func (s *Service) getState() (domainstate.State, error) {
 	return s.repo.Load()
 }
 
+func (s *Service) SetSessionProfile(name string) {
+	s.sessionOverride = name
+	s.hasSession = true
+}
+
 func (s *Service) GetCurrentProfile() (string, error) {
+	// Session override takes precedence
+	if s.hasSession {
+		return s.sessionOverride, nil
+	}
+
+	// Otherwise use persistent state
 	st, err := s.getState()
 	if err != nil {
 		return "", err
 	}
+
 	return st.CurrentProfile, nil
 }
 
@@ -33,7 +47,6 @@ func (s *Service) SetCurrentProfile(name string) error {
 		return err
 	}
 
-	// TODO: support for temp/one session overrides
 	st.CurrentProfile = name
 	return s.repo.Save(st)
 }

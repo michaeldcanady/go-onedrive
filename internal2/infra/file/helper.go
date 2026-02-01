@@ -32,12 +32,18 @@ func toDomainItem(driveID string, it models.DriveItemable) *DriveItem {
 		mimeType = deref(file.GetMimeType())
 	}
 
+	path := deref(it.GetParentReference().GetPath())
+	pathWithoutDrive := ""
+	if path != "" {
+		pathWithoutDrive = strings.Split(deref(it.GetParentReference().GetPath()), ":")[1]
+	}
+
 	return &DriveItem{
 		DriveID:          driveID,
 		ID:               deref(it.GetId()),
 		Name:             deref(it.GetName()),
-		Path:             deref(it.GetParentReference().GetPath()),
-		PathWithoutDrive: strings.Split(deref(it.GetParentReference().GetPath()), ":")[1],
+		Path:             path,
+		PathWithoutDrive: pathWithoutDrive,
 		IsFolder:         it.GetFolder() != nil,
 		Size:             deref(it.GetSize()),
 		ETag:             deref(it.GetETag()),

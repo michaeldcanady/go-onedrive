@@ -115,7 +115,7 @@ func (c *Container) Auth() domainauth.AuthService {
 		loggerService := c.Logger()
 		logger, _ := loggerService.CreateLogger("auth")
 
-		c.authService = auth.NewService(credentialFactory, c.CacheService(), c.Config(), logger)
+		c.authService = auth.NewService(credentialFactory, c.CacheService(), c.Config(), c.State(), logger)
 	})
 
 	return c.authService

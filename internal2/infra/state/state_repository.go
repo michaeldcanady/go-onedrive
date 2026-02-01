@@ -6,6 +6,7 @@ import (
 
 	"github.com/michaeldcanady/go-onedrive/internal2/domain/state"
 	"github.com/michaeldcanady/go-onedrive/internal2/infra/cache/abstractions"
+	"github.com/michaeldcanady/go-onedrive/internal2/infra/profile"
 )
 
 type Repository struct {
@@ -56,6 +57,6 @@ func (r *Repository) Save(state state.State) error {
 
 func (r *Repository) defaultState() state.State {
 	return state.State{
-		CurrentProfile: "default",
+		CurrentProfile: profile.DefaultProfileName,
 	}
 }

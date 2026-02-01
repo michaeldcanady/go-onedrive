@@ -224,7 +224,6 @@ func (c *Cache[K, V]) SetEntry(ctx context.Context, entry *abstractions.Entry[K,
 	if err := binary.Write(f, binary.LittleEndian, uint32(len(serializedValue))); err != nil {
 		return err
 	}
-
 	if _, err := f.Write(serializedValue); err != nil {
 		return err
 	}
@@ -232,7 +231,46 @@ func (c *Cache[K, V]) SetEntry(ctx context.Context, entry *abstractions.Entry[K,
 	// Update index
 	c.index[string(serializedKey)] = offset
 
-	return nil
+	// Rewrite file to remove stale entries
+	return c.rewriteFile()
+}
+
+func (c *Cache[K, V]) readValueAtOffset(offset int64) (V, error) {
+	var zero V
+
+	f, err := os.Open(c.path)
+	if err != nil {
+		return zero, err
+	}
+	defer f.Close()
+
+	if _, err := f.Seek(offset, io.SeekStart); err != nil {
+		return zero, err
+	}
+
+	// Read key length
+	var keyLen uint32
+	if err := binary.Read(f, binary.LittleEndian, &keyLen); err != nil {
+		return zero, err
+	}
+
+	// Skip key bytes
+	if _, err := f.Seek(int64(keyLen), io.SeekCurrent); err != nil {
+		return zero, err
+	}
+
+	// Read value length
+	var valLen uint32
+	if err := binary.Read(f, binary.LittleEndian, &valLen); err != nil {
+		return zero, err
+	}
+
+	valBytes := make([]byte, valLen)
+	if _, err := f.Read(valBytes); err != nil {
+		return zero, err
+	}
+
+	return c.valueSerializer.Deserialize(valBytes)
 }
 
 // rewriteFile compacts the file by rewriting only live entries.
@@ -247,29 +285,42 @@ func (c *Cache[K, V]) rewriteFile() error {
 
 	newIndex := make(map[string]int64)
 
-	for keyStr := range c.index {
+	for keyStr, oldOffset := range c.index {
 		offset, _ := f.Seek(0, io.SeekEnd)
 
 		// Deserialize key
-		key, err := c.keySerializer.Deserialize([]byte(keyStr))
+		_, err := c.keySerializer.Deserialize([]byte(keyStr))
 		if err != nil {
 			return err
 		}
 
-		// Get value
-		entry, err := c.GetEntry(context.Background(), key)
+		// Read value directly from disk (no GetEntry)
+		val, err := c.readValueAtOffset(oldOffset)
 		if err != nil {
-			continue
+			return err
 		}
 
 		keyBytes := []byte(keyStr)
-		valBytes, _ := c.valueSerializer.Serialize(entry.GetValue())
+		valBytes, err := c.valueSerializer.Serialize(val)
+		if err != nil {
+			return err
+		}
 
-		binary.Write(f, binary.LittleEndian, uint32(len(keyBytes)))
-		f.Write(keyBytes)
+		// Write key
+		if err := binary.Write(f, binary.LittleEndian, uint32(len(keyBytes))); err != nil {
+			return err
+		}
+		if _, err := f.Write(keyBytes); err != nil {
+			return err
+		}
 
-		binary.Write(f, binary.LittleEndian, uint32(len(valBytes)))
-		f.Write(valBytes)
+		// Write value
+		if err := binary.Write(f, binary.LittleEndian, uint32(len(valBytes))); err != nil {
+			return err
+		}
+		if _, err := f.Write(valBytes); err != nil {
+			return err
+		}
 
 		newIndex[keyStr] = offset
 	}
