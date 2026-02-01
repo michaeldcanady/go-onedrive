@@ -39,6 +39,11 @@ func CreateLoginCmd(container di.Container) *cobra.Command {
 				ctx = context.Background()
 			}
 
+			profileName, err := container.State().GetCurrentProfile()
+			if err != nil {
+				return NewCommandErrorWithNameWithError(commandName, err)
+			}
+
 			authService := container.Auth()
 
 			opts := auth.LoginOptions{
@@ -50,7 +55,7 @@ func CreateLoginCmd(container di.Container) *cobra.Command {
 				EnableCAE: true,
 			}
 
-			result, err := authService.Login(ctx, "default", opts)
+			result, err := authService.Login(ctx, profileName, opts)
 			if err != nil {
 				return NewCommandError(commandName, "failed authentication", err)
 			}

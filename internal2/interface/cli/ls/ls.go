@@ -9,6 +9,7 @@ import (
 	"github.com/michaeldcanady/go-onedrive/internal2/domain/di"
 	domainfs "github.com/michaeldcanady/go-onedrive/internal2/domain/fs"
 	infralogging "github.com/michaeldcanady/go-onedrive/internal2/infra/common/logging"
+	"github.com/michaeldcanady/go-onedrive/internal2/interface/cli/util"
 	"github.com/michaeldcanady/go-onedrive/internal2/interface/filtering"
 	"github.com/michaeldcanady/go-onedrive/internal2/interface/formatting"
 	"github.com/michaeldcanady/go-onedrive/internal2/interface/sorting"
@@ -69,15 +70,15 @@ func CreateLSCmd(c di.Container) *cobra.Command {
 		PreRunE: func(_ *cobra.Command, _ []string) error {
 			// Validate flags
 			if foldersOnly && filesOnly {
-				return NewCommandErrorWithNameWithMessage(commandName, "can't use --folders-only and --files-only together")
+				return util.NewCommandErrorWithNameWithMessage(commandName, "can't use --folders-only and --files-only together")
 			}
 
 			if !slices.Contains(supportedFormats, format) {
-				return NewCommandErrorWithNameWithMessage(commandName, fmt.Sprintf("unsupported format: %s; only supports: json, yaml/yml, long, or short", format))
+				return util.NewCommandErrorWithNameWithMessage(commandName, fmt.Sprintf("unsupported format: %s; only supports: json, yaml/yml, long, or short", format))
 			}
 
 			if !slices.Contains(supportedProperties, sortProperty) {
-				return NewCommandErrorWithNameWithMessage(commandName, fmt.Sprintf("unsupported property: %s; only supports: name, size, or modified", sortProperty))
+				return util.NewCommandErrorWithNameWithMessage(commandName, fmt.Sprintf("unsupported property: %s; only supports: name, size, or modified", sortProperty))
 			}
 
 			if format == "tree" && sortProperty != "" {
@@ -110,7 +111,7 @@ func CreateLSCmd(c di.Container) *cobra.Command {
 
 			logger, err := ensureLogger(c)
 			if err != nil {
-				return NewCommandErrorWithNameWithError(commandName, err)
+				return util.NewCommandErrorWithNameWithError(commandName, err)
 			}
 
 			logger.Info("starting ls command",
@@ -122,6 +123,13 @@ func CreateLSCmd(c di.Container) *cobra.Command {
 				infralogging.String("sortDirection", sortOrder.String()),
 			)
 
+			// Filesystem service
+			fsSvc := c.FS()
+			if fsSvc == nil {
+				logger.Error("filesystem service is nil")
+				return util.NewCommandErrorWithNameWithMessage(commandName, "filesystem service is nil")
+			}
+
 			// Resolve path
 			path := ""
 			if len(args) > 0 {
@@ -129,20 +137,13 @@ func CreateLSCmd(c di.Container) *cobra.Command {
 			}
 			logger.Debug("path resolved", infralogging.String("path", path))
 
-			// Filesystem service
-			fsSvc := c.FS()
-			if fsSvc == nil {
-				logger.Error("filesystem service is nil")
-				return NewCommandErrorWithNameWithMessage(commandName, "filesystem service is nil")
-			}
-
 			logger.Debug("listing items from filesystem")
 			items, err := fsSvc.List(cmd.Context(), path, domainfs.ListOptions{
 				Recursive: recursive,
 			})
 			if err != nil {
 				logger.Error("failed to list items", infralogging.String("error", err.Error()))
-				return NewCommandErrorWithNameWithError(commandName, err)
+				return util.NewCommandErrorWithNameWithError(commandName, err)
 			}
 			logger.Info("items retrieved", infralogging.Int("count", len(items)))
 
@@ -151,14 +152,14 @@ func CreateLSCmd(c di.Container) *cobra.Command {
 			filterer, err := filtering.NewFilterFactory().Create(filterOpts...)
 			if err != nil {
 				logger.Error("failed to initialize filterer", infralogging.String("error", err.Error()))
-				return NewCommandError(commandName, "failed to initialize filter", err)
+				return util.NewCommandError(commandName, "failed to initialize filter", err)
 			}
 
 			logger.Debug("applying filters")
 			items, err = filterer.Filter(items)
 			if err != nil {
 				logger.Error("failed to filter items", infralogging.String("error", err.Error()))
-				return NewCommandError(commandName, "failed to filter items", err)
+				return util.NewCommandError(commandName, "failed to filter items", err)
 			}
 			logger.Info("items after filtering", infralogging.Int("count", len(items)))
 
@@ -168,14 +169,14 @@ func CreateLSCmd(c di.Container) *cobra.Command {
 				sorter, err := sorting.NewSorterFactory().Create(sortOpts...)
 				if err != nil {
 					logger.Error("failed to initialize sorter", infralogging.String("error", err.Error()))
-					return NewCommandError(commandName, "failed to initialize sorter", err)
+					return util.NewCommandError(commandName, "failed to initialize sorter", err)
 				}
 
 				logger.Debug("sorting items")
 				items, err = sorter.Sort(items)
 				if err != nil {
 					logger.Error("failed to sort items", infralogging.String("error", err.Error()))
-					return NewCommandError(commandName, "failed to sort items", err)
+					return util.NewCommandError(commandName, "failed to sort items", err)
 				}
 			}
 
@@ -184,13 +185,13 @@ func CreateLSCmd(c di.Container) *cobra.Command {
 			formatter, err := formatting.NewFormatterFactory().Create(format)
 			if err != nil {
 				logger.Error("failed to initialize formatter", infralogging.String("error", err.Error()))
-				return NewCommandError(commandName, "failed to initialize formatter", err)
+				return util.NewCommandError(commandName, "failed to initialize formatter", err)
 			}
 
 			logger.Debug("formatting output")
 			if err := formatter.Format(cmd.OutOrStdout(), items); err != nil {
 				logger.Error("failed to format items", infralogging.String("error", err.Error()))
-				return NewCommandError(commandName, "failed to format items", err)
+				return util.NewCommandError(commandName, "failed to format items", err)
 			}
 
 			logger.Info("ls command completed",

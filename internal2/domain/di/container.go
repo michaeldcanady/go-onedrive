@@ -9,6 +9,7 @@ import (
 	"github.com/michaeldcanady/go-onedrive/internal2/domain/file"
 	domainfs "github.com/michaeldcanady/go-onedrive/internal2/domain/fs"
 	domainprofile "github.com/michaeldcanady/go-onedrive/internal2/domain/profile"
+	"github.com/michaeldcanady/go-onedrive/internal2/domain/state"
 )
 
 type Container interface {
@@ -20,4 +21,5 @@ type Container interface {
 	Profile() domainprofile.ProfileService
 	Config() config.ConfigService
 	File() file.FileService
+	State() state.Service
 }

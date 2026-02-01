@@ -5,6 +5,7 @@ import (
 
 	"github.com/michaeldcanady/go-onedrive/internal2/domain/di"
 	"github.com/michaeldcanady/go-onedrive/internal2/infra/common/logging"
+	infraprofile "github.com/michaeldcanady/go-onedrive/internal2/infra/profile"
 	"github.com/michaeldcanady/go-onedrive/internal2/interface/cli/auth"
 	"github.com/michaeldcanady/go-onedrive/internal2/interface/cli/ls"
 	profilecmd "github.com/michaeldcanady/go-onedrive/internal2/interface/cli/profile"
@@ -13,7 +14,6 @@ import (
 
 const (
 	profileNameFlagLong     = "profile"
-	profileNameFlagDefault  = "default"
 	profileNameFlagUsage    = "name of profile"
 	configFileFlagLong      = "config"
 	configFileFlagUsage     = "path to config file"
@@ -57,18 +57,18 @@ func CreateRootCmd(container di.Container) (*cobra.Command, error) {
 				return fmt.Errorf("failed to initialize cli logger: %w", err)
 			}
 
-			if err := container.Config().AddPath(profile, config); err != nil {
+			profileName, err := container.State().GetCurrentProfile()
+			if err != nil {
+				return fmt.Errorf("failed to get current profile: %w", err)
+			}
+
+			if err := container.Config().AddPath(profileName, config); err != nil {
 				return fmt.Errorf("failed to load config file %s: %w", config, err)
 			}
 
 			container.Logger().SetAllLevel(level)
 			cliLogger.Info("updated all logger level", logging.String("level", level))
 			cliLogger.Info("updated config path", logging.String("path", config))
-			//container.Options = di.RuntimeOptions{
-			//	LogLevel:    level,
-			//	ConfigPath:  config,
-			//	ProfileName: profile,
-			//}
 
 			return nil
 		},
@@ -76,7 +76,7 @@ func CreateRootCmd(container di.Container) (*cobra.Command, error) {
 
 	rootCmd.PersistentFlags().StringVar(&config, configFileFlagLong, configFileFlagDefault, configFileFlagUsage)
 	rootCmd.PersistentFlags().StringVar(&level, loggingLevelFlagLong, loggingLevelFlagDefault, loggingLevelFlagUsage)
-	rootCmd.PersistentFlags().StringVar(&profile, profileNameFlagLong, profileNameFlagDefault, profileNameFlagUsage)
+	rootCmd.PersistentFlags().StringVar(&profile, profileNameFlagLong, infraprofile.DefaultProfileName, profileNameFlagUsage)
 
 	rootCmd.AddCommand(
 		ls.CreateLSCmd(container),

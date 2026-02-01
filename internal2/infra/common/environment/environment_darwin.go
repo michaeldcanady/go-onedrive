@@ -8,35 +8,51 @@ import (
 )
 
 func ConfigBase() (string, error) {
+	libraryDir, err := libraryBase()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(libraryDir, "Preferences"), nil
+}
+
+func libraryBase() (string, error) {
 	home, err := os.UserHomeDir()
 	if err != nil {
 		return "", err
 	}
-	return filepath.Join(home, "Library", "Preferences"), nil
+	return filepath.Join(home, "Library"), nil
+}
+
+func applicationSupportBase() (string, error) {
+	libraryDir, err := libraryBase()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(libraryDir, "Application Support"), nil
+}
+
+func StateBase() (string, error) {
+	return applicationSupportBase()
 }
 
 func DataBase() (string, error) {
-	home, err := os.UserHomeDir()
-	if err != nil {
-		return "", err
-	}
-	return filepath.Join(home, "Library", "Application Support"), nil
+	return applicationSupportBase()
 }
 
 func CacheBase() (string, error) {
-	home, err := os.UserHomeDir()
+	libraryDir, err := libraryBase()
 	if err != nil {
 		return "", err
 	}
-	return filepath.Join(home, "Library", "Caches"), nil
+	return filepath.Join(libraryDir, "Caches"), nil
 }
 
 func LogsBase() (string, error) {
-	home, err := os.UserHomeDir()
+	libraryDir, err := libraryBase()
 	if err != nil {
 		return "", err
 	}
-	return filepath.Join(home, "Library", "Logs"), nil
+	return filepath.Join(libraryDir, "Logs"), nil
 }
 
 func InstallBase() (string, error) {

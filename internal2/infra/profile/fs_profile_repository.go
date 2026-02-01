@@ -11,6 +11,10 @@ import (
 	"github.com/michaeldcanady/go-onedrive/internal2/domain/profile"
 )
 
+const (
+	DefaultProfileName = "default"
+)
+
 type FSProfileService struct {
 	baseDir string // e.g. ~/.config/odc
 }
@@ -73,7 +77,7 @@ func (s *FSProfileService) Create(name string) (profile.Profile, error) {
 }
 
 func (s *FSProfileService) Delete(name string) error {
-	if name == "default" {
+	if name == DefaultProfileName {
 		return errors.New("default profile can't be deleted")
 	}
 	p := s.profilePath(name)
@@ -96,6 +100,6 @@ func (s *FSProfileService) Get(_ context.Context, name string) (profile.Profile,
 }
 
 func (s *FSProfileService) ensureDefault() error {
-	defaultProfilePath := filepath.Join(s.baseDir, "default")
+	defaultProfilePath := filepath.Join(s.baseDir, DefaultProfileName)
 	return os.MkdirAll(defaultProfilePath, os.ModePerm)
 }

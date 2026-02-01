@@ -15,12 +15,20 @@ func ConfigBase() (string, error) {
 	return filepath.Join(home, ".config"), nil
 }
 
-func DataBase() (string, error) {
+func localDir() (string, error) {
 	home, err := os.UserHomeDir()
 	if err != nil {
 		return "", err
 	}
-	return filepath.Join(home, ".local", "share"), nil
+	return filepath.Join(home, ".local"), nil
+}
+
+func DataBase() (string, error) {
+	localDir, err := localDir()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(localDir, "share"), nil
 }
 
 func CacheBase() (string, error) {
@@ -31,21 +39,28 @@ func CacheBase() (string, error) {
 	return filepath.Join(home, ".cache"), nil
 }
 
-func LogsBase() (string, error) {
-	home, err := os.UserHomeDir()
+func StateBase() (string, error) {
+	localDir, err := localDir()
 	if err != nil {
 		return "", err
 	}
-	// ~/.local/state/yourapp/logs (appName is added in impl.go)
-	return filepath.Join(home, ".local", "state"), nil
+	return filepath.Join(localDir, "state"), nil
+}
+
+func LogsBase() (string, error) {
+	state, err := StateBase()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(state, "logs"), nil
 }
 
 func InstallBase() (string, error) {
-	home, err := os.UserHomeDir()
+	localDir, err := localDir()
 	if err != nil {
 		return "", err
 	}
-	return filepath.Join(home, ".local", "bin"), nil
+	return filepath.Join(localDir, "bin"), nil
 }
 
 func TempBase() (string, error) {

@@ -22,7 +22,7 @@ func NewZapProvider(logLevel string, logsHome string) (Logger, error) {
 		return nil, fmt.Errorf("unknown logging level: %s", logLevel)
 	}
 
-	cfg.OutputPaths = append(cfg.OutputPaths, logsHome)
+	cfg.OutputPaths = []string{logsHome}
 
 	return NewZapLogger(cfg), nil
 }

@@ -23,10 +23,14 @@ import (
 	domainfile "github.com/michaeldcanady/go-onedrive/internal2/domain/file"
 	domainfs "github.com/michaeldcanady/go-onedrive/internal2/domain/fs"
 	domainprofile "github.com/michaeldcanady/go-onedrive/internal2/domain/profile"
+	domainstate "github.com/michaeldcanady/go-onedrive/internal2/domain/state"
 	infraauth "github.com/michaeldcanady/go-onedrive/internal2/infra/auth"
 	"github.com/michaeldcanady/go-onedrive/internal2/infra/common/graph"
 	"github.com/michaeldcanady/go-onedrive/internal2/infra/file"
 	infraprofile "github.com/michaeldcanady/go-onedrive/internal2/infra/profile"
+
+	appstate "github.com/michaeldcanady/go-onedrive/internal2/app/state"
+	infrastate "github.com/michaeldcanady/go-onedrive/internal2/infra/state"
 )
 
 var _ di.Container = (*Container)(nil)
@@ -58,6 +62,10 @@ type Container struct {
 
 	clientOnce    sync.Once
 	clientProvide clienter
+
+	// in Container struct
+	stateOnce    sync.Once
+	stateService domainstate.Service
 }
 
 func NewContainer() *Container {
@@ -179,4 +187,18 @@ func (c *Container) Profile() domainprofile.ProfileService {
 	})
 
 	return c.profileService
+}
+
+func (c *Container) State() domainstate.Service {
+	c.stateOnce.Do(func() {
+		env := c.EnvironmentService()
+		stateDir, _ := env.StateDir()
+		statePath := filepath.Join(stateDir, "state.json") // or .yaml
+
+		serializer := &cache.JSONSerializerDeserializer[domainstate.State]{}
+		repo := infrastate.NewRepository(statePath, serializer)
+
+		c.stateService = appstate.NewService(repo)
+	})
+	return c.stateService
 }

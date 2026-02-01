@@ -93,7 +93,7 @@ func (s *ProfileService) GetProfile(ctx context.Context, name string) (domainpro
 
 	// Try cache first
 	profile, err := s.cacheSvc.GetCLIProfile(ctx, name)
-	if err == nil {
+	if err == nil && profile != (domainprofile.Profile{}) {
 		return profile, nil
 	}
 

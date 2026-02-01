@@ -13,4 +13,5 @@ type EnvironmentService interface {
 	Name() string
 	OS() string
 	TempDir() (string, error)
+	StateDir() (string, error)
 }

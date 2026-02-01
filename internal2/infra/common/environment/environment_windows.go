@@ -16,10 +16,26 @@ func ConfigBase() (string, error) {
 	return base, nil
 }
 
-func DataBase() (string, error) {
+func localAppdata() (string, error) {
 	base := os.Getenv("LOCALAPPDATA")
 	if base == "" {
 		return "", fmt.Errorf("LOCALAPPDATA not set")
+	}
+	return base, nil
+}
+
+func StateBase() (string, error) {
+	base, err := localAppdata()
+	if err != nil {
+		return "", err
+	}
+	return base, nil
+}
+
+func DataBase() (string, error) {
+	base, err := localAppdata()
+	if err != nil {
+		return "", err
 	}
 	return base, nil
 }

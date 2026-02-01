@@ -54,14 +54,17 @@ func (s *EnvironmentService) CacheDir() (string, error) {
 }
 
 func (s *EnvironmentService) LogDir() (string, error) {
+	if s.IsLinux() {
+		base, err := infracommon.StateBase()
+		if err != nil {
+			return "", err
+		}
+
+		return filepath.Join(base, s.appName, "logs"), nil
+	}
 	base, err := infracommon.LogsBase()
 	if err != nil {
 		return "", err
-	}
-
-	if s.IsLinux() {
-		// ~/.local/state/<app>/logs
-		return filepath.Join(base, s.appName, "logs"), nil
 	}
 
 	// Windows: %LOCALAPPDATA%\Logs\<app>
@@ -90,7 +93,21 @@ func (s *EnvironmentService) InstallDir() (string, error) {
 }
 
 func (s *EnvironmentService) TempDir() (string, error) {
-	return infracommon.TempBase()
+	temp, err := infracommon.TempBase()
+	if err != nil {
+		return "", err
+	}
+
+	return filepath.Join(temp, s.appName), nil
+}
+
+func (s *EnvironmentService) StateDir() (string, error) {
+	state, err := infracommon.StateBase()
+	if err != nil {
+		return "", err
+	}
+
+	return filepath.Join(state, s.appName), nil
 }
 
 func (s *EnvironmentService) EnsureAll() error {
@@ -100,6 +117,7 @@ func (s *EnvironmentService) EnsureAll() error {
 		s.DataDir,
 		s.CacheDir,
 		s.LogDir,
+		s.StateDir,
 	}
 
 	for _, fn := range creators {
