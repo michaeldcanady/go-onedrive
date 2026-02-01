@@ -20,25 +20,26 @@ import (
 type Service struct {
 	// due to golang's runtime generics there is no type safe way to manage these caches.
 	// this is our work around until a better solution is possible.
-	profileCache       abstractions.Cache[string, azidentity.AuthenticationRecord]
+	authCache          abstractions.Cache[string, azidentity.AuthenticationRecord]
 	configurationCache abstractions.Cache[string, config.Configuration3]
 	driveCache         abstractions.Cache[string, *domaincache.CachedChildren]
 	fileCache          abstractions.Cache[string, *domaincache.CachedItem]
 	logger             logging.Logger
+	profileCache       abstractions.Cache[string, domainprofile.Profile]
 }
 
-func New(profileCachePath, driveCachePath, fileCachePath string, logger logging.Logger) (*Service, error) {
-	parent, _ := filepath.Split(profileCachePath)
+func New(authCachePath, driveCachePath, fileCachePath string, logger logging.Logger) (*Service, error) {
+	parent, _ := filepath.Split(authCachePath)
 	if err := os.MkdirAll(parent, os.ModePerm); err != nil {
 		return nil, err
 	}
 
-	profileCache, err := disk.New(profileCachePath, &JSONSerializerDeserializer[string]{}, &JSONSerializerDeserializer[azidentity.AuthenticationRecord]{})
+	authCache, err := disk.New(authCachePath, &JSONSerializerDeserializer[string]{}, &JSONSerializerDeserializer[azidentity.AuthenticationRecord]{})
 	if err != nil {
 		return nil, err
 	}
 
-	configurationCache := memory.New[*abstractions.Entry[string, config.Configuration3], string, config.Configuration3]()
+	configurationCache := memory.New[*abstractions.Entry[string, config.Configuration3]]()
 
 	driveCache, err := disk.New(driveCachePath, &JSONSerializerDeserializer[string]{}, NewKiotaJSONSerializerDeserializer[*domaincache.CachedChildren](domaincache.CreateCachedChildrenFromDiscriminatorValue))
 	if err != nil {
@@ -50,12 +51,15 @@ func New(profileCachePath, driveCachePath, fileCachePath string, logger logging.
 		return nil, err
 	}
 
+	profileCache := memory.New[*abstractions.Entry[string, domainprofile.Profile]]()
+
 	return &Service{
-		profileCache:       profileCache,
+		authCache:          authCache,
 		configurationCache: configurationCache,
 		logger:             logger,
 		driveCache:         driveCache,
 		fileCache:          fileCache,
+		profileCache:       profileCache,
 	}, nil
 }
 
@@ -66,11 +70,11 @@ func (s *Service) GetProfile(ctx context.Context, name string) (azidentity.Authe
 		return record, err
 	}
 
-	if s.profileCache == nil {
+	if s.authCache == nil {
 		return record, errors.New("profile cache is nil")
 	}
 
-	entry, err := s.profileCache.GetEntry(ctx, name)
+	entry, err := s.authCache.GetEntry(ctx, name)
 	if err != nil {
 		// ok if key isn't found as that means no profile cached
 		if !errors.Is(err, core.ErrKeyNotFound) {
@@ -90,28 +94,28 @@ func (s *Service) SetProfile(ctx context.Context, name string, record azidentity
 		return err
 	}
 
-	if s.profileCache == nil {
+	if s.authCache == nil {
 		return errors.New("profile cache is nil")
 	}
 
-	entry, err := s.profileCache.GetEntry(ctx, name)
+	entry, err := s.authCache.GetEntry(ctx, name)
 	if err != nil {
 		// ok if key isn't found as that means no profile cached previously
 		if !errors.Is(err, core.ErrKeyNotFound) {
 			return err
 		}
-		if entry, err = s.profileCache.NewEntry(ctx, name); err != nil {
+		if entry, err = s.authCache.NewEntry(ctx, name); err != nil {
 			return err
 		}
 	}
 	if entry == nil {
-		if entry, err = s.profileCache.NewEntry(ctx, name); err != nil {
+		if entry, err = s.authCache.NewEntry(ctx, name); err != nil {
 			return err
 		}
 	}
 	entry.SetValue(record)
 
-	return s.profileCache.SetEntry(ctx, entry)
+	return s.authCache.SetEntry(ctx, entry)
 }
 
 func (s *Service) GetConfiguration(ctx context.Context, name string) (config.Configuration3, error) {
@@ -172,6 +176,22 @@ func (s *Service) GetCLIProfile(ctx context.Context, name string) (domainprofile
 		return profile, err
 	}
 
+	if s.profileCache == nil {
+		return profile, errors.New("profile cache is nil")
+	}
+
+	entry, err := s.profileCache.GetEntry(ctx, name)
+	if err != nil && !errors.Is(err, core.ErrKeyNotFound) {
+		return profile, errors.Join(errors.New("unable to retrieve profile"), err)
+	}
+
+	if entry != nil {
+		profile = entry.GetValue()
+		if profile == (domainprofile.Profile{}) {
+			return domainprofile.Profile{}, errors.New("")
+		}
+	}
+
 	return profile, nil
 }
 
@@ -180,7 +200,28 @@ func (s *Service) SetCLIProfile(ctx context.Context, name string, profile domain
 		return err
 	}
 
-	return nil
+	if s.profileCache == nil {
+		return errors.New("profile cache is nil")
+	}
+
+	entry, err := s.profileCache.GetEntry(ctx, name)
+	if err != nil {
+		// ok if key isn't found as that means no profile cached previously
+		if !errors.Is(err, core.ErrKeyNotFound) {
+			return err
+		}
+		if entry, err = s.profileCache.NewEntry(ctx, name); err != nil {
+			return err
+		}
+	}
+	if entry == nil {
+		if entry, err = s.profileCache.NewEntry(ctx, name); err != nil {
+			return err
+		}
+	}
+	entry.SetValue(profile)
+
+	return s.profileCache.SetEntry(ctx, entry)
 }
 
 func (s *Service) GetDrive(ctx context.Context, name string) (domaincache.CachedChildren, error) {
@@ -190,14 +231,14 @@ func (s *Service) GetDrive(ctx context.Context, name string) (domaincache.Cached
 	}
 
 	if s.driveCache == nil {
-		return record, errors.New("profile cache is nil")
+		return record, errors.New("drive cache is nil")
 	}
 
 	entry, err := s.driveCache.GetEntry(ctx, name)
 	if err != nil {
-		// ok if key isn't found as that means no profile cached
+		// ok if key isn't found as that means no drive cached
 		if !errors.Is(err, core.ErrKeyNotFound) {
-			return record, errors.Join(errors.New("unable to retrieve profile"), err)
+			return record, errors.Join(errors.New("unable to retrieve drive"), err)
 		}
 	}
 	if entry != nil {
