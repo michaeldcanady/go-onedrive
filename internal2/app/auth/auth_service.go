@@ -37,12 +37,6 @@ func NewService(
 	}
 }
 
-//
-// ────────────────────────────────────────────────────────────────────────────────
-//   PUBLIC: GetToken (silent token acquisition)
-// ────────────────────────────────────────────────────────────────────────────────
-//
-
 // GetToken implements auth.AuthService.
 // This method NEVER triggers interactive login.
 // It only attempts silent token acquisition using cached AuthenticationRecord.
@@ -136,35 +130,50 @@ func (s *AuthService) Login(ctx context.Context, profileName string, opts authdo
 		EnableCAE: opts.EnableCAE,
 	}
 
-	// Determine if interactive login is required
-	needsAuth := opts.Force || record == (azidentity.AuthenticationRecord{})
+	var token azcore.AccessToken
+	maxAttempts := 3
 
-	if needsAuth {
-		s.logger.Info("performing interactive authentication")
+	for range maxAttempts {
+		// Determine if interactive login is required
+		needsAuth := opts.Force || record == (azidentity.AuthenticationRecord{})
 
-		newRecord, err := authenticator.Authenticate(ctx, tokenOpts)
-		if err != nil {
-			return nil, fmt.Errorf("authentication failed: %w", err)
+		if needsAuth {
+			s.logger.Info("performing interactive authentication")
+
+			newRecord, err := authenticator.Authenticate(ctx, tokenOpts)
+			if err != nil {
+				return nil, fmt.Errorf("authentication failed: %w", err)
+			}
+
+			record = newRecord
+
+			// Reload credential with updated record
+			cred, err = s.factory.Create(authinfra.CredentialOptions{
+				Type:                 cfg.Auth.Type,
+				ClientID:             cfg.Auth.ClientID,
+				TenantID:             cfg.Auth.TenantID,
+				AuthenticationRecord: newRecord,
+			})
+			if err != nil {
+				return nil, fmt.Errorf("failed to reload credential: %w", err)
+			}
 		}
 
-		record = newRecord
-
-		// Reload credential with updated record
-		cred, err = s.factory.Create(authinfra.CredentialOptions{
-			Type:                 cfg.Auth.Type,
-			ClientID:             cfg.Auth.ClientID,
-			TenantID:             cfg.Auth.TenantID,
-			AuthenticationRecord: newRecord,
-		})
+		// Retrieve token
+		token, err = cred.GetToken(ctx, *tokenOpts)
 		if err != nil {
-			return nil, fmt.Errorf("failed to reload credential: %w", err)
+			if !isAuthRequired(err) {
+				return nil, fmt.Errorf("failed to retrieve token: %w", err)
+			}
+			record = azidentity.AuthenticationRecord{}
+			continue
 		}
+		break
 	}
 
-	// Retrieve token
-	token, err := cred.GetToken(ctx, *tokenOpts)
-	if err != nil {
-		return nil, fmt.Errorf("failed to retrieve token: %w", err)
+	if token == (azcore.AccessToken{}) {
+		s.logger.Warn("token is empty")
+		return nil, errors.New("empty token")
 	}
 
 	// Save updated record
