@@ -60,3 +60,35 @@ func (s *Service) ClearCurrentProfile() error {
 	st.CurrentProfile = profile.DefaultProfileName
 	return s.repo.Save(st)
 }
+
+func (s *Service) GetCurrentDrive() (string, error) {
+	// TODO: Add support for session state
+
+	st, err := s.getState()
+	if err != nil {
+		return "", err
+	}
+
+	return st.CurrentDrive, nil
+}
+
+func (s *Service) SetCurrentDrive(name string) error {
+	st, err := s.getState()
+	if err != nil {
+		return err
+	}
+
+	st.CurrentDrive = name
+	return s.repo.Save(st)
+}
+
+func (s *Service) ClearCurrentDrive() error {
+	st, err := s.getState()
+	if err != nil {
+		return err
+	}
+
+	// TODO: Figure out how to default to current user's personal drive.
+	st.CurrentDrive = ""
+	return s.repo.Save(st)
+}

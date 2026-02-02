@@ -5,4 +5,8 @@ type Service interface {
 	SetCurrentProfile(name string) error
 	ClearCurrentProfile() error
 	SetSessionProfile(name string)
+
+	GetCurrentDrive() (string, error)
+	SetCurrentDrive(name string) error
+	ClearCurrentDrive() error
 }
