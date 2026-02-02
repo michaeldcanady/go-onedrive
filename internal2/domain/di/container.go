@@ -6,6 +6,7 @@ import (
 	domainenvironment "github.com/michaeldcanady/go-onedrive/internal2/domain/common/environment"
 	domainlogger "github.com/michaeldcanady/go-onedrive/internal2/domain/common/logger"
 	"github.com/michaeldcanady/go-onedrive/internal2/domain/config"
+	"github.com/michaeldcanady/go-onedrive/internal2/domain/drive"
 	"github.com/michaeldcanady/go-onedrive/internal2/domain/file"
 	domainfs "github.com/michaeldcanady/go-onedrive/internal2/domain/fs"
 	domainprofile "github.com/michaeldcanady/go-onedrive/internal2/domain/profile"
@@ -22,4 +23,5 @@ type Container interface {
 	Config() config.ConfigService
 	File() file.FileService
 	State() state.Service
+	Drive() drive.DriveService
 }

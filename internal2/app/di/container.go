@@ -20,6 +20,7 @@ import (
 	domainlogger "github.com/michaeldcanady/go-onedrive/internal2/domain/common/logger"
 	domainconfig "github.com/michaeldcanady/go-onedrive/internal2/domain/config"
 	"github.com/michaeldcanady/go-onedrive/internal2/domain/di"
+	domaindrive "github.com/michaeldcanady/go-onedrive/internal2/domain/drive"
 	domainfile "github.com/michaeldcanady/go-onedrive/internal2/domain/file"
 	domainfs "github.com/michaeldcanady/go-onedrive/internal2/domain/fs"
 	domainprofile "github.com/michaeldcanady/go-onedrive/internal2/domain/profile"
@@ -63,13 +64,27 @@ type Container struct {
 	clientOnce    sync.Once
 	clientProvide clienter
 
-	// in Container struct
 	stateOnce    sync.Once
 	stateService domainstate.Service
+
+	driveOnce    sync.Once
+	driveService domaindrive.DriveService
 }
 
 func NewContainer() *Container {
 	return &Container{}
+}
+
+// Drive implements [di.Container].
+func (c *Container) Drive() domaindrive.DriveService {
+	c.driveOnce.Do(func() {
+		loggerService := c.Logger()
+		logger, _ := loggerService.CreateLogger("drive")
+
+		c.driveService = drive.NewDriveService(c.clientProvider(), logger)
+	})
+
+	return c.driveService
 }
 
 // File implements [di.Container].

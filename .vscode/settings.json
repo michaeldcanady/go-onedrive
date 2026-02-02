@@ -14,6 +14,7 @@
         "credentialservice",
         "derr",
         "domainconfig",
+        "domaindrive",
         "domainenv",
         "domainenvironment",
         "domainformatting",
