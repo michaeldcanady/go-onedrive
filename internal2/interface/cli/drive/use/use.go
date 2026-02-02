@@ -20,17 +20,18 @@ func CreateUseCmd(container di.Container) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// TODO: add logger
 
-			id := strings.TrimSpace(args[0])
+			id := strings.ToLower(strings.TrimSpace(args[0]))
 			if id == "" {
 				return util.NewCommandErrorWithNameWithMessage(commandName, "id is empty")
 			}
 
-			id = strings.ToLower(id)
-
-			// TODO: update drive state
-			_, err := container.Drive().ResolveDrive(cmd.Context(), id)
+			drive, err := container.Drive().ResolveDrive(cmd.Context(), id)
 			if err != nil {
 				return util.NewCommandErrorWithNameWithError(commandName, err)
+			}
+
+			if err := container.State().SetCurrentDrive(drive.ID); err != nil {
+				return util.NewCommandErrorWithNameWithMessage(commandName, "failed to set current drive")
 			}
 
 			return nil
