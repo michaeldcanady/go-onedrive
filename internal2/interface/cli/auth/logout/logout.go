@@ -3,7 +3,6 @@ package logout
 import (
 	"context"
 
-	applogging "github.com/michaeldcanady/go-onedrive/internal2/app/common/logging"
 	"github.com/michaeldcanady/go-onedrive/internal2/domain/di"
 	infralogging "github.com/michaeldcanady/go-onedrive/internal2/infra/common/logging"
 	"github.com/michaeldcanady/go-onedrive/internal2/interface/cli/util"
@@ -31,7 +30,7 @@ func CreateLogoutCmd(container di.Container) *cobra.Command {
 				ctx = context.Background()
 			}
 
-			logger, err := ensureLogger(container)
+			logger, err := util.EnsureLogger(container, loggerID)
 			if err != nil {
 				return util.NewCommandErrorWithNameWithError(commandName, err)
 			}
@@ -80,12 +79,4 @@ func CreateLogoutCmd(container di.Container) *cobra.Command {
 	cmd.Flags().BoolVarP(&force, forceLongFlag, forceShortFlag, false, forceUsage)
 
 	return cmd
-}
-
-func ensureLogger(c di.Container) (infralogging.Logger, error) {
-	logger, err := c.Logger().GetLogger(loggerID)
-	if err == applogging.ErrUnknownLogger {
-		return c.Logger().CreateLogger(loggerID)
-	}
-	return logger, err
 }

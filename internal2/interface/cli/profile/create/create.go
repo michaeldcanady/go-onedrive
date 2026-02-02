@@ -3,7 +3,6 @@ package create
 import (
 	"strings"
 
-	applogging "github.com/michaeldcanady/go-onedrive/internal2/app/common/logging"
 	"github.com/michaeldcanady/go-onedrive/internal2/domain/di"
 	infralogging "github.com/michaeldcanady/go-onedrive/internal2/infra/common/logging"
 	"github.com/michaeldcanady/go-onedrive/internal2/interface/cli/util"
@@ -34,7 +33,7 @@ func CreateCreateCmd(container di.Container) *cobra.Command {
 		Args:  cobra.ExactArgs(1),
 
 		RunE: func(cmd *cobra.Command, args []string) error {
-			logger, err := ensureLogger(container)
+			logger, err := util.EnsureLogger(container, loggerID)
 			if err != nil {
 				return util.NewCommandErrorWithNameWithError(commandName, err)
 			}
@@ -101,12 +100,4 @@ func CreateCreateCmd(container di.Container) *cobra.Command {
 	cmd.Flags().BoolVarP(&force, forceFlagLong, forceFlagShort, false, forceFlagUsage)
 
 	return cmd
-}
-
-func ensureLogger(c di.Container) (infralogging.Logger, error) {
-	logger, err := c.Logger().GetLogger(loggerID)
-	if err == applogging.ErrUnknownLogger {
-		return c.Logger().CreateLogger(loggerID)
-	}
-	return logger, err
 }
