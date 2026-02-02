@@ -8,7 +8,9 @@ import (
 	"github.com/spf13/cobra"
 )
 
-const commandName = "use"
+const (
+	commandName = "use"
+)
 
 func CreateUseCmd(container di.Container) *cobra.Command {
 	return &cobra.Command{
