@@ -213,10 +213,10 @@ func (c *Container) State() domainstate.Service {
 	c.stateOnce.Do(func() {
 		env := c.EnvironmentService()
 		stateDir, _ := env.StateDir()
-		statePath := filepath.Join(stateDir, stateFileName) // or .yaml
+		statePath := filepath.Join(stateDir, stateFileName)
 
 		serializer := &cache.JSONSerializerDeserializer[domainstate.State]{}
-		repo := infrastate.NewRepository(statePath, serializer, nil)
+		repo := infrastate.NewRepository(statePath, serializer)
 
 		c.stateService = appstate.NewService(repo)
 	})
