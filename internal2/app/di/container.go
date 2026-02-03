@@ -10,6 +10,7 @@ import (
 	"github.com/michaeldcanady/go-onedrive/internal2/app/drive"
 	"github.com/michaeldcanady/go-onedrive/internal2/app/fs"
 	appprofile "github.com/michaeldcanady/go-onedrive/internal2/app/profile"
+	"github.com/michaeldcanady/go-onedrive/internal2/app/state"
 
 	"github.com/michaeldcanady/go-onedrive/internal2/app/common/environment"
 	"github.com/michaeldcanady/go-onedrive/internal2/app/common/logging"
@@ -37,7 +38,7 @@ import (
 var _ di.Container = (*Container)(nil)
 
 const (
-	stateFileName = "profile"
+	stateFileName = "state.json"
 )
 
 type Container struct {
@@ -166,9 +167,9 @@ func (c *Container) FS() domainfs.Service {
 		loggerService := c.Logger()
 		logger, _ := loggerService.CreateLogger("filesystem")
 
-		resolver := drive.NewDriverResolverAdapter(drive.NewDriveService(c.clientProvider(), logger))
+		resolver := state.NewDriverResolverAdapter(c.State())
 
-		c.fsService = fs.NewService(c.File(), resolver)
+		c.fsService = fs.NewService(c.File(), resolver, logger)
 	})
 	return c.fsService
 }
@@ -192,7 +193,7 @@ func (c *Container) Profile() domainprofile.ProfileService {
 		profileBaseDir, _ := env.ConfigDir()
 
 		loggerService := c.Logger()
-		logger, _ := loggerService.CreateLogger(stateFileName)
+		logger, _ := loggerService.CreateLogger("profile")
 
 		// Infra repository
 		repo := infraprofile.NewFSProfileService(profileBaseDir)
@@ -212,7 +213,7 @@ func (c *Container) State() domainstate.Service {
 	c.stateOnce.Do(func() {
 		env := c.EnvironmentService()
 		stateDir, _ := env.StateDir()
-		statePath := filepath.Join(stateDir, "state.json") // or .yaml
+		statePath := filepath.Join(stateDir, stateFileName) // or .yaml
 
 		serializer := &cache.JSONSerializerDeserializer[domainstate.State]{}
 		repo := infrastate.NewRepository(statePath, serializer, nil)

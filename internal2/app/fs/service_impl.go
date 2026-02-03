@@ -8,6 +8,7 @@ import (
 	domainDrive "github.com/michaeldcanady/go-onedrive/internal2/domain/drive"
 	domainfile "github.com/michaeldcanady/go-onedrive/internal2/domain/file"
 	domainfs "github.com/michaeldcanady/go-onedrive/internal2/domain/fs"
+	"github.com/michaeldcanady/go-onedrive/internal2/infra/common/logging"
 	infrafile "github.com/michaeldcanady/go-onedrive/internal2/infra/file"
 )
 
@@ -16,10 +17,15 @@ var _ domainfs.Service = (*Service)(nil)
 type Service struct {
 	files         domainfile.FileService
 	driveResolver domainDrive.DriveResolver
+	logger        logging.Logger
 }
 
-func NewService(files domainfile.FileService, driveResolver domainDrive.DriveResolver) *Service {
-	return &Service{files: files, driveResolver: driveResolver}
+func NewService(
+	files domainfile.FileService,
+	driveResolver domainDrive.DriveResolver,
+	logger logging.Logger,
+) *Service {
+	return &Service{files: files, driveResolver: driveResolver, logger: logger}
 }
 
 // Mkdir implements [Service].
