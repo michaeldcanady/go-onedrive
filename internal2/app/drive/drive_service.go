@@ -3,7 +3,6 @@ package drive
 import (
 	"context"
 	"errors"
-	"fmt"
 	"strings"
 
 	"github.com/michaeldcanady/go-onedrive/internal2/domain/drive"
@@ -32,7 +31,6 @@ func (s *driveService) ListDrives(ctx context.Context) ([]*drive.Drive, error) {
 
 	out := make([]*drive.Drive, 0, len(resp.GetValue()))
 	for _, d := range resp.GetValue() {
-		fmt.Println(deref(d.GetName()))
 		out = append(out, toDomainDrive(d))
 	}
 

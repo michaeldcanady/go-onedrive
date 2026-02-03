@@ -6,8 +6,9 @@ import (
 
 	"github.com/michaeldcanady/go-onedrive/internal2/domain/di"
 	"github.com/michaeldcanady/go-onedrive/internal2/infra/common/logging"
-	"github.com/michaeldcanady/go-onedrive/internal2/interface/cli/auth"
-	"github.com/michaeldcanady/go-onedrive/internal2/interface/cli/ls"
+	authcmd "github.com/michaeldcanady/go-onedrive/internal2/interface/cli/auth"
+	drivecmd "github.com/michaeldcanady/go-onedrive/internal2/interface/cli/drive"
+	lscmd "github.com/michaeldcanady/go-onedrive/internal2/interface/cli/ls"
 	profilecmd "github.com/michaeldcanady/go-onedrive/internal2/interface/cli/profile"
 	"github.com/spf13/cobra"
 )
@@ -83,9 +84,10 @@ func CreateRootCmd(container di.Container) (*cobra.Command, error) {
 	rootCmd.PersistentFlags().StringVar(&profile, profileNameFlagLong, "", profileNameFlagUsage)
 
 	rootCmd.AddCommand(
-		ls.CreateLSCmd(container),
-		auth.CreateAuthCmd(container),
+		lscmd.CreateLSCmd(container),
+		authcmd.CreateAuthCmd(container),
 		profilecmd.CreateProfileCmd(container),
+		drivecmd.CreateDriveCmd(container),
 	)
 
 	return rootCmd, nil

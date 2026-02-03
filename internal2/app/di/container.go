@@ -215,7 +215,7 @@ func (c *Container) State() domainstate.Service {
 		statePath := filepath.Join(stateDir, "state.json") // or .yaml
 
 		serializer := &cache.JSONSerializerDeserializer[domainstate.State]{}
-		repo := infrastate.NewRepository(statePath, serializer, c.Drive())
+		repo := infrastate.NewRepository(statePath, serializer, nil)
 
 		c.stateService = appstate.NewService(repo)
 	})

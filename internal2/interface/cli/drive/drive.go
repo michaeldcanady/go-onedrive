@@ -2,6 +2,8 @@ package drive
 
 import (
 	"github.com/michaeldcanady/go-onedrive/internal2/domain/di"
+	"github.com/michaeldcanady/go-onedrive/internal2/interface/cli/drive/list"
+	"github.com/michaeldcanady/go-onedrive/internal2/interface/cli/drive/use"
 	"github.com/spf13/cobra"
 )
 
@@ -14,7 +16,10 @@ func CreateDriveCmd(container di.Container) *cobra.Command {
 	}
 
 	// Subcommands
-	//authCmd.AddCommand()
+	authCmd.AddCommand(
+		list.CreateListCmd(container),
+		use.CreateUseCmd(container),
+	)
 
 	return authCmd
 }

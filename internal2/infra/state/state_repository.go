@@ -1,7 +1,6 @@
 package state
 
 import (
-	"context"
 	"os"
 	"path/filepath"
 
@@ -65,14 +64,8 @@ func (r *Repository) Save(state state.State) error {
 
 func (r *Repository) defaultState() state.State {
 
-	drive, _ := r.driveService.ResolvePersonalDrive(context.Background())
-	driveID := ""
-	if drive != nil {
-		driveID = drive.ID
-	}
-
 	return state.State{
 		CurrentProfile: profile.DefaultProfileName,
-		CurrentDrive:   driveID,
+		CurrentDrive:   "",
 	}
 }
