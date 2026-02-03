@@ -36,6 +36,10 @@ import (
 
 var _ di.Container = (*Container)(nil)
 
+const (
+	stateFileName = "profile"
+)
+
 type Container struct {
 	authOnce    sync.Once
 	authService domainauth.AuthService
@@ -188,7 +192,7 @@ func (c *Container) Profile() domainprofile.ProfileService {
 		profileBaseDir, _ := env.ConfigDir()
 
 		loggerService := c.Logger()
-		logger, _ := loggerService.CreateLogger("profile")
+		logger, _ := loggerService.CreateLogger(stateFileName)
 
 		// Infra repository
 		repo := infraprofile.NewFSProfileService(profileBaseDir)
@@ -211,7 +215,7 @@ func (c *Container) State() domainstate.Service {
 		statePath := filepath.Join(stateDir, "state.json") // or .yaml
 
 		serializer := &cache.JSONSerializerDeserializer[domainstate.State]{}
-		repo := infrastate.NewRepository(statePath, serializer)
+		repo := infrastate.NewRepository(statePath, serializer, c.Drive())
 
 		c.stateService = appstate.NewService(repo)
 	})

@@ -1,23 +1,31 @@
 package state
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 
+	"github.com/michaeldcanady/go-onedrive/internal2/domain/drive"
 	"github.com/michaeldcanady/go-onedrive/internal2/domain/state"
 	"github.com/michaeldcanady/go-onedrive/internal2/infra/cache/abstractions"
 	"github.com/michaeldcanady/go-onedrive/internal2/infra/profile"
 )
 
 type Repository struct {
-	path       string
-	serializer abstractions.SerializerDeserializer[state.State]
+	path         string
+	serializer   abstractions.SerializerDeserializer[state.State]
+	driveService drive.DriveService
 }
 
-func NewRepository(path string, serializer abstractions.SerializerDeserializer[state.State]) *Repository {
+func NewRepository(
+	path string,
+	serializer abstractions.SerializerDeserializer[state.State],
+	driveService drive.DriveService,
+) *Repository {
 	return &Repository{
-		path:       path,
-		serializer: serializer,
+		path:         path,
+		serializer:   serializer,
+		driveService: driveService,
 	}
 }
 
@@ -56,7 +64,15 @@ func (r *Repository) Save(state state.State) error {
 }
 
 func (r *Repository) defaultState() state.State {
+
+	drive, _ := r.driveService.ResolvePersonalDrive(context.Background())
+	driveID := ""
+	if drive != nil {
+		driveID = drive.ID
+	}
+
 	return state.State{
 		CurrentProfile: profile.DefaultProfileName,
+		CurrentDrive:   driveID,
 	}
 }

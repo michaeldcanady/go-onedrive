@@ -2,6 +2,7 @@
     "cSpell.words": [
         "applogging",
         "appprofile",
+        "appstate",
         "authinfra",
         "azcore",
         "azidentity",
@@ -32,6 +33,7 @@
         "infrafile",
         "infralogging",
         "infraprofile",
+        "infrastate",
         "Itemable",
         "itemtype",
         "jsonserialization",
