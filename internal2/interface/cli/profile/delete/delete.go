@@ -5,9 +5,7 @@ import (
 	"strings"
 
 	"github.com/manifoldco/promptui"
-	applogging "github.com/michaeldcanady/go-onedrive/internal2/app/common/logging"
 	"github.com/michaeldcanady/go-onedrive/internal2/domain/di"
-	infralogging "github.com/michaeldcanady/go-onedrive/internal2/infra/common/logging"
 	"github.com/michaeldcanady/go-onedrive/internal2/infra/profile"
 	"github.com/michaeldcanady/go-onedrive/internal2/interface/cli/util"
 	"github.com/spf13/cobra"
@@ -27,7 +25,7 @@ func CreateDeleteCmd(container di.Container) *cobra.Command {
 		Args:  cobra.ExactArgs(1),
 
 		RunE: func(cmd *cobra.Command, args []string) error {
-			logger, err := ensureLogger(container)
+			logger, err := util.EnsureLogger(container, loggerID)
 			if err != nil {
 				return util.NewCommandErrorWithNameWithError(commandName, err)
 			}
@@ -85,12 +83,4 @@ func CreateDeleteCmd(container di.Container) *cobra.Command {
 	cmd.Flags().BoolVarP(&force, "force", "f", false, "Force deletion without confirmation")
 
 	return cmd
-}
-
-func ensureLogger(c di.Container) (infralogging.Logger, error) {
-	logger, err := c.Logger().GetLogger(loggerID)
-	if err == applogging.ErrUnknownLogger {
-		return c.Logger().CreateLogger(loggerID)
-	}
-	return logger, err
 }

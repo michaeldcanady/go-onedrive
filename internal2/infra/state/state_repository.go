@@ -14,7 +14,10 @@ type Repository struct {
 	serializer abstractions.SerializerDeserializer[state.State]
 }
 
-func NewRepository(path string, serializer abstractions.SerializerDeserializer[state.State]) *Repository {
+func NewRepository(
+	path string,
+	serializer abstractions.SerializerDeserializer[state.State],
+) *Repository {
 	return &Repository{
 		path:       path,
 		serializer: serializer,
@@ -56,7 +59,9 @@ func (r *Repository) Save(state state.State) error {
 }
 
 func (r *Repository) defaultState() state.State {
+
 	return state.State{
 		CurrentProfile: profile.DefaultProfileName,
+		CurrentDrive:   "",
 	}
 }

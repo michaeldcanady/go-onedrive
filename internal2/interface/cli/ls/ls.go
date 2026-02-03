@@ -5,7 +5,6 @@ import (
 	"slices"
 	"time"
 
-	applogging "github.com/michaeldcanady/go-onedrive/internal2/app/common/logging"
 	"github.com/michaeldcanady/go-onedrive/internal2/domain/di"
 	domainfs "github.com/michaeldcanady/go-onedrive/internal2/domain/fs"
 	infralogging "github.com/michaeldcanady/go-onedrive/internal2/infra/common/logging"
@@ -109,7 +108,7 @@ func CreateLSCmd(c di.Container) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			start := time.Now()
 
-			logger, err := ensureLogger(c)
+			logger, err := util.EnsureLogger(c, loggerID)
 			if err != nil {
 				return util.NewCommandErrorWithNameWithError(commandName, err)
 			}
@@ -211,13 +210,4 @@ func CreateLSCmd(c di.Container) *cobra.Command {
 	cmd.Flags().BoolVarP(&recursive, recursiveFlagLong, recursiveFlagShort, false, recursiveFlagUsage)
 
 	return cmd
-}
-
-// ensureLogger retrieves or creates the CLI logger.
-func ensureLogger(c di.Container) (infralogging.Logger, error) {
-	logger, err := c.Logger().GetLogger(loggerID)
-	if err == applogging.ErrUnknownLogger {
-		return c.Logger().CreateLogger(loggerID)
-	}
-	return logger, err
 }

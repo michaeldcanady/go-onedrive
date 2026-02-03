@@ -2,6 +2,7 @@
     "cSpell.words": [
         "applogging",
         "appprofile",
+        "appstate",
         "authinfra",
         "azcore",
         "azidentity",
@@ -14,6 +15,7 @@
         "credentialservice",
         "derr",
         "domainconfig",
+        "domaindrive",
         "domainenv",
         "domainenvironment",
         "domainformatting",
@@ -31,6 +33,7 @@
         "infrafile",
         "infralogging",
         "infraprofile",
+        "infrastate",
         "Itemable",
         "itemtype",
         "jsonserialization",

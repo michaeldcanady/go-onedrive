@@ -10,6 +10,7 @@ import (
 	"github.com/michaeldcanady/go-onedrive/internal2/app/drive"
 	"github.com/michaeldcanady/go-onedrive/internal2/app/fs"
 	appprofile "github.com/michaeldcanady/go-onedrive/internal2/app/profile"
+	"github.com/michaeldcanady/go-onedrive/internal2/app/state"
 
 	"github.com/michaeldcanady/go-onedrive/internal2/app/common/environment"
 	"github.com/michaeldcanady/go-onedrive/internal2/app/common/logging"
@@ -20,6 +21,7 @@ import (
 	domainlogger "github.com/michaeldcanady/go-onedrive/internal2/domain/common/logger"
 	domainconfig "github.com/michaeldcanady/go-onedrive/internal2/domain/config"
 	"github.com/michaeldcanady/go-onedrive/internal2/domain/di"
+	domaindrive "github.com/michaeldcanady/go-onedrive/internal2/domain/drive"
 	domainfile "github.com/michaeldcanady/go-onedrive/internal2/domain/file"
 	domainfs "github.com/michaeldcanady/go-onedrive/internal2/domain/fs"
 	domainprofile "github.com/michaeldcanady/go-onedrive/internal2/domain/profile"
@@ -34,6 +36,10 @@ import (
 )
 
 var _ di.Container = (*Container)(nil)
+
+const (
+	stateFileName = "state.json"
+)
 
 type Container struct {
 	authOnce    sync.Once
@@ -63,13 +69,27 @@ type Container struct {
 	clientOnce    sync.Once
 	clientProvide clienter
 
-	// in Container struct
 	stateOnce    sync.Once
 	stateService domainstate.Service
+
+	driveOnce    sync.Once
+	driveService domaindrive.DriveService
 }
 
 func NewContainer() *Container {
 	return &Container{}
+}
+
+// Drive implements [di.Container].
+func (c *Container) Drive() domaindrive.DriveService {
+	c.driveOnce.Do(func() {
+		loggerService := c.Logger()
+		logger, _ := loggerService.CreateLogger("drive")
+
+		c.driveService = drive.NewDriveService(c.clientProvider(), logger)
+	})
+
+	return c.driveService
 }
 
 // File implements [di.Container].
@@ -147,9 +167,9 @@ func (c *Container) FS() domainfs.Service {
 		loggerService := c.Logger()
 		logger, _ := loggerService.CreateLogger("filesystem")
 
-		resolver := drive.NewDriverResolverAdapter(drive.NewDriveService(c.clientProvider(), logger))
+		resolver := state.NewDriverResolverAdapter(c.State())
 
-		c.fsService = fs.NewService(c.File(), resolver)
+		c.fsService = fs.NewService(c.File(), resolver, logger)
 	})
 	return c.fsService
 }
@@ -193,7 +213,7 @@ func (c *Container) State() domainstate.Service {
 	c.stateOnce.Do(func() {
 		env := c.EnvironmentService()
 		stateDir, _ := env.StateDir()
-		statePath := filepath.Join(stateDir, "state.json") // or .yaml
+		statePath := filepath.Join(stateDir, stateFileName)
 
 		serializer := &cache.JSONSerializerDeserializer[domainstate.State]{}
 		repo := infrastate.NewRepository(statePath, serializer)

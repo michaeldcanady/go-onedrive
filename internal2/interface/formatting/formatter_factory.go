@@ -4,13 +4,14 @@ import (
 	"fmt"
 
 	domainformatting "github.com/michaeldcanady/go-onedrive/internal2/domain/formatting"
+	domainfs "github.com/michaeldcanady/go-onedrive/internal2/domain/fs"
 )
 
 type FormatterFactory struct{}
 
 func NewFormatterFactory() *FormatterFactory { return &FormatterFactory{} }
 
-func (f *FormatterFactory) Create(format string) (domainformatting.OutputFormatter, error) {
+func (f *FormatterFactory) Create(format string) (domainformatting.OutputFormatter[domainfs.Item], error) {
 	if format == "" {
 		format = "short"
 	}

@@ -3,25 +3,10 @@ package drive
 import (
 	"errors"
 
+	"github.com/michaeldcanady/go-onedrive/internal2/domain/drive"
 	"github.com/microsoftgraph/msgraph-sdk-go/models"
 	"github.com/microsoftgraph/msgraph-sdk-go/models/odataerrors"
 )
-
-type DriveType string
-
-const (
-	DriveTypePersonal   DriveType = "personal"
-	DriveTypeBusiness   DriveType = "business"
-	DriveTypeSharePoint DriveType = "sharepoint"
-)
-
-type Drive struct {
-	ID       string
-	Name     string
-	Type     DriveType
-	Owner    string
-	ReadOnly bool
-}
 
 func deref[T any](ptr *T) T {
 	var zero T
@@ -31,15 +16,15 @@ func deref[T any](ptr *T) T {
 	return *ptr
 }
 
-func toDomainDrive(g models.Driveable) *Drive {
+func toDomainDrive(g models.Driveable) *drive.Drive {
 	if g == nil {
 		return nil
 	}
 
-	return &Drive{
+	return &drive.Drive{
 		ID:   deref(g.GetId()),
 		Name: deref(g.GetName()),
-		Type: DriveType(deref(g.GetDriveType())),
+		Type: drive.DriveType(deref(g.GetDriveType())),
 	}
 }
 
