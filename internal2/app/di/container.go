@@ -14,6 +14,7 @@ import (
 
 	"github.com/michaeldcanady/go-onedrive/internal2/app/common/environment"
 	"github.com/michaeldcanady/go-onedrive/internal2/app/common/logging"
+	appformatting "github.com/michaeldcanady/go-onedrive/internal2/app/formatting"
 	domainauth "github.com/michaeldcanady/go-onedrive/internal2/domain/auth"
 	domaincache "github.com/michaeldcanady/go-onedrive/internal2/domain/cache"
 	domainenv "github.com/michaeldcanady/go-onedrive/internal2/domain/common/environment"
@@ -23,6 +24,7 @@ import (
 	"github.com/michaeldcanady/go-onedrive/internal2/domain/di"
 	domaindrive "github.com/michaeldcanady/go-onedrive/internal2/domain/drive"
 	domainfile "github.com/michaeldcanady/go-onedrive/internal2/domain/file"
+	domainformatting "github.com/michaeldcanady/go-onedrive/internal2/domain/formatting"
 	domainfs "github.com/michaeldcanady/go-onedrive/internal2/domain/fs"
 	domainprofile "github.com/michaeldcanady/go-onedrive/internal2/domain/profile"
 	domainstate "github.com/michaeldcanady/go-onedrive/internal2/domain/state"
@@ -74,6 +76,9 @@ type Container struct {
 
 	driveOnce    sync.Once
 	driveService domaindrive.DriveService
+
+	formatOnce    sync.Once
+	formatService domainformatting.Service
 }
 
 func NewContainer() *Container {
@@ -221,4 +226,14 @@ func (c *Container) State() domainstate.Service {
 		c.stateService = appstate.NewService(repo)
 	})
 	return c.stateService
+}
+
+func (c *Container) Format() domainformatting.Service {
+	c.formatOnce.Do(func() {
+		loggerService := c.Logger()
+		logger, _ := loggerService.CreateLogger("format")
+
+		c.formatService = appformatting.NewService(logger)
+	})
+	return c.formatService
 }

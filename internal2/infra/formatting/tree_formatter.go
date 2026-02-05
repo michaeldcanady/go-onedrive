@@ -16,7 +16,13 @@ func NewTreeFormatter() *TreeFormatter {
 	return &TreeFormatter{}
 }
 
-func (f *TreeFormatter) Format(w io.Writer, items []fs.Item) error {
+func (f *TreeFormatter) Format(w io.Writer, v any) error {
+	// Accept both []domainfs.Item and []*domainfs.Item
+	items, ok := v.([]domainfs.Item)
+	if !ok {
+		return fmt.Errorf("unsupported element type %T", v)
+	}
+
 	if len(items) == 0 {
 		_, err := fmt.Fprintln(w, "(empty)")
 		return err

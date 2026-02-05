@@ -41,5 +41,6 @@
   "runArgs": [
     "--userns=keep-id"
   ],
-  "containerUser": "vscode"
+  "containerUser": "vscode",
+  "postCreateCommand": "gpg --keyserver keyserver.ubuntu.com --recv-keys 23E7166788B63E1E"
 }

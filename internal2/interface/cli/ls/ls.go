@@ -2,15 +2,16 @@ package ls
 
 import (
 	"fmt"
+	"reflect"
 	"slices"
 	"time"
 
 	"github.com/michaeldcanady/go-onedrive/internal2/domain/di"
 	domainfs "github.com/michaeldcanady/go-onedrive/internal2/domain/fs"
 	infralogging "github.com/michaeldcanady/go-onedrive/internal2/infra/common/logging"
+	"github.com/michaeldcanady/go-onedrive/internal2/infra/formatting"
 	"github.com/michaeldcanady/go-onedrive/internal2/interface/cli/util"
 	"github.com/michaeldcanady/go-onedrive/internal2/interface/filtering"
-	"github.com/michaeldcanady/go-onedrive/internal2/interface/formatting"
 	"github.com/michaeldcanady/go-onedrive/internal2/interface/sorting"
 	"github.com/spf13/cobra"
 )
@@ -78,6 +79,32 @@ func CreateLSCmd(c di.Container) *cobra.Command {
 
 			if !slices.Contains(supportedProperties, sortProperty) {
 				return util.NewCommandErrorWithNameWithMessage(commandName, fmt.Sprintf("unsupported property: %s; only supports: name, size, or modified", sortProperty))
+			}
+
+			// register formatters
+			jsonFormatter := &formatting.JSONFormatter{}
+			if err := c.Format().RegisterWithType("json", reflect.TypeOf([]domainfs.Item{}), jsonFormatter); err != nil {
+				return util.NewCommandErrorWithNameWithError(commandName, err)
+			}
+
+			yamlFormatter := &formatting.YAMLFormatter{}
+			if err := c.Format().RegisterWithType("yaml", reflect.TypeOf([]domainfs.Item{}), yamlFormatter); err != nil {
+				return util.NewCommandErrorWithNameWithError(commandName, err)
+			}
+
+			humanLongFormatter := &formatting.HumanLongFormatter{}
+			if err := c.Format().RegisterWithType("long", reflect.TypeOf([]domainfs.Item{}), humanLongFormatter); err != nil {
+				return util.NewCommandErrorWithNameWithError(commandName, err)
+			}
+
+			humanShortFormatter := &formatting.HumanShortFormatter{}
+			if err := c.Format().RegisterWithType("short", reflect.TypeOf([]domainfs.Item{}), humanShortFormatter); err != nil {
+				return util.NewCommandErrorWithNameWithError(commandName, err)
+			}
+
+			treeFormatter := &formatting.TreeFormatter{}
+			if err := c.Format().RegisterWithType("tree", reflect.TypeOf([]domainfs.Item{}), treeFormatter); err != nil {
+				return util.NewCommandErrorWithNameWithError(commandName, err)
 			}
 
 			if format == "tree" && sortProperty != "" {
@@ -180,15 +207,8 @@ func CreateLSCmd(c di.Container) *cobra.Command {
 			}
 
 			// Formatting
-			logger.Debug("initializing formatter", infralogging.String("format", format))
-			formatter, err := formatting.NewFormatterFactory().Create(format)
-			if err != nil {
-				logger.Error("failed to initialize formatter", infralogging.String("error", err.Error()))
-				return util.NewCommandError(commandName, "failed to initialize formatter", err)
-			}
-
-			logger.Debug("formatting output")
-			if err := formatter.Format(cmd.OutOrStdout(), items); err != nil {
+			logger.Debug("formatting output", infralogging.String("format", format))
+			if err := c.Format().Format(cmd.OutOrStdout(), format, items); err != nil {
 				logger.Error("failed to format items", infralogging.String("error", err.Error()))
 				return util.NewCommandError(commandName, "failed to format items", err)
 			}

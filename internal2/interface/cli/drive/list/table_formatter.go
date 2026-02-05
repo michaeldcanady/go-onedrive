@@ -40,9 +40,14 @@ func NewTableFormatter[T any](cols ...Column[T]) *TableFormatter[T] {
 	return &TableFormatter[T]{Columns: cols}
 }
 
-func (tf *TableFormatter[T]) Format(w io.Writer, items []T) error {
+func (tf *TableFormatter[T]) Format(w io.Writer, items any) error {
 	if len(tf.Columns) == 0 {
 		return fmt.Errorf("no columns defined for table formatter")
+	}
+
+	typedItems, ok := items.([]T)
+	if !ok {
+		return fmt.Errorf("unexpected input type: %t", items)
 	}
 
 	// Determine terminal width
@@ -52,7 +57,7 @@ func (tf *TableFormatter[T]) Format(w io.Writer, items []T) error {
 	}
 
 	// Compute natural column widths
-	widths := tf.computeColumnWidths(items)
+	widths := tf.computeColumnWidths(typedItems)
 
 	// Adjust widths to fit terminal
 	widths = tf.fitToTerminal(widths, termWidth)
@@ -64,7 +69,7 @@ func (tf *TableFormatter[T]) Format(w io.Writer, items []T) error {
 	tf.writeSeparator(w, widths)
 
 	// Rows
-	for _, item := range items {
+	for _, item := range typedItems {
 		tf.writeRow(w, widths, func(i int) string {
 			return tf.Columns[i].Value(item)
 		})
