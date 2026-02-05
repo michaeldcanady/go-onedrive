@@ -8,6 +8,7 @@ import (
 	"github.com/michaeldcanady/go-onedrive/internal2/app/cache"
 	"github.com/michaeldcanady/go-onedrive/internal2/app/config"
 	"github.com/michaeldcanady/go-onedrive/internal2/app/drive"
+	appfiltering "github.com/michaeldcanady/go-onedrive/internal2/app/filtering"
 	"github.com/michaeldcanady/go-onedrive/internal2/app/fs"
 	appprofile "github.com/michaeldcanady/go-onedrive/internal2/app/profile"
 	"github.com/michaeldcanady/go-onedrive/internal2/app/state"
@@ -24,6 +25,7 @@ import (
 	"github.com/michaeldcanady/go-onedrive/internal2/domain/di"
 	domaindrive "github.com/michaeldcanady/go-onedrive/internal2/domain/drive"
 	domainfile "github.com/michaeldcanady/go-onedrive/internal2/domain/file"
+	domainfiltering "github.com/michaeldcanady/go-onedrive/internal2/domain/filtering"
 	domainformatting "github.com/michaeldcanady/go-onedrive/internal2/domain/formatting"
 	domainfs "github.com/michaeldcanady/go-onedrive/internal2/domain/fs"
 	domainprofile "github.com/michaeldcanady/go-onedrive/internal2/domain/profile"
@@ -79,6 +81,9 @@ type Container struct {
 
 	formatOnce    sync.Once
 	formatService domainformatting.Service
+
+	filterOnce    sync.Once
+	filterService domainfiltering.Service
 }
 
 func NewContainer() *Container {
@@ -236,4 +241,14 @@ func (c *Container) Format() domainformatting.Service {
 		c.formatService = appformatting.NewService(logger)
 	})
 	return c.formatService
+}
+
+func (c *Container) Filter() domainfiltering.Service {
+	c.filterOnce.Do(func() {
+		loggerService := c.Logger()
+		logger, _ := loggerService.CreateLogger("filter")
+
+		c.filterService = appfiltering.NewService(logger)
+	})
+	return c.filterService
 }

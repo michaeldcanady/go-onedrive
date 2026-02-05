@@ -9,9 +9,9 @@ import (
 	"github.com/michaeldcanady/go-onedrive/internal2/domain/di"
 	domainfs "github.com/michaeldcanady/go-onedrive/internal2/domain/fs"
 	infralogging "github.com/michaeldcanady/go-onedrive/internal2/infra/common/logging"
+	infrafiltering "github.com/michaeldcanady/go-onedrive/internal2/infra/filtering"
 	"github.com/michaeldcanady/go-onedrive/internal2/infra/formatting"
 	"github.com/michaeldcanady/go-onedrive/internal2/interface/cli/util"
-	"github.com/michaeldcanady/go-onedrive/internal2/interface/filtering"
 	"github.com/michaeldcanady/go-onedrive/internal2/interface/sorting"
 	"github.com/spf13/cobra"
 )
@@ -59,7 +59,7 @@ func CreateLSCmd(c di.Container) *cobra.Command {
 		sortProperty string
 		sortOrder    = sorting.DirectionAscending
 		sortOpts     = []sorting.SortingOption{sorting.WithDirection(sortOrder)}
-		filterOpts   = []filtering.FilterOption{}
+		filterOpts   = []infrafiltering.FilterOption{}
 	)
 
 	cmd := &cobra.Command{
@@ -113,15 +113,24 @@ func CreateLSCmd(c di.Container) *cobra.Command {
 
 			// Build filter options
 			if includeAll {
-				filterOpts = append(filterOpts, filtering.IncludeAll())
+				filterOpts = append(filterOpts, infrafiltering.IncludeAll())
 			} else {
-				filterOpts = append(filterOpts, filtering.ExcludeHidden())
+				filterOpts = append(filterOpts, infrafiltering.ExcludeHidden())
 			}
 
 			if filesOnly {
-				filterOpts = append(filterOpts, filtering.WithItemType(domainfs.ItemTypeFile))
+				filterOpts = append(filterOpts, infrafiltering.WithItemType(domainfs.ItemTypeFile))
 			} else if foldersOnly {
-				filterOpts = append(filterOpts, filtering.WithItemType(domainfs.ItemTypeFolder))
+				filterOpts = append(filterOpts, infrafiltering.WithItemType(domainfs.ItemTypeFolder))
+			}
+
+			filterOpt := infrafiltering.NewFilterOptions()
+			if err := filterOpt.Apply(filterOpts); err != nil {
+				return util.NewCommandErrorWithNameWithError(commandName, err)
+			}
+			optionFilter := infrafiltering.NewOptionsFilterer(*filterOpt)
+			if err := c.Filter().RegisterWithType("option", reflect.TypeFor[[]domainfs.Item](), optionFilter); err != nil {
+				return util.NewCommandErrorWithNameWithError(commandName, err)
 			}
 
 			// Build sort options
@@ -174,16 +183,8 @@ func CreateLSCmd(c di.Container) *cobra.Command {
 			logger.Info("items retrieved", infralogging.Int("count", len(items)))
 
 			// Filtering
-			logger.Debug("initializing filterer")
-			filterer, err := filtering.NewFilterFactory().Create(filterOpts...)
-			if err != nil {
-				logger.Error("failed to initialize filterer", infralogging.String("error", err.Error()))
-				return util.NewCommandError(commandName, "failed to initialize filter", err)
-			}
-
 			logger.Debug("applying filters")
-			items, err = filterer.Filter(items)
-			if err != nil {
+			if err := c.Filter().Filter("option", items); err != nil {
 				logger.Error("failed to filter items", infralogging.String("error", err.Error()))
 				return util.NewCommandError(commandName, "failed to filter items", err)
 			}

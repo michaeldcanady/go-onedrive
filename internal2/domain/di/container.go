@@ -8,6 +8,7 @@ import (
 	"github.com/michaeldcanady/go-onedrive/internal2/domain/config"
 	"github.com/michaeldcanady/go-onedrive/internal2/domain/drive"
 	"github.com/michaeldcanady/go-onedrive/internal2/domain/file"
+	"github.com/michaeldcanady/go-onedrive/internal2/domain/filtering"
 	"github.com/michaeldcanady/go-onedrive/internal2/domain/formatting"
 	domainfs "github.com/michaeldcanady/go-onedrive/internal2/domain/fs"
 	domainprofile "github.com/michaeldcanady/go-onedrive/internal2/domain/profile"
@@ -26,4 +27,5 @@ type Container interface {
 	State() state.Service
 	Drive() drive.DriveService
 	Format() formatting.Service
+	Filter() filtering.Service
 }

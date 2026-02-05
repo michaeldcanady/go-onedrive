@@ -1,5 +1,7 @@
 {
     "cSpell.words": [
+        "appfiltering",
+        "appformatting",
         "applogging",
         "appprofile",
         "appstate",
@@ -18,6 +20,7 @@
         "domaindrive",
         "domainenv",
         "domainenvironment",
+        "domainfiltering",
         "domainformatting",
         "domainfs",
         "domaingraph",
@@ -31,6 +34,7 @@
         "infraauth",
         "infracommon",
         "infrafile",
+        "infrafiltering",
         "infralogging",
         "infraprofile",
         "infrastate",
