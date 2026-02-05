@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	domaincache "github.com/michaeldcanady/go-onedrive/internal2/domain/cache"
 	"github.com/michaeldcanady/go-onedrive/internal2/infra/common/logging"
@@ -35,7 +36,6 @@ func (s *Service2) cacheKey(driveID, normalizedPath string) string {
 }
 
 func (s *Service2) ResolveItem(ctx context.Context, driveID, path string) (*DriveItem, error) {
-	// Internally calls your existing getDriveRoot logic
 	item, err := s.getDriveRoot(ctx, driveID, normalizePath(path))
 	if err != nil {
 		var odataErr odataerrors.ODataErrorable
@@ -82,18 +82,23 @@ func (s *Service2) getDriveRoot(ctx context.Context, driveID, normalizedPath str
 
 	// Load cached ETag
 	cacheKey := s.cacheKey(driveID, normalizedPath)
+	s.logger.Info("retrieved cache key", logging.String("key", cacheKey), logging.String("drive_id", driveID))
 	cached, err := s.cache.GetDrive(ctx, cacheKey)
 	if err != nil {
 		return nil, err
 	}
+	s.logger.Info("retrieved cached etag", logging.String("etag", cached.ETag), logging.String("drive_id", driveID))
+	var config *drives.ItemRootRequestBuilderGetRequestConfiguration
+	if strings.TrimSpace(cached.ETag) != "" {
+		headers := abstractions.NewRequestHeaders()
+		headers.Add("If-None-Match", fmt.Sprintf("\"%s\"", cached.ETag))
 
-	headers := abstractions.NewRequestHeaders()
-	headers.Add("If-None-Match", fmt.Sprintf("\"%s\"", cached.ETag))
-
-	config := &drives.ItemRootRequestBuilderGetRequestConfiguration{
-		Headers: headers,
+		config = &drives.ItemRootRequestBuilderGetRequestConfiguration{
+			Headers: headers,
+		}
 	}
 
+	s.logger.Debug("requesting drive root", logging.String("drive_id", driveID), logging.String("path", normalizedPath), logging.Any("config", config))
 	return s.driveItemBuilder(client, driveID, normalizedPath).Get(ctx, config)
 }
 
@@ -101,7 +106,7 @@ func (s *Service2) getDriveRoot(ctx context.Context, driveID, normalizedPath str
 func (s *Service2) getChildren(ctx context.Context, driveID, folderPath string) (models.DriveItemCollectionResponseable, error) {
 	client, err := s.graph.Client(ctx)
 	if err != nil {
-		s.logger.Error("unable to instantiate graph client", logging.Any("error", err))
+		s.logger.Error("unable to instantiate graph client", logging.Error(err))
 		return nil, err
 	}
 

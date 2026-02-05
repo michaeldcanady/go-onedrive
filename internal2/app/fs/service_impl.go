@@ -59,6 +59,7 @@ func (s *Service) resolvePath(ctx context.Context, p string) (*infrafile.DriveIt
 		return nil, err
 	}
 
+	s.logger.Debug("resolving path", logging.String("drive_id", driveID), logging.String("path", p))
 	return s.files.ResolveItem(ctx, driveID, p)
 }
 
