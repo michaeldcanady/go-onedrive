@@ -1,6 +1,7 @@
 package create
 
 import (
+	"context"
 	"strings"
 
 	"github.com/michaeldcanady/go-onedrive/internal2/domain/di"
@@ -33,65 +34,118 @@ func CreateCreateCmd(container di.Container) *cobra.Command {
 		Args:  cobra.ExactArgs(1),
 
 		RunE: func(cmd *cobra.Command, args []string) error {
-			logger, err := util.EnsureLogger(container, loggerID)
+			ctx := cmd.Context()
+			if ctx == nil {
+				ctx = context.Background()
+				cmd.SetContext(ctx)
+			}
+
+			logger, err := util.EnsureLogger(ctx, container, loggerID)
 			if err != nil {
 				return util.NewCommandErrorWithNameWithError(commandName, err)
 			}
+
+			logger.Info("command started",
+				infralogging.String("command", commandName),
+
+				infralogging.Bool("force", force),
+				infralogging.Bool("set_current", setCurrent),
+				infralogging.Strings("args", args),
+			)
 
 			name := strings.ToLower(strings.TrimSpace(args[0]))
 			if name == "" {
-				logger.Warn("profile name is empty")
+				logger.Warn("profile name is empty",
+					infralogging.String("event", "validate_input"),
+				)
 				return util.NewCommandErrorWithNameWithMessage(commandName, "name is empty")
 			}
 
-			logger.Info("checking if profile exists", infralogging.String("name", name))
+			logger.Debug("checking if profile exists",
+				infralogging.String("event", "check_exists"),
+				infralogging.String("profile", name),
+			)
 
 			exists, err := container.Profile().Exists(name)
 			if err != nil {
-				logger.Error("failed to check profile existence", infralogging.String("error", err.Error()))
+				logger.Error("failed to check profile existence",
+					infralogging.String("event", "check_exists"),
+					infralogging.Error(err),
+					infralogging.String("profile", name),
+				)
 				return util.NewCommandErrorWithNameWithError(commandName, err)
 			}
 
-			// Handle existing profile
 			if exists {
 				if !force {
-					logger.Warn("profile already exists", infralogging.String("name", name))
+					logger.Warn("profile already exists",
+						infralogging.String("event", "check_exists"),
+						infralogging.String("profile", name),
+					)
 					return util.NewCommandErrorWithNameWithMessage(commandName, "profile already exists")
 				}
 
 				logger.Warn("profile exists; force enabled, deleting existing profile",
-					infralogging.String("name", name),
+					infralogging.String("event", "force_delete_existing"),
+					infralogging.String("profile", name),
 				)
 
 				if err := container.Profile().Delete(name); err != nil {
-					logger.Error("failed to delete existing profile", infralogging.String("error", err.Error()))
+					logger.Error("failed to delete existing profile",
+						infralogging.String("event", "force_delete_existing"),
+						infralogging.Error(err),
+						infralogging.String("profile", name),
+					)
 					return util.NewCommandErrorWithNameWithError(commandName, err)
 				}
 			}
 
-			logger.Info("creating profile", infralogging.String("name", name))
+			logger.Info("creating profile",
+				infralogging.String("event", "create_profile"),
+				infralogging.String("profile", name),
+			)
 
 			p, err := container.Profile().Create(name)
 			if err != nil {
-				logger.Error("failed to create profile", infralogging.String("error", err.Error()))
+				logger.Error("failed to create profile",
+					infralogging.String("event", "create_profile"),
+					infralogging.Error(err),
+					infralogging.String("profile", name),
+				)
 				return util.NewCommandErrorWithNameWithError(commandName, err)
 			}
 
 			if setCurrent {
-				logger.Info("setting new profile as current", infralogging.String("name", name))
+				logger.Info("setting new profile as current",
+					infralogging.String("event", "set_current_profile"),
+					infralogging.String("profile", p.Name),
+				)
 
 				if err := container.State().SetCurrentProfile(p.Name); err != nil {
-					logger.Error("failed to set current profile", infralogging.String("error", err.Error()))
+					logger.Error("failed to set current profile",
+						infralogging.String("event", "set_current_profile"),
+						infralogging.Error(err),
+						infralogging.String("profile", p.Name),
+					)
 					return util.NewCommandErrorWithNameWithError(commandName, err)
 				}
 			}
 
 			logger.Info("profile created successfully",
-				infralogging.String("name", p.Name),
+				infralogging.String("event", "create_success"),
+				infralogging.String("profile", p.Name),
 				infralogging.String("path", p.Path),
 			)
 
 			cmd.Printf("Created profile %q at %s\n", p.Name, p.Path)
+
+			logger.Info("command completed",
+				infralogging.String("command", commandName),
+				infralogging.String("profile", p.Name),
+				infralogging.Bool("force", force),
+				infralogging.Bool("set_current", setCurrent),
+			)
+
 			return nil
 		},
 	}

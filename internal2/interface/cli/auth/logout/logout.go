@@ -24,53 +24,75 @@ func CreateLogoutCmd(container di.Container) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "logout",
 		Short: "Log out of the current OneDrive profile",
+
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 			if ctx == nil {
 				ctx = context.Background()
+				cmd.SetContext(ctx)
 			}
 
-			logger, err := util.EnsureLogger(container, loggerID)
+			logger, err := util.EnsureLogger(ctx, container, loggerID)
 			if err != nil {
 				return util.NewCommandErrorWithNameWithError(commandName, err)
 			}
 
-			logger.Info("starting logout flow")
+			logger.Info("command started",
+				infralogging.String("command", commandName),
+				infralogging.Bool("force", force),
+			)
 
-			// Determine which profile to log out from
+			logger.Debug("resolving current profile",
+				infralogging.String("event", "resolve_profile"),
+			)
+
 			profileName, err := container.State().GetCurrentProfile()
 			if err != nil {
-				logger.Error("failed to get current profile", infralogging.Error(err))
+				logger.Error("failed to get current profile",
+					infralogging.String("event", "resolve_profile"),
+					infralogging.Error(err),
+				)
 				return util.NewCommandErrorWithNameWithError(commandName, err)
 			}
 
 			logger.Info("resolved current profile",
+				infralogging.String("event", "profile_resolved"),
 				infralogging.String("profile", profileName),
 				infralogging.Bool("force", force),
 			)
 
 			authService := container.Auth()
 
-			// Attempt logout
 			logger.Info("attempting logout",
+				infralogging.String("event", "logout_attempt"),
 				infralogging.String("profile", profileName),
+				infralogging.Bool("force", force),
 			)
 
 			err = authService.Logout(ctx, profileName, force)
 			if err != nil {
 				logger.Error("logout failed",
+					infralogging.String("event", "logout_failed"),
 					infralogging.String("profile", profileName),
+					infralogging.Bool("force", force),
 					infralogging.Error(err),
 				)
 				return util.NewCommandErrorWithNameWithError(commandName, err)
 			}
 
 			logger.Info("logout successful",
+				infralogging.String("event", "logout_success"),
 				infralogging.String("profile", profileName),
+				infralogging.Bool("force", force),
 			)
 
 			cmd.Printf("Logged out of profile %q\n", profileName)
-			logger.Info("logout flow completed successfully")
+
+			logger.Info("command completed",
+				infralogging.String("command", commandName),
+				infralogging.String("profile", profileName),
+				infralogging.Bool("force", force),
+			)
 
 			return nil
 		},

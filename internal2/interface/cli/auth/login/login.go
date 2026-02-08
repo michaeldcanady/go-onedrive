@@ -41,7 +41,7 @@ func CreateLoginCmd(container di.Container) *cobra.Command {
 				ctx = context.Background()
 			}
 
-			logger, err := util.EnsureLogger(container, loggerID)
+			logger, err := util.EnsureLogger(cmd.Context(), container, loggerID)
 			if err != nil {
 				return util.NewCommandErrorWithNameWithError(commandName, err)
 			}

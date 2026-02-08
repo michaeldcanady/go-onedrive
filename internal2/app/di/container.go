@@ -6,7 +6,7 @@ import (
 
 	"github.com/michaeldcanady/go-onedrive/internal2/app/auth"
 	"github.com/michaeldcanady/go-onedrive/internal2/app/cache"
-	"github.com/michaeldcanady/go-onedrive/internal2/app/config"
+	appconfig "github.com/michaeldcanady/go-onedrive/internal2/app/config"
 	"github.com/michaeldcanady/go-onedrive/internal2/app/drive"
 	appfiltering "github.com/michaeldcanady/go-onedrive/internal2/app/filtering"
 	"github.com/michaeldcanady/go-onedrive/internal2/app/fs"
@@ -32,6 +32,7 @@ import (
 	domainstate "github.com/michaeldcanady/go-onedrive/internal2/domain/state"
 	infraauth "github.com/michaeldcanady/go-onedrive/internal2/infra/auth"
 	"github.com/michaeldcanady/go-onedrive/internal2/infra/common/graph"
+	"github.com/michaeldcanady/go-onedrive/internal2/infra/config"
 	"github.com/michaeldcanady/go-onedrive/internal2/infra/file"
 	infraprofile "github.com/michaeldcanady/go-onedrive/internal2/infra/profile"
 
@@ -119,7 +120,7 @@ func (c *Container) Config() domainconfig.ConfigService {
 		loggerService := c.Logger()
 		logger, _ := loggerService.CreateLogger("config")
 
-		c.configService = config.New2(c.CacheService(), config.NewYAMLLoader(), logger)
+		c.configService = appconfig.New2(c.CacheService(), config.NewYAMLLoader(), logger)
 	})
 	return c.configService
 }

@@ -12,11 +12,11 @@ import (
 )
 
 var (
-	driveIDColumn       = NewColumn("ID", func(item *drive.Drive) string { return item.ID })
-	driveNameColumn     = NewColumn("Name", func(item *drive.Drive) string { return item.Name })
-	driveTypeColumn     = NewColumn("Type", func(item *drive.Drive) string { return string(item.Type) })
-	driveOwnerColumn    = NewColumn("Owner", func(item *drive.Drive) string { return string(item.Owner) })
-	driveReadOnlyColumn = NewColumn("ReadOnly", func(item *drive.Drive) string { return strconv.FormatBool(item.ReadOnly) })
+	DriveIDColumn       = NewColumn("ID", func(item *drive.Drive) string { return item.ID })
+	DriveNameColumn     = NewColumn("Name", func(item *drive.Drive) string { return item.Name })
+	DriveTypeColumn     = NewColumn("Type", func(item *drive.Drive) string { return string(item.Type) })
+	DriveOwnerColumn    = NewColumn("Owner", func(item *drive.Drive) string { return string(item.Owner) })
+	DriveReadOnlyColumn = NewColumn("ReadOnly", func(item *drive.Drive) string { return strconv.FormatBool(item.ReadOnly) })
 )
 
 // Column defines how to extract a string value for a column.
