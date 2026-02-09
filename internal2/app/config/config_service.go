@@ -3,9 +3,10 @@ package config
 import (
 	"context"
 	"errors"
+	"os"
 	"strings"
 
-	"github.com/michaeldcanady/go-onedrive/internal2/domain/cache"
+	domaincache "github.com/michaeldcanady/go-onedrive/internal2/domain/cache"
 	domainconfig "github.com/michaeldcanady/go-onedrive/internal2/domain/config"
 	"github.com/michaeldcanady/go-onedrive/internal2/infra/cache/core"
 	"github.com/michaeldcanady/go-onedrive/internal2/infra/common/logging"
@@ -26,13 +27,13 @@ import (
 // ConfigService does not interpret or validate configuration contents.
 // It simply loads and returns them as config.Configuration3 values.
 type ConfigService struct {
-	cacheService cache.CacheService
+	cacheService domaincache.CacheService
 	paths        map[string]string
 	loader       domainconfig.Loader
 	logger       logging.Logger
 }
 
-func New2(cache cache.CacheService, loader domainconfig.Loader, logger logging.Logger) *ConfigService {
+func New2(cache domaincache.CacheService, loader domainconfig.Loader, logger logging.Logger) *ConfigService {
 	return &ConfigService{
 		cacheService: cache,
 		paths:        make(map[string]string),
@@ -75,12 +76,23 @@ func (s *ConfigService) AddPath(name, path string) error {
 	return nil
 }
 
+func (s *ConfigService) getDefaultConfig() config.Configuration3 {
+	return config.Configuration3{
+		Auth: config.AuthenticationConfigImpl{
+			Type:        "interactiveBrowser",
+			ClientID:    "6b1e6ec0-ad93-4175-a0e0-84c02e13f206",
+			TenantID:    "common",
+			RedirectURI: "http://localhost:8400",
+		},
+	}
+}
+
 // GetConfiguration returns the configuration associated with the given name.
 //
 // The method first checks the provided context for cancellation.
 // It then attempts to retrieve the configuration from the CacheService.
 // If the configuration is not cached, the service loads it from the
-// registered path using the Loader and stores it in the cache.
+// registered path using the Loader and stores it in the domaincache.
 //
 // Errors:
 //   - ErrNotRegistered: no path has been registered for this name
@@ -120,8 +132,17 @@ func (s *ConfigService) GetConfiguration(ctx context.Context, name string) (conf
 		return cfg, nil
 	}
 
+	if errors.Is(err, domaincache.ErrUnavailableCache) {
+		s.logger.Warn("cache service unavailable while retrieving configuration",
+			logging.String("event", "config_get_cache_unavailable"),
+			logging.Error(err),
+			logging.String("name", name),
+			logging.String("correlation_id", cid),
+		)
+	}
+
 	// Unexpected cache error
-	if !errors.Is(err, core.ErrKeyNotFound) {
+	if !errors.Is(err, core.ErrKeyNotFound) && !errors.Is(err, domaincache.ErrUnavailableCache) {
 		s.logger.Error("failed to retrieve configuration from cache",
 			logging.String("event", "config_get_cache_error"),
 			logging.Error(err),
@@ -168,14 +189,33 @@ func (s *ConfigService) GetConfiguration(ctx context.Context, name string) (conf
 
 	loadedCfg, err := s.loader.Load(path)
 	if err != nil {
-		s.logger.Error("failed to load configuration from disk",
-			logging.String("event", "config_load_disk"),
-			logging.Error(err),
+		if !errors.Is(err, os.ErrNotExist) {
+			s.logger.Error("failed to load configuration from disk",
+				logging.String("event", "config_load_disk"),
+				logging.Error(err),
+				logging.String("name", name),
+				logging.String("path", path),
+				logging.String("correlation_id", cid),
+			)
+			return config.Configuration3{}, err
+		}
+		s.logger.Warn("configuration file does not exist on disk, using default configuration",
+			logging.String("event", "config_load_missing_file"),
 			logging.String("name", name),
 			logging.String("path", path),
 			logging.String("correlation_id", cid),
 		)
-		return config.Configuration3{}, err
+		loadedCfg = s.getDefaultConfig()
+	}
+
+	if loadedCfg == (config.Configuration3{}) {
+		s.logger.Warn("loaded configuration is empty, using default configuration",
+			logging.String("event", "config_load_empty"),
+			logging.String("name", name),
+			logging.String("path", path),
+			logging.String("correlation_id", cid),
+		)
+		loadedCfg = s.getDefaultConfig()
 	}
 
 	// Save to cache
@@ -186,13 +226,21 @@ func (s *ConfigService) GetConfiguration(ctx context.Context, name string) (conf
 	)
 
 	if err := s.cacheService.SetConfiguration(ctx, name, loadedCfg); err != nil {
-		s.logger.Error("failed to cache configuration",
-			logging.String("event", "config_cache_set"),
+		if !errors.Is(err, domaincache.ErrUnavailableCache) {
+			s.logger.Error("failed to cache configuration",
+				logging.String("event", "config_cache_set"),
+				logging.Error(err),
+				logging.String("name", name),
+				logging.String("correlation_id", cid),
+			)
+			return config.Configuration3{}, err
+		}
+		s.logger.Warn("cache service unavailable while caching configuration",
+			logging.String("event", "config_cache_set_unavailable"),
 			logging.Error(err),
 			logging.String("name", name),
 			logging.String("correlation_id", cid),
 		)
-		return config.Configuration3{}, err
 	}
 
 	s.logger.Info("configuration loaded successfully",

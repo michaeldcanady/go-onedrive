@@ -88,7 +88,13 @@ func (s *Service2) getDriveRoot(ctx context.Context, driveID, normalizedPath str
 	s.logger.Info("retrieved cache key", logging.String("key", cacheKey), logging.String("drive_id", driveID))
 	cached, err := s.cache.GetDrive(ctx, cacheKey)
 	if err != nil {
-		return nil, err
+		if !errors.Is(err, domaincache.ErrUnavailableCache) {
+			return nil, err
+		}
+		s.logger.Warn(
+			"cache service unavailable while retrieving cached drive",
+			logging.String("drive_id", driveID),
+		)
 	}
 	s.logger.Info("retrieved cached etag", logging.String("etag", cached.ETag), logging.String("drive_id", driveID))
 	var config *drives.ItemRootRequestBuilderGetRequestConfiguration
@@ -128,7 +134,13 @@ func (s *Service2) getChildren(ctx context.Context, driveID, folderPath string) 
 	if driveItem == nil {
 		cached, err := s.cache.GetDrive(ctx, cacheKey)
 		if err != nil {
-			return nil, err
+			if !errors.Is(err, domaincache.ErrUnavailableCache) {
+				return nil, err
+			}
+			s.logger.Warn(
+				"cache service unavailable while retrieving cached drive",
+				logging.String("drive_id", driveID),
+			)
 		}
 		return cached.Items, nil
 	}
@@ -147,10 +159,12 @@ func (s *Service2) getChildren(ctx context.Context, driveID, folderPath string) 
 
 	// Cache updated children
 	if etag := driveItem.GetETag(); etag != nil && *etag != "" {
-		s.cache.SetDrive(ctx, cacheKey, domaincache.CachedChildren{
+		if err := s.cache.SetDrive(ctx, cacheKey, domaincache.CachedChildren{
 			ETag:  *etag,
 			Items: resp,
-		})
+		}); err != nil {
+			s.logger.Warn("failed to cache drive children", logging.String("path", normalized), logging.Error(err))
+		}
 	} else {
 		s.logger.Warn("drive etag unavailable; response not cached")
 	}

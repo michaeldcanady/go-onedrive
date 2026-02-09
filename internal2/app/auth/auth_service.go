@@ -74,13 +74,20 @@ func (s *AuthService) GetToken(ctx context.Context, options policy.TokenRequestO
 
 	record, err := s.cache.GetProfile(ctx, profileName)
 	if err != nil {
-		s.logger.Warn("failed to load cached authentication record",
+		if !errors.Is(err, cache.ErrUnavailableCache) {
+			s.logger.Warn("failed to load cached authentication record",
+				logging.String("event", "load_cached_record"),
+				logging.Error(err),
+				logging.String("profile", profileName),
+				logging.String("correlation_id", cid),
+			)
+			return azcore.AccessToken{}, fmt.Errorf("failed to load cached authentication record: %w", err)
+		}
+		s.logger.Warn("cache service unavailable while loading cached authentication record",
 			logging.String("event", "load_cached_record"),
-			logging.Error(err),
 			logging.String("profile", profileName),
 			logging.String("correlation_id", cid),
 		)
-		return azcore.AccessToken{}, fmt.Errorf("failed to load cached authentication record: %w", err)
 	}
 
 	s.logger.Debug("loading profile configuration",
@@ -181,12 +188,21 @@ func (s *AuthService) Login(ctx context.Context, profileName string, opts authdo
 
 		record, err = s.cache.GetProfile(ctx, profileName)
 		if err != nil {
-			s.logger.Warn("failed to load cached record",
+			if !errors.Is(err, cache.ErrUnavailableCache) {
+				s.logger.Warn("failed to load cached record",
+					logging.String("event", "load_cached_record"),
+					logging.Error(err),
+					logging.String("correlation_id", cid),
+				)
+				return nil, fmt.Errorf("failed to retrieve cached auth record: %w", err)
+			}
+			s.logger.Warn("cache service unavailable while loading cached record",
 				logging.String("event", "load_cached_record"),
-				logging.Error(err),
+				logging.String("profile", profileName),
 				logging.String("correlation_id", cid),
 			)
-			return nil, fmt.Errorf("failed to retrieve cached auth record: %w", err)
+			// Proceed without cached record
+			record = azidentity.AuthenticationRecord{}
 		}
 	}
 
@@ -333,14 +349,14 @@ func (s *AuthService) Login(ctx context.Context, profileName string, opts authdo
 	}
 
 	s.logger.Debug("saving authentication record",
-		logging.String("event", "save_record"),
+		logging.String("event", "cache_authentication_record"),
 		logging.String("profile", profileName),
 		logging.String("correlation_id", cid),
 	)
 
 	if err := s.cache.SetProfile(ctx, profileName, record); err != nil {
-		s.logger.Warn("failed to save authentication record",
-			logging.String("event", "save_record"),
+		s.logger.Warn("failed to cache authentication record",
+			logging.String("event", "cache_authentication_record"),
 			logging.Error(err),
 			logging.String("correlation_id", cid),
 		)
@@ -372,19 +388,29 @@ func (s *AuthService) Logout(ctx context.Context, profileName string, force bool
 
 	record, err := s.cache.GetProfile(ctx, profileName)
 	if err != nil {
-		if force {
-			s.logger.Warn("failed to load cached record, but force=true; continuing",
-				logging.String("event", "load_cached_record"),
-				logging.Error(err),
-				logging.String("correlation_id", cid),
-			)
-		} else {
-			s.logger.Error("failed to load cached record",
-				logging.String("event", "load_cached_record"),
-				logging.Error(err),
-				logging.String("correlation_id", cid),
-			)
+		s.logger.Error("failed to load cached record",
+			logging.String("event", "load_cached_record"),
+			logging.Error(err),
+			logging.String("correlation_id", cid),
+		)
+		if !force && !errors.Is(err, cache.ErrUnavailableCache) {
 			return fmt.Errorf("failed to load cached authentication record: %w", err)
+		}
+
+		if errors.Is(err, cache.ErrUnavailableCache) {
+			s.logger.Warn("cache service unavailable while loading cached record",
+				logging.String("event", "load_cached_record"),
+				logging.String("profile", profileName),
+				logging.String("correlation_id", cid),
+			)
+		}
+
+		if force {
+			s.logger.Warn("proceeding with logout despite cache error due to force=true",
+				logging.String("event", "forced_authentication"),
+				logging.String("profile", profileName),
+				logging.String("correlation_id", cid),
+			)
 		}
 	}
 
