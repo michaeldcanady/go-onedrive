@@ -7,6 +7,13 @@ import (
 	"runtime"
 
 	infracommon "github.com/michaeldcanady/go-onedrive/internal2/infra/common/environment"
+	"github.com/michaeldcanady/go-onedrive/internal2/infra/common/logging"
+)
+
+const (
+	EnvLogLevel  = "ODC_LOG_LEVEL"
+	EnvLogOutput = "ODC_LOG_OUTPUT"
+	EnvLogPath   = "ODC_LOG_PATH"
 )
 
 type EnvironmentService struct {
@@ -134,4 +141,15 @@ func (s *EnvironmentService) EnsureAll() error {
 	}
 
 	return nil
+}
+
+func (s *EnvironmentService) OutputDestination() (logging.OutputDestination, error) {
+	outputDestString := os.Getenv(EnvLogOutput)
+
+	outputDest := logging.ParseOutputDestination(outputDestString)
+	if outputDest == logging.OutputDestinationUnknown {
+		return logging.DefaultLoggerOutputDestination, nil
+	}
+
+	return outputDest, nil
 }

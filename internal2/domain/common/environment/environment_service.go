@@ -1,5 +1,7 @@
 package environment
 
+import "github.com/michaeldcanady/go-onedrive/internal2/infra/common/logging"
+
 type EnvironmentService interface {
 	CacheDir() (string, error)
 	ConfigDir() (string, error)
@@ -14,4 +16,5 @@ type EnvironmentService interface {
 	OS() string
 	TempDir() (string, error)
 	StateDir() (string, error)
+	OutputDestination() (logging.OutputDestination, error)
 }

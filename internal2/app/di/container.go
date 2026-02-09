@@ -20,6 +20,7 @@ import (
 	domaincache "github.com/michaeldcanady/go-onedrive/internal2/domain/cache"
 	domainenv "github.com/michaeldcanady/go-onedrive/internal2/domain/common/environment"
 	domaingraph "github.com/michaeldcanady/go-onedrive/internal2/domain/common/graph"
+	"github.com/michaeldcanady/go-onedrive/internal2/domain/common/logger"
 	domainlogger "github.com/michaeldcanady/go-onedrive/internal2/domain/common/logger"
 	domainconfig "github.com/michaeldcanady/go-onedrive/internal2/domain/config"
 	"github.com/michaeldcanady/go-onedrive/internal2/domain/di"
@@ -32,6 +33,7 @@ import (
 	domainstate "github.com/michaeldcanady/go-onedrive/internal2/domain/state"
 	infraauth "github.com/michaeldcanady/go-onedrive/internal2/infra/auth"
 	"github.com/michaeldcanady/go-onedrive/internal2/infra/common/graph"
+	infralogging "github.com/michaeldcanady/go-onedrive/internal2/infra/common/logging"
 	"github.com/michaeldcanady/go-onedrive/internal2/infra/config"
 	"github.com/michaeldcanady/go-onedrive/internal2/infra/file"
 	infraprofile "github.com/michaeldcanady/go-onedrive/internal2/infra/profile"
@@ -133,7 +135,14 @@ func (c *Container) CacheService() domaincache.CacheService {
 		loggerService := c.Logger()
 		logger, _ := loggerService.CreateLogger("cache")
 
-		c.cacheService, _ = cache.New(filepath.Join(cachePath, "profile.cache"), filepath.Join(cachePath, "drive.cache"), filepath.Join(cachePath, "file.cache"), logger)
+		var cacheService domaincache.CacheService
+
+		cacheService, err := cache.New(filepath.Join(cachePath, "profile.cache"), filepath.Join(cachePath, "drive.cache"), filepath.Join(cachePath, "file.cache"), logger)
+		if err != nil {
+			logger.Error("failed to initialize cache service", infralogging.Error(err))
+			cacheService = cache.NewNoopCacheService()
+		}
+		c.cacheService = cacheService
 	})
 	return c.cacheService
 }
@@ -189,8 +198,22 @@ func (c *Container) FS() domainfs.Service {
 func (c *Container) Logger() domainlogger.LoggerService {
 	c.loggerOnce.Do(func() {
 
-		logHome, _ := c.EnvironmentService().LogDir()
-		c.loggerService, _ = logging.NewLoggerService("info", logHome, logging.NewLoggerProvider())
+		opts := []logger.Option{logger.WithLogLevel("info"), logger.WithType(infralogging.TypeZap)}
+
+		outputDest, _ := c.EnvironmentService().OutputDestination()
+		switch outputDest {
+		case infralogging.OutputDestinationFile:
+			logHome, _ := c.EnvironmentService().LogDir()
+			opts = append(opts, logger.WithOutputDestinationFile(logHome))
+		case infralogging.OutputDestinationStandardOut:
+			opts = append(opts, logger.WithOutputDestinationStandardOut())
+		case infralogging.OutputDestinationStandardError:
+			opts = append(opts, logger.WithOutputDestinationStandardError())
+		default:
+		}
+
+		c.loggerService, _ = logging.NewLoggerService(opts...)
+		c.loggerService.RegisterProvider(infralogging.TypeZap, infralogging.NewZapLoggerProvider())
 	})
 	return c.loggerService
 }

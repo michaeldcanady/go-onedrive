@@ -5,6 +5,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	domaincache "github.com/michaeldcanady/go-onedrive/internal2/domain/cache"
@@ -30,6 +31,10 @@ type Service struct {
 }
 
 func New(authCachePath, driveCachePath, fileCachePath string, logger logging.Logger) (*Service, error) {
+	if logger == nil {
+		logger = logging.NewNoopLogger()
+	}
+
 	logger.Info("initializing cache service",
 		logging.String("event", "cache_init"),
 		logging.String("auth_cache_path", authCachePath),
@@ -581,6 +586,14 @@ func (s *Service) GetDrive(ctx context.Context, name string) (domaincache.Cached
 			logging.String("correlation_id", cid),
 		)
 		return record, err
+	}
+
+	if strings.TrimSpace(name) == "" {
+		s.logger.Warn("drive name is empty",
+			logging.String("event", "cache_get_drive"),
+			logging.String("correlation_id", cid),
+		)
+		return record, errors.New("drive name is empty")
 	}
 
 	// Cache missing
