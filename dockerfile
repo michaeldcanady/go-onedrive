@@ -9,7 +9,7 @@ COPY . .
 
 RUN CGO_ENABLED=0 go build -o /out/onedrive ./cmd/odc
 
-FROM scratch
+FROM docker.io/library/golang:1.25-alpine
 
 COPY --from=builder /out/onedrive /onedrive
 
