@@ -8,6 +8,10 @@ import (
 func WithCorrelationID(cmd *cobra.Command) {
 	original := cmd.RunE
 
+	if original == nil {
+		return
+	}
+
 	cmd.RunE = func(c *cobra.Command, args []string) error {
 		ctx := c.Context()
 
