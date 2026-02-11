@@ -87,8 +87,14 @@ func (s *Service2) getDriveRoot(ctx context.Context, driveID, normalizedPath str
 		return nil, err
 	}
 
-	headers := abstractions.NewRequestHeaders()
-	headers.Add("If-None-Match", fmt.Sprintf("\"%s\"", cached.ETag))
+	var headers *abstractions.RequestHeaders
+	if cached.ETag != "" {
+		s.logger.Info("cached ETag found", logging.String("etag", cached.ETag))
+		headers = abstractions.NewRequestHeaders()
+		headers.Add("If-None-Match", fmt.Sprintf("\"%s\"", cached.ETag))
+	} else {
+		s.logger.Info("no cached ETag found for path", logging.String("path", normalizedPath))
+	}
 
 	config := &drives.ItemRootRequestBuilderGetRequestConfiguration{
 		Headers: headers,
