@@ -7,12 +7,14 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/michaeldcanady/go-onedrive/internal2/domain/cache"
+	domaincache "github.com/michaeldcanady/go-onedrive/internal2/domain/cache"
 	"github.com/michaeldcanady/go-onedrive/internal2/domain/profile"
 	"github.com/michaeldcanady/go-onedrive/internal2/infra/cache/abstractions"
 	"github.com/michaeldcanady/go-onedrive/internal2/infra/cache/bolt"
 	"github.com/michaeldcanady/go-onedrive/internal2/infra/cache/core"
 	"github.com/michaeldcanady/go-onedrive/internal2/infra/cache/memory"
 	"github.com/michaeldcanady/go-onedrive/internal2/infra/config"
+	jsonserialization "github.com/microsoft/kiota-serialization-json-go"
 )
 
 var _ cache.CacheService = (*ServiceAdapter)(nil)
@@ -53,8 +55,8 @@ func siblingBoltFactory(store *bolt.Store, bucket string) func() abstractions.Ke
 	}
 }
 
-func NewServiceAdapter(authCachePath, driveCachePath, fileCachePath string, service2 *Service2) *ServiceAdapter {
-	driveCacheStore := boltCacheFactory(driveCachePath, driveCacheName)()
+func NewServiceAdapter(authCachePath string, service2 *Service2) *ServiceAdapter {
+	driveCacheStore := boltCacheFactory(authCachePath, driveCacheName)()
 
 	_ = service2.CreateCache(profileCacheName, memoryCacheFactory)
 	_ = service2.CreateCache(configurationCacheName, memoryCacheFactory)
@@ -175,9 +177,19 @@ func (s *ServiceAdapter) GetDrive(ctx context.Context, name string) (cache.Cache
 	}
 
 	if err := driveCache.Get(ctx, func() ([]byte, error) { return json.Marshal(name) }, func(data []byte) error {
-		if err := json.Unmarshal(data, &record); err != nil {
+		parseNode, err := jsonserialization.NewJsonParseNode(data)
+		if err != nil {
 			return err
 		}
+		parsable, err := parseNode.GetObjectValue(domaincache.CreateCachedChildrenFromDiscriminatorValue)
+		if err != nil {
+			return err
+		}
+		cachedChildren, ok := parsable.(*cache.CachedChildren)
+		if !ok {
+			return errors.New("cached value is not of type CachedChildren")
+		}
+		record = *cachedChildren
 		return nil
 	}); !errors.Is(err, core.ErrKeyNotFound) {
 		return record, err
@@ -195,9 +207,19 @@ func (s *ServiceAdapter) GetItem(ctx context.Context, name string) (cache.Cached
 	}
 
 	if err := fileCache.Get(ctx, func() ([]byte, error) { return json.Marshal(name) }, func(data []byte) error {
-		if err := json.Unmarshal(data, &record); err != nil {
+		parseNode, err := jsonserialization.NewJsonParseNode(data)
+		if err != nil {
 			return err
 		}
+		parsable, err := parseNode.GetObjectValue(domaincache.CreateCachedItemFromDiscriminatorValue)
+		if err != nil {
+			return err
+		}
+		cachedItem, ok := parsable.(*cache.CachedItem)
+		if !ok {
+			return errors.New("cached value is not of type CachedItem")
+		}
+		record = *cachedItem
 		return nil
 	}); !errors.Is(err, core.ErrKeyNotFound) {
 		return record, err
@@ -259,7 +281,15 @@ func (s *ServiceAdapter) SetDrive(ctx context.Context, name string, record cache
 		return err
 	}
 
-	if err := driveCache.Set(ctx, func() ([]byte, error) { return json.Marshal(name) }, func() ([]byte, error) { return json.Marshal(record) }); !errors.Is(err, core.ErrKeyNotFound) {
+	if err := driveCache.Set(ctx, func() ([]byte, error) { return json.Marshal(name) }, func() ([]byte, error) {
+		writer := jsonserialization.NewJsonSerializationWriter()
+
+		if err := writer.WriteObjectValue("", &record); err != nil {
+			return nil, err
+		}
+
+		return writer.GetSerializedContent()
+	}); !errors.Is(err, core.ErrKeyNotFound) {
 		return err
 	}
 	return nil
@@ -272,7 +302,15 @@ func (s *ServiceAdapter) SetItem(ctx context.Context, name string, record cache.
 		return err
 	}
 
-	if err := fileCache.Set(ctx, func() ([]byte, error) { return json.Marshal(name) }, func() ([]byte, error) { return json.Marshal(record) }); !errors.Is(err, core.ErrKeyNotFound) {
+	if err := fileCache.Set(ctx, func() ([]byte, error) { return json.Marshal(name) }, func() ([]byte, error) {
+		writer := jsonserialization.NewJsonSerializationWriter()
+
+		if err := writer.WriteObjectValue("", &record); err != nil {
+			return nil, err
+		}
+
+		return writer.GetSerializedContent()
+	}); !errors.Is(err, core.ErrKeyNotFound) {
 		return err
 	}
 	return nil
