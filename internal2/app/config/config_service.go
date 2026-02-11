@@ -54,6 +54,17 @@ func (s *ConfigService) AddPath(name, path string) error {
 	return nil
 }
 
+func (s *ConfigService) getDefaultConfig() config.Configuration3 {
+	return config.Configuration3{
+		Auth: config.AuthenticationConfigImpl{
+			Type:        "interactiveBrowser",
+			ClientID:    "6b1e6ec0-ad93-4175-a0e0-84c02e13f206",
+			TenantID:    "common",
+			RedirectURI: "http://localhost:8400",
+		},
+	}
+}
+
 // GetConfiguration returns the configuration associated with the given name.
 //
 // The method first checks the provided context for cancellation.
@@ -76,6 +87,15 @@ func (s *ConfigService) GetConfiguration(ctx context.Context, name string) (conf
 
 	cfg, err := s.cacheService.GetConfiguration(ctx, name)
 	if err == nil {
+		s.logger.Debug("configuration retrieved from cache",
+			logging.String("name", name),
+		)
+		if cfg == (config.Configuration3{}) {
+			cfg = s.getDefaultConfig()
+			s.logger.Warn("cached configuration is empty, using default configuration",
+				logging.String("name", name),
+			)
+		}
 		return cfg, nil
 	}
 
