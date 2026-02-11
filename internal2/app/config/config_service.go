@@ -129,6 +129,14 @@ func (s *ConfigService) GetConfiguration(ctx context.Context, name string) (conf
 			logging.String("name", name),
 			logging.String("correlation_id", cid),
 		)
+		if cfg == (config.Configuration3{}) {
+			cfg = s.getDefaultConfig()
+			s.logger.Warn("cached configuration is empty, using default configuration",
+				logging.String("event", "config_get_cache_empty"),
+				logging.String("name", name),
+				logging.String("correlation_id", cid),
+			)
+		}
 		return cfg, nil
 	}
 
