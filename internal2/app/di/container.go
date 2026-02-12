@@ -180,8 +180,9 @@ func (c *Container) FS() domainfs.Service {
 // Logger implements [di.Container].
 func (c *Container) Logger() domainlogger.LoggerService {
 	c.loggerOnce.Do(func() {
+		level, _ := c.EnvironmentService().LogLevel()
 
-		opts := []logger.Option{logger.WithLogLevel("info"), logger.WithType(infralogging.TypeZap)}
+		opts := []logger.Option{logger.WithLogLevel(level), logger.WithType(infralogging.TypeZap)}
 
 		outputDest, _ := c.EnvironmentService().OutputDestination()
 		switch outputDest {

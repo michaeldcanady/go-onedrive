@@ -17,4 +17,5 @@ type EnvironmentService interface {
 	TempDir() (string, error)
 	StateDir() (string, error)
 	OutputDestination() (logging.OutputDestination, error)
+	LogLevel() (string, error)
 }

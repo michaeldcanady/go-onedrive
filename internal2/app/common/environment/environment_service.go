@@ -170,3 +170,11 @@ func (s *EnvironmentService) OutputDestination() (logging.OutputDestination, err
 
 	return logging.DefaultLoggerOutputDestination, nil
 }
+
+func (s *EnvironmentService) LogLevel() (string, error) {
+	if logLevel := os.Getenv(environment.EnvLogLevel); strings.TrimSpace(logLevel) == "" {
+		return logLevel, nil
+	}
+
+	return logging.DefaultLoggerLevel, nil
+}
