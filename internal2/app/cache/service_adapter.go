@@ -58,19 +58,19 @@ func siblingBoltFactory(store *bolt.Store, bucket string) func() abstractions.Ke
 func NewServiceAdapter(authCachePath string, service2 *Service2) *ServiceAdapter {
 	driveCacheStore := boltCacheFactory(authCachePath, driveCacheName)()
 
-	_ = service2.CreateCache(profileCacheName, memoryCacheFactory)
-	_ = service2.CreateCache(configurationCacheName, memoryCacheFactory)
-	_ = service2.CreateCache(driveCacheName, func() abstractions.KeyValueStore { return driveCacheStore })
-	_ = service2.CreateCache(fileCacheName, siblingBoltFactory(driveCacheStore.(*bolt.Store), fileCacheName))
-	_ = service2.CreateCache(authCacheName, siblingBoltFactory(driveCacheStore.(*bolt.Store), authCacheName))
+	_ = service2.CreateCache(context.Background(), profileCacheName, memoryCacheFactory)
+	_ = service2.CreateCache(context.Background(), configurationCacheName, memoryCacheFactory)
+	_ = service2.CreateCache(context.Background(), driveCacheName, func() abstractions.KeyValueStore { return driveCacheStore })
+	_ = service2.CreateCache(context.Background(), fileCacheName, siblingBoltFactory(driveCacheStore.(*bolt.Store), fileCacheName))
+	_ = service2.CreateCache(context.Background(), authCacheName, siblingBoltFactory(driveCacheStore.(*bolt.Store), authCacheName))
 
 	return &ServiceAdapter{
 		service2: service2,
 	}
 }
 
-func (s *ServiceAdapter) getProfileCache() (*abstractions.Cache2, error) {
-	profileCache, exists := s.service2.GetCache(profileCacheName)
+func (s *ServiceAdapter) getProfileCache(ctx context.Context) (*abstractions.Cache2, error) {
+	profileCache, exists := s.service2.GetCache(ctx, profileCacheName)
 	if !exists {
 		return nil, errors.New("No profile cache found")
 	}
@@ -78,8 +78,8 @@ func (s *ServiceAdapter) getProfileCache() (*abstractions.Cache2, error) {
 	return profileCache, nil
 }
 
-func (s *ServiceAdapter) getConfigurationCache() (*abstractions.Cache2, error) {
-	configurationCache, exists := s.service2.GetCache(configurationCacheName)
+func (s *ServiceAdapter) getConfigurationCache(ctx context.Context) (*abstractions.Cache2, error) {
+	configurationCache, exists := s.service2.GetCache(ctx, configurationCacheName)
 	if !exists {
 		return nil, errors.New("No configuration cache found")
 	}
@@ -87,8 +87,8 @@ func (s *ServiceAdapter) getConfigurationCache() (*abstractions.Cache2, error) {
 	return configurationCache, nil
 }
 
-func (s *ServiceAdapter) getDriveCache() (*abstractions.Cache2, error) {
-	driveCache, exists := s.service2.GetCache(driveCacheName)
+func (s *ServiceAdapter) getDriveCache(ctx context.Context) (*abstractions.Cache2, error) {
+	driveCache, exists := s.service2.GetCache(ctx, driveCacheName)
 	if !exists {
 		return nil, errors.New("No drive cache found")
 	}
@@ -96,8 +96,8 @@ func (s *ServiceAdapter) getDriveCache() (*abstractions.Cache2, error) {
 	return driveCache, nil
 }
 
-func (s *ServiceAdapter) getFileCache() (*abstractions.Cache2, error) {
-	fileCache, exists := s.service2.GetCache(fileCacheName)
+func (s *ServiceAdapter) getFileCache(ctx context.Context) (*abstractions.Cache2, error) {
+	fileCache, exists := s.service2.GetCache(ctx, fileCacheName)
 	if !exists {
 		return nil, errors.New("No file cache found")
 	}
@@ -105,8 +105,8 @@ func (s *ServiceAdapter) getFileCache() (*abstractions.Cache2, error) {
 	return fileCache, nil
 }
 
-func (s *ServiceAdapter) getAuthCache() (*abstractions.Cache2, error) {
-	authCache, exists := s.service2.GetCache(authCacheName)
+func (s *ServiceAdapter) getAuthCache(ctx context.Context) (*abstractions.Cache2, error) {
+	authCache, exists := s.service2.GetCache(ctx, authCacheName)
 	if !exists {
 		return nil, errors.New("No auth cache found")
 	}
@@ -116,7 +116,7 @@ func (s *ServiceAdapter) getAuthCache() (*abstractions.Cache2, error) {
 
 // DeleteProfile implements [cache.CacheService].
 func (s *ServiceAdapter) DeleteProfile(ctx context.Context, name string) error {
-	authCache, err := s.getAuthCache()
+	authCache, err := s.getAuthCache(ctx)
 	if err != nil {
 		return err
 	}
@@ -131,7 +131,7 @@ func (s *ServiceAdapter) DeleteProfile(ctx context.Context, name string) error {
 // GetCLIProfile implements [cache.CacheService].
 func (s *ServiceAdapter) GetCLIProfile(ctx context.Context, name string) (profile.Profile, error) {
 	var profile profile.Profile
-	profileCache, err := s.getProfileCache()
+	profileCache, err := s.getProfileCache(ctx)
 	if err != nil {
 		return profile, err
 	}
@@ -151,7 +151,7 @@ func (s *ServiceAdapter) GetCLIProfile(ctx context.Context, name string) (profil
 // GetConfiguration implements [cache.CacheService].
 func (s *ServiceAdapter) GetConfiguration(ctx context.Context, name string) (config.Configuration3, error) {
 	var record config.Configuration3
-	configurationCache, err := s.getConfigurationCache()
+	configurationCache, err := s.getConfigurationCache(ctx)
 	if err != nil {
 		return record, err
 	}
@@ -171,7 +171,7 @@ func (s *ServiceAdapter) GetConfiguration(ctx context.Context, name string) (con
 // GetDrive implements [cache.CacheService].
 func (s *ServiceAdapter) GetDrive(ctx context.Context, name string) (cache.CachedChildren, error) {
 	var record cache.CachedChildren
-	driveCache, err := s.getDriveCache()
+	driveCache, err := s.getDriveCache(ctx)
 	if err != nil {
 		return record, err
 	}
@@ -201,7 +201,7 @@ func (s *ServiceAdapter) GetDrive(ctx context.Context, name string) (cache.Cache
 // GetItem implements [cache.CacheService].
 func (s *ServiceAdapter) GetItem(ctx context.Context, name string) (cache.CachedItem, error) {
 	var record cache.CachedItem
-	fileCache, err := s.getFileCache()
+	fileCache, err := s.getFileCache(ctx)
 	if err != nil {
 		return record, err
 	}
@@ -231,7 +231,7 @@ func (s *ServiceAdapter) GetItem(ctx context.Context, name string) (cache.Cached
 // GetProfile implements [cache.CacheService].
 func (s *ServiceAdapter) GetProfile(ctx context.Context, name string) (azidentity.AuthenticationRecord, error) {
 	var record azidentity.AuthenticationRecord
-	authCache, err := s.getAuthCache()
+	authCache, err := s.getAuthCache(ctx)
 	if err != nil {
 		return record, err
 	}
@@ -250,7 +250,7 @@ func (s *ServiceAdapter) GetProfile(ctx context.Context, name string) (azidentit
 
 // SetCLIProfile implements [cache.CacheService].
 func (s *ServiceAdapter) SetCLIProfile(ctx context.Context, name string, profile profile.Profile) error {
-	profileCache, err := s.getProfileCache()
+	profileCache, err := s.getProfileCache(ctx)
 	if err != nil {
 		return err
 	}
@@ -263,7 +263,7 @@ func (s *ServiceAdapter) SetCLIProfile(ctx context.Context, name string, profile
 
 // SetConfiguration implements [cache.CacheService].
 func (s *ServiceAdapter) SetConfiguration(ctx context.Context, name string, record config.Configuration3) error {
-	configurationCache, err := s.getConfigurationCache()
+	configurationCache, err := s.getConfigurationCache(ctx)
 	if err != nil {
 		return err
 	}
@@ -276,7 +276,7 @@ func (s *ServiceAdapter) SetConfiguration(ctx context.Context, name string, reco
 
 // SetDrive implements [cache.CacheService].
 func (s *ServiceAdapter) SetDrive(ctx context.Context, name string, record cache.CachedChildren) error {
-	driveCache, err := s.getDriveCache()
+	driveCache, err := s.getDriveCache(ctx)
 	if err != nil {
 		return err
 	}
@@ -297,7 +297,7 @@ func (s *ServiceAdapter) SetDrive(ctx context.Context, name string, record cache
 
 // SetItem implements [cache.CacheService].
 func (s *ServiceAdapter) SetItem(ctx context.Context, name string, record cache.CachedItem) error {
-	fileCache, err := s.getFileCache()
+	fileCache, err := s.getFileCache(ctx)
 	if err != nil {
 		return err
 	}
@@ -318,7 +318,7 @@ func (s *ServiceAdapter) SetItem(ctx context.Context, name string, record cache.
 
 // SetProfile implements [cache.CacheService].
 func (s *ServiceAdapter) SetProfile(ctx context.Context, name string, record azidentity.AuthenticationRecord) error {
-	authCache, err := s.getAuthCache()
+	authCache, err := s.getAuthCache(ctx)
 	if err != nil {
 		return err
 	}

@@ -3,7 +3,6 @@ package config
 import (
 	"os"
 
-	"github.com/michaeldcanady/go-onedrive/internal2/infra/config"
 	"github.com/stretchr/testify/assert/yaml"
 )
 
@@ -13,15 +12,15 @@ func NewYAMLLoader() *YAMLLoader {
 	return &YAMLLoader{}
 }
 
-func (l *YAMLLoader) Load(path string) (config.Configuration3, error) {
+func (l *YAMLLoader) Load(path string) (Configuration3, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
-		return config.Configuration3{}, err
+		return Configuration3{}, err
 	}
 
-	var cfg config.Configuration3
+	var cfg Configuration3
 	if err := yaml.Unmarshal(data, &cfg); err != nil {
-		return config.Configuration3{}, err
+		return Configuration3{}, err
 	}
 
 	return cfg, nil

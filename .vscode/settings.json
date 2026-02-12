@@ -31,6 +31,7 @@
         "Errorable",
         "infraauth",
         "infracommon",
+        "infraconfig",
         "infrafile",
         "infralogging",
         "infraprofile",

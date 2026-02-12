@@ -44,6 +44,10 @@ func Strings(key string, val []string) Field {
 	return Field{Key: key, FieldType: FieldTypeStrings, Value: val}
 }
 
+func Time(key string, val time.Time) Field {
+	return Field{Key: key, FieldType: FieldTypeTime, Value: val}
+}
+
 func Error(val error) Field {
 	return Field{Key: "error", FieldType: FieldTypeError, Value: val}
 }

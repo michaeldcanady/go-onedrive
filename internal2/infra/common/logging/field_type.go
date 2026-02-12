@@ -12,8 +12,12 @@ const (
 	FieldTypeAny
 	// FieldTypeBool represents a field with a boolean value.
 	FieldTypeBool
-
+	// FieldTypeDuration represents a field with a duration value.
 	FieldTypeDuration
+	// FieldTypeStrings represents a field with a slice of strings value.
 	FieldTypeStrings
+	// FieldTypeError represents a field with an error value.
 	FieldTypeError
+	// FieldTypeTime represents a field with a time.Time value.
+	FieldTypeTime
 )

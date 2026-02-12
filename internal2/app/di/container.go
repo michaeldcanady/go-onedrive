@@ -32,6 +32,7 @@ import (
 	infraprofile "github.com/michaeldcanady/go-onedrive/internal2/infra/profile"
 
 	appstate "github.com/michaeldcanady/go-onedrive/internal2/app/state"
+	infraconfig "github.com/michaeldcanady/go-onedrive/internal2/infra/config"
 	infrastate "github.com/michaeldcanady/go-onedrive/internal2/infra/state"
 )
 
@@ -67,7 +68,7 @@ type Container struct {
 	fileService domainfile.FileService
 
 	clientOnce    sync.Once
-	clientProvide clienter
+	clientProvide domaingraph.ClientProvider
 
 	stateOnce    sync.Once
 	stateService domainstate.Service
@@ -109,7 +110,7 @@ func (c *Container) Config() domainconfig.ConfigService {
 		loggerService := c.Logger()
 		logger, _ := loggerService.CreateLogger("config")
 
-		c.configService = config.New2(c.CacheService(), config.NewYAMLLoader(), logger)
+		c.configService = config.New2(c.CacheService(), infraconfig.NewYAMLLoader(), logger)
 	})
 	return c.configService
 }
@@ -119,7 +120,10 @@ func (c *Container) CacheService() domaincache.CacheService {
 		environmentService := c.EnvironmentService()
 		cachePath, _ := environmentService.CacheDir()
 
-		c.cacheService = cache.NewServiceAdapter(filepath.Join(cachePath, "cache.db"), cache.NewService2())
+		loggerService := c.Logger()
+		logger, _ := loggerService.CreateLogger("cache")
+
+		c.cacheService = cache.NewServiceAdapter(filepath.Join(cachePath, "cache.db"), cache.NewService2(logger))
 	})
 	return c.cacheService
 }
