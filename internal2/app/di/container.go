@@ -119,10 +119,7 @@ func (c *Container) CacheService() domaincache.CacheService {
 		environmentService := c.EnvironmentService()
 		cachePath, _ := environmentService.CacheDir()
 
-		loggerService := c.Logger()
-		logger, _ := loggerService.CreateLogger("cache")
-
-		c.cacheService, _ = cache.New(filepath.Join(cachePath, "profile.cache"), filepath.Join(cachePath, "drive.cache"), filepath.Join(cachePath, "file.cache"), logger)
+		c.cacheService = cache.NewServiceAdapter(filepath.Join(cachePath, "cache.db"), cache.NewService2())
 	})
 	return c.cacheService
 }

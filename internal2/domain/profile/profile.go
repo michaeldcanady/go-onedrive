@@ -1,7 +1,7 @@
 package profile
 
 type Profile struct {
-	Name              string
-	Path              string
-	ConfigurationPath string
+	Name              string `json:"name"`
+	Path              string `json:"path"`
+	ConfigurationPath string `json:"configurationPath"`
 }

@@ -6,6 +6,7 @@
         "authinfra",
         "azcore",
         "azidentity",
+        "bbolt",
         "cacheabstractions",
         "cachev",
         "Clienter",
