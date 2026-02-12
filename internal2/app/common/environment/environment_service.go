@@ -9,6 +9,7 @@ import (
 
 	"github.com/michaeldcanady/go-onedrive/internal2/infra/common/environment"
 	infracommon "github.com/michaeldcanady/go-onedrive/internal2/infra/common/environment"
+	"github.com/michaeldcanady/go-onedrive/internal2/infra/common/logging"
 )
 
 type EnvironmentService struct {
@@ -160,4 +161,12 @@ func (s *EnvironmentService) EnsureAll() error {
 	}
 
 	return nil
+}
+
+func (s *EnvironmentService) OutputDestination() (logging.OutputDestination, error) {
+	if outputDest := os.Getenv(environment.EnvLogOutput); strings.TrimSpace(outputDest) == "" {
+		return logging.ParseOutputDestination(outputDest), nil
+	}
+
+	return logging.DefaultLoggerOutputDestination, nil
 }

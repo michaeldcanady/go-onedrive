@@ -12,4 +12,5 @@ type LoggerService interface {
 	GetLogger(id string) (logging.Logger, error)
 	SetAllLevel(level string)
 	SetLevel(id string, level string) error
+	RegisterProvider(ype logging.Type, factory LoggerProvider)
 }
