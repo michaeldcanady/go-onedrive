@@ -43,7 +43,7 @@ func NewLoggerService(opts ...logger.Option) (*LoggerService, error) {
 	}, nil
 }
 
-func (s *LoggerService) buildLoggerOptions(id string) logging.LoggerOptions {
+func (s *LoggerService) buildLoggerOptions(id string) (logging.LoggerOptions, error) {
 	config := logging.NewLoggerOptions()
 
 	opts := []logging.LoggerOption{logging.WithLogLevel(s.config.LogLevel)}
@@ -57,7 +57,11 @@ func (s *LoggerService) buildLoggerOptions(id string) logging.LoggerOptions {
 		opts = append(opts, logging.WithOutputDestinationStandardError())
 	}
 
-	return *config
+	if err := config.Apply(opts...); err != nil {
+		return logging.LoggerOptions{}, errors.Join(errors.New("unable to apply logger options"), err)
+	}
+
+	return *config, nil
 }
 
 // createLogger creates a new logger using the current factory.
@@ -68,7 +72,12 @@ func (s *LoggerService) CreateLogger(id string) (logging.Logger, error) {
 		return nil, fmt.Errorf("no logger provider registered for type: %v", s.config.Type)
 	}
 
-	logger, err := provider.Logger(s.buildLoggerOptions(id))
+	config, err := s.buildLoggerOptions(id)
+	if err != nil {
+		return nil, errors.Join(errors.New("unable to build logger options"), err)
+	}
+
+	logger, err := provider.Logger(config)
 	if err != nil {
 		return nil, err
 	}
