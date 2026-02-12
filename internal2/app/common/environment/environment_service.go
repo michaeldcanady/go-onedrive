@@ -5,7 +5,9 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 
+	"github.com/michaeldcanady/go-onedrive/internal2/infra/common/environment"
 	infracommon "github.com/michaeldcanady/go-onedrive/internal2/infra/common/environment"
 )
 
@@ -30,6 +32,10 @@ func (s *EnvironmentService) IsMac() bool     { return runtime.GOOS == "darwin" 
 func (s *EnvironmentService) IsLinux() bool   { return runtime.GOOS == "linux" }
 
 func (s *EnvironmentService) ConfigDir() (string, error) {
+	if configDir := os.Getenv(environment.EnvConfigDir); strings.TrimSpace(configDir) == "" {
+		return configDir, nil
+	}
+
 	base, err := infracommon.ConfigBase()
 	if err != nil {
 		return "", err
@@ -38,6 +44,10 @@ func (s *EnvironmentService) ConfigDir() (string, error) {
 }
 
 func (s *EnvironmentService) DataDir() (string, error) {
+	if dataDir := os.Getenv(environment.EnvDataDir); strings.TrimSpace(dataDir) == "" {
+		return dataDir, nil
+	}
+
 	base, err := infracommon.DataBase()
 	if err != nil {
 		return "", err
@@ -46,6 +56,10 @@ func (s *EnvironmentService) DataDir() (string, error) {
 }
 
 func (s *EnvironmentService) CacheDir() (string, error) {
+	if cacheDir := os.Getenv(environment.EnvCacheDir); strings.TrimSpace(cacheDir) == "" {
+		return cacheDir, nil
+	}
+
 	base, err := infracommon.CacheBase()
 	if err != nil {
 		return "", err
@@ -54,6 +68,10 @@ func (s *EnvironmentService) CacheDir() (string, error) {
 }
 
 func (s *EnvironmentService) LogDir() (string, error) {
+	if logPath := os.Getenv(environment.EnvLogDir); strings.TrimSpace(logPath) == "" {
+		return logPath, nil
+	}
+
 	if s.IsLinux() {
 		base, err := infracommon.StateBase()
 		if err != nil {
@@ -93,6 +111,10 @@ func (s *EnvironmentService) InstallDir() (string, error) {
 }
 
 func (s *EnvironmentService) TempDir() (string, error) {
+	if tempDir := os.Getenv(environment.EnvTempDir); strings.TrimSpace(tempDir) == "" {
+		return tempDir, nil
+	}
+
 	temp, err := infracommon.TempBase()
 	if err != nil {
 		return "", err
@@ -102,6 +124,10 @@ func (s *EnvironmentService) TempDir() (string, error) {
 }
 
 func (s *EnvironmentService) StateDir() (string, error) {
+	if stateDir := os.Getenv(environment.EnvStateDir); strings.TrimSpace(stateDir) == "" {
+		return stateDir, nil
+	}
+
 	state, err := infracommon.StateBase()
 	if err != nil {
 		return "", err
