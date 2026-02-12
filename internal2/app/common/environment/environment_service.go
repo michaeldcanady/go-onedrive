@@ -9,6 +9,7 @@ import (
 
 	"github.com/michaeldcanady/go-onedrive/internal2/infra/common/environment"
 	infracommon "github.com/michaeldcanady/go-onedrive/internal2/infra/common/environment"
+	"github.com/michaeldcanady/go-onedrive/internal2/infra/common/logging"
 )
 
 type EnvironmentService struct {
@@ -32,7 +33,7 @@ func (s *EnvironmentService) IsMac() bool     { return runtime.GOOS == "darwin" 
 func (s *EnvironmentService) IsLinux() bool   { return runtime.GOOS == "linux" }
 
 func (s *EnvironmentService) ConfigDir() (string, error) {
-	if configDir := os.Getenv(environment.EnvConfigDir); strings.TrimSpace(configDir) == "" {
+	if configDir := os.Getenv(environment.EnvConfigDir); strings.TrimSpace(configDir) != "" {
 		return configDir, nil
 	}
 
@@ -44,7 +45,7 @@ func (s *EnvironmentService) ConfigDir() (string, error) {
 }
 
 func (s *EnvironmentService) DataDir() (string, error) {
-	if dataDir := os.Getenv(environment.EnvDataDir); strings.TrimSpace(dataDir) == "" {
+	if dataDir := os.Getenv(environment.EnvDataDir); strings.TrimSpace(dataDir) != "" {
 		return dataDir, nil
 	}
 
@@ -56,7 +57,7 @@ func (s *EnvironmentService) DataDir() (string, error) {
 }
 
 func (s *EnvironmentService) CacheDir() (string, error) {
-	if cacheDir := os.Getenv(environment.EnvCacheDir); strings.TrimSpace(cacheDir) == "" {
+	if cacheDir := os.Getenv(environment.EnvCacheDir); strings.TrimSpace(cacheDir) != "" {
 		return cacheDir, nil
 	}
 
@@ -68,7 +69,7 @@ func (s *EnvironmentService) CacheDir() (string, error) {
 }
 
 func (s *EnvironmentService) LogDir() (string, error) {
-	if logPath := os.Getenv(environment.EnvLogDir); strings.TrimSpace(logPath) == "" {
+	if logPath := os.Getenv(environment.EnvLogDir); strings.TrimSpace(logPath) != "" {
 		return logPath, nil
 	}
 
@@ -85,8 +86,6 @@ func (s *EnvironmentService) LogDir() (string, error) {
 		return "", err
 	}
 
-	// Windows: %LOCALAPPDATA%\Logs\<app>
-	// macOS:   ~/Library/Logs/<app>
 	return filepath.Join(base, s.appName), nil
 }
 
@@ -97,7 +96,6 @@ func (s *EnvironmentService) InstallDir() (string, error) {
 	}
 
 	if s.IsWindows() {
-		// %LOCALAPPDATA%\Programs\<app>
 		return filepath.Join(base, s.appName), nil
 	}
 
@@ -111,7 +109,7 @@ func (s *EnvironmentService) InstallDir() (string, error) {
 }
 
 func (s *EnvironmentService) TempDir() (string, error) {
-	if tempDir := os.Getenv(environment.EnvTempDir); strings.TrimSpace(tempDir) == "" {
+	if tempDir := os.Getenv(environment.EnvTempDir); strings.TrimSpace(tempDir) != "" {
 		return tempDir, nil
 	}
 
@@ -124,7 +122,7 @@ func (s *EnvironmentService) TempDir() (string, error) {
 }
 
 func (s *EnvironmentService) StateDir() (string, error) {
-	if stateDir := os.Getenv(environment.EnvStateDir); strings.TrimSpace(stateDir) == "" {
+	if stateDir := os.Getenv(environment.EnvStateDir); strings.TrimSpace(stateDir) != "" {
 		return stateDir, nil
 	}
 
@@ -160,4 +158,22 @@ func (s *EnvironmentService) EnsureAll() error {
 	}
 
 	return nil
+}
+
+func (s *EnvironmentService) OutputDestination() (logging.OutputDestination, error) {
+	if outputDest := os.Getenv(environment.EnvLogOutput); strings.TrimSpace(outputDest) != "" {
+		if dest := logging.ParseOutputDestination(outputDest); dest != logging.OutputDestinationUnknown {
+			return dest, nil
+		}
+	}
+
+	return logging.DefaultLoggerOutputDestination, nil
+}
+
+func (s *EnvironmentService) LogLevel() (string, error) {
+	if logLevel := os.Getenv(environment.EnvLogLevel); strings.TrimSpace(logLevel) != "" {
+		return logLevel, nil
+	}
+
+	return logging.DefaultLoggerLevel, nil
 }

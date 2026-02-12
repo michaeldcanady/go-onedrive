@@ -18,6 +18,7 @@ import (
 	domaincache "github.com/michaeldcanady/go-onedrive/internal2/domain/cache"
 	domainenv "github.com/michaeldcanady/go-onedrive/internal2/domain/common/environment"
 	domaingraph "github.com/michaeldcanady/go-onedrive/internal2/domain/common/graph"
+	"github.com/michaeldcanady/go-onedrive/internal2/domain/common/logger"
 	domainlogger "github.com/michaeldcanady/go-onedrive/internal2/domain/common/logger"
 	domainconfig "github.com/michaeldcanady/go-onedrive/internal2/domain/config"
 	"github.com/michaeldcanady/go-onedrive/internal2/domain/di"
@@ -32,6 +33,7 @@ import (
 	infraprofile "github.com/michaeldcanady/go-onedrive/internal2/infra/profile"
 
 	appstate "github.com/michaeldcanady/go-onedrive/internal2/app/state"
+	infralogging "github.com/michaeldcanady/go-onedrive/internal2/infra/common/logging"
 	infraconfig "github.com/michaeldcanady/go-onedrive/internal2/infra/config"
 	infrastate "github.com/michaeldcanady/go-onedrive/internal2/infra/state"
 )
@@ -178,9 +180,24 @@ func (c *Container) FS() domainfs.Service {
 // Logger implements [di.Container].
 func (c *Container) Logger() domainlogger.LoggerService {
 	c.loggerOnce.Do(func() {
+		level, _ := c.EnvironmentService().LogLevel()
 
-		logHome, _ := c.EnvironmentService().LogDir()
-		c.loggerService, _ = logging.NewLoggerService("info", logHome, logging.NewLoggerProvider())
+		opts := []logger.Option{logger.WithLogLevel(level), logger.WithType(infralogging.TypeZap)}
+
+		outputDest, _ := c.EnvironmentService().OutputDestination()
+		switch outputDest {
+		case infralogging.OutputDestinationFile:
+			logHome, _ := c.EnvironmentService().LogDir()
+			opts = append(opts, logger.WithOutputDestinationFile(logHome))
+		case infralogging.OutputDestinationStandardOut:
+			opts = append(opts, logger.WithOutputDestinationStandardOut())
+		case infralogging.OutputDestinationStandardError:
+			opts = append(opts, logger.WithOutputDestinationStandardError())
+		default:
+		}
+
+		c.loggerService, _ = logging.NewLoggerService(opts...)
+		c.loggerService.RegisterProvider(infralogging.TypeZap, infralogging.NewZapLoggerProvider())
 	})
 	return c.loggerService
 }

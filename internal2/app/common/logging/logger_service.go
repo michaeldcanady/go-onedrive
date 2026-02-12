@@ -5,37 +5,79 @@ import (
 	"errors"
 	"fmt"
 	"maps"
-	"os"
 	"path/filepath"
 
+	"github.com/michaeldcanady/go-onedrive/internal2/domain/common/logger"
 	domainlogger "github.com/michaeldcanady/go-onedrive/internal2/domain/common/logger"
 	"github.com/michaeldcanady/go-onedrive/internal2/infra/common/logging"
 )
 
+var _ domainlogger.LoggerService = (*LoggerService)(nil)
+
 type LoggerService struct {
 	loggers  map[string]logging.Logger
-	logLevel string
-	logsHome string
-	factory  domainlogger.LoggerProvider
+	registry map[logging.Type]domainlogger.LoggerProvider
+	config   *logger.Options
 }
 
-func NewLoggerService(logLevel string, logsHome string, factory domainlogger.LoggerProvider) (*LoggerService, error) {
+// RegisterProvider implements [logger.LoggerService].
+func (s *LoggerService) RegisterProvider(ype logging.Type, factory domainlogger.LoggerProvider) {
+	if s.registry == nil {
+		s.registry = make(map[logging.Type]domainlogger.LoggerProvider)
+	}
+	s.registry[ype] = factory
+}
 
-	if err := os.MkdirAll(logsHome, os.ModePerm); err != nil {
-		return nil, err
+func NewLoggerService(opts ...logger.Option) (*LoggerService, error) {
+
+	config := logger.NewOptions()
+
+	if err := config.Apply(opts...); err != nil {
+		return nil, errors.Join(errors.New("unable to apply logger options"), err)
 	}
 
 	return &LoggerService{
 		loggers:  map[string]logging.Logger{},
-		logLevel: logLevel,
-		logsHome: logsHome,
-		factory:  factory,
+		registry: map[logging.Type]domainlogger.LoggerProvider{},
+		config:   config,
 	}, nil
+}
+
+func (s *LoggerService) buildLoggerOptions(id string) (logging.LoggerOptions, error) {
+	config := logging.NewLoggerOptions()
+
+	opts := []logging.LoggerOption{logging.WithLogLevel(s.config.LogLevel)}
+
+	switch s.config.OutputDestination {
+	case logging.OutputDestinationFile:
+		opts = append(opts, logging.WithOutputDestinationFile(s.toPath(id)))
+	case logging.OutputDestinationStandardOut:
+		opts = append(opts, logging.WithOutputDestinationStandardOut())
+	case logging.OutputDestinationStandardError:
+		opts = append(opts, logging.WithOutputDestinationStandardError())
+	}
+
+	if err := config.Apply(opts...); err != nil {
+		return logging.LoggerOptions{}, errors.Join(errors.New("unable to apply logger options"), err)
+	}
+
+	return *config, nil
 }
 
 // createLogger creates a new logger using the current factory.
 func (s *LoggerService) CreateLogger(id string) (logging.Logger, error) {
-	logger, err := s.factory.Logger(s.logLevel, s.toPath(id))
+
+	provider, ok := s.registry[s.config.Type]
+	if !ok {
+		return nil, fmt.Errorf("no logger provider registered for type: %v", s.config.Type)
+	}
+
+	config, err := s.buildLoggerOptions(id)
+	if err != nil {
+		return nil, errors.Join(errors.New("unable to build logger options"), err)
+	}
+
+	logger, err := provider.Logger(config)
 	if err != nil {
 		return nil, err
 	}
@@ -54,7 +96,7 @@ func (s *LoggerService) GetContextLogger(ctx context.Context, name string) (logg
 }
 
 func (s *LoggerService) SetAllLevel(level string) {
-	s.logLevel = level
+	s.config.LogLevel = level
 	maps.Keys(s.loggers)(func(key string) bool {
 		s.SetLevel(key, level)
 		return true
@@ -81,5 +123,5 @@ func (s *LoggerService) SetLevel(id, level string) error {
 
 // toPath combines the provided id and logsHome to create the log's path.
 func (s *LoggerService) toPath(id string) string {
-	return filepath.Join(s.logsHome, fmt.Sprintf("%s.log", id))
+	return filepath.Join(s.config.LogsHome, fmt.Sprintf("%s.log", id))
 }
