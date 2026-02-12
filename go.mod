@@ -9,9 +9,10 @@ require (
 	github.com/gofrs/flock v0.13.0
 	github.com/google/uuid v1.6.0
 	github.com/manifoldco/promptui v0.9.0
-	github.com/microsoftgraph/msgraph-sdk-go v1.94.0
+	github.com/microsoftgraph/msgraph-sdk-go v1.95.0
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/viper v1.21.0
+	go.etcd.io/bbolt v1.4.3
 	go.uber.org/zap v1.27.1
 	go.yaml.in/yaml/v3 v3.0.4
 	golang.org/x/term v0.40.0
@@ -23,7 +24,6 @@ require (
 	github.com/microsoftgraph/msgraph-sdk-go-core v1.4.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/stretchr/objx v0.5.2 // indirect
-	go.etcd.io/bbolt v1.4.3 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
