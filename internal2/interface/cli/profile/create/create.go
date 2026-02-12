@@ -33,6 +33,8 @@ func CreateCreateCmd(container di.Container) *cobra.Command {
 		Args:  cobra.ExactArgs(1),
 
 		RunE: func(cmd *cobra.Command, args []string) error {
+			ctx := cmd.Context()
+
 			logger, err := util.EnsureLogger(container, loggerID)
 			if err != nil {
 				return util.NewCommandErrorWithNameWithError(commandName, err)
@@ -46,7 +48,7 @@ func CreateCreateCmd(container di.Container) *cobra.Command {
 
 			logger.Info("checking if profile exists", infralogging.String("name", name))
 
-			exists, err := container.Profile().Exists(name)
+			exists, err := container.Profile().Exists(ctx, name)
 			if err != nil {
 				logger.Error("failed to check profile existence", infralogging.String("error", err.Error()))
 				return util.NewCommandErrorWithNameWithError(commandName, err)
@@ -63,7 +65,7 @@ func CreateCreateCmd(container di.Container) *cobra.Command {
 					infralogging.String("name", name),
 				)
 
-				if err := container.Profile().Delete(name); err != nil {
+				if err := container.Profile().Delete(ctx, name); err != nil {
 					logger.Error("failed to delete existing profile", infralogging.String("error", err.Error()))
 					return util.NewCommandErrorWithNameWithError(commandName, err)
 				}
@@ -71,7 +73,7 @@ func CreateCreateCmd(container di.Container) *cobra.Command {
 
 			logger.Info("creating profile", infralogging.String("name", name))
 
-			p, err := container.Profile().Create(name)
+			p, err := container.Profile().Create(ctx, name)
 			if err != nil {
 				logger.Error("failed to create profile", infralogging.String("error", err.Error()))
 				return util.NewCommandErrorWithNameWithError(commandName, err)

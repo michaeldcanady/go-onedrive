@@ -25,6 +25,8 @@ func CreateDeleteCmd(container di.Container) *cobra.Command {
 		Args:  cobra.ExactArgs(1),
 
 		RunE: func(cmd *cobra.Command, args []string) error {
+			ctx := cmd.Context()
+
 			logger, err := util.EnsureLogger(container, loggerID)
 			if err != nil {
 				return util.NewCommandErrorWithNameWithError(commandName, err)
@@ -71,7 +73,7 @@ func CreateDeleteCmd(container di.Container) *cobra.Command {
 			}
 
 			// Delete the profile directory
-			if err := container.Profile().Delete(name); err != nil {
+			if err := container.Profile().Delete(ctx, name); err != nil {
 				return util.NewCommandErrorWithNameWithError(commandName, err)
 			}
 

@@ -5,31 +5,22 @@ import (
 	"errors"
 	"strings"
 
+	"github.com/michaeldcanady/go-onedrive/internal2/domain/cache"
+	domainconfig "github.com/michaeldcanady/go-onedrive/internal2/domain/config"
 	"github.com/michaeldcanady/go-onedrive/internal2/infra/cache/core"
 	"github.com/michaeldcanady/go-onedrive/internal2/infra/common/logging"
 	"github.com/michaeldcanady/go-onedrive/internal2/infra/config"
+	"github.com/michaeldcanady/go-onedrive/internal2/interface/cli/util"
 )
 
-// ConfigService manages named configuration sources and provides lazy,
-// cached access to their contents.
-//
-// A configuration is identified by a string key (e.g. "personal")
-// and associated with a filesystem path registered via AddPath.
-// When GetConfiguration is called, the service attempts to retrieve
-// the configuration from the CacheService. If it is not present,
-// the service loads it from disk using the Loader and stores it
-// in the cache for future retrieval.
-//
-// ConfigService does not interpret or validate configuration contents.
-// It simply loads and returns them as config.Configuration3 values.
 type ConfigService struct {
-	cacheService CacheService
+	cacheService cache.CacheService
 	paths        map[string]string
-	loader       Loader
+	loader       domainconfig.Loader
 	logger       logging.Logger
 }
 
-func New2(cache CacheService, loader Loader, logger logging.Logger) *ConfigService {
+func New2(cache cache.CacheService, loader domainconfig.Loader, logger logging.Logger) *ConfigService {
 	return &ConfigService{
 		cacheService: cache,
 		paths:        make(map[string]string),
@@ -38,14 +29,25 @@ func New2(cache CacheService, loader Loader, logger logging.Logger) *ConfigServi
 	}
 }
 
-// AddPath registers a configuration source under the given name.
-//
-// The name is an arbitrary identifier (e.g. "default") used
-// later when retrieving the configuration. The path must point to
-// a readable configuration file compatible with the Loader.
-//
-// If a configuration with the same name is already registered,
-// AddPath returns ErrAlreadyRegistered.
+// ───────────────────────────────────────────────────────────────────────────────
+// Event Taxonomy (config.service)
+// ───────────────────────────────────────────────────────────────────────────────
+
+const (
+	eventConfigGetStart         = "config.get.start"
+	eventConfigGetCacheHit      = "config.get.cache.hit"
+	eventConfigGetCacheMiss     = "config.get.cache.miss"
+	eventConfigGetCacheEmpty    = "config.get.cache.empty"
+	eventConfigGetLoadStart     = "config.get.load.start"
+	eventConfigGetLoadSuccess   = "config.get.load.success"
+	eventConfigGetLoadFailure   = "config.get.load.failure"
+	eventConfigGetSaveStart     = "config.get.save.start"
+	eventConfigGetSaveSuccess   = "config.get.save.success"
+	eventConfigGetSaveFailure   = "config.get.save.failure"
+	eventConfigGetNotRegistered = "config.get.not_registered"
+	eventConfigGetPathMissing   = "config.get.path_missing"
+)
+
 func (s *ConfigService) AddPath(name, path string) error {
 	if _, exists := s.paths[name]; exists {
 		return ErrAlreadyRegistered
@@ -65,61 +67,98 @@ func (s *ConfigService) getDefaultConfig() config.Configuration3 {
 	}
 }
 
-// GetConfiguration returns the configuration associated with the given name.
-//
-// The method first checks the provided context for cancellation.
-// It then attempts to retrieve the configuration from the CacheService.
-// If the configuration is not cached, the service loads it from the
-// registered path using the Loader and stores it in the cache.
-//
-// Errors:
-//   - ErrNotRegistered: no path has been registered for this name
-//   - ErrPathMissing: the registered path is empty or whitespace
-//   - Loader errors: if the configuration file cannot be read or parsed
-//   - CacheService errors: if caching the loaded configuration fails
-//
-// The returned config.Configuration3 is the raw configuration data
-// as loaded by the Loader.
 func (s *ConfigService) GetConfiguration(ctx context.Context, name string) (config.Configuration3, error) {
 	if err := ctx.Err(); err != nil {
 		return config.Configuration3{}, err
 	}
 
+	correlationID := util.CorrelationIDFromContext(ctx)
+
+	logger := s.logger.WithContext(ctx).With(
+		logging.String("correlation_id", correlationID),
+		logging.String("config_name", name),
+	)
+
+	logger.Info("starting configuration retrieval",
+		logging.String("event", eventConfigGetStart),
+	)
+
 	cfg, err := s.cacheService.GetConfiguration(ctx, name)
 	if err == nil {
-		s.logger.Debug("configuration retrieved from cache",
-			logging.String("name", name),
+		logger.Debug("configuration retrieved from cache",
+			logging.String("event", eventConfigGetCacheHit),
 		)
+
 		if cfg == (config.Configuration3{}) {
-			cfg = s.getDefaultConfig()
-			s.logger.Warn("cached configuration is empty, using default configuration",
-				logging.String("name", name),
+			logger.Warn("cached configuration is empty; using default",
+				logging.String("event", eventConfigGetCacheEmpty),
 			)
+			return s.getDefaultConfig(), nil
 		}
+
 		return cfg, nil
 	}
 
 	if !errors.Is(err, core.ErrKeyNotFound) {
+		logger.Error("failed to retrieve configuration from cache",
+			logging.String("event", eventConfigGetCacheMiss),
+			logging.Error(err),
+		)
 		return config.Configuration3{}, err
 	}
 
-	s.logger.Info("config not cached", logging.String("name", name))
+	logger.Info("configuration not found in cache",
+		logging.String("event", eventConfigGetCacheMiss),
+	)
+
 	path, ok := s.paths[name]
 	if !ok {
+		logger.Error("configuration name not registered",
+			logging.String("event", eventConfigGetNotRegistered),
+		)
 		return config.Configuration3{}, ErrNotRegistered
 	}
+
 	if strings.TrimSpace(path) == "" {
+		logger.Error("registered configuration path is empty",
+			logging.String("event", eventConfigGetPathMissing),
+		)
 		return config.Configuration3{}, ErrPathMissing
 	}
 
+	logger.Info("loading configuration from disk",
+		logging.String("event", eventConfigGetLoadStart),
+		logging.String("path", path),
+	)
+
 	loadedCfg, err := s.loader.Load(path)
 	if err != nil {
+		logger.Error("failed to load configuration from disk",
+			logging.String("event", eventConfigGetLoadFailure),
+			logging.Error(err),
+		)
 		return config.Configuration3{}, err
 	}
 
+	logger.Info("configuration loaded successfully",
+		logging.String("event", eventConfigGetLoadSuccess),
+	)
+
+	logger.Debug("saving configuration to cache",
+		logging.String("event", eventConfigGetSaveStart),
+	)
+
 	if err := s.cacheService.SetConfiguration(ctx, name, loadedCfg); err != nil {
+		logger.Error("failed to save configuration to cache",
+			logging.String("event", eventConfigGetSaveFailure),
+			logging.Error(err),
+		)
 		return config.Configuration3{}, err
 	}
+
+	logger.Info("configuration cached successfully",
+		logging.String("event", eventConfigGetSaveSuccess),
+	)
 
 	return loadedCfg, nil
 }

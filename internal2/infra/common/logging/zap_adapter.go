@@ -39,6 +39,8 @@ func convertFieldsToZap(fields ...Field) ([]zap.Field, error) {
 			zapFields[index] = zap.Strings(field.Key, field.Value.([]string))
 		case FieldTypeError:
 			zapFields[index] = zap.Error(field.Value.(error))
+		case FieldTypeTime:
+			zapFields[index] = zap.Time(field.Key, field.Value.(time.Time))
 		default:
 			return nil, fmt.Errorf("unknown field type: %v", field.FieldType)
 		}

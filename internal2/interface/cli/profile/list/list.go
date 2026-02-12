@@ -10,7 +10,9 @@ func CreateListCmd(container di.Container) *cobra.Command {
 		Use:   "list",
 		Short: "List available profiles",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			profiles, err := container.Profile().List()
+			ctx := cmd.Context()
+
+			profiles, err := container.Profile().List(ctx)
 			if err != nil {
 				return err
 			}
