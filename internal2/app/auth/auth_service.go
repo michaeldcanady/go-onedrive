@@ -14,6 +14,7 @@ import (
 	"github.com/michaeldcanady/go-onedrive/internal2/domain/config"
 	"github.com/michaeldcanady/go-onedrive/internal2/domain/state"
 	authinfra "github.com/michaeldcanady/go-onedrive/internal2/infra/auth"
+	msalbuilder "github.com/michaeldcanady/go-onedrive/internal2/infra/auth/msal/builder"
 	"github.com/michaeldcanady/go-onedrive/internal2/infra/common/logging"
 	"github.com/michaeldcanady/go-onedrive/internal2/interface/cli/util"
 )
@@ -151,6 +152,25 @@ func (s *AuthService) GetToken(ctx context.Context, options policy.TokenRequestO
 	return token, nil
 }
 
+func (s *AuthService) buildFlow(ctx context.Context, profile string) (msalbuilder.Flow, error) {
+	correlationID := util.CorrelationIDFromContext(ctx)
+
+	logger := s.logger.WithContext(ctx).With(
+		logging.String("correlation_id", correlationID),
+		logging.String("profile", profile),
+	)
+
+	cfg, err := s.config.GetConfiguration(ctx, profile)
+	if err != nil {
+		logger.Error("failed to retrieve configuration", logging.Error(err))
+		return nil, fmt.Errorf("failed to retrieve configuration: %w", err)
+	}
+
+	switch cfg.Auth.Type {
+	case "interactiveBrowser":
+	}
+}
+
 // Login performs interactive authentication if needed, then retrieves a token.
 func (s *AuthService) Login(ctx context.Context, profileName string, opts authdomain.LoginOptions) (*authdomain.LoginResult, error) {
 	correlationID := util.CorrelationIDFromContext(ctx)
@@ -158,13 +178,13 @@ func (s *AuthService) Login(ctx context.Context, profileName string, opts authdo
 	logger := s.logger.WithContext(ctx).With(
 		logging.String("correlation_id", correlationID),
 		logging.String("profile", profileName),
-		logging.String("event", eventAuthLoginStart),
 	)
 
 	logger.Info("starting login flow",
 		logging.Bool("force", opts.Force),
 		logging.Bool("enable_cae", opts.EnableCAE),
 		logging.String("scopes", fmt.Sprintf("%v", opts.Scopes)),
+		logging.String("event", eventAuthLoginStart),
 	)
 
 	var (

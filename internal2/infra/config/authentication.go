@@ -16,6 +16,7 @@ type AuthenticationConfig interface {
 type AuthenticationConfigImpl struct {
 	Type         string `mapstructure:"type" yaml:"type"`
 	ClientID     string `mapstructure:"client_id" yaml:"client_id"`
+	ClientSecret string `mapstructure:"client_secret" yaml:"client_secret"`
 	TenantID     string `mapstructure:"tenant_id" yaml:"tenant_id"`
 	RedirectURI  string `mapstructure:"redirect_uri" yaml:"redirect_uri"`
 	ProfileCache string `mapstructure:"profile_cache" yaml:"profile_cache"`

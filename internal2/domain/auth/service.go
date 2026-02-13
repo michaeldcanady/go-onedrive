@@ -7,8 +7,8 @@ import (
 )
 
 type AuthService interface {
-	Login(ctx context.Context, profileName string, opts LoginOptions) (*LoginResult, error)
-	Logout(ctx context.Context, profileName string, force bool) error
+	Login(ctx context.Context, profile string, opts LoginOptions) (*LoginResult, error)
+	Logout(ctx context.Context, profile string, force bool) error
 
 	azcore.TokenCredential
 }
