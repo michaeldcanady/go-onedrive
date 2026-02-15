@@ -46,6 +46,7 @@ const (
 	eventAuthLogoutSuccess       = "auth.logout.success"
 )
 
+// DEPRECATED: use [Service2] instead.
 type AuthService struct {
 	cache   cache.CacheService
 	factory authinfra.CredentialFactory

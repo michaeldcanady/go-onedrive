@@ -32,7 +32,7 @@ import (
 	domainfs "github.com/michaeldcanady/go-onedrive/internal2/domain/fs"
 	domainprofile "github.com/michaeldcanady/go-onedrive/internal2/domain/profile"
 	domainstate "github.com/michaeldcanady/go-onedrive/internal2/domain/state"
-	infraauth "github.com/michaeldcanady/go-onedrive/internal2/infra/auth"
+	"github.com/michaeldcanady/go-onedrive/internal2/infra/auth/msal"
 	"github.com/michaeldcanady/go-onedrive/internal2/infra/common/graph"
 	"github.com/michaeldcanady/go-onedrive/internal2/infra/file"
 	infraprofile "github.com/michaeldcanady/go-onedrive/internal2/infra/profile"
@@ -156,12 +156,18 @@ func (c *Container) CacheService() domaincache.CacheService {
 // Auth implements [di.Container].
 func (c *Container) Auth() domainauth.AuthService {
 	c.authOnce.Do(func() {
-		credentialFactory := infraauth.NewDefaultCredentialFactory()
+		credentialFactory := msal.NewMSALCredentialFactory()
 
 		loggerService := c.Logger()
 		logger, _ := loggerService.CreateLogger("auth")
 
-		c.authService = auth.NewService(credentialFactory, c.CacheService(), c.Config(), c.State(), logger, c.Account())
+		environmentService := c.EnvironmentService()
+		cachePath, _ := environmentService.CacheDir()
+
+		cacheSvc := c.Cache()
+		cache := cacheSvc.CreateCache(context.Background(), "auth", cache.BoltCacheFactory(path.Join(cachePath, "auth.db"), "auth"))
+
+		c.authService = auth.NewService2(cache, c.Config(), c.State(), logger, credentialFactory, c.Account())
 	})
 
 	return c.authService

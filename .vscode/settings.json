@@ -47,6 +47,7 @@
         "mapstructure",
         "michaeldcanady",
         "microsoftgraph",
+        "MSAL",
         "msgraph",
         "msgraphcore",
         "msgraphsdkgo",
