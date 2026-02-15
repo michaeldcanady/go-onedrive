@@ -2,21 +2,28 @@ package auth
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
-	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
-	"github.com/michaeldcanady/go-onedrive/internal2/domain/auth"
+	accountdomain "github.com/michaeldcanady/go-onedrive/internal2/domain/account"
 	authdomain "github.com/michaeldcanady/go-onedrive/internal2/domain/auth"
-	"github.com/michaeldcanady/go-onedrive/internal2/domain/cache"
 	domainconfig "github.com/michaeldcanady/go-onedrive/internal2/domain/config"
 	"github.com/michaeldcanady/go-onedrive/internal2/domain/state"
 	"github.com/michaeldcanady/go-onedrive/internal2/infra/cache/abstractions"
+	"github.com/michaeldcanady/go-onedrive/internal2/infra/cache/core"
 	"github.com/michaeldcanady/go-onedrive/internal2/infra/common/logging"
 	"github.com/michaeldcanady/go-onedrive/internal2/infra/config"
 	"github.com/michaeldcanady/go-onedrive/internal2/interface/cli/util"
+)
+
+var (
+	ErrSilentRequiresAccount = errors.New("silent token acquisition requires a cached account")
+	ErrMaxAuthAttempts       = errors.New("max authentication attempts reached")
+	ErrEmptyToken            = errors.New("empty token returned from provider")
 )
 
 type Service2 struct {
@@ -24,8 +31,8 @@ type Service2 struct {
 	config  domainconfig.ConfigService
 	state   state.Service
 	logger  logging.Logger
-	factory auth.CredentialFactory
-	account cache.CacheService
+	factory authdomain.CredentialFactory
+	account accountdomain.Service
 }
 
 func NewService2(
@@ -33,10 +40,11 @@ func NewService2(
 	config domainconfig.ConfigService,
 	state state.Service,
 	logger logging.Logger,
-	factory auth.CredentialFactory,
-	account cache.CacheService,
+	factory authdomain.CredentialFactory,
+	account accountdomain.Service,
 ) *Service2 {
 	return &Service2{
+		cache:   cache,
 		config:  config,
 		state:   state,
 		logger:  logger,
@@ -45,8 +53,6 @@ func NewService2(
 	}
 }
 
-// ---------- shared helpers ----------
-
 func (s *Service2) buildLogger(ctx context.Context) logging.Logger {
 	correlationID := util.CorrelationIDFromContext(ctx)
 	return s.logger.WithContext(ctx).With(
@@ -54,153 +60,66 @@ func (s *Service2) buildLogger(ctx context.Context) logging.Logger {
 	)
 }
 
-func (s *Service2) loadConfiguration(ctx context.Context, logger logging.Logger, profile string) (config.Configuration3, error) {
-	logger.Debug("loading configuration",
-		logging.String("profile", profile),
-	)
+func (s *Service2) resolveProfile(profileName string) (string, error) {
+	if profileName != "" {
+		return profileName, nil
+	}
+	return s.state.GetCurrentProfile()
+}
+
+func (s *Service2) loadProfileConfig(
+	ctx context.Context,
+	logger logging.Logger,
+	profileName string,
+) (string, config.Configuration3, error) {
+
+	profile, err := s.resolveProfile(profileName)
+	if err != nil {
+		logger.Warn("failed to resolve profile", logging.Error(err))
+		return "", config.Configuration3{}, fmt.Errorf("failed to resolve profile: %w", err)
+	}
 
 	cfg, err := s.config.GetConfiguration(ctx, profile)
 	if err != nil {
-		logger.Warn("failed to retrieve config",
+		logger.Warn("failed to load configuration",
+			logging.String("profile", profile),
 			logging.Error(err),
 		)
-		return config.Configuration3{}, err
+		return "", config.Configuration3{}, fmt.Errorf("failed to load configuration: %w", err)
 	}
 
-	return cfg, nil
+	return profile, cfg, nil
 }
 
-func (s *Service2) getCredential(
+func (s *Service2) buildCredentialProvider(
+	logger logging.Logger,
 	cfg config.Configuration3,
-	account azidentity.AuthenticationRecord,
-) (auth.CredentialProvider, error) {
-	opts := &auth.Options{
-		Method:   auth.ParseMethod(cfg.Auth.Type),
+	account accountdomain.Account,
+) (authdomain.CredentialProvider, error) {
+
+	opts := &authdomain.Options{
+		Method:   authdomain.ParseMethod(cfg.Auth.Type),
 		TenantID: cfg.Auth.TenantID,
 		ClientID: cfg.Auth.ClientID,
 	}
 
-	return s.factory.Credential(account, opts)
-}
-
-func (s *Service2) buildCredentialProvider(
-	ctx context.Context,
-	logger logging.Logger,
-	cfg config.Configuration3,
-	account azidentity.AuthenticationRecord,
-) (auth.CredentialProvider, error) {
-	logger.Debug("retrieving credential provider")
-	provider, err := s.getCredential(cfg, account)
+	provider, err := s.factory.Credential(account, opts)
 	if err != nil {
-		logger.Warn("failed to retrieve credential",
-			logging.Error(err),
-		)
-		return nil, err
+		logger.Warn("failed to build credential provider", logging.Error(err))
+		return nil, fmt.Errorf("failed to build credential provider: %w", err)
 	}
+
+	logger.Info("credential provider initialized")
 	return provider, nil
 }
 
-// ---------- GetToken ----------
-
-func (s *Service2) GetToken(ctx context.Context, options policy.TokenRequestOptions) (azcore.AccessToken, error) {
-	logger := s.buildLogger(ctx)
-	s.logSilentStart(logger, options)
-
-	account, err := s.loadCachedAccountForSilent(ctx, logger, "default")
+func (s *Service2) loadAccountOrEmpty(ctx context.Context, logger logging.Logger) accountdomain.Account {
+	acc, err := s.account.Get(ctx)
 	if err != nil {
-		logger.Warn("failed to load cached account",
-			logging.String("profile", "default"),
-			logging.Error(err),
-		)
-
-		return azcore.AccessToken{}, err
+		logger.Debug("no cached account found", logging.Error(err))
+		return accountdomain.Account{}
 	}
-
-	cfg, err := s.loadConfiguration(ctx, logger, "default")
-	if err != nil {
-		logger.Warn("failed to load configuration",
-			logging.String("profile", "default"),
-			logging.Error(err),
-		)
-
-		return azcore.AccessToken{}, err
-	}
-
-	provider, err := s.buildCredentialProvider(ctx, logger, cfg, account)
-	if err != nil {
-		return azcore.AccessToken{}, err
-	}
-
-	return provider.GetToken(ctx, options)
-}
-
-func (s *Service2) logSilentStart(logger logging.Logger, options policy.TokenRequestOptions) {
-	logger.Info("starting silent token acquisition",
-		logging.String("event", eventAuthSilentStart),
-		logging.String("scopes", fmt.Sprintf("%v", options.Scopes)),
-	)
-}
-
-func (s *Service2) loadCachedAccountForSilent(ctx context.Context, logger logging.Logger, profile string) (azidentity.AuthenticationRecord, error) {
-	logger.Debug("loading cached authentication record for silent token acquisition")
-
-	// TODO: With new cache system how to get cached profile?
-	return s.account.GetProfile(ctx, profile)
-}
-
-// ---------- Login ----------
-
-func (s *Service2) Login(ctx context.Context, profileName string, opts authdomain.LoginOptions) (*authdomain.LoginResult, error) {
-	logger := s.buildLogger(ctx)
-	s.logLoginStart(logger, opts)
-
-	account := s.loadCachedAccountForLogin(ctx, logger)
-
-	cfg, err := s.loadConfiguration(ctx, logger, "default")
-	if err != nil {
-		return nil, err
-	}
-
-	provider, err := s.buildCredentialProvider(ctx, logger, cfg, account)
-	if err != nil {
-		return nil, err
-	}
-
-	tokenOpts := s.buildTokenRequestOptions(opts)
-
-	token, record, err := s.performLoginFlow(ctx, logger, provider, cfg, tokenOpts, opts)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := s.validateLoginToken(logger, token); err != nil {
-		return nil, err
-	}
-
-	s.logLoginSuccess(logger, record)
-
-	// TODO: cache account
-	// TODO: cache token
-
-	return &authdomain.LoginResult{
-		AccessToken: token.Token,
-		RecordSaved: (record != azidentity.AuthenticationRecord{}),
-	}, nil
-}
-
-func (s *Service2) logLoginStart(logger logging.Logger, opts authdomain.LoginOptions) {
-	logger.Info("starting login flow",
-		logging.Bool("force", opts.Force),
-		logging.Bool("enable_cae", opts.EnableCAE),
-		logging.String("scopes", fmt.Sprintf("%v", opts.Scopes)),
-	)
-}
-
-func (s *Service2) loadCachedAccountForLogin(ctx context.Context, logger logging.Logger) azidentity.AuthenticationRecord {
-	// TODO: With new cache system how to get cached profile?
-	var account azidentity.AuthenticationRecord
-	logger.Debug("loading cached authentication record for login")
-	return account
+	return acc
 }
 
 func (s *Service2) buildTokenRequestOptions(opts authdomain.LoginOptions) *policy.TokenRequestOptions {
@@ -210,160 +129,258 @@ func (s *Service2) buildTokenRequestOptions(opts authdomain.LoginOptions) *polic
 	}
 }
 
+func (s *Service2) needsInteractiveAuth(opts authdomain.LoginOptions, record accountdomain.Account) bool {
+	return opts.Force || record == (accountdomain.Account{})
+}
+
+func (s *Service2) getCachedToken(ctx context.Context, account accountdomain.Account) (authdomain.AccessToken, error) {
+	var token authdomain.AccessToken
+
+	if err := s.cache.Get(ctx, func() ([]byte, error) { return json.Marshal(account.HomeAccountID) }, func(b []byte) error { return json.Unmarshal(b, &token) }); err != nil {
+		if !errors.Is(err, core.ErrKeyNotFound) {
+			return authdomain.AccessToken{}, err
+		}
+	}
+
+	if time.Now().Before(token.ExpiresOn) && token.Token != "" {
+		return token, nil
+	}
+
+	return authdomain.AccessToken{}, nil
+}
+
+func (s *Service2) GetToken(ctx context.Context, options policy.TokenRequestOptions) (azcore.AccessToken, error) {
+	logger := s.buildLogger(ctx).With(logging.String("event", eventAuthSilentStart))
+	logger.Info("starting silent token acquisition")
+
+	profile, cfg, err := s.loadProfileConfig(ctx, logger, "")
+	if err != nil {
+		return azcore.AccessToken{}, err
+	}
+	logger = logger.With(logging.String("profile", profile))
+
+	account := s.loadAccountOrEmpty(ctx, logger)
+	if account == (accountdomain.Account{}) {
+		logger.Warn("silent auth requires cached account")
+		return azcore.AccessToken{}, ErrSilentRequiresAccount
+	}
+
+	token, err := s.getCachedToken(ctx, account)
+	if err != nil {
+		return azcore.AccessToken{}, err
+	}
+
+	if token != (authdomain.AccessToken{}) {
+		return azcore.AccessToken{
+			Token:     token.Token,
+			ExpiresOn: token.ExpiresOn,
+			RefreshOn: token.RefreshOn,
+		}, nil
+	}
+
+	provider, err := s.buildCredentialProvider(logger, cfg, account)
+	if err != nil {
+		return azcore.AccessToken{}, err
+	}
+
+	azToken, err := provider.GetToken(ctx, options)
+	if err != nil {
+		logger.Error("silent token acquisition failed", logging.Error(err))
+		return azcore.AccessToken{}, err
+	}
+
+	token = authdomain.AccessToken{
+		Token:     azToken.Token,
+		ExpiresOn: azToken.ExpiresOn,
+		RefreshOn: azToken.ExpiresOn,
+	}
+
+	logger.Info("silent token acquisition successful",
+		logging.String("expires_on", token.ExpiresOn.String()),
+	)
+
+	return azToken, nil
+}
+
+func (s *Service2) Login(ctx context.Context, profileName string, opts authdomain.LoginOptions) (*authdomain.LoginResult, error) {
+	logger := s.buildLogger(ctx).With(logging.String("event", eventAuthLoginStart))
+	logger.Info("starting login flow")
+
+	profile, cfg, err := s.loadProfileConfig(ctx, logger, profileName)
+	if err != nil {
+		return nil, err
+	}
+	logger = logger.With(logging.String("profile", profile))
+
+	account := s.loadAccountOrEmpty(ctx, logger)
+
+	token, err := s.getCachedToken(ctx, account)
+	if err != nil {
+		return nil, err
+	}
+
+	if token != (authdomain.AccessToken{}) {
+		return &authdomain.LoginResult{
+			AccessToken: token.Token,
+			RecordSaved: true,
+			ExpiresOn:   token.ExpiresOn,
+			Username:    account.Username,
+			Profile:     profile,
+		}, nil
+	}
+
+	provider, err := s.buildCredentialProvider(logger, cfg, account)
+	if err != nil {
+		return nil, err
+	}
+
+	tokenOpts := s.buildTokenRequestOptions(opts)
+
+	token, record, err := s.performLoginFlow(ctx, logger, provider, tokenOpts, opts, account)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := s.validateLoginToken(logger, token); err != nil {
+		return nil, err
+	}
+
+	if err := s.account.Put(ctx, record); err != nil {
+		logger.Warn("failed to cache account", logging.Error(err))
+	}
+
+	s.cache.Set(ctx, func() ([]byte, error) { return json.Marshal(record.HomeAccountID) }, func() ([]byte, error) { return json.Marshal(token) })
+
+	logger.Info("login successful")
+
+	return &authdomain.LoginResult{
+		AccessToken: token.Token,
+		ExpiresOn:   token.ExpiresOn,
+		Username:    record.Username,
+		Profile:     profile,
+		RecordSaved: record != (accountdomain.Account{}),
+	}, nil
+}
+
 func (s *Service2) performLoginFlow(
 	ctx context.Context,
 	logger logging.Logger,
-	provider auth.CredentialProvider,
-	cfg config.Configuration3,
+	provider authdomain.CredentialProvider,
 	tokenOpts *policy.TokenRequestOptions,
 	opts authdomain.LoginOptions,
-) (azcore.AccessToken, azidentity.AuthenticationRecord, error) {
+	record accountdomain.Account,
+) (authdomain.AccessToken, accountdomain.Account, error) {
+
 	var (
-		token       azcore.AccessToken
-		record      azidentity.AuthenticationRecord
+		token       authdomain.AccessToken
 		maxAttempts = int32(3)
 		err         error
 	)
 
-	for attempt := int32(1); attempt <= maxAttempts; attempt++ {
+	attempt := int32(0)
+	for {
+		if ctx.Err() != nil {
+			return authdomain.AccessToken{}, accountdomain.Account{}, ctx.Err()
+		}
+		attempt++
+
+		if attempt >= maxAttempts {
+			return authdomain.AccessToken{}, accountdomain.Account{}, ErrMaxAuthAttempts
+		}
+
+		logger.Debug("login attempt",
+			logging.Int("attempt", int(attempt)),
+			logging.Int("max_attempts", int(maxAttempts)),
+		)
+
 		if s.needsInteractiveAuth(opts, record) {
-			record, provider, err = s.performInteractiveAuthAttempt(ctx, logger, provider, cfg, tokenOpts, attempt, maxAttempts)
+			record, err = s.performInteractiveAuthAttempt(ctx, logger, provider, tokenOpts)
 			if err != nil {
-				return azcore.AccessToken{}, azidentity.AuthenticationRecord{}, err
+				continue
 			}
 		}
 
-		token, err = s.requestAccessToken(ctx, logger, provider, tokenOpts, attempt, maxAttempts)
+		azToken, err := provider.GetToken(ctx, *tokenOpts)
+
+		token = authdomain.AccessToken{
+			Token:     azToken.Token,
+			ExpiresOn: azToken.ExpiresOn,
+			RefreshOn: azToken.RefreshOn,
+		}
+
 		if err == nil {
 			break
 		}
 
 		if !isAuthRequired(err) {
-			return azcore.AccessToken{}, azidentity.AuthenticationRecord{}, s.handleNonAuthError(logger, err, attempt)
+			logger.Error("token retrieval failed", logging.Error(err))
+			return authdomain.AccessToken{}, accountdomain.Account{}, fmt.Errorf("token retrieval failed: %w", err)
 		}
 
-		s.logAuthRequiredRetry(logger, err, attempt)
-		record = azidentity.AuthenticationRecord{}
+		logger.Warn("authentication required; clearing record and retrying", logging.Error(err))
+		record = accountdomain.Account{}
 	}
 
 	return token, record, nil
 }
 
-func (s *Service2) needsInteractiveAuth(opts authdomain.LoginOptions, record azidentity.AuthenticationRecord) bool {
-	return opts.Force || record == (azidentity.AuthenticationRecord{})
-}
-
 func (s *Service2) performInteractiveAuthAttempt(
 	ctx context.Context,
 	logger logging.Logger,
-	provider auth.CredentialProvider,
-	cfg config.Configuration3,
+	provider authdomain.CredentialProvider,
 	tokenOpts *policy.TokenRequestOptions,
-	attempt, maxAttempts int32,
-) (azidentity.AuthenticationRecord, auth.CredentialProvider, error) {
-	s.logInteractiveAuthStart(logger, attempt, maxAttempts)
+) (accountdomain.Account, error) {
+
+	logger.Info("performing interactive authentication")
 
 	newRecord, err := provider.Authenticate(ctx, tokenOpts)
 	if err != nil {
-		s.logInteractiveAuthFailure(logger, err, attempt)
-		return azidentity.AuthenticationRecord{}, nil, fmt.Errorf("authentication failed: %w", err)
+		logger.Warn("interactive authentication failed", logging.Error(err))
+		return accountdomain.Account{}, fmt.Errorf("interactive authentication failed: %w", err)
 	}
 
-	provider, err = s.reloadCredentialAfterAuth(ctx, logger, cfg, newRecord)
-	if err != nil {
-		return azidentity.AuthenticationRecord{}, nil, err
-	}
+	account := accountdomain.AccountFromMSAuthRecord(newRecord)
 
-	return newRecord, provider, nil
-}
-
-func (s *Service2) logInteractiveAuthStart(logger logging.Logger, attempt, maxAttempts int32) {
-	logger.Info("performing interactive authentication",
-		logging.String("event", eventAuthLoginInteractive),
-		logging.Int("attempt", attempt),
-		logging.Int("max_attempts", maxAttempts),
-	)
-}
-
-func (s *Service2) logInteractiveAuthFailure(logger logging.Logger, err error, attempt int32) {
-	logger.Error("interactive authentication failed",
-		logging.String("event", eventAuthLoginTokenFailure),
-		logging.Int("attempt", attempt),
-		logging.Error(err),
-	)
-}
-
-func (s *Service2) reloadCredentialAfterAuth(
-	ctx context.Context,
-	logger logging.Logger,
-	cfg config.Configuration3,
-	record azidentity.AuthenticationRecord,
-) (auth.CredentialProvider, error) {
-	provider, err := s.getCredential(cfg, record)
-	if err != nil {
-		logger.Error("failed to reload credential after authentication", logging.Error(err))
-		return nil, fmt.Errorf("failed to reload credential: %w", err)
-	}
-	return provider, nil
-}
-
-func (s *Service2) requestAccessToken(
-	ctx context.Context,
-	logger logging.Logger,
-	provider auth.CredentialProvider,
-	tokenOpts *policy.TokenRequestOptions,
-	attempt, maxAttempts int32,
-) (azcore.AccessToken, error) {
-	logger.Debug("requesting access token",
-		logging.String("event", eventAuthLoginTokenAttempt),
-		logging.Int("attempt", attempt),
-		logging.Int("max_attempts", maxAttempts),
+	logger.Info("interactive authentication successful",
+		logging.String("username", account.Username),
 	)
 
-	token, err := provider.GetToken(ctx, *tokenOpts)
-	if err != nil {
-		return azcore.AccessToken{}, err
-	}
-
-	logger.Info("token retrieved successfully",
-		logging.String("event", eventAuthLoginTokenSuccess),
-		logging.Int("attempt", attempt),
-		logging.String("expires_on", token.ExpiresOn.String()),
-	)
-
-	return token, nil
+	return account, nil
 }
 
-func (s *Service2) handleNonAuthError(logger logging.Logger, err error, attempt int32) error {
-	logger.Error("failed to retrieve token",
-		logging.String("event", eventAuthLoginTokenFailure),
-		logging.Int("attempt", attempt),
-		logging.Error(err),
-	)
-	return fmt.Errorf("failed to retrieve token: %w", err)
-}
-
-func (s *Service2) logAuthRequiredRetry(logger logging.Logger, err error, attempt int32) {
-	logger.Warn("token request indicates authentication required; clearing record and retrying",
-		logging.String("event", eventAuthLoginTokenFailure),
-		logging.Int("attempt", attempt),
-		logging.Error(err),
-	)
-}
-
-func (s *Service2) validateLoginToken(logger logging.Logger, token azcore.AccessToken) error {
-	if token == (azcore.AccessToken{}) {
-		logger.Error("token is empty after login attempts",
-			logging.String("event", eventAuthLoginEmptyToken),
-		)
-		return errors.New("empty token")
+func (s *Service2) validateLoginToken(logger logging.Logger, token authdomain.AccessToken) error {
+	if token.Token == "" || token.ExpiresOn.IsZero() {
+		logger.Error("empty or invalid token returned")
+		return ErrEmptyToken
 	}
 	return nil
 }
 
-func (s *Service2) logLoginSuccess(logger logging.Logger, record azidentity.AuthenticationRecord) {
-	logger.Info("login successful",
-		logging.String("event", eventAuthLoginSuccess),
-		logging.Bool("record_saved", record != (azidentity.AuthenticationRecord{})),
+func (s *Service2) Logout(ctx context.Context, profileName string, force bool) error {
+	logger := s.buildLogger(ctx).With(
+		logging.String("profile", profileName),
 	)
+
+	logger.Info("starting logout flow",
+		logging.String("event", eventAuthLogoutStart),
+	)
+
+	account := s.loadAccountOrEmpty(ctx, logger)
+	if account == (accountdomain.Account{}) {
+		logger.Info("no cached account; nothing to do")
+		return nil
+	}
+
+	if err := s.account.Delete(ctx); err != nil {
+		logger.Warn("failed to delete account", logging.Error(err))
+		return fmt.Errorf("failed to delete account: %w", err)
+	}
+
+	if err := s.cache.Delete(ctx, func() ([]byte, error) { return json.Marshal(account.HomeAccountID) }); err != nil {
+		logger.Warn("failed to delete token", logging.Error(err))
+		return fmt.Errorf("failed to delete token: %w", err)
+	}
+
+	logger.Info("logout successful")
+	return nil
 }

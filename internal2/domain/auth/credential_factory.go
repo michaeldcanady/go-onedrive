@@ -1,7 +1,7 @@
 package auth
 
-import "github.com/Azure/azure-sdk-for-go/sdk/azidentity"
+import accountdomain "github.com/michaeldcanady/go-onedrive/internal2/domain/account"
 
 type CredentialFactory interface {
-	Credential(record azidentity.AuthenticationRecord, opts *Options) (CredentialProvider, error)
+	Credential(record accountdomain.Account, opts *Options) (CredentialProvider, error)
 }

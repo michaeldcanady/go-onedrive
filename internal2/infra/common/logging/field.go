@@ -26,7 +26,7 @@ type _int interface {
 
 // Int creates a Field with an integer value.
 func Int[T _int](key string, val T) Field {
-	return Field{Key: key, FieldType: FieldTypeInt, Value: val}
+	return Field{Key: key, FieldType: FieldTypeInt, Value: int(val)}
 }
 
 // Any creates a Field with an arbitrary value.

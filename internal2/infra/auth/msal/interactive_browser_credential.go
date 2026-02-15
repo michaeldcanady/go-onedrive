@@ -8,9 +8,10 @@ import (
 func newInteractiveBrowserCredential(record azidentity.AuthenticationRecord, opts *auth.Options) (*azidentity.InteractiveBrowserCredential, error) {
 
 	azOpts := &azidentity.InteractiveBrowserCredentialOptions{
-		AuthenticationRecord: record,
-		ClientID:             opts.ClientID,
-		TenantID:             opts.TenantID,
+		AuthenticationRecord:           record,
+		ClientID:                       opts.ClientID,
+		TenantID:                       opts.TenantID,
+		DisableAutomaticAuthentication: true,
 	}
 
 	return azidentity.NewInteractiveBrowserCredential(azOpts)

@@ -3,7 +3,7 @@ package msal
 import (
 	"errors"
 
-	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
+	accountdomain "github.com/michaeldcanady/go-onedrive/internal2/domain/account"
 	"github.com/michaeldcanady/go-onedrive/internal2/domain/auth"
 )
 
@@ -13,7 +13,9 @@ func NewMSALCredentialFactory() *MSALCredentialFactory {
 
 type MSALCredentialFactory struct{}
 
-func (_ *MSALCredentialFactory) Credential(record azidentity.AuthenticationRecord, opts *auth.Options) (auth.CredentialProvider, error) {
+func (_ *MSALCredentialFactory) Credential(account accountdomain.Account, opts *auth.Options) (auth.CredentialProvider, error) {
+	record := accountdomain.AccountToMSAuthRecord(account)
+
 	switch opts.Method {
 	case auth.MethodInteractiveBrowser:
 		return newInteractiveBrowserCredential(record, opts)
