@@ -7,8 +7,8 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
-	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 
+	accountdomain "github.com/michaeldcanady/go-onedrive/internal2/domain/account"
 	authdomain "github.com/michaeldcanady/go-onedrive/internal2/domain/auth"
 	"github.com/michaeldcanady/go-onedrive/internal2/domain/cache"
 	"github.com/michaeldcanady/go-onedrive/internal2/domain/config"
@@ -50,6 +50,7 @@ type AuthService struct {
 	cache   cache.CacheService
 	factory authinfra.CredentialFactory
 	config  config.ConfigService
+	account accountdomain.Service
 	state   state.Service
 	logger  logging.Logger
 }
@@ -60,6 +61,7 @@ func NewService(
 	config config.ConfigService,
 	state state.Service,
 	logger logging.Logger,
+	account accountdomain.Service,
 ) *AuthService {
 	return &AuthService{
 		factory: factory,
@@ -67,6 +69,7 @@ func NewService(
 		config:  config,
 		logger:  logger,
 		state:   state,
+		account: account,
 	}
 }
 
@@ -92,14 +95,14 @@ func (s *AuthService) GetToken(ctx context.Context, options policy.TokenRequestO
 
 	logger = logger.With(logging.String("profile", profileName))
 
-	record, err := s.cache.GetProfile(ctx, profileName)
+	account, err := s.account.Get(ctx)
 	if err != nil {
-		logger.Error("failed to load cached authentication record", logging.Error(err))
-		return azcore.AccessToken{}, fmt.Errorf("failed to load cached authentication record: %w", err)
+		logger.Error("failed to load cached account", logging.Error(err))
+		return azcore.AccessToken{}, fmt.Errorf("failed to load cached account: %w", err)
 	}
 
-	logger.Debug("loaded cached authentication record",
-		logging.Bool("has_record", record != (azidentity.AuthenticationRecord{})),
+	logger.Debug("loaded cached account",
+		logging.Bool("has_record", account != (accountdomain.Account{})),
 	)
 
 	cfg, err := s.config.GetConfiguration(ctx, profileName)
@@ -109,10 +112,10 @@ func (s *AuthService) GetToken(ctx context.Context, options policy.TokenRequestO
 	}
 
 	credOpts := authinfra.CredentialOptions{
-		Type:                 cfg.Auth.Type,
-		ClientID:             cfg.Auth.ClientID,
-		TenantID:             cfg.Auth.TenantID,
-		AuthenticationRecord: record,
+		Type:     cfg.Auth.Type,
+		ClientID: cfg.Auth.ClientID,
+		TenantID: cfg.Auth.TenantID,
+		Account:  account,
 	}
 
 	logger.Debug("creating credential",
@@ -129,8 +132,8 @@ func (s *AuthService) GetToken(ctx context.Context, options policy.TokenRequestO
 
 	token, err := cred.GetToken(ctx, options)
 	if err != nil {
-		if record == (azidentity.AuthenticationRecord{}) {
-			logger.Warn("silent token acquisition failed: no authentication record",
+		if account == (accountdomain.Account{}) {
+			logger.Warn("silent token acquisition failed: no account",
 				logging.String("event", eventAuthSilentNotLoggedIn),
 			)
 			return azcore.AccessToken{}, errors.New("not logged in")
@@ -167,20 +170,15 @@ func (s *AuthService) Login(ctx context.Context, profileName string, opts authdo
 		logging.String("scopes", fmt.Sprintf("%v", opts.Scopes)),
 	)
 
-	var (
-		record azidentity.AuthenticationRecord
-		err    error
-	)
-
-	record, err = s.cache.GetProfile(ctx, profileName)
+	account, err := s.account.Get(ctx)
 	if err != nil {
-		logger.Error("failed to retrieve cached auth record", logging.Error(err))
-		return nil, fmt.Errorf("failed to retrieve cached auth record: %w", err)
+		logger.Error("failed to retrieve cached account", logging.Error(err))
+		return nil, fmt.Errorf("failed to retrieve cached account: %w", err)
 	}
 
-	logger.Debug("loaded cached authentication record",
+	logger.Debug("loaded cached account",
 		logging.String("event", eventAuthLoginRecordLoaded),
-		logging.Bool("has_record", record != (azidentity.AuthenticationRecord{})),
+		logging.Bool("has_record", (account != accountdomain.Account{})),
 	)
 
 	cfg, err := s.config.GetConfiguration(ctx, profileName)
@@ -197,10 +195,10 @@ func (s *AuthService) Login(ctx context.Context, profileName string, opts authdo
 	)
 
 	credOpts := authinfra.CredentialOptions{
-		Type:                 cfg.Auth.Type,
-		ClientID:             cfg.Auth.ClientID,
-		TenantID:             cfg.Auth.TenantID,
-		AuthenticationRecord: record,
+		Type:     cfg.Auth.Type,
+		ClientID: cfg.Auth.ClientID,
+		TenantID: cfg.Auth.TenantID,
+		Account:  account,
 	}
 
 	cred, err := s.factory.Create(credOpts)
@@ -224,7 +222,7 @@ func (s *AuthService) Login(ctx context.Context, profileName string, opts authdo
 	maxAttempts := 3
 
 	for attempt := 1; attempt <= maxAttempts; attempt++ {
-		needsAuth := opts.Force || record == (azidentity.AuthenticationRecord{})
+		needsAuth := opts.Force || account == (accountdomain.Account{})
 
 		if needsAuth {
 			logger.Info("performing interactive authentication",
@@ -243,13 +241,13 @@ func (s *AuthService) Login(ctx context.Context, profileName string, opts authdo
 				return nil, fmt.Errorf("authentication failed: %w", err)
 			}
 
-			record = newRecord
+			account = accountdomain.AccountFromMSAuthRecord(newRecord)
 
 			cred, err = s.factory.Create(authinfra.CredentialOptions{
-				Type:                 cfg.Auth.Type,
-				ClientID:             cfg.Auth.ClientID,
-				TenantID:             cfg.Auth.TenantID,
-				AuthenticationRecord: newRecord,
+				Type:     cfg.Auth.Type,
+				ClientID: cfg.Auth.ClientID,
+				TenantID: cfg.Auth.TenantID,
+				Account:  account,
 			})
 			if err != nil {
 				logger.Error("failed to reload credential after authentication", logging.Error(err))
@@ -280,7 +278,7 @@ func (s *AuthService) Login(ctx context.Context, profileName string, opts authdo
 				logging.Error(err),
 			)
 
-			record = azidentity.AuthenticationRecord{}
+			account = accountdomain.Account{}
 			continue
 		}
 
@@ -299,30 +297,30 @@ func (s *AuthService) Login(ctx context.Context, profileName string, opts authdo
 		return nil, errors.New("empty token")
 	}
 
-	if err := s.cache.SetProfile(ctx, profileName, record); err != nil {
-		logger.Warn("failed to save authentication record",
+	if err := s.account.Put(ctx, account); err != nil {
+		logger.Warn("failed to save account",
 			logging.String("event", eventAuthLoginRecordSaveErr),
 			logging.Error(err),
 		)
 	} else {
-		logger.Info("authentication record saved",
+		logger.Info("account saved",
 			logging.String("event", eventAuthLoginRecordSaved),
-			logging.Bool("record_saved", record != (azidentity.AuthenticationRecord{})),
+			logging.Bool("record_saved", (account != accountdomain.Account{})),
 		)
 	}
 
 	logger.Info("login successful",
 		logging.String("event", eventAuthLoginSuccess),
-		logging.Bool("record_saved", record != (azidentity.AuthenticationRecord{})),
+		logging.Bool("record_saved", (account != accountdomain.Account{})),
 	)
 
 	return &authdomain.LoginResult{
 		AccessToken: token.Token,
-		RecordSaved: (record != azidentity.AuthenticationRecord{}),
+		RecordSaved: (account != accountdomain.Account{}),
 	}, nil
 }
 
-// Logout removes the cached authentication record for the given profile.
+// Logout removes the cached account for the given profile.
 // If force is true, logout proceeds even if no record exists.
 func (s *AuthService) Logout(ctx context.Context, profileName string, force bool) error {
 	correlationID := util.CorrelationIDFromContext(ctx)
@@ -335,7 +333,7 @@ func (s *AuthService) Logout(ctx context.Context, profileName string, force bool
 
 	logger.Info("starting logout flow", logging.Bool("force", force))
 
-	record, err := s.cache.GetProfile(ctx, profileName)
+	account, err := s.account.Get(ctx)
 	if err != nil {
 		if force {
 			logger.Warn("failed to load cached record, but force=true; continuing",
@@ -347,35 +345,35 @@ func (s *AuthService) Logout(ctx context.Context, profileName string, force bool
 				logging.String("event", eventAuthLogoutRecordLoad),
 				logging.Error(err),
 			)
-			return fmt.Errorf("failed to load cached authentication record: %w", err)
+			return fmt.Errorf("failed to load cached account: %w", err)
 		}
 	} else {
-		logger.Debug("loaded cached authentication record for logout",
+		logger.Debug("loaded cached account for logout",
 			logging.String("event", eventAuthLogoutRecordLoad),
-			logging.Bool("has_record", record != (azidentity.AuthenticationRecord{})),
+			logging.Bool("has_record", account != (accountdomain.Account{})),
 		)
 	}
 
-	if record == (azidentity.AuthenticationRecord{}) && !force {
-		logger.Info("no authentication record found; nothing to do",
+	if account == (accountdomain.Account{}) && !force {
+		logger.Info("no account found; nothing to do",
 			logging.String("event", eventAuthLogoutRecordMissing),
 		)
 		return nil
 	}
 
-	logger.Info("deleting cached authentication record",
+	logger.Info("deleting cached account",
 		logging.String("event", eventAuthLogoutDelete),
 	)
 
-	if err := s.cache.DeleteProfile(ctx, profileName); err != nil {
-		logger.Error("failed to delete authentication record",
+	if err := s.account.Delete(ctx); err != nil {
+		logger.Error("failed to delete account",
 			logging.String("event", eventAuthLogoutDeleteError),
 			logging.Error(err),
 		)
-		return fmt.Errorf("failed to delete authentication record: %w", err)
+		return fmt.Errorf("failed to delete account: %w", err)
 	}
 
-	logger.Info("authentication record deleted",
+	logger.Info("account deleted",
 		logging.String("event", eventAuthLogoutDelete),
 	)
 
