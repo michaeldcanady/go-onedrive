@@ -1,6 +1,10 @@
 package abstractions
 
-import "context"
+import (
+	"context"
+	"errors"
+	"fmt"
+)
 
 type Cache2 struct {
 	store KeyValueStore
@@ -24,6 +28,11 @@ func (c *Cache2) Get(
 		return err
 	}
 
+	if len(keyBytes) == 0 {
+		return errors.New("key is empty")
+	}
+
+	fmt.Println(keyBytes)
 	raw, err := c.store.Get(ctx, keyBytes)
 	if err != nil {
 		return err
