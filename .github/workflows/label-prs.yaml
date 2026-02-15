@@ -18,7 +18,7 @@ jobs:
       - uses: actions/labeler@v6
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
-          sync-labels: false
+          sync-labels: true
       - name: Label PR size
         uses: codelytv/pr-size-labeler@v1
         with:
