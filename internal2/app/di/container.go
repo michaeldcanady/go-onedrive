@@ -135,7 +135,7 @@ func (c *Container) Cache() domaincache.Service2 {
 		loggerService := c.Logger()
 		logger, _ := loggerService.CreateLogger("cache")
 
-		cache.NewService2(logger)
+		c.cacheService2 = cache.NewService2(logger)
 	})
 
 	return c.cacheService2
