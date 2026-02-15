@@ -60,6 +60,9 @@
           - any-glob-to-any-file:
               - "docs/**"
               - "**/*.md"
+              - mkdocs.yaml
+              - requirements.txt
+              - doc.dockerfile
 
 "component: ci":
   - any:
