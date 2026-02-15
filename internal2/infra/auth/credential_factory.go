@@ -7,6 +7,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity/cache"
+	"github.com/michaeldcanady/go-onedrive/internal2/domain/account"
 )
 
 type CredentialFactory interface {
@@ -34,12 +35,19 @@ func (f *DefaultCredentialFactory) createInteractiveBrowser(authCfg CredentialOp
 		return nil, errors.Join(errors.New("failed to initialize token cache"), err)
 	}
 
+	var authenticationRecord azidentity.AuthenticationRecord
+	if authCfg.Account != (account.Account{}) {
+		authenticationRecord = account.AccountToMSAuthRecord(authCfg.Account)
+	} else if authCfg.AuthenticationRecord != (azidentity.AuthenticationRecord{}) {
+		authenticationRecord = authCfg.AuthenticationRecord
+	}
+
 	return azidentity.NewInteractiveBrowserCredential(&azidentity.InteractiveBrowserCredentialOptions{
 		TenantID:                       authCfg.TenantID,
 		ClientID:                       authCfg.ClientID,
 		RedirectURL:                    authCfg.RedirectURI,
 		DisableAutomaticAuthentication: true,
-		AuthenticationRecord:           authCfg.AuthenticationRecord,
+		AuthenticationRecord:           authenticationRecord,
 		Cache:                          tokenCache,
 	})
 }

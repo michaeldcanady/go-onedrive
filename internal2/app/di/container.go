@@ -1,9 +1,12 @@
 package di
 
 import (
+	"context"
+	"path"
 	"path/filepath"
 	"sync"
 
+	"github.com/michaeldcanady/go-onedrive/internal2/app/account"
 	"github.com/michaeldcanady/go-onedrive/internal2/app/auth"
 	"github.com/michaeldcanady/go-onedrive/internal2/app/cache"
 	"github.com/michaeldcanady/go-onedrive/internal2/app/config"
@@ -11,6 +14,8 @@ import (
 	"github.com/michaeldcanady/go-onedrive/internal2/app/fs"
 	appprofile "github.com/michaeldcanady/go-onedrive/internal2/app/profile"
 	"github.com/michaeldcanady/go-onedrive/internal2/app/state"
+
+	domainaccount "github.com/michaeldcanady/go-onedrive/internal2/domain/account"
 
 	"github.com/michaeldcanady/go-onedrive/internal2/app/common/environment"
 	"github.com/michaeldcanady/go-onedrive/internal2/app/common/logging"
@@ -60,7 +65,13 @@ type Container struct {
 	profileOnce    sync.Once
 	profileService domainprofile.ProfileService
 
-	cacheOnce    sync.Once
+	cacheOnce2    sync.Once
+	cacheService2 domaincache.Service2
+
+	// DEPRECATED: use cacheOnce2 instead.
+	cacheOnce sync.Once
+
+	// DEPRECATED: use cacheService2 instead.
 	cacheService domaincache.CacheService
 
 	configOnce    sync.Once
@@ -77,6 +88,9 @@ type Container struct {
 
 	driveOnce    sync.Once
 	driveService domaindrive.DriveService
+
+	accountOnce    sync.Once
+	accountService domainaccount.Service
 }
 
 func NewContainer() *Container {
@@ -117,15 +131,24 @@ func (c *Container) Config() domainconfig.ConfigService {
 	return c.configService
 }
 
+func (c *Container) Cache() domaincache.Service2 {
+	c.cacheOnce2.Do(func() {
+		loggerService := c.Logger()
+		logger, _ := loggerService.CreateLogger("cache")
+
+		c.cacheService2 = cache.NewService2(logger)
+	})
+
+	return c.cacheService2
+}
+
+// DEPRECATED: use Cache instead.
 func (c *Container) CacheService() domaincache.CacheService {
 	c.cacheOnce.Do(func() {
 		environmentService := c.EnvironmentService()
 		cachePath, _ := environmentService.CacheDir()
 
-		loggerService := c.Logger()
-		logger, _ := loggerService.CreateLogger("cache")
-
-		c.cacheService = cache.NewServiceAdapter(filepath.Join(cachePath, "cache.db"), cache.NewService2(logger))
+		c.cacheService = cache.NewServiceAdapter(filepath.Join(cachePath, "cache.db"), c.Cache())
 	})
 	return c.cacheService
 }
@@ -138,7 +161,7 @@ func (c *Container) Auth() domainauth.AuthService {
 		loggerService := c.Logger()
 		logger, _ := loggerService.CreateLogger("auth")
 
-		c.authService = auth.NewService(credentialFactory, c.CacheService(), c.Config(), c.State(), logger)
+		c.authService = auth.NewService(credentialFactory, c.CacheService(), c.Config(), c.State(), logger, c.Account())
 	})
 
 	return c.authService
@@ -175,6 +198,23 @@ func (c *Container) FS() domainfs.Service {
 		c.fsService = fs.NewService(c.File(), resolver, logger)
 	})
 	return c.fsService
+}
+
+func (c *Container) Account() domainaccount.Service {
+	c.accountOnce.Do(func() {
+		cacheSvc := c.Cache()
+
+		loggerSvc := c.Logger()
+		logger, _ := loggerSvc.CreateLogger("account")
+
+		environmentService := c.EnvironmentService()
+		cachePath, _ := environmentService.CacheDir()
+
+		cache := cacheSvc.CreateCache(context.Background(), "account", cache.BoltCacheFactory(path.Join(cachePath, "account.db"), "account"))
+
+		c.accountService = account.New(cache, logger)
+	})
+	return c.accountService
 }
 
 // Logger implements [di.Container].
