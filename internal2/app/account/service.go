@@ -3,9 +3,11 @@ package account
 import (
 	"context"
 	"encoding/json"
+	"errors"
 
 	"github.com/michaeldcanady/go-onedrive/internal2/domain/account"
 	"github.com/michaeldcanady/go-onedrive/internal2/infra/cache/abstractions"
+	"github.com/michaeldcanady/go-onedrive/internal2/infra/cache/core"
 	"github.com/michaeldcanady/go-onedrive/internal2/infra/common/logging"
 	"github.com/michaeldcanady/go-onedrive/internal2/interface/cli/util"
 )
@@ -43,14 +45,18 @@ func (s *Service) Get(ctx context.Context) (account.Account, error) {
 
 	logger.Debug("retrieving account from cache")
 	if err := s.cache.Get(ctx, accountKeySerializer, func(b []byte) error { return json.Unmarshal(b, &acct) }); err != nil {
-		logger.Warn("failed to retrieve cached account",
-			logging.Error(err),
+		if !errors.Is(err, core.ErrKeyNotFound) {
+			logger.Warn("failed to retrieve cached account",
+				logging.Error(err),
+			)
+			return acct, err
+		}
+		logger.Info("no account cached")
+	} else {
+		logger.Info("account retrieved",
+			logging.String("username", acct.Username),
 		)
-		return acct, err
 	}
-	logger.Info("account retrieved",
-		logging.String("username", acct.Username),
-	)
 
 	return acct, nil
 }
