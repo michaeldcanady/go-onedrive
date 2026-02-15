@@ -71,6 +71,8 @@
               - ".github/workflows/**"
               - ".github/labeler.yml"
               - ".github/dependabot.yaml"
+              - ".vale.ini"
+              - ".golangci.yml"
 
 # ============================================
 # TYPE LABELS
