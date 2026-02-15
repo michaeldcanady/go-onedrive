@@ -1,4 +1,4 @@
-package msal
+package auth
 
 import (
 	"context"

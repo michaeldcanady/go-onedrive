@@ -1,4 +1,4 @@
-package msal
+package auth
 
 type Method int32
 

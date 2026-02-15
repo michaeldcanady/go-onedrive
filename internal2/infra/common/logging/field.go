@@ -20,8 +20,12 @@ func String(key, val string) Field {
 	return Field{Key: key, FieldType: FieldTypeString, Value: val}
 }
 
+type _int interface {
+	int | int32 | int64
+}
+
 // Int creates a Field with an integer value.
-func Int(key string, val int) Field {
+func Int[T _int](key string, val T) Field {
 	return Field{Key: key, FieldType: FieldTypeInt, Value: val}
 }
 
