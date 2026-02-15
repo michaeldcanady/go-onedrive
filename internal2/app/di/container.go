@@ -160,7 +160,7 @@ func (c *Container) Auth() domainauth.AuthService {
 		loggerService := c.Logger()
 		logger, _ := loggerService.CreateLogger("auth")
 
-		c.authService = auth.NewService(credentialFactory, c.CacheService(), c.Config(), c.State(), logger)
+		c.authService = auth.NewService(credentialFactory, c.CacheService(), c.Config(), c.State(), logger, c.Account())
 	})
 
 	return c.authService

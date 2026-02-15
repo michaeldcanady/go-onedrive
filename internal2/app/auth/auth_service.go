@@ -9,6 +9,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 
+	accountdomain "github.com/michaeldcanady/go-onedrive/internal2/domain/account"
 	authdomain "github.com/michaeldcanady/go-onedrive/internal2/domain/auth"
 	"github.com/michaeldcanady/go-onedrive/internal2/domain/cache"
 	"github.com/michaeldcanady/go-onedrive/internal2/domain/config"
@@ -50,6 +51,7 @@ type AuthService struct {
 	cache   cache.CacheService
 	factory authinfra.CredentialFactory
 	config  config.ConfigService
+	account accountdomain.Service
 	state   state.Service
 	logger  logging.Logger
 }
@@ -60,6 +62,7 @@ func NewService(
 	config config.ConfigService,
 	state state.Service,
 	logger logging.Logger,
+	account accountdomain.Service,
 ) *AuthService {
 	return &AuthService{
 		factory: factory,
@@ -67,6 +70,7 @@ func NewService(
 		config:  config,
 		logger:  logger,
 		state:   state,
+		account: account,
 	}
 }
 
@@ -92,14 +96,14 @@ func (s *AuthService) GetToken(ctx context.Context, options policy.TokenRequestO
 
 	logger = logger.With(logging.String("profile", profileName))
 
-	record, err := s.cache.GetProfile(ctx, profileName)
+	account, err := s.account.Get(ctx)
 	if err != nil {
 		logger.Error("failed to load cached authentication record", logging.Error(err))
 		return azcore.AccessToken{}, fmt.Errorf("failed to load cached authentication record: %w", err)
 	}
 
 	logger.Debug("loaded cached authentication record",
-		logging.Bool("has_record", record != (azidentity.AuthenticationRecord{})),
+		logging.Bool("has_record", account != (accountdomain.Account{})),
 	)
 
 	cfg, err := s.config.GetConfiguration(ctx, profileName)
@@ -109,10 +113,10 @@ func (s *AuthService) GetToken(ctx context.Context, options policy.TokenRequestO
 	}
 
 	credOpts := authinfra.CredentialOptions{
-		Type:                 cfg.Auth.Type,
-		ClientID:             cfg.Auth.ClientID,
-		TenantID:             cfg.Auth.TenantID,
-		AuthenticationRecord: record,
+		Type:     cfg.Auth.Type,
+		ClientID: cfg.Auth.ClientID,
+		TenantID: cfg.Auth.TenantID,
+		Account:  account,
 	}
 
 	logger.Debug("creating credential",
@@ -129,7 +133,7 @@ func (s *AuthService) GetToken(ctx context.Context, options policy.TokenRequestO
 
 	token, err := cred.GetToken(ctx, options)
 	if err != nil {
-		if record == (azidentity.AuthenticationRecord{}) {
+		if account == (accountdomain.Account{}) {
 			logger.Warn("silent token acquisition failed: no authentication record",
 				logging.String("event", eventAuthSilentNotLoggedIn),
 			)
