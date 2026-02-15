@@ -14,6 +14,8 @@
               - "!internal*/*/profile/**/*.go"
               - "!internal*/*/state/**/*.go"
               - "!internal*/*/cache/**/*.go"
+              - "go.mod"
+              - "go.sum"
 
 "component: auth":
   - any:
