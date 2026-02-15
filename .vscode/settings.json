@@ -15,6 +15,7 @@
         "coreutils",
         "credentialservice",
         "derr",
+        "domainaccount",
         "domainconfig",
         "domaindrive",
         "domainenv",

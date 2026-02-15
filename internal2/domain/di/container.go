@@ -1,6 +1,7 @@
 package di
 
 import (
+	"github.com/michaeldcanady/go-onedrive/internal2/domain/account"
 	domainauth "github.com/michaeldcanady/go-onedrive/internal2/domain/auth"
 	domaincache "github.com/michaeldcanady/go-onedrive/internal2/domain/cache"
 	domainenvironment "github.com/michaeldcanady/go-onedrive/internal2/domain/common/environment"
@@ -14,6 +15,8 @@ import (
 )
 
 type Container interface {
+	Cache() domaincache.Service2
+	// DEPRECATED: use [Cache] instead.
 	CacheService() domaincache.CacheService
 	FS() domainfs.Service
 	EnvironmentService() domainenvironment.EnvironmentService
@@ -24,4 +27,5 @@ type Container interface {
 	File() file.FileService
 	State() state.Service
 	Drive() drive.DriveService
+	Account() account.Service
 }

@@ -1,9 +1,11 @@
 package di
 
 import (
+	"context"
 	"path/filepath"
 	"sync"
 
+	"github.com/michaeldcanady/go-onedrive/internal2/app/account"
 	"github.com/michaeldcanady/go-onedrive/internal2/app/auth"
 	"github.com/michaeldcanady/go-onedrive/internal2/app/cache"
 	"github.com/michaeldcanady/go-onedrive/internal2/app/config"
@@ -11,6 +13,8 @@ import (
 	"github.com/michaeldcanady/go-onedrive/internal2/app/fs"
 	appprofile "github.com/michaeldcanady/go-onedrive/internal2/app/profile"
 	"github.com/michaeldcanady/go-onedrive/internal2/app/state"
+
+	domainaccount "github.com/michaeldcanady/go-onedrive/internal2/domain/account"
 
 	"github.com/michaeldcanady/go-onedrive/internal2/app/common/environment"
 	"github.com/michaeldcanady/go-onedrive/internal2/app/common/logging"
@@ -83,6 +87,9 @@ type Container struct {
 
 	driveOnce    sync.Once
 	driveService domaindrive.DriveService
+
+	accountOnce    sync.Once
+	accountService domainaccount.Service
 }
 
 func NewContainer() *Container {
@@ -190,6 +197,23 @@ func (c *Container) FS() domainfs.Service {
 		c.fsService = fs.NewService(c.File(), resolver, logger)
 	})
 	return c.fsService
+}
+
+func (c *Container) Account() domainaccount.Service {
+	c.accountOnce.Do(func() {
+		cacheSvc := c.Cache()
+
+		loggerSvc := c.Logger()
+		logger, _ := loggerSvc.CreateLogger("account")
+
+		environmentService := c.EnvironmentService()
+		cachePath, _ := environmentService.CacheDir()
+
+		cache := cacheSvc.CreateCache(context.Background(), "account", cache.BoltCacheFactory(cachePath, "account"))
+
+		c.accountService = account.New(cache, logger)
+	})
+	return c.accountService
 }
 
 // Logger implements [di.Container].

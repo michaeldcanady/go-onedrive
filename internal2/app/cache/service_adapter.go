@@ -35,7 +35,7 @@ func memoryCacheFactory() abstractions.KeyValueStore {
 	return memory.NewStore()
 }
 
-func boltCacheFactory(path, bucket string) func() abstractions.KeyValueStore {
+func BoltCacheFactory(path, bucket string) func() abstractions.KeyValueStore {
 	return func() abstractions.KeyValueStore {
 		store, err := bolt.NewStore(path, bucket)
 		if err != nil {
@@ -56,7 +56,7 @@ func siblingBoltFactory(store *bolt.Store, bucket string) func() abstractions.Ke
 }
 
 func NewServiceAdapter(authCachePath string, service2 domaincache.Service2) *ServiceAdapter {
-	driveCacheStore := boltCacheFactory(authCachePath, driveCacheName)()
+	driveCacheStore := BoltCacheFactory(authCachePath, driveCacheName)()
 
 	_ = service2.CreateCache(context.Background(), profileCacheName, memoryCacheFactory)
 	_ = service2.CreateCache(context.Background(), configurationCacheName, memoryCacheFactory)
