@@ -3,7 +3,6 @@ package abstractions
 import (
 	"context"
 	"errors"
-	"fmt"
 )
 
 type Cache2 struct {
@@ -32,7 +31,6 @@ func (c *Cache2) Get(
 		return errors.New("key is empty")
 	}
 
-	fmt.Println(keyBytes)
 	raw, err := c.store.Get(ctx, keyBytes)
 	if err != nil {
 		return err

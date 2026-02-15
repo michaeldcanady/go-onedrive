@@ -2,6 +2,7 @@ package di
 
 import (
 	"context"
+	"path"
 	"path/filepath"
 	"sync"
 
@@ -209,7 +210,7 @@ func (c *Container) Account() domainaccount.Service {
 		environmentService := c.EnvironmentService()
 		cachePath, _ := environmentService.CacheDir()
 
-		cache := cacheSvc.CreateCache(context.Background(), "account", cache.BoltCacheFactory(cachePath, "account"))
+		cache := cacheSvc.CreateCache(context.Background(), "account", cache.BoltCacheFactory(path.Join(cachePath, "account.db"), "account"))
 
 		c.accountService = account.New(cache, logger)
 	})
