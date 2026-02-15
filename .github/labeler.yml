@@ -1,23 +1,82 @@
+# ============================================
+# COMPONENT LABELS
+# ============================================
+
 "component: go":
   - any:
       - changed-files:
           - any-glob-to-any-file:
               - "**/*.go"
+              - "!internal*/*/auth/**/*.go"
+              - "!internal*/*/common/**/*.go"
+              - "!internal*/*/fs/**/*.go"
+              - "!internal*/*/file/**/*.go"
+              - "!internal*/*/profile/**/*.go"
+              - "!internal*/*/state/**/*.go"
+              - "!internal*/*/cache/**/*.go"
               - "go.mod"
               - "go.sum"
+
+"component: auth":
+  - any:
+      - changed-files:
+          - any-glob-to-any-file:
+              - "internal*/*/auth/**/*.go"
+
+"component: common":
+  - any:
+      - changed-files:
+          - any-glob-to-any-file:
+              - "internal*/*/common/**/*.go"
+
+"component: filesystem":
+  - any:
+      - changed-files:
+          - any-glob-to-any-file:
+              - "internal*/*/fs/**/*.go"
+              - "internal*/*/file/**/*.go"
+
+"component: profile":
+  - any:
+      - changed-files:
+          - any-glob-to-any-file:
+              - "internal*/*/profile/**/*.go"
+
+"component: state":
+  - any:
+      - changed-files:
+          - any-glob-to-any-file:
+              - "internal*/*/state/**/*.go"
+
+"component: cache":
+  - any:
+      - changed-files:
+          - any-glob-to-any-file:
+              - "internal*/*/cache/**/*.go"
 
 "component: doc":
   - any:
       - changed-files:
           - any-glob-to-any-file:
-              - "docs/*"
+              - "docs/**"
               - "**/*.md"
+              - mkdocs.yaml
+              - requirements.txt
+              - doc.dockerfile
 
 "component: ci":
   - any:
       - changed-files:
           - any-glob-to-any-file:
               - ".github/workflows/**"
+              - ".github/labeler.yml"
+              - ".github/dependabot.yaml"
+              - ".vale.ini"
+              - ".golangci.yml"
+
+# ============================================
+# TYPE LABELS
+# ============================================
 
 "type: bug":
   - any:
