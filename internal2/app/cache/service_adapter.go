@@ -28,7 +28,7 @@ const (
 )
 
 type ServiceAdapter struct {
-	service2 *Service2
+	service2 domaincache.Service2
 }
 
 func memoryCacheFactory() abstractions.KeyValueStore {
@@ -55,7 +55,7 @@ func siblingBoltFactory(store *bolt.Store, bucket string) func() abstractions.Ke
 	}
 }
 
-func NewServiceAdapter(authCachePath string, service2 *Service2) *ServiceAdapter {
+func NewServiceAdapter(authCachePath string, service2 domaincache.Service2) *ServiceAdapter {
 	driveCacheStore := boltCacheFactory(authCachePath, driveCacheName)()
 
 	_ = service2.CreateCache(context.Background(), profileCacheName, memoryCacheFactory)

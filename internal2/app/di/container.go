@@ -60,7 +60,13 @@ type Container struct {
 	profileOnce    sync.Once
 	profileService domainprofile.ProfileService
 
-	cacheOnce    sync.Once
+	cacheOnce2    sync.Once
+	cacheService2 domaincache.Service2
+
+	// DEPRECATED: use cacheOnce2 instead.
+	cacheOnce sync.Once
+
+	// DEPRECATED: use cacheService2 instead.
 	cacheService domaincache.CacheService
 
 	configOnce    sync.Once
@@ -117,15 +123,24 @@ func (c *Container) Config() domainconfig.ConfigService {
 	return c.configService
 }
 
+func (c *Container) Cache() domaincache.Service2 {
+	c.cacheOnce2.Do(func() {
+		loggerService := c.Logger()
+		logger, _ := loggerService.CreateLogger("cache")
+
+		cache.NewService2(logger)
+	})
+
+	return c.cacheService2
+}
+
+// DEPRECATED: use Cache instead.
 func (c *Container) CacheService() domaincache.CacheService {
 	c.cacheOnce.Do(func() {
 		environmentService := c.EnvironmentService()
 		cachePath, _ := environmentService.CacheDir()
 
-		loggerService := c.Logger()
-		logger, _ := loggerService.CreateLogger("cache")
-
-		c.cacheService = cache.NewServiceAdapter(filepath.Join(cachePath, "cache.db"), cache.NewService2(logger))
+		c.cacheService = cache.NewServiceAdapter(filepath.Join(cachePath, "cache.db"), c.Cache())
 	})
 	return c.cacheService
 }
