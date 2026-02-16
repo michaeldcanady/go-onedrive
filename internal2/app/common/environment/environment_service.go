@@ -186,3 +186,12 @@ func (s *EnvironmentService) Shell() (string, error) {
 
 	return os.Getenv("SHELL"), nil
 }
+
+func (s *EnvironmentService) Editor() (string, error) {
+	// allow for ODC specific editor
+	if editor := os.Getenv(environment.EnvEditor); strings.TrimSpace(editor) != "" {
+		return editor, nil
+	}
+
+	return os.Getenv("EDITOR"), nil
+}
