@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 
 	domaincache "github.com/michaeldcanady/go-onedrive/internal2/domain/cache"
 	"github.com/michaeldcanady/go-onedrive/internal2/infra/common/logging"
@@ -79,7 +80,32 @@ func (s *Service2) GetFileContents(ctx context.Context, driveID, path string) ([
 		return nil, err
 	}
 
+	// TODO: add caching of file contents
+
 	return s.relativePathContentsBuilder(client, driveID, normalizePath(path)).Get(ctx, nil)
+}
+
+func (s *Service2) WriteFile(ctx context.Context, driveID, path string, reader io.Reader) (*DriveItem, error) {
+	client, err := s.graph.Client(ctx)
+	if err != nil {
+		s.logger.Error("unable to instantiate graph client", logging.Error(err))
+		return nil, err
+	}
+
+	data, err := io.ReadAll(reader)
+	if err != nil {
+		s.logger.Error("unable to read data", logging.Error(err))
+		return nil, err
+	}
+
+	rawItem, err := s.relativePathContentsBuilder(client, driveID, normalizePath(path)).Put(ctx, data, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	// TODO: if successful update cache with new value
+
+	return toDomainItem(driveID, rawItem), nil
 }
 
 // getDriveRoot fetches the DriveItem for the given path, using ETag caching.

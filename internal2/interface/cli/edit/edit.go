@@ -1,6 +1,7 @@
 package edit
 
 import (
+	"bytes"
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
@@ -53,7 +54,7 @@ func CreateEditCmd(c di.Container) *cobra.Command {
 
 			reader, err := fsSvc.ReadFile(ctx, path, fs.ReadOptions{})
 			if err != nil {
-				return util.NewCommandErrorWithNameWithMessage(commandName, "unable to read file")
+				return util.NewCommandError(commandName, "failed to read file", err)
 			}
 			defer reader.Close()
 
@@ -65,7 +66,6 @@ func CreateEditCmd(c di.Container) *cobra.Command {
 			editorSvc := NewEditorService(c.EnvironmentService(), logger).
 				WithIO(cmd.InOrStdin(), cmd.OutOrStdout(), cmd.ErrOrStderr())
 
-			// Launch editor
 			editedBytes, tmpPath, err := editorSvc.LaunchTempFile(fmt.Sprintf("%s-edit-", name), ext, io.TeeReader(reader, origHash))
 			defer os.Remove(tmpPath)
 			if err != nil {
@@ -74,19 +74,17 @@ func CreateEditCmd(c di.Container) *cobra.Command {
 
 			origHashSum := hex.EncodeToString(origHash.Sum(nil))
 
-			// Hash edited
 			editedHash := sha256.Sum256(editedBytes)
 
-			// Compare
 			if origHashSum == hex.EncodeToString(editedHash[:]) {
 				logger.Info("no changes detected")
 				return nil
 			}
 
-			//err = fsSvc.WriteFile(ctx, path, bytes.NewReader(editedBytes), fs.WriteOptions{})
-			//if err != nil {
-			//	return util.NewCommandErrorWithNameWithMessage(commandName, "failed to write updated file")
-			//}
+			_, err = fsSvc.WriteFile(ctx, path, bytes.NewReader(editedBytes), fs.WriteOptions{})
+			if err != nil {
+				return util.NewCommandError(commandName, "failed to write updated file", err)
+			}
 
 			logger.Info("file updated successfully",
 				infralogging.Duration("duration", time.Since(start)),

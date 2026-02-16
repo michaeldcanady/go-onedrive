@@ -127,14 +127,43 @@ func (s *Service) Remove(ctx context.Context, path string, opts domainfs.RemoveO
 	panic("unimplemented")
 }
 
-func (s *Service) WriteFile(ctx context.Context, path string, r io.Reader, opts domainfs.WriteOptions) error {
+func (s *Service) WriteFile(ctx context.Context, path string, r io.Reader, opts domainfs.WriteOptions) (domainfs.Item, error) {
 	correlationID := util.CorrelationIDFromContext(ctx)
 	s.logger.WithContext(ctx).With(
 		logging.String("correlation_id", correlationID),
 		logging.String("path", path),
-		logging.String("event", eventFSNotImplemented),
-	).Error("WriteFile is not implemented")
-	panic("unimplemented")
+	)
+
+	logger := s.buildLogger(ctx)
+	logger = logger.With(logging.String("path", path))
+
+	item, err := s.resolvePath(ctx, path)
+	if err != nil {
+		logger.Warn("failed to resolve item path",
+			logging.Error(err),
+		)
+		return domainfs.Item{}, err
+	}
+
+	if item.IsFolder {
+		return domainfs.Item{}, errors.New("can't write directories")
+	}
+
+	driveID, err := s.driveResolver.CurrentDriveID(ctx)
+	if err != nil {
+		logger.Error("failed to resolve current drive ID",
+			logging.String("event", eventFSResolveFailure),
+			logging.Error(err),
+		)
+		return domainfs.Item{}, err
+	}
+
+	result, err := s.files.WriteFile(ctx, driveID, path, r)
+	if err != nil {
+
+	}
+
+	return mapToFSItem(result), nil
 }
 
 func (s *Service) resolvePath(ctx context.Context, p string) (*infrafile.DriveItem, error) {

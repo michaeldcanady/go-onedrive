@@ -2,10 +2,13 @@ package edit
 
 import (
 	"crypto/sha256"
+	"errors"
 	"io"
 	"log"
 	"path/filepath"
 	"strings"
+
+	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 )
 
 func Name(path string) string {
@@ -19,4 +22,9 @@ func hashSha256(reader io.Reader) []byte {
 	}
 
 	return hash.Sum(nil)
+}
+
+func isAuthRequired(err error) bool {
+	var authErr *azidentity.AuthenticationRequiredError
+	return errors.As(err, &authErr)
 }
