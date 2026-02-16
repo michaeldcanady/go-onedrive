@@ -1,8 +1,10 @@
 package file
 
 const (
-	rootChildrenURITemplate         = "https://graph.microsoft.com/v1.0/drives/%s/root/children"
-	rootRelativeChildrenURITemplate = "https://graph.microsoft.com/v1.0/drives/%s/root:%s:/children"
-	rootRelativeURITemplate         = "https://graph.microsoft.com/v1.0/drives/%s/root:%s:"
-	rootURITemplate                 = "https://graph.microsoft.com/v1.0/drives/%s/root"
+	baseURL                          = "https://graph.microsoft.com/v1.0"
+	rootChildrenURITemplate2         = "{+baseurl}/drives/{drive_id}/root/children"
+	rootRelativeChildrenURITemplate2 = "{+baseurl}/drives/{drive_id}/root:{path}:/children"
+	rootRelativeURITemplate2         = "{+baseurl}/drives/{drive_id}/root:{path}:"
+	rootURITemplate2                 = "{+baseurl}/drives/{drive_id}/root"
+	rootRelativeContentURITemplate2  = "{+baseurl}/drives/{drive_id}/root:{path}:/content"
 )

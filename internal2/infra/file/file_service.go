@@ -12,6 +12,7 @@ import (
 	"github.com/microsoftgraph/msgraph-sdk-go/drives"
 	"github.com/microsoftgraph/msgraph-sdk-go/models"
 	"github.com/microsoftgraph/msgraph-sdk-go/models/odataerrors"
+	stduritemplate "github.com/std-uritemplate/std-uritemplate/go/v2"
 )
 
 type Service2 struct {
@@ -69,6 +70,16 @@ func (s *Service2) ResolveItem(ctx context.Context, driveID, path string) (*Driv
 	}
 
 	return toDomainItem(driveID, item), nil
+}
+
+func (s *Service2) GetFileContents(ctx context.Context, driveID, path string) ([]byte, error) {
+	client, err := s.graph.Client(ctx)
+	if err != nil {
+		s.logger.Error("unable to instantiate graph client", logging.Any("error", err))
+		return nil, err
+	}
+
+	return s.relativePathContentsBuilder(client, driveID, normalizePath(path)).Get(ctx, nil)
 }
 
 // getDriveRoot fetches the DriveItem for the given path, using ETag caching.
@@ -176,16 +187,45 @@ func (s *Service2) ListChildren(ctx context.Context, driveID, path string) ([]*D
 }
 
 func (s *Service2) driveItemBuilder(client *msgraphsdkgo.GraphServiceClient, driveID, normalizedPath string) *drives.ItemRootRequestBuilder {
-	if normalizedPath == "" {
-		return drives.NewItemRootRequestBuilder(fmt.Sprintf(rootURITemplate, driveID), client.RequestAdapter)
+	urlTemplate := rootURITemplate2
+	subs := make(stduritemplate.Substitutions)
+	subs["baseurl"] = baseURL
+	subs["drive_id"] = driveID
+
+	if normalizedPath != "" {
+		urlTemplate = rootRelativeURITemplate2
+		subs["path"] = normalizedPath
 	}
-	return drives.NewItemRootRequestBuilder(fmt.Sprintf(rootRelativeURITemplate, driveID, normalizedPath), client.RequestAdapter)
+
+	uri, _ := stduritemplate.Expand(urlTemplate, subs)
+
+	return drives.NewItemRootRequestBuilder(uri, client.RequestAdapter)
 }
 
 func (s *Service2) childrenBuilder(client *msgraphsdkgo.GraphServiceClient, driveID, normalizedPath string) *drives.ItemItemsRequestBuilder {
+	urlTemplate := rootChildrenURITemplate2
+	subs := make(stduritemplate.Substitutions)
+	subs["baseurl"] = baseURL
+	subs["drive_id"] = driveID
+
 	if normalizedPath != "" {
-		return drives.NewItemItemsRequestBuilder(fmt.Sprintf(rootRelativeChildrenURITemplate, driveID, normalizedPath), client.RequestAdapter)
+		urlTemplate = rootRelativeChildrenURITemplate2
+		subs["path"] = normalizedPath
 	}
 
-	return drives.NewItemItemsRequestBuilder(fmt.Sprintf(rootChildrenURITemplate, driveID), client.RequestAdapter)
+	uri, _ := stduritemplate.Expand(urlTemplate, subs)
+
+	return drives.NewItemItemsRequestBuilder(uri, client.RequestAdapter)
+}
+
+func (s *Service2) relativePathContentsBuilder(client *msgraphsdkgo.GraphServiceClient, driveID, normalizedPath string) *drives.ItemRootContentRequestBuilder {
+	urlTemplate := rootRelativeContentURITemplate2
+	subs := make(stduritemplate.Substitutions)
+	subs["baseurl"] = baseURL
+	subs["drive_id"] = driveID
+	subs["path"] = normalizedPath
+
+	uri, _ := stduritemplate.Expand(urlTemplate, subs)
+
+	return drives.NewItemRootContentRequestBuilder(uri, client.RequestAdapter)
 }
