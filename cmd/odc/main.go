@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/michaeldcanady/go-onedrive/internal2/app/di"
 	"github.com/michaeldcanady/go-onedrive/internal2/interface/cli/root"
@@ -29,7 +30,11 @@ func realMain() int {
 		if isAuthRequired(err) {
 			err = errors.New("authentication required. Run `odc auth login`")
 		}
-		fmt.Fprintf(cmd.OutOrStdout(), "%s: %s\n", cmd.CalledAs(), err)
+		text := err.Error()
+		if !strings.HasPrefix(err.Error(), fmt.Sprintf("%s:", cmd.CalledAs())) {
+			text = fmt.Sprintf("%s: %s\n", cmd.CalledAs(), err)
+		}
+		fmt.Fprint(cmd.OutOrStdout(), text)
 		return 1
 	}
 

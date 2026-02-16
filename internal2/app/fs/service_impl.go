@@ -10,6 +10,7 @@ import (
 	domainfile "github.com/michaeldcanady/go-onedrive/internal2/domain/file"
 	domainfs "github.com/michaeldcanady/go-onedrive/internal2/domain/fs"
 	"github.com/michaeldcanady/go-onedrive/internal2/infra/common/logging"
+	"github.com/michaeldcanady/go-onedrive/internal2/infra/file"
 	infrafile "github.com/michaeldcanady/go-onedrive/internal2/infra/file"
 	"github.com/michaeldcanady/go-onedrive/internal2/interface/cli/util"
 )
@@ -137,15 +138,33 @@ func (s *Service) WriteFile(ctx context.Context, path string, r io.Reader, opts 
 	logger := s.buildLogger(ctx)
 	logger = logger.With(logging.String("path", path))
 
+	exists := true
 	item, err := s.resolvePath(ctx, path)
 	if err != nil {
-		logger.Warn("failed to resolve item path",
-			logging.Error(err),
-		)
-		return domainfs.Item{}, err
+		var dErr = &file.DomainError{}
+		if !errors.As(err, &dErr) {
+			logger.Warn("failed to resolve item path",
+				logging.Error(err),
+			)
+			return domainfs.Item{}, err
+		}
+		if dErr.Kind != file.ErrNotFound {
+			logger.Warn("failed to resolve item path",
+				logging.Error(err),
+			)
+			return domainfs.Item{}, err
+		}
+		logger.Info("file doesn't currently exist")
+		exists = false
 	}
 
-	if item.IsFolder {
+	if exists && !opts.Overwrite {
+		logger.Warn("file already exists; can't overwrite")
+		return domainfs.Item{}, errors.New("can't overwrite existing file")
+	}
+
+	if exists && item.IsFolder {
+		logger.Warn("can't write to directory")
 		return domainfs.Item{}, errors.New("can't write directories")
 	}
 
@@ -160,7 +179,7 @@ func (s *Service) WriteFile(ctx context.Context, path string, r io.Reader, opts 
 
 	result, err := s.files.WriteFile(ctx, driveID, path, r)
 	if err != nil {
-
+		return domainfs.Item{}, err
 	}
 
 	return mapToFSItem(result), nil

@@ -81,7 +81,7 @@ func CreateEditCmd(c di.Container) *cobra.Command {
 				return nil
 			}
 
-			_, err = fsSvc.WriteFile(ctx, path, bytes.NewReader(editedBytes), fs.WriteOptions{})
+			_, err = fsSvc.WriteFile(ctx, path, bytes.NewReader(editedBytes), fs.WriteOptions{Overwrite: true})
 			if err != nil {
 				return util.NewCommandError(commandName, "failed to write updated file", err)
 			}
