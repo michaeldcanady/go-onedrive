@@ -177,3 +177,21 @@ func (s *EnvironmentService) LogLevel() (string, error) {
 
 	return logging.DefaultLoggerLevel, nil
 }
+
+func (s *EnvironmentService) Shell() (string, error) {
+	// allow for ODC specific shell
+	if shell := os.Getenv(environment.EnvShell); strings.TrimSpace(shell) != "" {
+		return shell, nil
+	}
+
+	return os.Getenv("SHELL"), nil
+}
+
+func (s *EnvironmentService) Editor() (string, error) {
+	// allow for ODC specific editor
+	if editor := os.Getenv(environment.EnvEditor); strings.TrimSpace(editor) != "" {
+		return editor, nil
+	}
+
+	return os.Getenv("EDITOR"), nil
+}

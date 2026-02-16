@@ -18,4 +18,6 @@ type EnvironmentService interface {
 	StateDir() (string, error)
 	OutputDestination() (logging.OutputDestination, error)
 	LogLevel() (string, error)
+	Shell() (string, error)
+	Editor() (string, error)
 }

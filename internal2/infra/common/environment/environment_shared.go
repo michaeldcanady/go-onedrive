@@ -9,4 +9,6 @@ const (
 	EnvDataDir   = "ODC_DATA_DIR"
 	EnvConfigDir = "ODC_CONFIG_DIR"
 	EnvStateDir  = "ODC_STATE_DIR"
+	EnvShell     = "ODC_SHELL"
+	EnvEditor    = "ODC_EDITOR"
 )
