@@ -18,4 +18,5 @@ type EnvironmentService interface {
 	StateDir() (string, error)
 	OutputDestination() (logging.OutputDestination, error)
 	LogLevel() (string, error)
+	SHELL() (string, error)
 }

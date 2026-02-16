@@ -177,3 +177,12 @@ func (s *EnvironmentService) LogLevel() (string, error) {
 
 	return logging.DefaultLoggerLevel, nil
 }
+
+func (s *EnvironmentService) Shell() (string, error) {
+	// allow for ODC specific shell
+	if shell := os.Getenv(environment.EnvShell); strings.TrimSpace(shell) != "" {
+		return shell, nil
+	}
+
+	return os.Getenv("SHELL"), nil
+}
