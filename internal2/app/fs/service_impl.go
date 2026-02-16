@@ -1,7 +1,9 @@
 package fs
 
 import (
+	"bytes"
 	"context"
+	"errors"
 	"io"
 
 	domainDrive "github.com/michaeldcanady/go-onedrive/internal2/domain/drive"
@@ -32,6 +34,7 @@ const (
 	eventFSResolveStart   = "fs.resolve.start"
 	eventFSResolveSuccess = "fs.resolve.success"
 	eventFSResolveFailure = "fs.resolve.failure"
+	eventFSReadFailure    = "fs.read.failure"
 
 	eventFSListStart    = "fs.list.start"
 	eventFSListChildren = "fs.list.children"
@@ -49,13 +52,20 @@ const (
 	eventFSNotImplemented = "fs.not_implemented"
 )
 
-func (s *Service) Mkdir(ctx context.Context, path string, opts domainfs.MKDirOptions) error {
+func (s *Service) buildLogger(ctx context.Context) logging.Logger {
 	correlationID := util.CorrelationIDFromContext(ctx)
-	s.logger.WithContext(ctx).With(
+	return s.logger.WithContext(ctx).With(
 		logging.String("correlation_id", correlationID),
-		logging.String("path", path),
+	)
+}
+
+func (s *Service) Mkdir(ctx context.Context, path string, opts domainfs.MKDirOptions) error {
+	logger := s.buildLogger(ctx)
+	logger = logger.With(logging.String("path", path))
+
+	logger.Error("Mkdir is not implemented",
 		logging.String("event", eventFSNotImplemented),
-	).Error("Mkdir is not implemented")
+	)
 	panic("unimplemented")
 }
 
@@ -71,13 +81,40 @@ func (s *Service) Move(ctx context.Context, src string, dst string, opts domainf
 }
 
 func (s *Service) ReadFile(ctx context.Context, path string, opts domainfs.ReadOptions) (io.ReadCloser, error) {
-	correlationID := util.CorrelationIDFromContext(ctx)
-	s.logger.WithContext(ctx).With(
-		logging.String("correlation_id", correlationID),
-		logging.String("path", path),
-		logging.String("event", eventFSNotImplemented),
-	).Error("ReadFile is not implemented")
-	panic("unimplemented")
+	logger := s.buildLogger(ctx)
+	logger = logger.With(logging.String("path", path))
+
+	item, err := s.resolvePath(ctx, path)
+	if err != nil {
+		logger.Warn("failed to resolve item path",
+			logging.Error(err),
+		)
+		return nil, err
+	}
+
+	if item.IsFolder {
+		return nil, errors.New("can't read directories")
+	}
+
+	driveID, err := s.driveResolver.CurrentDriveID(ctx)
+	if err != nil {
+		logger.Error("failed to resolve current drive ID",
+			logging.String("event", eventFSResolveFailure),
+			logging.Error(err),
+		)
+		return nil, err
+	}
+
+	content, err := s.files.GetFileContents(ctx, driveID, path)
+	if err != nil {
+		logger.Error("failed to retrieve file contents",
+			logging.String("event", eventFSReadFailure),
+			logging.Error(err),
+		)
+		return nil, err
+	}
+
+	return io.NopCloser(bytes.NewReader(content)), nil
 }
 
 func (s *Service) Remove(ctx context.Context, path string, opts domainfs.RemoveOptions) error {

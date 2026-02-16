@@ -6,4 +6,5 @@ const (
 	rootRelativeChildrenURITemplate2 = "{+baseurl}/drives/{drive_id}/root:{path}:/children"
 	rootRelativeURITemplate2         = "{+baseurl}/drives/{drive_id}/root:{path}:"
 	rootURITemplate2                 = "{+baseurl}/drives/{drive_id}/root"
+	rootRelativeContentURITemplate2  = "{+baseurl}/drives/{drive_id}/root:{path}:/content"
 )

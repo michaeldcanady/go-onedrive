@@ -7,6 +7,7 @@ import (
 	"github.com/michaeldcanady/go-onedrive/internal2/domain/di"
 	"github.com/michaeldcanady/go-onedrive/internal2/infra/common/logging"
 	authcmd "github.com/michaeldcanady/go-onedrive/internal2/interface/cli/auth"
+	catcmd "github.com/michaeldcanady/go-onedrive/internal2/interface/cli/cat"
 	drivecmd "github.com/michaeldcanady/go-onedrive/internal2/interface/cli/drive"
 	lscmd "github.com/michaeldcanady/go-onedrive/internal2/interface/cli/ls"
 	"github.com/michaeldcanady/go-onedrive/internal2/interface/cli/middleware"
@@ -89,6 +90,7 @@ func CreateRootCmd(container di.Container) (*cobra.Command, error) {
 		authcmd.CreateAuthCmd(container),
 		profilecmd.CreateProfileCmd(container),
 		drivecmd.CreateDriveCmd(container),
+		catcmd.CreateCatCmd(container),
 	)
 
 	middleware.ApplyMiddlewareRecursively(rootCmd, middleware.WithCorrelationID)

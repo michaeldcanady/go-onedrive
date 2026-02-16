@@ -72,6 +72,16 @@ func (s *Service2) ResolveItem(ctx context.Context, driveID, path string) (*Driv
 	return toDomainItem(driveID, item), nil
 }
 
+func (s *Service2) GetFileContents(ctx context.Context, driveID, path string) ([]byte, error) {
+	client, err := s.graph.Client(ctx)
+	if err != nil {
+		s.logger.Error("unable to instantiate graph client", logging.Any("error", err))
+		return nil, err
+	}
+
+	return s.relativePathContentsBuilder(client, driveID, normalizePath(path)).Get(ctx, nil)
+}
+
 // getDriveRoot fetches the DriveItem for the given path, using ETag caching.
 func (s *Service2) getDriveRoot(ctx context.Context, driveID, normalizedPath string) (models.DriveItemable, error) {
 	if err := ctx.Err(); err != nil {
@@ -206,4 +216,16 @@ func (s *Service2) childrenBuilder(client *msgraphsdkgo.GraphServiceClient, driv
 	uri, _ := stduritemplate.Expand(urlTemplate, subs)
 
 	return drives.NewItemItemsRequestBuilder(uri, client.RequestAdapter)
+}
+
+func (s *Service2) relativePathContentsBuilder(client *msgraphsdkgo.GraphServiceClient, driveID, normalizedPath string) *drives.ItemRootContentRequestBuilder {
+	urlTemplate := rootRelativeContentURITemplate2
+	subs := make(stduritemplate.Substitutions)
+	subs["baseurl"] = baseURL
+	subs["drive_id"] = driveID
+	subs["path"] = normalizedPath
+
+	uri, _ := stduritemplate.Expand(urlTemplate, subs)
+
+	return drives.NewItemRootContentRequestBuilder(uri, client.RequestAdapter)
 }
