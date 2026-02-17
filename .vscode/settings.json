@@ -46,6 +46,7 @@
         "loggerservice",
         "manifoldco",
         "mapstructure",
+        "metadatas",
         "michaeldcanady",
         "microsoftgraph",
         "mkdocs",

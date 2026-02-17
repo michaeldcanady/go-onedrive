@@ -28,6 +28,7 @@ func NewContentsRepository(client abstractions.RequestAdapter, contentCache Cont
 
 func (r *ContentsRepository) Download(
 	ctx context.Context,
+	driveID,
 	path string,
 	opts file.DownloadOptions,
 ) (io.ReadCloser, error) {
@@ -57,7 +58,7 @@ func (r *ContentsRepository) Download(
 		}
 	}
 
-	resp, err := r.relativePathContentsBuilder(r.client, "drive-id", normalizePath(path)).Get(ctx, &config)
+	resp, err := r.relativePathContentsBuilder(r.client, driveID, normalizePath(path)).Get(ctx, &config)
 	if err := mapGraphError2(err); err != nil {
 		return nil, err
 	}
@@ -95,6 +96,7 @@ func (r *ContentsRepository) Download(
 
 func (r *ContentsRepository) Upload(
 	ctx context.Context,
+	driveID,
 	path string,
 	body io.Reader,
 	opts file.UploadOptions,
@@ -117,7 +119,7 @@ func (r *ContentsRepository) Upload(
 	}
 
 	// 3. Upload
-	item, err := r.relativePathContentsBuilder(r.client, "drive-id", normalizePath(path)).Put(ctx, data, config)
+	item, err := r.relativePathContentsBuilder(r.client, driveID, normalizePath(path)).Put(ctx, data, config)
 	if err := mapGraphError2(err); err != nil {
 		return err
 	}

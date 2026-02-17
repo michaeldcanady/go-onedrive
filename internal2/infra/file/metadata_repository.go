@@ -15,7 +15,7 @@ type MetadataRepository struct {
 	metadataListingCache ListingCache
 }
 
-func (r *MetadataRepository) getByPath(ctx context.Context, path string) (*file.Metadata, bool, error) {
+func (r *MetadataRepository) getByPath(ctx context.Context, driveID, path string) (*file.Metadata, bool, error) {
 	config := &drives.ItemRootRequestBuilderGetRequestConfiguration{}
 
 	metadata, ok := r.metadataCache.Get(ctx, path)
@@ -23,7 +23,7 @@ func (r *MetadataRepository) getByPath(ctx context.Context, path string) (*file.
 		config.Headers.Add("If-None-Match", metadata.ETag)
 	}
 
-	item, err := r.driveItemBuilder(r.client, "drive-id", normalizePath(path)).Get(ctx, config)
+	item, err := r.driveItemBuilder(r.client, driveID, normalizePath(path)).Get(ctx, config)
 	if err := mapGraphError2(err); err != nil {
 		return nil, false, err
 	}
@@ -40,15 +40,15 @@ func (r *MetadataRepository) getByPath(ctx context.Context, path string) (*file.
 	return metadata, true, nil
 }
 
-func (r *MetadataRepository) GetByPath(ctx context.Context, path string) (*file.Metadata, error) {
-	metadata, _, err := r.getByPath(ctx, path)
+func (r *MetadataRepository) GetByPath(ctx context.Context, driveID, path string) (*file.Metadata, error) {
+	metadata, _, err := r.getByPath(ctx, driveID, path)
 
 	return metadata, err
 }
 
-func (r *MetadataRepository) ListByPath(ctx context.Context, path string) ([]*file.Metadata, error) {
+func (r *MetadataRepository) ListByPath(ctx context.Context, driveID, path string) ([]*file.Metadata, error) {
 	// 1. Always fetch parent first (to get CTag)
-	parent, updated, err := r.getByPath(ctx, path)
+	parent, updated, err := r.getByPath(ctx, driveID, path)
 	if err != nil {
 		return nil, err
 	}
@@ -72,7 +72,7 @@ func (r *MetadataRepository) ListByPath(ctx context.Context, path string) ([]*fi
 	}
 
 	// 4. Fetch children
-	items, err := r.childrenBuilder(r.client, "drive-id", normalizePath(path)).Get(ctx, config)
+	items, err := r.childrenBuilder(r.client, driveID, normalizePath(path)).Get(ctx, config)
 	if err := mapGraphError2(err); err != nil {
 		return nil, err
 	}
