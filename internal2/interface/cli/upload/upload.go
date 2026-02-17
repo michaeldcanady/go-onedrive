@@ -19,9 +19,17 @@ import (
 const (
 	loggerID    = "cli"
 	commandName = "upload"
+
+	overwriteFlagName  = "force"
+	overwriteFlagShort = "f"
+	overwriteFlagUsage = ""
 )
 
 func CreateUploadCmd(c di.Container) *cobra.Command {
+	var (
+		overwrite bool
+	)
+
 	cmd := &cobra.Command{
 		Use:   fmt.Sprintf("%s [src] [dst]", commandName),
 		Short: "Upload a local file to a OneDrive path.",
@@ -101,7 +109,7 @@ You must be logged in (via 'onedrive auth login') before using this command.
 			}
 			defer file.Close()
 
-			_, err = fsSvc.WriteFile(ctx, dst, file, fs.WriteOptions{})
+			_, err = fsSvc.WriteFile(ctx, dst, file, fs.WriteOptions{Overwrite: overwrite})
 			if err != nil {
 				return util.NewCommandError(commandName, "failed to upload file", err)
 			}
@@ -113,6 +121,8 @@ You must be logged in (via 'onedrive auth login') before using this command.
 			return nil
 		},
 	}
+
+	cmd.Flags().BoolVarP(&overwrite, overwriteFlagName, overwriteFlagShort, false, overwriteFlagUsage)
 
 	return cmd
 }
