@@ -167,7 +167,7 @@ func mapItemToMetadata(it models.DriveItemable) *file.Metadata {
 		ype      file.ItemType = file.ItemTypeFolder
 	)
 	if parent := it.GetParentReference(); parent != nil {
-		parentID = *parent.GetId()
+		parentID = deref(parent.GetId())
 		path = *parent.GetPath()
 	}
 
@@ -178,13 +178,13 @@ func mapItemToMetadata(it models.DriveItemable) *file.Metadata {
 	}
 
 	return &file.Metadata{
-		ID:         *it.GetId(),
-		Name:       *it.GetName(),
+		ID:         deref(it.GetId()),
+		Name:       deref(it.GetName()),
 		Path:       path,
-		Size:       *it.GetSize(),
+		Size:       deref(it.GetSize()),
 		MimeType:   mimeType,
-		ETag:       *it.GetETag(),
-		CTag:       *it.GetCTag(),
+		ETag:       deref(it.GetETag()),
+		CTag:       deref(it.GetCTag()),
 		ParentID:   parentID,
 		CreatedAt:  it.GetCreatedDateTime(),
 		ModifiedAt: it.GetLastModifiedDateTime(),
