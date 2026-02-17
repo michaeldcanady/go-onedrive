@@ -15,46 +15,76 @@ type MetadataRepository struct {
 	metadataListingCache ListingCache
 }
 
-func (r *MetadataRepository) getByPath(ctx context.Context, driveID, path string) (*file.Metadata, bool, error) {
-	config := &drives.ItemRootRequestBuilderGetRequestConfiguration{}
+func (r *MetadataRepository) getByPath(
+	ctx context.Context,
+	driveID, path string,
+	opts file.MetadataGetOptions,
+) (*file.Metadata, bool, error) {
 
-	metadata, ok := r.metadataCache.Get(ctx, path)
-	if ok && metadata != nil {
-		config.Headers.Add("If-None-Match", metadata.ETag)
+	config := &drives.ItemRootRequestBuilderGetRequestConfiguration{
+		Headers: abstractions.NewRequestHeaders(),
 	}
 
+	// 1. Cache lookup unless disabled
+	var cached *file.Metadata
+	if !opts.NoCache {
+		if m, ok := r.metadataCache.Get(ctx, path); ok && m != nil {
+			cached = m
+			if !opts.Force {
+				config.Headers.Add("If-None-Match", m.ETag)
+			}
+		}
+	}
+
+	// 2. Fetch from OneDrive
 	item, err := r.driveItemBuilder(r.client, driveID, normalizePath(path)).Get(ctx, config)
 	if err := mapGraphError2(err); err != nil {
 		return nil, false, err
 	}
 
+	// 3. 304 Not Modified → return cached
 	if item == nil {
-		return metadata, false, nil
+		return cached, false, nil
 	}
 
-	metadata = mapItemToMetadata(item)
+	// 4. Fresh metadata
+	metadata := mapItemToMetadata(item)
 
-	if err := r.metadataCache.Put(ctx, metadata); err != nil {
-		return nil, false, err
+	if !opts.NoStore {
+		_ = r.metadataCache.Put(ctx, metadata)
 	}
+
 	return metadata, true, nil
 }
 
-func (r *MetadataRepository) GetByPath(ctx context.Context, driveID, path string) (*file.Metadata, error) {
-	metadata, _, err := r.getByPath(ctx, driveID, path)
+func (r *MetadataRepository) GetByPath(
+	ctx context.Context,
+	driveID, path string,
+	opts file.MetadataGetOptions,
+) (*file.Metadata, error) {
 
+	metadata, _, err := r.getByPath(ctx, driveID, path, opts)
 	return metadata, err
 }
 
-func (r *MetadataRepository) ListByPath(ctx context.Context, driveID, path string) ([]*file.Metadata, error) {
-	// 1. Always fetch parent first (to get CTag)
-	parent, updated, err := r.getByPath(ctx, driveID, path)
+func (r *MetadataRepository) ListByPath(
+	ctx context.Context,
+	driveID, path string,
+	opts file.MetadataListOptions,
+) ([]*file.Metadata, error) {
+
+	// 1. Fetch parent metadata (CTag)
+	parent, updated, err := r.getByPath(ctx, driveID, path, file.MetadataGetOptions{
+		NoCache: opts.NoCache,
+		NoStore: opts.NoStore,
+		Force:   opts.Force,
+	})
 	if err != nil {
 		return nil, err
 	}
 
-	// 2. If parent was not updated, try listing cache
-	if !updated {
+	// 2. If parent not updated and listing cache allowed → return cached listing
+	if !updated && !opts.NoCache {
 		if listing, ok := r.metadataListingCache.Get(ctx, path); ok {
 			children := make([]*file.Metadata, len(listing.ChildIDs))
 			for i, id := range listing.ChildIDs {
@@ -65,9 +95,12 @@ func (r *MetadataRepository) ListByPath(ctx context.Context, driveID, path strin
 		}
 	}
 
-	// 3. Prepare conditional GET for children using parent's CTag
-	config := &drives.ItemItemsRequestBuilderGetRequestConfiguration{}
-	if parent != nil && parent.CTag != "" {
+	// 3. Prepare conditional GET for children
+	config := &drives.ItemItemsRequestBuilderGetRequestConfiguration{
+		Headers: abstractions.NewRequestHeaders(),
+	}
+
+	if !opts.Force && parent != nil && parent.CTag != "" {
 		config.Headers.Add("If-None-Match", parent.CTag)
 	}
 
@@ -78,9 +111,8 @@ func (r *MetadataRepository) ListByPath(ctx context.Context, driveID, path strin
 	}
 
 	// 5. 304 Not Modified → return cached listing
-	if items == nil {
-		listing, ok := r.metadataListingCache.Get(ctx, path)
-		if ok {
+	if items == nil && !opts.NoCache {
+		if listing, ok := r.metadataListingCache.Get(ctx, path); ok {
 			children := make([]*file.Metadata, len(listing.ChildIDs))
 			for i, id := range listing.ChildIDs {
 				children[i], _ = r.metadataCache.Get(ctx, id)
@@ -89,7 +121,7 @@ func (r *MetadataRepository) ListByPath(ctx context.Context, driveID, path strin
 		}
 	}
 
-	// 6. Fresh listing → update caches
+	// 6. Fresh listing
 	realItems := items.GetValue()
 	metadatas := make([]*file.Metadata, len(realItems))
 	listing := &Listing{
@@ -102,11 +134,13 @@ func (r *MetadataRepository) ListByPath(ctx context.Context, driveID, path strin
 		metadatas[i] = m
 		listing.ChildIDs[i] = m.ID
 
-		_ = r.metadataCache.Put(ctx, m)
+		if !opts.NoStore {
+			_ = r.metadataCache.Put(ctx, m)
+		}
 	}
 
-	if err := r.metadataListingCache.Put(ctx, path, listing); err != nil {
-		return nil, err
+	if !opts.NoStore {
+		_ = r.metadataListingCache.Put(ctx, path, listing)
 	}
 
 	return metadatas, nil
