@@ -3,7 +3,7 @@ package file
 import "context"
 
 type Listing struct {
-	CTag     string
+	ETag     string
 	ChildIDs []string
 }
 

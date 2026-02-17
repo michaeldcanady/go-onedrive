@@ -100,8 +100,8 @@ func (r *MetadataRepository) ListByPath(
 		Headers: abstractions.NewRequestHeaders(),
 	}
 
-	if !opts.Force && parent != nil && parent.CTag != "" {
-		config.Headers.Add("If-None-Match", parent.CTag)
+	if !opts.Force && parent != nil && parent.ETag != "" {
+		config.Headers.Add("If-None-Match", parent.ETag)
 	}
 
 	// 4. Fetch children
@@ -125,7 +125,7 @@ func (r *MetadataRepository) ListByPath(
 	realItems := items.GetValue()
 	metadatas := make([]*file.Metadata, len(realItems))
 	listing := &Listing{
-		CTag:     parent.CTag,
+		ETag:     parent.ETag,
 		ChildIDs: make([]string, len(realItems)),
 	}
 
