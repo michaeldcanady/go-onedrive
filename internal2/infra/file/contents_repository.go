@@ -52,8 +52,8 @@ func (r *ContentsRepository) Download(
 	if !opts.NoCache {
 		if entry, ok := r.contentCache.Get(ctx, path); ok {
 			cached = io.NopCloser(bytes.NewReader(entry.Data))
-			if entry.ETag != "" {
-				config.Headers.Add("If-None-Match", entry.ETag)
+			if entry.CTag != "" {
+				config.Headers.Add("If-None-Match", entry.CTag)
 			}
 		}
 	}
@@ -72,18 +72,18 @@ func (r *ContentsRepository) Download(
 	if !opts.NoStore && headerOpt != nil {
 		// Extract ETag
 		headers := headerOpt.GetResponseHeaders()
-		etagValues := headers.Get("ETag")
-		if len(etagValues) == 0 {
-			etagValues = headers.Get("etag")
+		ctagValues := headers.Get("CTag")
+		if len(ctagValues) == 0 {
+			ctagValues = headers.Get("ctag")
 		}
-		var etag string
-		if len(etagValues) > 0 {
-			etag = etagValues[0]
+		var ctag string
+		if len(ctagValues) > 0 {
+			ctag = ctagValues[0]
 		}
 
-		if len(etag) > 0 {
+		if len(ctag) > 0 {
 			if err := r.contentCache.Put(ctx, path, &file.Contents{
-				ETag: etag,
+				CTag: ctag,
 				Data: resp,
 			}); err != nil {
 				return nil, err
@@ -107,8 +107,8 @@ func (r *ContentsRepository) Upload(
 
 	if !opts.Force {
 		if entry, ok := r.contentCache.Get(ctx, path); ok {
-			if entry.ETag != "" && len(entry.Data) > 0 {
-				config.Headers.Add("If-Match", entry.ETag)
+			if entry.CTag != "" && len(entry.Data) > 0 {
+				config.Headers.Add("If-Match", entry.CTag)
 			}
 		}
 	}
@@ -127,7 +127,7 @@ func (r *ContentsRepository) Upload(
 	if !opts.NoStore {
 		// update contents cache
 		if err := r.contentCache.Put(ctx, path, &file.Contents{
-			ETag: *item.GetETag(),
+			CTag: *item.GetCTag(),
 			Data: data,
 		}); err != nil {
 			return err

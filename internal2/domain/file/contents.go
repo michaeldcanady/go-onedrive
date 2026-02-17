@@ -1,6 +1,6 @@
 package file
 
 type Contents struct {
-	ETag string
+	CTag string
 	Data []byte
 }
