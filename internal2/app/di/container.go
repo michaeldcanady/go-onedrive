@@ -225,13 +225,13 @@ func (c *Container) metadataCache() file.MetadataCache {
 }
 
 func (c *Container) metadataListingCache() file.ListingCache {
-	c.metadataCacheOnce.Do(func() {
+	c.metadataListingCacheOnce.Do(func() {
 		environmentService := c.EnvironmentService()
 		cachePath, _ := environmentService.CacheDir()
 
-		store := cache.BoltCacheFactory(path.Join(cachePath, "metadata_listing.db"), "metadata_listing")
+		store := cache.BoltCacheFactory(path.Join(cachePath, "metadatl.db"), "metadatl")
 
-		cache := c.Cache().CreateCache(context.Background(), "metadata_listing", store)
+		cache := c.Cache().CreateCache(context.Background(), "metadatl", store)
 
 		c.metadataListingCacheCache = file.NewMetadataListCacheAdapter(cache)
 	})
