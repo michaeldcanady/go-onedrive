@@ -20,6 +20,15 @@ type Service2 struct {
 	driveResolver domainDrive.DriveResolver
 }
 
+func NewService2(metadataRepo file.MetadataRepository, contentsRepo file.FileContentsRepository, driveResolver domainDrive.DriveResolver, logger logging.Logger) *Service2 {
+	return &Service2{
+		metadataRepo:  metadataRepo,
+		contentsRepo:  contentsRepo,
+		logger:        logger,
+		driveResolver: driveResolver,
+	}
+}
+
 func (s *Service2) buildLogger(ctx context.Context) logging.Logger {
 	correlationID := util.CorrelationIDFromContext(ctx)
 	return s.logger.WithContext(ctx).With(

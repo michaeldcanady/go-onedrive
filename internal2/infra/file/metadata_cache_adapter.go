@@ -8,17 +8,17 @@ import (
 	"github.com/michaeldcanady/go-onedrive/internal2/infra/cache/abstractions"
 )
 
-type metadataCacheAdapter struct {
+type MetadataCacheAdapter struct {
 	cache *abstractions.Cache2
 }
 
-func newMetadataCacheAdapter(cache *abstractions.Cache2) *metadataCacheAdapter {
-	return &metadataCacheAdapter{
+func NewMetadataCacheAdapter(cache *abstractions.Cache2) *MetadataCacheAdapter {
+	return &MetadataCacheAdapter{
 		cache: cache,
 	}
 }
 
-func (c *metadataCacheAdapter) Get(ctx context.Context, path string) (*file.Metadata, bool) {
+func (c *MetadataCacheAdapter) Get(ctx context.Context, path string) (*file.Metadata, bool) {
 	var m file.Metadata
 
 	err := c.cache.Get(
@@ -33,7 +33,7 @@ func (c *metadataCacheAdapter) Get(ctx context.Context, path string) (*file.Meta
 	return &m, true
 }
 
-func (c *metadataCacheAdapter) Put(ctx context.Context, m *file.Metadata) error {
+func (c *MetadataCacheAdapter) Put(ctx context.Context, m *file.Metadata) error {
 	return c.cache.Set(
 		ctx,
 		func() ([]byte, error) { return []byte(m.Path), nil },
@@ -41,7 +41,7 @@ func (c *metadataCacheAdapter) Put(ctx context.Context, m *file.Metadata) error 
 	)
 }
 
-func (c *metadataCacheAdapter) Invalidate(ctx context.Context, path string) error {
+func (c *MetadataCacheAdapter) Invalidate(ctx context.Context, path string) error {
 	return c.cache.Delete(
 		ctx,
 		func() ([]byte, error) { return []byte(path), nil },

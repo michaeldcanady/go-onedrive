@@ -15,6 +15,14 @@ type MetadataRepository struct {
 	metadataListingCache ListingCache
 }
 
+func NewMetadataRepository(client abstractions.RequestAdapter, metadataCache MetadataCache, metadataListingCache ListingCache) *MetadataRepository {
+	return &MetadataRepository{
+		client:               client,
+		metadataCache:        metadataCache,
+		metadataListingCache: metadataListingCache,
+	}
+}
+
 func (r *MetadataRepository) getByPath(
 	ctx context.Context,
 	driveID, path string,

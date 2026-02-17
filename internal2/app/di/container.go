@@ -77,7 +77,9 @@ type Container struct {
 	configOnce    sync.Once
 	configService domainconfig.ConfigService
 
-	fileOnce    sync.Once
+	// DEPRECATED
+	fileOnce sync.Once
+	// DEPRECATED
 	fileService domainfile.FileService
 
 	clientOnce    sync.Once
@@ -91,6 +93,21 @@ type Container struct {
 
 	accountOnce    sync.Once
 	accountService domainaccount.Service
+
+	metadataOnce sync.Once
+	metadataRepo *file.MetadataRepository
+
+	contentsOnce sync.Once
+	contentsRepo *file.ContentsRepository
+
+	metadataCacheOnce  sync.Once
+	metadataCacheCache file.MetadataCache
+
+	metadataListingCacheOnce  sync.Once
+	metadataListingCacheCache file.ListingCache
+
+	contentsCacheOnce  sync.Once
+	contentsCacheCache file.ContentsCache
 }
 
 func NewContainer() *Container {
@@ -193,6 +210,67 @@ func (c *Container) EnvironmentService() domainenv.EnvironmentService {
 	return c.environmentService
 }
 
+func (c *Container) metadataCache() file.MetadataCache {
+	c.metadataCacheOnce.Do(func() {
+		environmentService := c.EnvironmentService()
+		cachePath, _ := environmentService.CacheDir()
+
+		store := cache.BoltCacheFactory(path.Join(cachePath, "metadata.db"), "metadata")
+
+		cache := c.Cache().CreateCache(context.Background(), "metadata", store)
+
+		c.metadataCacheCache = file.NewMetadataCacheAdapter(cache)
+	})
+	return c.metadataCacheCache
+}
+
+func (c *Container) metadataListingCache() file.ListingCache {
+	c.metadataCacheOnce.Do(func() {
+		environmentService := c.EnvironmentService()
+		cachePath, _ := environmentService.CacheDir()
+
+		store := cache.BoltCacheFactory(path.Join(cachePath, "metadata_listing.db"), "metadata_listing")
+
+		cache := c.Cache().CreateCache(context.Background(), "metadata_listing", store)
+
+		c.metadataListingCacheCache = file.NewMetadataListCacheAdapter(cache)
+	})
+	return c.metadataListingCacheCache
+}
+
+func (c *Container) contentsCache() file.ContentsCache {
+	c.metadataCacheOnce.Do(func() {
+		environmentService := c.EnvironmentService()
+		cachePath, _ := environmentService.CacheDir()
+
+		store := cache.BoltCacheFactory(path.Join(cachePath, "contents.db"), "contents")
+
+		cache := c.Cache().CreateCache(context.Background(), "contents", store)
+
+		c.contentsCacheCache = file.NewContentsCacheAdapter(cache)
+	})
+	return c.contentsCacheCache
+}
+
+func (c *Container) metadata() *file.MetadataRepository {
+	c.metadataOnce.Do(func() {
+
+		client, _ := c.clientProvider().Client(context.Background())
+
+		c.metadataRepo = file.NewMetadataRepository(client.RequestAdapter, c.metadataCache(), c.metadataListingCache())
+	})
+	return c.metadataRepo
+}
+
+func (c *Container) contents() *file.ContentsRepository {
+	c.contentsOnce.Do(func() {
+		client, _ := c.clientProvider().Client(context.Background())
+
+		c.contentsRepo = file.NewContentsRepository(client.RequestAdapter, c.contentsCache(), c.metadataCache())
+	})
+	return c.contentsRepo
+}
+
 // FS implements [di.Container].
 func (c *Container) FS() domainfs.Service {
 	c.fsOnce.Do(func() {
@@ -201,7 +279,7 @@ func (c *Container) FS() domainfs.Service {
 
 		resolver := state.NewDriverResolverAdapter(c.State())
 
-		c.fsService = fs.NewService(c.File(), resolver, logger)
+		c.fsService = fs.NewService2(c.metadata(), c.contents(), resolver, logger)
 	})
 	return c.fsService
 }
