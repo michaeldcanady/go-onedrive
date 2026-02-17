@@ -59,8 +59,10 @@
         "profilecmd",
         "promptui",
         "Responseable",
+        "stduritemplate",
         "stretchr",
         "tablewriter",
-        "Topicer"
+        "Topicer",
+        "uritemplate"
     ]
 }

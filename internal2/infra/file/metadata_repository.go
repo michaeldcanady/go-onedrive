@@ -4,13 +4,13 @@ import (
 	"context"
 
 	"github.com/michaeldcanady/go-onedrive/internal2/domain/file"
-	msgraphsdkgo "github.com/microsoftgraph/msgraph-sdk-go"
+	abstractions "github.com/microsoft/kiota-abstractions-go"
 	"github.com/microsoftgraph/msgraph-sdk-go/drives"
 	stduritemplate "github.com/std-uritemplate/std-uritemplate/go/v2"
 )
 
 type MetadataRepository struct {
-	client               *msgraphsdkgo.GraphServiceClient
+	client               abstractions.RequestAdapter
 	metadataCache        MetadataCache
 	metadataListingCache ListingCache
 }
@@ -112,7 +112,7 @@ func (r *MetadataRepository) ListByPath(ctx context.Context, path string) ([]*fi
 	return metadatas, nil
 }
 
-func (s *MetadataRepository) driveItemBuilder(client *msgraphsdkgo.GraphServiceClient, driveID, normalizedPath string) *drives.ItemRootRequestBuilder {
+func (s *MetadataRepository) driveItemBuilder(client abstractions.RequestAdapter, driveID, normalizedPath string) *drives.ItemRootRequestBuilder {
 	urlTemplate := rootURITemplate2
 	subs := make(stduritemplate.Substitutions)
 	subs["baseurl"] = baseURL
@@ -125,10 +125,10 @@ func (s *MetadataRepository) driveItemBuilder(client *msgraphsdkgo.GraphServiceC
 
 	uri, _ := stduritemplate.Expand(urlTemplate, subs)
 
-	return drives.NewItemRootRequestBuilder(uri, client.RequestAdapter)
+	return drives.NewItemRootRequestBuilder(uri, client)
 }
 
-func (s *MetadataRepository) childrenBuilder(client *msgraphsdkgo.GraphServiceClient, driveID, normalizedPath string) *drives.ItemItemsRequestBuilder {
+func (s *MetadataRepository) childrenBuilder(client abstractions.RequestAdapter, driveID, normalizedPath string) *drives.ItemItemsRequestBuilder {
 	urlTemplate := rootChildrenURITemplate2
 	subs := make(stduritemplate.Substitutions)
 	subs["baseurl"] = baseURL
@@ -141,5 +141,5 @@ func (s *MetadataRepository) childrenBuilder(client *msgraphsdkgo.GraphServiceCl
 
 	uri, _ := stduritemplate.Expand(urlTemplate, subs)
 
-	return drives.NewItemItemsRequestBuilder(uri, client.RequestAdapter)
+	return drives.NewItemItemsRequestBuilder(uri, client)
 }
