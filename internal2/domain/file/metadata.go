@@ -13,4 +13,5 @@ type Metadata struct {
 	ParentID   string
 	CreatedAt  *time.Time
 	ModifiedAt *time.Time
+	Type       ItemType
 }

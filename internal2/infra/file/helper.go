@@ -164,15 +164,17 @@ func mapItemToMetadata(it models.DriveItemable) *file.Metadata {
 		parentID string
 		mimeType string
 		path     string
+		ype      file.ItemType = file.ItemTypeFolder
 	)
 	if parent := it.GetParentReference(); parent != nil {
 		parentID = *parent.GetId()
 		path = *parent.GetPath()
 	}
 
-	if file := it.GetFile(); file != nil {
+	if fileObj := it.GetFile(); fileObj != nil {
 		// is file type
-		mimeType = *file.GetMimeType()
+		mimeType = *fileObj.GetMimeType()
+		ype = file.ItemTypeFile
 	}
 
 	return &file.Metadata{
@@ -186,5 +188,6 @@ func mapItemToMetadata(it models.DriveItemable) *file.Metadata {
 		ParentID:   parentID,
 		CreatedAt:  it.GetCreatedDateTime(),
 		ModifiedAt: it.GetLastModifiedDateTime(),
+		Type:       ype,
 	}
 }
