@@ -5,6 +5,7 @@ import (
 	"path"
 	"strings"
 
+	"github.com/michaeldcanady/go-onedrive/internal2/domain/file"
 	"github.com/microsoftgraph/msgraph-sdk-go/models"
 	"github.com/microsoftgraph/msgraph-sdk-go/models/odataerrors"
 )
@@ -104,4 +105,86 @@ func mapGraphError(err error) error {
 
 	// Fallback
 	return &DomainError{Kind: ErrInternal, Err: err}
+}
+
+func mapGraphError2(err error) error {
+	if err == nil {
+		return nil
+	}
+
+	var odataErr odataerrors.ODataErrorable
+	if errors.As(err, &odataErr) {
+		if odataErr.GetErrorEscaped() != nil && odataErr.GetErrorEscaped().GetCode() != nil {
+			code := deref(odataErr.GetErrorEscaped().GetCode())
+
+			switch code {
+			case "itemNotFound", "ErrorItemNotFound":
+				return ErrNotFound
+
+			case "accessDenied":
+				return ErrForbidden
+
+			case "unauthenticated":
+				return ErrUnauthorized
+
+			case "conflict":
+				return ErrConflict
+
+			case "preconditionFailed":
+				return ErrPrecondition
+			}
+		}
+	}
+
+	// Try to extract HTTP status code (Kiota adapter)
+	var respErr interface{ StatusCode() int }
+	if errors.As(err, &respErr) {
+		switch respErr.StatusCode() {
+		case 401:
+			return ErrUnauthorized
+		case 403:
+			return ErrForbidden
+		case 404:
+			return ErrNotFound
+		case 409:
+			return ErrConflict
+		case 412:
+			return ErrPrecondition
+		case 429, 500, 502, 503, 504:
+			return ErrTransient
+		}
+	}
+
+	// Fallback
+	return &DomainError{Kind: ErrInternal, Err: err}
+}
+
+func mapItemToMetadata(it models.DriveItemable) *file.Metadata {
+	var (
+		parentID string
+		mimeType string
+		path     string
+	)
+	if parent := it.GetParentReference(); parent != nil {
+		parentID = *parent.GetId()
+		path = *parent.GetPath()
+	}
+
+	if file := it.GetFile(); file != nil {
+		// is file type
+		mimeType = *file.GetMimeType()
+	}
+
+	return &file.Metadata{
+		ID:         *it.GetId(),
+		Name:       *it.GetName(),
+		Path:       path,
+		Size:       *it.GetSize(),
+		MimeType:   mimeType,
+		ETag:       *it.GetETag(),
+		CTag:       *it.GetCTag(),
+		ParentID:   parentID,
+		CreatedAt:  it.GetCreatedDateTime(),
+		ModifiedAt: it.GetLastModifiedDateTime(),
+	}
 }
