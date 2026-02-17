@@ -163,12 +163,20 @@ func mapItemToMetadata(it models.DriveItemable) *file.Metadata {
 	var (
 		parentID string
 		mimeType string
+		fullPath string
 		path     string
 		ype      file.ItemType = file.ItemTypeFolder
 	)
 	if parent := it.GetParentReference(); parent != nil {
 		parentID = deref(parent.GetId())
-		path = deref(parent.GetPath())
+		fullPath = deref(parent.GetPath())
+		if fullPath != "" {
+			path = strings.Split(fullPath, ":")[1]
+			path = strings.TrimSuffix(path, "/")
+		}
+	} else {
+		fullPath = deref(it.GetName())
+		path = deref(it.GetName())
 	}
 
 	if fileObj := it.GetFile(); fileObj != nil {
@@ -180,6 +188,7 @@ func mapItemToMetadata(it models.DriveItemable) *file.Metadata {
 	return &file.Metadata{
 		ID:         deref(it.GetId()),
 		Name:       deref(it.GetName()),
+		FullPath:   fullPath,
 		Path:       path,
 		Size:       deref(it.GetSize()),
 		MimeType:   mimeType,

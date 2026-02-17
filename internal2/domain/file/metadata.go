@@ -6,6 +6,7 @@ type Metadata struct {
 	ID         string
 	Name       string
 	Path       string
+	FullPath   string
 	Size       int64
 	MimeType   string
 	ETag       string
