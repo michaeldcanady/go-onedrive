@@ -6,6 +6,6 @@ import (
 )
 
 type FileContentsRepository interface {
-	Download(ctx context.Context, id string, opts DownloadOptions) (io.ReadCloser, string, error)
-	Upload(ctx context.Context, id string, r io.Reader, opts UploadOptions) (string, error)
+	Download(ctx context.Context, driveID string, path string, opts DownloadOptions) (io.ReadCloser, error)
+	Upload(ctx context.Context, driveID string, path string, r io.Reader, opts UploadOptions) (*Metadata, error)
 }

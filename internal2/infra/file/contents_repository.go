@@ -100,7 +100,7 @@ func (r *ContentsRepository) Upload(
 	path string,
 	body io.Reader,
 	opts file.UploadOptions,
-) error {
+) (*file.Metadata, error) {
 	config := &drives.ItemRootContentRequestBuilderPutRequestConfiguration{
 		Headers: abstractions.NewRequestHeaders(),
 	}
@@ -115,14 +115,16 @@ func (r *ContentsRepository) Upload(
 
 	data, err := io.ReadAll(body)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// 3. Upload
 	item, err := r.relativePathContentsBuilder(r.client, driveID, normalizePath(path)).Put(ctx, data, config)
 	if err := mapGraphError2(err); err != nil {
-		return err
+		return nil, err
 	}
+
+	metadata := mapItemToMetadata(item)
 
 	if !opts.NoStore {
 		// update contents cache
@@ -130,16 +132,16 @@ func (r *ContentsRepository) Upload(
 			CTag: *item.GetCTag(),
 			Data: data,
 		}); err != nil {
-			return err
+			return nil, err
 		}
 
 		// update metadata cache
-		if err := r.metadataCache.Put(ctx, mapItemToMetadata(item)); err != nil {
-			return err
+		if err := r.metadataCache.Put(ctx, metadata); err != nil {
+			return nil, err
 		}
 	}
 
-	return nil
+	return metadata, nil
 }
 
 func (s *ContentsRepository) relativePathContentsBuilder(client abstractions.RequestAdapter, driveID, normalizedPath string) *drives.ItemRootContentRequestBuilder {
