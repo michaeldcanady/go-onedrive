@@ -168,7 +168,7 @@ func mapItemToMetadata(it models.DriveItemable) *file.Metadata {
 	)
 	if parent := it.GetParentReference(); parent != nil {
 		parentID = deref(parent.GetId())
-		path = *parent.GetPath()
+		path = deref(parent.GetPath())
 	}
 
 	if fileObj := it.GetFile(); fileObj != nil {
