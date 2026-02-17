@@ -1,16 +1,5 @@
 package file
 
-import "time"
+import "github.com/michaeldcanady/go-onedrive/internal2/domain/file"
 
-type DriveItem struct {
-	DriveID          string
-	ID               string
-	Name             string
-	Path             string
-	PathWithoutDrive string
-	IsFolder         bool
-	Size             int64
-	ETag             string
-	MimeType         string
-	Modified         time.Time
-}
+type DriveItem = file.DriveItem
