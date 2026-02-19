@@ -3,6 +3,7 @@ package fs
 import (
 	"context"
 	"io"
+	"os"
 
 	domainDrive "github.com/michaeldcanady/go-onedrive/internal2/domain/drive"
 	"github.com/michaeldcanady/go-onedrive/internal2/domain/file"
@@ -36,13 +37,33 @@ func (s *Service2) buildLogger(ctx context.Context) logging.Logger {
 	)
 }
 
+func (s *Service2) Get(
+	ctx context.Context,
+	path string,
+) (domainfs.Item, error) {
+	logger := s.buildLogger(ctx).With(logging.String("path", path))
+
+	logger.Debug("retrieving metadata", logging.String("event", eventFSGetStart))
+
+	driveID, err := s.driveResolver.CurrentDriveID(ctx)
+	if err != nil {
+		return domainfs.Item{}, err
+	}
+
+	metadata, err := s.metadataRepo.GetByPath(ctx, driveID, path, file.MetadataGetOptions{})
+	if err != nil {
+		return domainfs.Item{}, err
+	}
+
+	return convertMetadataToItem(metadata), nil
+}
+
 // List implements [fs.Service].
 func (s *Service2) List(
 	ctx context.Context,
 	path string,
 	opts domainfs.ListOptions,
 ) ([]domainfs.Item, error) {
-
 	logger := s.buildLogger(ctx).With(logging.String("path", path))
 
 	driveID, err := s.driveResolver.CurrentDriveID(ctx)
@@ -55,28 +76,8 @@ func (s *Service2) List(
 		NoStore: opts.NoCache,
 	}
 
-	// -----------------------------
-	// NON‑RECURSIVE LIST
-	// -----------------------------
-	if !opts.Recursive {
-		metadatas, err := s.metadataRepo.ListByPath(ctx, driveID, path, metadataOpts)
-		if err != nil {
-			return nil, err
-		}
-
-		items := make([]domainfs.Item, len(metadatas))
-		for i, m := range metadatas {
-			items[i] = convertMetadataToItem(m)
-		}
-		return items, nil
-	}
-
-	// -----------------------------
-	// RECURSIVE LIST
-	// -----------------------------
 	var results []domainfs.Item
 
-	// Track visited paths to avoid cycles (defensive)
 	visited := map[string]bool{}
 
 	var walk func(string) error
@@ -96,7 +97,7 @@ func (s *Service2) List(
 			results = append(results, item)
 
 			// Recurse only into folders
-			if m.Type == file.ItemTypeFolder {
+			if m.Type == file.ItemTypeFolder && opts.Recursive {
 				childPath := currentPath + "/" + m.Name
 				if err := walk(childPath); err != nil {
 					return err
@@ -108,7 +109,7 @@ func (s *Service2) List(
 	}
 
 	if err := walk(path); err != nil {
-		logger.Error("recursive list failed", logging.Error(err))
+		logger.Error("listing failed", logging.Error(err))
 		return nil, err
 	}
 
@@ -163,4 +164,18 @@ func (s *Service2) WriteFile(ctx context.Context, path string, r io.Reader, opts
 	})
 
 	return convertMetadataToItem(metadata), err
+}
+
+func (s *Service2) Upload(ctx context.Context, src, dst string, opts domainfs.UploadOptions) (domainfs.Item, error) {
+	_ = s.buildLogger(ctx)
+
+	file, err := os.Open(src)
+	if err != nil {
+		return domainfs.Item{}, err
+	}
+	defer file.Close()
+
+	return s.WriteFile(ctx, dst, file, domainfs.WriteOptions{
+		Overwrite: opts.Overwrite,
+	})
 }
