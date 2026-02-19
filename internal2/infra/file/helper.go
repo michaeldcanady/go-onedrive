@@ -18,6 +18,9 @@ func normalizePath(p string) string {
 	return path.Clean("/" + p)
 }
 
+// deref safely converts a pointer to its base type.
+//
+// If the pointer is nil, it returns the zero value of the type.
 func deref[T any](ptr *T) T {
 	var zero T
 	if ptr == nil {

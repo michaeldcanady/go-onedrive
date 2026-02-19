@@ -8,13 +8,19 @@ import (
 	"github.com/michaeldcanady/go-onedrive/internal2/infra/cache/abstractions"
 )
 
+type cache interface {
+	Delete(ctx context.Context, keySerializer abstractions.Serializer2) error
+	Get(ctx context.Context, keySerializer abstractions.Serializer2, valueDeserializer abstractions.Deserializer2) error
+	Set(ctx context.Context, keySerializer abstractions.Serializer2, valueSerializer abstractions.Serializer2) error
+}
+
 var _ ContentsCache = (*ContentsCacheAdapter)(nil)
 
 type ContentsCacheAdapter struct {
-	cache *abstractions.Cache2
+	cache cache
 }
 
-func NewContentsCacheAdapter(cache *abstractions.Cache2) *ContentsCacheAdapter {
+func NewContentsCacheAdapter(cache cache) *ContentsCacheAdapter {
 	return &ContentsCacheAdapter{
 		cache: cache,
 	}

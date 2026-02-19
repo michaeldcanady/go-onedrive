@@ -3,15 +3,13 @@ package file
 import (
 	"context"
 	"encoding/json"
-
-	"github.com/michaeldcanady/go-onedrive/internal2/infra/cache/abstractions"
 )
 
 type MetadataListCacheAdapter struct {
-	cache *abstractions.Cache2
+	cache cache
 }
 
-func NewMetadataListCacheAdapter(cache *abstractions.Cache2) *MetadataListCacheAdapter {
+func NewMetadataListCacheAdapter(cache cache) *MetadataListCacheAdapter {
 	return &MetadataListCacheAdapter{
 		cache: cache,
 	}

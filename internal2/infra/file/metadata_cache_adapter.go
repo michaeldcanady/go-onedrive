@@ -5,14 +5,13 @@ import (
 	"encoding/json"
 
 	"github.com/michaeldcanady/go-onedrive/internal2/domain/file"
-	"github.com/michaeldcanady/go-onedrive/internal2/infra/cache/abstractions"
 )
 
 type MetadataCacheAdapter struct {
-	cache *abstractions.Cache2
+	cache cache
 }
 
-func NewMetadataCacheAdapter(cache *abstractions.Cache2) *MetadataCacheAdapter {
+func NewMetadataCacheAdapter(cache cache) *MetadataCacheAdapter {
 	return &MetadataCacheAdapter{
 		cache: cache,
 	}

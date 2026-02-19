@@ -23,12 +23,7 @@ func NewMetadataRepository(client abstractions.RequestAdapter, metadataCache Met
 	}
 }
 
-func (r *MetadataRepository) getByPath(
-	ctx context.Context,
-	driveID, path string,
-	opts file.MetadataGetOptions,
-) (*file.Metadata, bool, error) {
-
+func (r *MetadataRepository) getByPath(ctx context.Context, driveID, path string, opts file.MetadataGetOptions) (*file.Metadata, bool, error) {
 	config := &drives.ItemRootRequestBuilderGetRequestConfiguration{
 		Headers: abstractions.NewRequestHeaders(),
 	}
@@ -65,23 +60,12 @@ func (r *MetadataRepository) getByPath(
 	return metadata, true, nil
 }
 
-func (r *MetadataRepository) GetByPath(
-	ctx context.Context,
-	driveID, path string,
-	opts file.MetadataGetOptions,
-) (*file.Metadata, error) {
-
+func (r *MetadataRepository) GetByPath(ctx context.Context, driveID, path string, opts file.MetadataGetOptions) (*file.Metadata, error) {
 	metadata, _, err := r.getByPath(ctx, driveID, path, opts)
 	return metadata, err
 }
 
-func (r *MetadataRepository) ListByPath(
-	ctx context.Context,
-	driveID, path string,
-	opts file.MetadataListOptions,
-) ([]*file.Metadata, error) {
-
-	// 1. Fetch parent metadata (CTag)
+func (r *MetadataRepository) ListByPath(ctx context.Context, driveID, path string, opts file.MetadataListOptions) ([]*file.Metadata, error) {
 	parent, updated, err := r.getByPath(ctx, driveID, path, file.MetadataGetOptions{
 		NoCache: opts.NoCache,
 		NoStore: opts.NoStore,
