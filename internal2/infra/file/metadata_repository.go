@@ -9,12 +9,17 @@ import (
 	stduritemplate "github.com/std-uritemplate/std-uritemplate/go/v2"
 )
 
+// MetadataRepository provides methods for fetching and listing drive item
+// metadata from OneDrive. It supports multi-level caching (individual items
+// and folder listings) and handles path normalization.
 type MetadataRepository struct {
 	client               abstractions.RequestAdapter
 	metadataCache        MetadataCache
 	metadataListingCache ListingCache
 }
 
+// NewMetadataRepository initializes a new MetadataRepository with the provided
+// request adapter and cache implementations.
 func NewMetadataRepository(client abstractions.RequestAdapter, metadataCache MetadataCache, metadataListingCache ListingCache) *MetadataRepository {
 	return &MetadataRepository{
 		client:               client,
@@ -60,11 +65,14 @@ func (r *MetadataRepository) getByPath(ctx context.Context, driveID, path string
 	return metadata, true, nil
 }
 
+// GetByPath retrieves metadata for a single drive item at the specified path.
 func (r *MetadataRepository) GetByPath(ctx context.Context, driveID, path string, opts file.MetadataGetOptions) (*file.Metadata, error) {
 	metadata, _, err := r.getByPath(ctx, driveID, path, opts)
 	return metadata, err
 }
 
+// ListByPath returns metadata for all children of the folder at the specified path.
+// It utilizes both the listing cache and the individual item metadata cache.
 func (r *MetadataRepository) ListByPath(ctx context.Context, driveID, path string, opts file.MetadataListOptions) ([]*file.Metadata, error) {
 	parent, updated, err := r.getByPath(ctx, driveID, path, file.MetadataGetOptions{
 		NoCache: opts.NoCache,

@@ -41,7 +41,7 @@ require (
 	github.com/kylelemons/godebug v1.1.0 // indirect
 	github.com/microsoft/kiota-abstractions-go v1.9.3
 	github.com/microsoft/kiota-authentication-azure-go v1.3.1 // indirect
-	github.com/microsoft/kiota-http-go v1.5.4 // indirect
+	github.com/microsoft/kiota-http-go v1.5.4
 	github.com/microsoft/kiota-serialization-form-go v1.1.2 // indirect
 	github.com/microsoft/kiota-serialization-json-go v1.1.2
 	github.com/microsoft/kiota-serialization-multipart-go v1.1.2 // indirect
@@ -53,7 +53,7 @@ require (
 	github.com/spf13/afero v1.15.0 // indirect
 	github.com/spf13/cast v1.10.0 // indirect
 	github.com/spf13/pflag v1.0.10 // indirect
-	github.com/std-uritemplate/std-uritemplate/go/v2 v2.0.3 // indirect
+	github.com/std-uritemplate/std-uritemplate/go/v2 v2.0.3
 	github.com/stretchr/testify v1.11.1
 	github.com/subosito/gotenv v1.6.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect

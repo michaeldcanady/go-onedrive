@@ -25,7 +25,6 @@ func TestNormalizePath(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			require.Equal(t, tt.expected, normalizePath(tt.input))
@@ -89,7 +88,6 @@ func TestDeref(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 

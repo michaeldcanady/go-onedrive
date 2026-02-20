@@ -12,12 +12,17 @@ import (
 	stduritemplate "github.com/std-uritemplate/std-uritemplate/go/v2"
 )
 
+// ContentsRepository provides methods for downloading and uploading file
+// content to OneDrive. It integrates with caching mechanisms for improved
+// performance and handles Graph API interactions.
 type ContentsRepository struct {
 	client        abstractions.RequestAdapter
 	contentCache  ContentsCache
 	metadataCache MetadataCache
 }
 
+// NewContentsRepository initializes a new ContentsRepository with the provided
+// request adapter and cache implementations.
 func NewContentsRepository(client abstractions.RequestAdapter, contentCache ContentsCache, metadataCache MetadataCache) *ContentsRepository {
 	return &ContentsRepository{
 		client:        client,
@@ -26,6 +31,9 @@ func NewContentsRepository(client abstractions.RequestAdapter, contentCache Cont
 	}
 }
 
+// Download retrieves file content for a given path in a drive.
+// It supports conditional GET requests using cached ETags (CTags) unless
+// caching is explicitly disabled via DownloadOptions.
 func (r *ContentsRepository) Download(
 	ctx context.Context,
 	driveID,

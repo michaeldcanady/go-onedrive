@@ -9,6 +9,9 @@ import (
 
 var _ ContentsCache = (*ContentsCacheAdapter)(nil)
 
+// ContentsCacheAdapter implements the [ContentsCache] interface using a generic
+// cache implementation. It handles the serialization and deserialization of
+// file contents using JSON.
 type ContentsCacheAdapter struct {
 	cache cache
 }
