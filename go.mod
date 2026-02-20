@@ -9,7 +9,7 @@ require (
 	github.com/gofrs/flock v0.13.0
 	github.com/google/uuid v1.6.0
 	github.com/manifoldco/promptui v0.9.0
-	github.com/microsoftgraph/msgraph-sdk-go v1.95.0
+	github.com/microsoftgraph/msgraph-sdk-go v1.96.0
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/viper v1.21.0
 	go.etcd.io/bbolt v1.4.3
@@ -53,7 +53,7 @@ require (
 	github.com/spf13/afero v1.15.0 // indirect
 	github.com/spf13/cast v1.10.0 // indirect
 	github.com/spf13/pflag v1.0.10 // indirect
-	github.com/std-uritemplate/std-uritemplate/go/v2 v2.0.3 // indirect
+	github.com/std-uritemplate/std-uritemplate/go/v2 v2.0.3
 	github.com/stretchr/testify v1.11.1
 	github.com/subosito/gotenv v1.6.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
