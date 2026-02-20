@@ -5,14 +5,7 @@ import (
 	"encoding/json"
 
 	"github.com/michaeldcanady/go-onedrive/internal2/domain/file"
-	"github.com/michaeldcanady/go-onedrive/internal2/infra/cache/abstractions"
 )
-
-type cache interface {
-	Delete(ctx context.Context, keySerializer abstractions.Serializer2) error
-	Get(ctx context.Context, keySerializer abstractions.Serializer2, valueDeserializer abstractions.Deserializer2) error
-	Set(ctx context.Context, keySerializer abstractions.Serializer2, valueSerializer abstractions.Serializer2) error
-}
 
 var _ ContentsCache = (*ContentsCacheAdapter)(nil)
 
@@ -20,13 +13,16 @@ type ContentsCacheAdapter struct {
 	cache cache
 }
 
+// NewContentsCacheAdapter constructs a new [ContentsCacheAdapter] using the
+// provided cache implementation.
 func NewContentsCacheAdapter(cache cache) *ContentsCacheAdapter {
 	return &ContentsCacheAdapter{
 		cache: cache,
 	}
 }
 
-// Get implements [ContentsCache].
+// Get retrieves a *[file.Contents] value from the cache using the provided path
+// as the lookup key.
 func (c *ContentsCacheAdapter) Get(ctx context.Context, path string) (*file.Contents, bool) {
 	var m file.Contents
 
@@ -42,7 +38,7 @@ func (c *ContentsCacheAdapter) Get(ctx context.Context, path string) (*file.Cont
 	return &m, true
 }
 
-// Invalidate implements [ContentsCache].
+// Invalidate removes the cached entry associated with the given path.
 func (c *ContentsCacheAdapter) Invalidate(ctx context.Context, path string) error {
 	return c.cache.Delete(
 		ctx,
@@ -50,7 +46,7 @@ func (c *ContentsCacheAdapter) Invalidate(ctx context.Context, path string) erro
 	)
 }
 
-// Put implements [ContentsCache].
+// Put stores a *[file.Contents] value in the cache under the given path.
 func (c *ContentsCacheAdapter) Put(ctx context.Context, path string, m *file.Contents) error {
 	return c.cache.Set(
 		ctx,

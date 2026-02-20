@@ -10,7 +10,26 @@ import (
 	"github.com/microsoftgraph/msgraph-sdk-go/models/odataerrors"
 )
 
-// normalizePath ensures paths like "Documents", "/Documents", "Documents/" all become "/Documents"
+// normalizePath ensures that user‑supplied paths are converted into a canonical
+// OneDrive‑compatible form.
+//
+// The function normalizes several common path variants:
+//
+//   - "Documents"
+//   - "/Documents"
+//   - "Documents/"
+//   - "./Documents"
+//
+// All normalize to the canonical form:
+//
+//	"/Documents"
+//
+// Special cases:
+//
+//   - "", "/", "." → return "" (representing the drive root)
+//
+// The returned value is always either "" (root) or a leading‑slash absolute path
+// suitable for use with Microsoft Graph item path lookups.
 func normalizePath(p string) string {
 	if p == "" || p == "/" || p == "." {
 		return ""
@@ -18,9 +37,11 @@ func normalizePath(p string) string {
 	return path.Clean("/" + p)
 }
 
-// deref safely converts a pointer to its base type.
+// deref safely dereferences a pointer of any type T.
 //
-// If the pointer is nil, it returns the zero value of the type.
+// If ptr is non‑nil, its value is returned. If ptr is nil, the zero value of T
+// is returned instead. This helper eliminates repetitive nil checks when
+// working with Kiota‑generated pointer‑heavy Graph models.
 func deref[T any](ptr *T) T {
 	var zero T
 	if ptr == nil {
@@ -29,6 +50,20 @@ func deref[T any](ptr *T) T {
 	return *ptr
 }
 
+// toDomainItem converts a Microsoft Graph DriveItem into the internal DriveItem
+// domain model.
+//
+// The function extracts common metadata fields, normalizes parent paths, and
+// safely dereferences all pointer‑based Graph SDK fields using deref().
+//
+// Behavior:
+//
+//   - MIME type is populated only for file items.
+//   - PathWithoutDrive strips the "{drive-id}:" prefix from the Graph path.
+//   - IsFolder is true when the DriveItem contains a Folder facet.
+//   - Missing or nil Graph fields are treated as zero values.
+//
+// The returned DriveItem is always non‑nil.
 func toDomainItem(driveID string, it models.DriveItemable) *DriveItem {
 
 	var mimeType string
@@ -56,7 +91,22 @@ func toDomainItem(driveID string, it models.DriveItemable) *DriveItem {
 	}
 }
 
-// mapGraphError converts MS Graph OData error to domain error
+// mapGraphError converts a raw Microsoft Graph or Kiota error into a structured
+// DomainError with a specific Kind classification.
+//
+// The function attempts multiple extraction strategies:
+//
+//  1. ODataError (Graph error payload)
+//     - Maps well‑known Graph error codes such as:
+//     "itemNotFound", "accessDenied", "conflict", "preconditionFailed", etc.
+//
+//  2. Kiota transport errors exposing StatusCode()
+//     - Maps HTTP status codes (401, 403, 404, 409, 412, 429, 5xx).
+//
+//  3. Fallback
+//     - Any unrecognized error becomes ErrInternal.
+//
+// The returned error is always a *DomainError, except when err is nil.
 func mapGraphError(err error) error {
 	if err == nil {
 		return nil
@@ -110,6 +160,16 @@ func mapGraphError(err error) error {
 	return &DomainError{Kind: ErrInternal, Err: err}
 }
 
+// mapGraphError2 is a lightweight variant of mapGraphError that returns only
+// domain error *kinds* rather than wrapping the original error.
+//
+// This is useful in contexts where callers only care about classification
+// (e.g., retry logic, cache invalidation) and do not need the underlying error.
+//
+// Behavior mirrors mapGraphError, except:
+//
+//   - Known Graph/OData/HTTP errors return sentinel values such as ErrNotFound.
+//   - Unknown errors return a *DomainError with Kind ErrInternal.
 func mapGraphError2(err error) error {
 	if err == nil {
 		return nil
@@ -162,6 +222,25 @@ func mapGraphError2(err error) error {
 	return &DomainError{Kind: ErrInternal, Err: err}
 }
 
+// mapItemToMetadata converts a Microsoft Graph DriveItem into the internal
+// file.Metadata domain model.
+//
+// The function extracts:
+//
+//   - Parent ID and normalized parent path
+//   - File vs folder type (via presence of File facet)
+//   - MIME type (files only)
+//   - Size, ETag, CTag
+//   - Created/modified timestamps
+//
+// Path normalization:
+//
+//   - Graph parent paths are of the form: "driveID:/path/to/folder"
+//   - The function strips the "{driveID}:" prefix
+//   - Trailing slashes are removed
+//
+// The returned Metadata is always non‑nil and contains zero values for any
+// missing Graph fields.
 func mapItemToMetadata(it models.DriveItemable) *file.Metadata {
 	var (
 		parentID string
