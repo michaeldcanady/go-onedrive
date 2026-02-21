@@ -22,6 +22,7 @@ type Service2 struct {
 	cache  domaincache.CacheService
 }
 
+// DEPRECATED
 func New2(graph clienter, logger logging.Logger, cache domaincache.CacheService) *Service2 {
 	s := &Service2{
 		graph:  graph,

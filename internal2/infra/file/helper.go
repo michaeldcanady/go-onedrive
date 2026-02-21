@@ -1,15 +1,32 @@
 package file
 
 import (
-	"errors"
 	"path"
 	"strings"
 
 	"github.com/microsoftgraph/msgraph-sdk-go/models"
-	"github.com/microsoftgraph/msgraph-sdk-go/models/odataerrors"
 )
 
-// normalizePath ensures paths like "Documents", "/Documents", "Documents/" all become "/Documents"
+// normalizePath ensures that user‑supplied paths are converted into a canonical
+// OneDrive‑compatible form.
+//
+// The function normalizes several common path variants:
+//
+//   - "Documents"
+//   - "/Documents"
+//   - "Documents/"
+//   - "./Documents"
+//
+// All normalize to the canonical form:
+//
+//	"/Documents"
+//
+// Special cases:
+//
+//   - "", "/", "." → return "" (representing the drive root)
+//
+// The returned value is always either "" (root) or a leading‑slash absolute path
+// suitable for use with Microsoft Graph item path lookups.
 func normalizePath(p string) string {
 	if p == "" || p == "/" || p == "." {
 		return ""
@@ -17,6 +34,11 @@ func normalizePath(p string) string {
 	return path.Clean("/" + p)
 }
 
+// deref safely dereferences a pointer of any type T.
+//
+// If ptr is non‑nil, its value is returned. If ptr is nil, the zero value of T
+// is returned instead. This helper eliminates repetitive nil checks when
+// working with Kiota‑generated pointer‑heavy Graph models.
 func deref[T any](ptr *T) T {
 	var zero T
 	if ptr == nil {
@@ -25,6 +47,20 @@ func deref[T any](ptr *T) T {
 	return *ptr
 }
 
+// toDomainItem converts a Microsoft Graph DriveItem into the internal DriveItem
+// domain model.
+//
+// The function extracts common metadata fields, normalizes parent paths, and
+// safely dereferences all pointer‑based Graph SDK fields using deref().
+//
+// Behavior:
+//
+//   - MIME type is populated only for file items.
+//   - PathWithoutDrive strips the "{drive-id}:" prefix from the Graph path.
+//   - IsFolder is true when the DriveItem contains a Folder facet.
+//   - Missing or nil Graph fields are treated as zero values.
+//
+// The returned DriveItem is always non‑nil.
 func toDomainItem(driveID string, it models.DriveItemable) *DriveItem {
 
 	var mimeType string
@@ -50,58 +86,4 @@ func toDomainItem(driveID string, it models.DriveItemable) *DriveItem {
 		MimeType:         mimeType,
 		Modified:         deref(it.GetLastModifiedDateTime()),
 	}
-}
-
-// mapGraphError converts MS Graph OData error to domain error
-func mapGraphError(err error) error {
-	if err == nil {
-		return nil
-	}
-
-	// Try to extract OData error
-	var odataErr odataerrors.ODataErrorable
-	if errors.As(err, &odataErr) {
-		if odataErr.GetErrorEscaped() != nil && odataErr.GetErrorEscaped().GetCode() != nil {
-			code := deref(odataErr.GetErrorEscaped().GetCode())
-
-			switch code {
-			case "itemNotFound", "ErrorItemNotFound":
-				return &DomainError{Kind: ErrNotFound, Err: err}
-
-			case "accessDenied":
-				return &DomainError{Kind: ErrForbidden, Err: err}
-
-			case "unauthenticated":
-				return &DomainError{Kind: ErrUnauthorized, Err: err}
-
-			case "conflict":
-				return &DomainError{Kind: ErrConflict, Err: err}
-
-			case "preconditionFailed":
-				return &DomainError{Kind: ErrPrecondition, Err: err}
-			}
-		}
-	}
-
-	// Try to extract HTTP status code (Kiota adapter)
-	var respErr interface{ StatusCode() int }
-	if errors.As(err, &respErr) {
-		switch respErr.StatusCode() {
-		case 401:
-			return &DomainError{Kind: ErrUnauthorized, Err: err}
-		case 403:
-			return &DomainError{Kind: ErrForbidden, Err: err}
-		case 404:
-			return &DomainError{Kind: ErrNotFound, Err: err}
-		case 409:
-			return &DomainError{Kind: ErrConflict, Err: err}
-		case 412:
-			return &DomainError{Kind: ErrPrecondition, Err: err}
-		case 429, 500, 502, 503, 504:
-			return &DomainError{Kind: ErrTransient, Err: err}
-		}
-	}
-
-	// Fallback
-	return &DomainError{Kind: ErrInternal, Err: err}
 }

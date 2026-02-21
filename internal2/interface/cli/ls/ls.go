@@ -1,11 +1,13 @@
 package ls
 
 import (
+	"context"
 	"fmt"
 	"slices"
 	"time"
 
 	"github.com/michaeldcanady/go-onedrive/internal2/domain/di"
+	"github.com/michaeldcanady/go-onedrive/internal2/domain/fs"
 	domainfs "github.com/michaeldcanady/go-onedrive/internal2/domain/fs"
 	infralogging "github.com/michaeldcanady/go-onedrive/internal2/infra/common/logging"
 	"github.com/michaeldcanady/go-onedrive/internal2/interface/cli/util"
@@ -108,6 +110,11 @@ func CreateLSCmd(c di.Container) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			start := time.Now()
 
+			ctx := cmd.Context()
+			if ctx != nil {
+				ctx = context.Background()
+			}
+
 			logger, err := util.EnsureLogger(c, loggerID)
 			if err != nil {
 				return util.NewCommandErrorWithNameWithError(commandName, err)
@@ -136,15 +143,24 @@ func CreateLSCmd(c di.Container) *cobra.Command {
 			}
 			logger.Debug("path resolved", infralogging.String("path", path))
 
-			logger.Debug("listing items from filesystem")
-			items, err := fsSvc.List(cmd.Context(), path, domainfs.ListOptions{
-				Recursive: recursive,
-			})
+			item, err := fsSvc.Get(ctx, path)
 			if err != nil {
-				logger.Error("failed to list items", infralogging.String("error", err.Error()))
+				logger.Error("failed to get item", infralogging.String("error", err.Error()))
 				return util.NewCommandErrorWithNameWithError(commandName, err)
 			}
-			logger.Info("items retrieved", infralogging.Int("count", len(items)))
+
+			items := []fs.Item{item}
+			if item.Type == fs.ItemTypeFolder {
+				logger.Debug("listing items from filesystem")
+				items, err = fsSvc.List(ctx, path, domainfs.ListOptions{
+					Recursive: recursive,
+				})
+				if err != nil {
+					logger.Error("failed to list items", infralogging.String("error", err.Error()))
+					return util.NewCommandErrorWithNameWithError(commandName, err)
+				}
+				logger.Info("items retrieved", infralogging.Int("count", len(items)))
+			}
 
 			// Filtering
 			logger.Debug("initializing filterer")

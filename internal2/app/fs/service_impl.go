@@ -14,14 +14,14 @@ import (
 	"github.com/michaeldcanady/go-onedrive/internal2/interface/cli/util"
 )
 
-var _ domainfs.Service = (*Service)(nil)
-
+// DEPRECATED: use Service2 instead
 type Service struct {
 	files         domainfile.FileService
 	driveResolver domainDrive.DriveResolver
 	logger        logging.Logger
 }
 
+// DEPRECATED: use NewService2 instead
 func NewService(
 	files domainfile.FileService,
 	driveResolver domainDrive.DriveResolver,
@@ -35,6 +35,8 @@ const (
 	eventFSResolveSuccess = "fs.resolve.success"
 	eventFSResolveFailure = "fs.resolve.failure"
 	eventFSReadFailure    = "fs.read.failure"
+
+	eventFSGetStart = "fs.get.start"
 
 	eventFSListStart    = "fs.list.start"
 	eventFSListChildren = "fs.list.children"

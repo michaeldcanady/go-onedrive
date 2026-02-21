@@ -1,5 +1,5 @@
-repo_url: https://github.com/michaeldcanady/servicenow-sdk-go
-site_name: Service-Now SDK for Go Docs
+repo_url: https://github.com/michaeldcanady/go-onedrive
+site_name: go-onedrive Docs
 markdown_extensions:
   - pymdownx.superfences
   - pymdownx.tabbed:
@@ -11,61 +11,64 @@ markdown_extensions:
       permalink: true
 
 plugins:
-  - include-markdown
+  - search
+  - mermaid2
 
 nav:
-  - index.md
-  - getting-started.md
-  - APIs:
-      - apis/index.md
-      - Attachment:
-          - Overview: apis/attachment/index.md
-          - File:
-              - Overview: apis/attachment/file/index.md
-              - Get: apis/attachment/file/get.md
-              - Create: apis/attachment/file/create.md
-          - Upload:
-              - Overview: apis/attachment/upload/index.md
-              - Create: apis/attachment/upload/create.md
-          - List: apis/attachment/list.md
-          - Get: apis/attachment/get.md
-          - Delete: apis/attachment/delete.md
-      - Table:
-          - Overview: apis/tables/index.md
-          - List: apis/tables/list.md
-          - Create: apis/tables/create.md
-          - Get: apis/tables/get.md
-          - Update: apis/tables/update.md
-          - Delete: apis/tables/delete.md
-      - Batch:
-          - Overview: apis/batch/index.md
-          - Create: apis/batch/create.md
-  - Contributing:
-      - contributing/index.md
-      - Architecture:
-          - contributing/architecture/index.md
-          - contributing/architecture/core-concepts.md
-      - contributing/quick-start.md
-  - Releases ⧉: https://github.com/michaeldcanady/servicenow-sdk-go/releases
-  - Roadmap ⧉: https://github.com/users/michaeldcanady/projects/7/views/9
+  - Home: index.md
+  - User Guide:
+      - Introduction: user/index.md
+      - Tutorials:
+          - Getting Started: user/tutorials/getting-started.md
+          - Basic Operations: user/tutorials/basic-operations.md
+      - How-to Guides:
+          - Authenticate: user/how-to/authenticate.md
+      - Reference:
+          - CLI Commands: user/reference/cli-commands.md
+  - Developer Guide:
+      - Overview: developer/index.md
+      - Tutorials:
+          - Setup: developer/tutorials/setup.md
+          - Developing a Command: developer/tutorials/developing-a-command.md
+          - Adding a New Service: developer/tutorials/adding-a-new-service.md
+          - File Infrastructure: developer/tutorials/infra-file-getting-started.md
+      - How-to Guides:
+          - Testing: developer/how-to/testing.md
+          - Configuring Caching: developer/how-to/configure-caching.md
+          - Conditional Uploads: developer/how-to/conditional-uploads.md
+          - Adding a New Subcommand: developer/how-to/add-subcommand.md
+      - Explanation:
+          - Architecture Overview: developer/explanation/architecture.md
+          - CLI Interface Layer: developer/explanation/cli-interface-layer.md
+          - Dependency Injection: developer/explanation/dependency-injection.md
+          - Authentication: developer/explanation/authentication.md
+          - Caching Strategy: developer/explanation/caching-strategy.md
+          - Configuration Management: developer/explanation/configuration-management.md
+          - Filesystem Abstraction: developer/explanation/filesystem-abstraction.md
+          - Path Normalization: developer/explanation/path-normalization.md
+      - Reference:
+          - Domain Interfaces: developer/reference/domain-interfaces.md
+          - CLI Command Patterns: developer/reference/cli-command-patterns.md
+          - CLI Error Handling: developer/reference/cli-error-handling.md
+          - CLI Output Formatting: developer/reference/cli-output-formatting.md
+          - CLI Filtering and Sorting: developer/reference/cli-filtering-sorting.md
+          - Coding Standards: developer/reference/coding-standards.md
+          - Metadata Repository: developer/reference/metadata-repository.md
+          - Contents Repository: developer/reference/contents-repository.md
 
 theme:
-  font:
-    text: Work Sans
-  logo: assets/logo.png
-  favicon: assets/favicon.png
   name: material
   features:
     - content.code.copy
   palette:
     - media: "(prefers-color-scheme: light)"
-      primary: teal
+      primary: indigo
       scheme: default
       toggle:
         icon: material/brightness-7
         name: Switch to dark mode
     - media: "(prefers-color-scheme: dark)"
-      primary: teal
+      primary: indigo
       scheme: slate
       toggle:
         icon: material/brightness-4
