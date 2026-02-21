@@ -2,6 +2,19 @@
 export DOC_IMAGE := "sdk-docs"
 export DOC_PORT := "8000"
 export DOC_PATH := "."
+export BINARY_NAME := "odc"
+
+# Build the odc binary
+build-cli:
+    go build -o {{BINARY_NAME}} ./cmd/odc/
+
+# Run the odc binary
+run *args: build-cli
+    ./{{BINARY_NAME}} {{args}}
+
+# Clean up build artifacts and docs
+clean: clean-docs
+    rm -f {{BINARY_NAME}}
 
 # Build the docs container image
 build-docs:
