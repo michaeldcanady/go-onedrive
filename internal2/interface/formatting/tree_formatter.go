@@ -26,11 +26,7 @@ func (f *TreeFormatter) Format(w io.Writer, items []fs.Item) error {
 
 	visitor := NewTreeNodeVisitor(w)
 
-	if err := visitor.VisitNode(root); err != nil {
-		return err
-	}
-	_, err := w.Write([]byte(visitor.String() + "\n"))
-	return err
+	return visitor.VisitNode(root)
 }
 
 func (f *TreeFormatter) buildTree(items []domainfs.Item) *treeNode {
