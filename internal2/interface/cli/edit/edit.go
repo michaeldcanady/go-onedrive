@@ -1,21 +1,9 @@
 package edit
 
 import (
-	"bytes"
-	"context"
-	"crypto/sha256"
-	"encoding/hex"
 	"fmt"
-	"io"
-	"os"
-	"path/filepath"
-	"time"
 
 	"github.com/michaeldcanady/go-onedrive/internal2/domain/di"
-	"github.com/michaeldcanady/go-onedrive/internal2/domain/fs"
-	"github.com/michaeldcanady/go-onedrive/internal2/infra/common/logging"
-	infralogging "github.com/michaeldcanady/go-onedrive/internal2/infra/common/logging"
-	"github.com/michaeldcanady/go-onedrive/internal2/interface/cli/util"
 	"github.com/spf13/cobra"
 )
 
@@ -24,75 +12,45 @@ const (
 	commandName = "edit"
 )
 
+// CreateEditCmd constructs and returns the cobra.Command for the edit operation.
+// It initializes flags and sets up the execution logic using EditCmd.
 func CreateEditCmd(c di.Container) *cobra.Command {
+	var opts Options
+
 	cmd := &cobra.Command{
 		Use:   fmt.Sprintf("%s [path]", commandName),
 		Short: "Edit a OneDrive file in your local editor",
-		Args:  cobra.ExactArgs(1),
+		Long: `
+Edit a OneDrive file in your local editor.
+
+This command downloads the specified file to a temporary local location,
+launches your default text editor, and waits for you to save and close it.
+If changes are detected (via SHA-256 hashing), the updated file is
+automatically uploaded back to OneDrive.
+
+Editor Detection Order:
+  1. VISUAL environment variable
+  2. EDITOR environment variable
+  3. OS Default (notepad on Windows, open -W -t on macOS, xdg-open on Linux)
+  4. Common fallbacks (vim, vi, nano)
+
+Authentication:
+You must be logged in (via 'onedrive auth login') before using this command.
+`,
+		Args: cobra.ExactArgs(1),
 
 		RunE: func(cmd *cobra.Command, args []string) error {
-			start := time.Now()
-
-			ctx := cmd.Context()
-			if ctx == nil {
-				ctx = context.Background()
+			opts.Path = args[0]
+			if err := opts.Validate(); err != nil {
+				return err
 			}
 
-			logger, err := util.EnsureLogger(c, loggerID)
-			if err != nil {
-				return util.NewCommandErrorWithNameWithError(commandName, err)
-			}
-
-			logger = logger.WithContext(ctx).With(logging.String("correlationID", util.CorrelationIDFromContext(ctx)))
-
-			fsSvc := c.FS()
-			if fsSvc == nil {
-				return util.NewCommandErrorWithNameWithMessage(commandName, "filesystem service is nil")
-			}
-
-			path := args[0]
-
-			reader, err := fsSvc.ReadFile(ctx, path, fs.ReadOptions{})
-			if err != nil {
-				return util.NewCommandError(commandName, "failed to read file", err)
-			}
-			defer reader.Close()
-
-			origHash := sha256.New()
-
-			name := Name(path)
-			ext := filepath.Ext(path)
-
-			editorSvc := NewEditorService(c.EnvironmentService(), logger).
-				WithIO(cmd.InOrStdin(), cmd.OutOrStdout(), cmd.ErrOrStderr())
-
-			editedBytes, tmpPath, err := editorSvc.LaunchTempFile(fmt.Sprintf("%s-edit-", name), ext, io.TeeReader(reader, origHash))
-			defer os.Remove(tmpPath)
-			if err != nil {
-				return util.NewCommandErrorWithNameWithError(commandName, err)
-			}
-
-			origHashSum := hex.EncodeToString(origHash.Sum(nil))
-
-			editedHash := sha256.Sum256(editedBytes)
-
-			if origHashSum == hex.EncodeToString(editedHash[:]) {
-				logger.Info("no changes detected")
-				return nil
-			}
-
-			_, err = fsSvc.WriteFile(ctx, path, bytes.NewReader(editedBytes), fs.WriteOptions{Overwrite: true})
-			if err != nil {
-				return util.NewCommandError(commandName, "failed to write updated file", err)
-			}
-
-			logger.Info("file updated successfully",
-				infralogging.Duration("duration", time.Since(start)),
-			)
-
-			return nil
+			editCmd := NewEditCmd(c)
+			return editCmd.Run(cmd.Context(), cmd, opts)
 		},
 	}
+
+	cmd.Flags().BoolVarP(&opts.Force, "force", "f", false, "Overwrite the file even if it changed in the cloud")
 
 	return cmd
 }
