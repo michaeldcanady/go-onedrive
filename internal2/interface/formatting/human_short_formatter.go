@@ -19,8 +19,8 @@ func (f *HumanShortFormatter) Format(w io.Writer, items []fs.Item) error {
 	colWidth := 0
 
 	for _, it := range items {
-		if len(displayName(it)) > colWidth {
-			colWidth = len(displayName(it))
+		if len(it.Name) > colWidth {
+			colWidth = len(it.Name)
 		}
 	}
 	colWidth += 2
