@@ -1,16 +1,7 @@
 package file
 
-import "time"
+import "github.com/michaeldcanady/go-onedrive/internal2/domain/file"
 
-type DriveItem struct {
-	DriveID          string
-	ID               string
-	Name             string
-	Path             string
-	PathWithoutDrive string
-	IsFolder         bool
-	Size             int64
-	ETag             string
-	MimeType         string
-	Modified         time.Time
-}
+// DriveItem is a type alias for file.DriveItem from the domain layer.
+// It represents a file or folder in OneDrive.
+type DriveItem = file.DriveItem

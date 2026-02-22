@@ -34,9 +34,10 @@
     },
     "./features/xdg-utils": {},
     "ghcr.io/guiyomh/features/just:0": {},
-    "ghcr.io/devcontainers/features/powershell:1": {
+    "ghcr.io/devcontainers/features/powershell:2": {
       "version": "latest"
-    }
+    },
+    "ghcr.io/stu-bell/devcontainer-features/gemini-cli:0": {}
   },
   "runArgs": [
     "--userns=keep-id"
