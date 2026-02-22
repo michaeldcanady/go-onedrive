@@ -2,16 +2,22 @@ package formatting
 
 import (
 	"fmt"
+	"io"
 	"strings"
 
 	"github.com/michaeldcanady/go-onedrive/internal2/domain/fs"
 )
 
 type TreeNodeVisitor struct {
+	writer    io.Writer
 	builder   strings.Builder
 	prefix    string
 	connector string
 	level     int
+}
+
+func NewTreeNodeVisitor(w io.Writer) *TreeNodeVisitor {
+	return &TreeNodeVisitor{writer: w}
 }
 
 func (v *TreeNodeVisitor) VisitNode(node *treeNode) error {
@@ -29,7 +35,7 @@ func (v *TreeNodeVisitor) VisitNode(node *treeNode) error {
 func (v *TreeNodeVisitor) VisitFolder(node *treeNode) error {
 	childrenCount := len(node.Children)
 
-	v.builder.WriteString(v.prefix + v.connector + node.Item.Name)
+	v.builder.WriteString(v.prefix + v.connector + ColorizeItem(v.writer, *node.Item))
 
 	for i, child := range node.Children {
 		v.builder.WriteString("\n")
@@ -69,7 +75,7 @@ func (v *TreeNodeVisitor) VisitFolder(node *treeNode) error {
 }
 
 func (v *TreeNodeVisitor) VisitFile(node *treeNode) {
-	v.builder.WriteString(v.prefix + v.connector + node.Item.Name)
+	v.builder.WriteString(v.prefix + v.connector + ColorizeItem(v.writer, *node.Item))
 }
 
 func (v *TreeNodeVisitor) String() string {

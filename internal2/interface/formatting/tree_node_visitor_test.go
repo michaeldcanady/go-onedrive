@@ -39,7 +39,7 @@ func TestTreeNodeVisitor(t *testing.T) {
 					Size: 0,
 				},
 				Children: []*treeNode{
-					&treeNode{
+					{
 						Name: "file",
 						Item: &fs.Item{
 							ID:   "",
@@ -65,7 +65,7 @@ func TestTreeNodeVisitor(t *testing.T) {
 					Size: 0,
 				},
 				Children: []*treeNode{
-					&treeNode{
+					{
 						Name: "folder/",
 						Item: &fs.Item{
 							ID:   "",
@@ -75,7 +75,7 @@ func TestTreeNodeVisitor(t *testing.T) {
 							Size: 0,
 						},
 						Children: []*treeNode{
-							&treeNode{
+							{
 								Name: "folder/file",
 								Item: &fs.Item{
 									ID:   "",
@@ -103,7 +103,7 @@ func TestTreeNodeVisitor(t *testing.T) {
 					Size: 0,
 				},
 				Children: []*treeNode{
-					&treeNode{
+					{
 						Name: "folder/",
 						Item: &fs.Item{
 							ID:   "",
@@ -113,7 +113,7 @@ func TestTreeNodeVisitor(t *testing.T) {
 							Size: 0,
 						},
 						Children: []*treeNode{
-							&treeNode{
+							{
 								Name: "folder/file1",
 								Item: &fs.Item{
 									ID:   "",
@@ -123,7 +123,7 @@ func TestTreeNodeVisitor(t *testing.T) {
 									Size: 0,
 								},
 							},
-							&treeNode{
+							{
 								Name: "folder/file2",
 								Item: &fs.Item{
 									ID:   "",
@@ -151,7 +151,7 @@ func TestTreeNodeVisitor(t *testing.T) {
 					Size: 0,
 				},
 				Children: []*treeNode{
-					&treeNode{
+					{
 						Name: "folder/",
 						Item: &fs.Item{
 							ID:   "",
@@ -161,7 +161,7 @@ func TestTreeNodeVisitor(t *testing.T) {
 							Size: 0,
 						},
 						Children: []*treeNode{
-							&treeNode{
+							{
 								Name: "folder/file1",
 								Item: &fs.Item{
 									ID:   "",
@@ -171,7 +171,7 @@ func TestTreeNodeVisitor(t *testing.T) {
 									Size: 0,
 								},
 							},
-							&treeNode{
+							{
 								Name: "folder/file2",
 								Item: &fs.Item{
 									ID:   "",
@@ -183,7 +183,7 @@ func TestTreeNodeVisitor(t *testing.T) {
 							},
 						},
 					},
-					&treeNode{
+					{
 						Name: "file",
 						Item: &fs.Item{
 							ID:   "",
@@ -209,7 +209,7 @@ func TestTreeNodeVisitor(t *testing.T) {
 					Size: 0,
 				},
 				Children: []*treeNode{
-					&treeNode{
+					{
 						Name: "folder/",
 						Item: &fs.Item{
 							ID:   "",
@@ -219,7 +219,7 @@ func TestTreeNodeVisitor(t *testing.T) {
 							Size: 0,
 						},
 						Children: []*treeNode{
-							&treeNode{
+							{
 								Name: "folder/file1",
 								Item: &fs.Item{
 									ID:   "",
@@ -229,7 +229,7 @@ func TestTreeNodeVisitor(t *testing.T) {
 									Size: 0,
 								},
 							},
-							&treeNode{
+							{
 								Name: "folder/folder",
 								Item: &fs.Item{
 									ID:   "",
@@ -239,7 +239,7 @@ func TestTreeNodeVisitor(t *testing.T) {
 									Size: 0,
 								},
 								Children: []*treeNode{
-									&treeNode{
+									{
 										Name: "file",
 										Item: &fs.Item{
 											ID:   "",
@@ -253,7 +253,7 @@ func TestTreeNodeVisitor(t *testing.T) {
 							},
 						},
 					},
-					&treeNode{
+					{
 						Name: "file",
 						Item: &fs.Item{
 							ID:   "",
@@ -271,7 +271,7 @@ func TestTreeNodeVisitor(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.Name, func(t *testing.T) {
-			visitor := &TreeNodeVisitor{}
+			visitor := NewTreeNodeVisitor(nil)
 			visitor.VisitNode(test.Input)
 			assert.Equal(t, test.Result, visitor.String())
 		})

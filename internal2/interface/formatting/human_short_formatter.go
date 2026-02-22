@@ -31,7 +31,10 @@ func (f *HumanShortFormatter) Format(w io.Writer, items []fs.Item) error {
 	}
 
 	for i, it := range items {
-		fmt.Fprintf(w, "%-*s", colWidth, displayName(it))
+		// Calculate padding needed: colWidth - visible length
+		name := displayName(it)
+		padding := colWidth - len(name)
+		fmt.Fprintf(w, "%s%*s", ColorizeItem(w, it), padding, "")
 		if (i+1)%cols == 0 {
 			fmt.Fprintln(w)
 		}
