@@ -19,15 +19,17 @@ type ContentsRepository struct {
 	client        abstractions.RequestAdapter
 	contentCache  ContentsCache
 	metadataCache MetadataCache
+	pathIDCache   PathIDCache
 }
 
 // NewContentsRepository initializes a new ContentsRepository with the provided
 // request adapter and cache implementations.
-func NewContentsRepository(client abstractions.RequestAdapter, contentCache ContentsCache, metadataCache MetadataCache) *ContentsRepository {
+func NewContentsRepository(client abstractions.RequestAdapter, contentCache ContentsCache, metadataCache MetadataCache, pathIDCache PathIDCache) *ContentsRepository {
 	return &ContentsRepository{
 		client:        client,
 		contentCache:  contentCache,
 		metadataCache: metadataCache,
+		pathIDCache:   pathIDCache,
 	}
 }
 
@@ -50,6 +52,8 @@ func (r *ContentsRepository) Download(
 		headerOpt *nethttplibrary.HeadersInspectionOptions
 	)
 
+	path = normalizePath(path)
+
 	if !opts.NoStore {
 		headerOpt = nethttplibrary.NewHeadersInspectionOptions()
 		headerOpt.InspectResponseHeaders = true
@@ -58,7 +62,13 @@ func (r *ContentsRepository) Download(
 
 	// Try cache
 	if !opts.NoCache {
-		if entry, ok := r.contentCache.Get(ctx, path); ok {
+		// Use ID if we have it
+		cacheKey := path
+		if id, ok := r.pathIDCache.Get(ctx, path); ok {
+			cacheKey = id
+		}
+
+		if entry, ok := r.contentCache.Get(ctx, cacheKey); ok {
 			cached = io.NopCloser(bytes.NewReader(entry.Data))
 			if entry.CTag != "" {
 				config.Headers.Add("If-None-Match", entry.CTag)
@@ -66,7 +76,7 @@ func (r *ContentsRepository) Download(
 		}
 	}
 
-	resp, err := r.relativePathContentsBuilder(r.client, driveID, normalizePath(path)).Get(ctx, &config)
+	resp, err := r.relativePathContentsBuilder(r.client, driveID, path).Get(ctx, &config)
 	if err := mapGraphError2(err); err != nil {
 		return nil, err
 	}
@@ -90,6 +100,7 @@ func (r *ContentsRepository) Download(
 		}
 
 		if len(ctag) > 0 {
+			// update contents cache
 			if err := r.contentCache.Put(ctx, path, &file.Contents{
 				CTag: ctag,
 				Data: resp,
@@ -113,8 +124,15 @@ func (r *ContentsRepository) Upload(
 		Headers: abstractions.NewRequestHeaders(),
 	}
 
+	path = normalizePath(path)
+
 	if !opts.Force {
-		if entry, ok := r.contentCache.Get(ctx, path); ok {
+		cacheKey := path
+		if id, ok := r.pathIDCache.Get(ctx, path); ok {
+			cacheKey = id
+		}
+
+		if entry, ok := r.contentCache.Get(ctx, cacheKey); ok {
 			if entry.CTag != "" && len(entry.Data) > 0 {
 				config.Headers.Add("If-Match", entry.CTag)
 			}
@@ -127,7 +145,7 @@ func (r *ContentsRepository) Upload(
 	}
 
 	// 3. Upload
-	item, err := r.relativePathContentsBuilder(r.client, driveID, normalizePath(path)).Put(ctx, data, config)
+	item, err := r.relativePathContentsBuilder(r.client, driveID, path).Put(ctx, data, config)
 	if err := mapGraphError2(err); err != nil {
 		return nil, err
 	}
@@ -136,7 +154,7 @@ func (r *ContentsRepository) Upload(
 
 	if !opts.NoStore {
 		// update contents cache
-		if err := r.contentCache.Put(ctx, path, &file.Contents{
+		if err := r.contentCache.Put(ctx, metadata.ID, &file.Contents{
 			CTag: *item.GetCTag(),
 			Data: data,
 		}); err != nil {
@@ -144,9 +162,12 @@ func (r *ContentsRepository) Upload(
 		}
 
 		// update metadata cache
-		if err := r.metadataCache.Put(ctx, path, metadata); err != nil {
+		if err := r.metadataCache.Put(ctx, metadata.ID, metadata); err != nil {
 			return nil, err
 		}
+
+		// update path-to-id mapping
+		_ = r.pathIDCache.Put(ctx, path, metadata.ID)
 	}
 
 	return metadata, nil

@@ -47,7 +47,7 @@ func (m *MockMetadataCache) Get(ctx context.Context, id string) (*file.Metadata,
 }
 
 func (m *MockMetadataCache) Put(ctx context.Context, path string, meta *file.Metadata) error {
-	args := m.Called(ctx, meta)
+	args := m.Called(ctx, path, meta)
 	return args.Error(0)
 }
 
@@ -75,6 +75,26 @@ func (m *MockListingCache) Put(ctx context.Context, path string, l *Listing) err
 }
 
 func (m *MockListingCache) Invalidate(ctx context.Context, path string) error {
+	args := m.Called(ctx, path)
+	return args.Error(0)
+}
+
+// MockPathIDCache mocks the PathIDCache interface
+type MockPathIDCache struct {
+	mock.Mock
+}
+
+func (m *MockPathIDCache) Get(ctx context.Context, path string) (string, bool) {
+	args := m.Called(ctx, path)
+	return args.String(0), args.Bool(1)
+}
+
+func (m *MockPathIDCache) Put(ctx context.Context, path string, id string) error {
+	args := m.Called(ctx, path, id)
+	return args.Error(0)
+}
+
+func (m *MockPathIDCache) Invalidate(ctx context.Context, path string) error {
 	args := m.Called(ctx, path)
 	return args.Error(0)
 }

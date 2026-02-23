@@ -16,15 +16,17 @@ type MetadataRepository struct {
 	client               abstractions.RequestAdapter
 	metadataCache        MetadataCache
 	metadataListingCache ListingCache
+	pathIDCache          PathIDCache
 }
 
 // NewMetadataRepository initializes a new MetadataRepository with the provided
 // request adapter and cache implementations.
-func NewMetadataRepository(client abstractions.RequestAdapter, metadataCache MetadataCache, metadataListingCache ListingCache) *MetadataRepository {
+func NewMetadataRepository(client abstractions.RequestAdapter, metadataCache MetadataCache, metadataListingCache ListingCache, pathIDCache PathIDCache) *MetadataRepository {
 	return &MetadataRepository{
 		client:               client,
 		metadataCache:        metadataCache,
 		metadataListingCache: metadataListingCache,
+		pathIDCache:          pathIDCache,
 	}
 }
 
@@ -33,18 +35,29 @@ func (r *MetadataRepository) getByPath(ctx context.Context, driveID, path string
 		Headers: abstractions.NewRequestHeaders(),
 	}
 
+	path = normalizePath(path)
+
 	// 1. Cache lookup unless disabled
 	var cached *file.Metadata
 	if !opts.NoCache {
-		if m, ok := r.metadataCache.Get(ctx, path); ok && m != nil {
-			cached = m
-			if !opts.Force {
-				config.Headers.Add("If-None-Match", m.ETag)
+		// Try path-to-ID cache first if we have it
+		if id, ok := r.pathIDCache.Get(ctx, path); ok {
+			if m, ok := r.metadataCache.Get(ctx, id); ok && m != nil {
+				cached = m
+				if !opts.Force {
+					config.Headers.Add("If-None-Match", m.ETag)
+				}
+			}
+		} else {
+			// Fallback to path lookup in metadata cache
+			if m, ok := r.metadataCache.Get(ctx, path); ok && m != nil {
+				cached = m
+				if !opts.Force {
+					config.Headers.Add("If-None-Match", m.ETag)
+				}
 			}
 		}
 	}
-
-	path = normalizePath(path)
 
 	// 2. Fetch from OneDrive
 	item, err := r.driveItemBuilder(r.client, driveID, path).Get(ctx, config)
@@ -61,7 +74,8 @@ func (r *MetadataRepository) getByPath(ctx context.Context, driveID, path string
 	metadata := mapItemToMetadata(item)
 
 	if !opts.NoStore {
-		_ = r.metadataCache.Put(ctx, path, metadata)
+		_ = r.metadataCache.Put(ctx, metadata.ID, metadata)
+		_ = r.pathIDCache.Put(ctx, path, metadata.ID)
 	}
 
 	return metadata, true, nil

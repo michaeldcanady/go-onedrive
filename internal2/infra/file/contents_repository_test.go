@@ -26,8 +26,11 @@ func TestContentsRepository_Download(t *testing.T) {
 		mockAdapter := new(MockRequestAdapter)
 		mockContentCache := new(MockContentsCache)
 		mockMetadataCache := new(MockMetadataCache)
+		mockPathIDCache := new(MockPathIDCache)
 
-		repo := NewContentsRepository(mockAdapter, mockContentCache, mockMetadataCache)
+		repo := NewContentsRepository(mockAdapter, mockContentCache, mockMetadataCache, mockPathIDCache)
+
+		mockPathIDCache.On("Get", mock.Anything, path).Return("", false)
 
 		// Cache returns data
 		mockContentCache.On("Get", mock.Anything, path).Return(&file.Contents{
@@ -51,8 +54,11 @@ func TestContentsRepository_Download(t *testing.T) {
 		mockAdapter := new(MockRequestAdapter)
 		mockContentCache := new(MockContentsCache)
 		mockMetadataCache := new(MockMetadataCache)
+		mockPathIDCache := new(MockPathIDCache)
 
-		repo := NewContentsRepository(mockAdapter, mockContentCache, mockMetadataCache)
+		repo := NewContentsRepository(mockAdapter, mockContentCache, mockMetadataCache, mockPathIDCache)
+
+		mockPathIDCache.On("Get", mock.Anything, path).Return("", false)
 
 		// Cache miss
 		mockContentCache.On("Get", mock.Anything, path).Return(nil, false)
@@ -82,8 +88,11 @@ func TestContentsRepository_Download(t *testing.T) {
 		mockAdapter := new(MockRequestAdapter)
 		mockContentCache := new(MockContentsCache)
 		mockMetadataCache := new(MockMetadataCache)
+		mockPathIDCache := new(MockPathIDCache)
 
-		repo := NewContentsRepository(mockAdapter, mockContentCache, mockMetadataCache)
+		repo := NewContentsRepository(mockAdapter, mockContentCache, mockMetadataCache, mockPathIDCache)
+
+		mockPathIDCache.On("Get", mock.Anything, path).Return("", false)
 
 		mockContentCache.On("Get", mock.Anything, path).Return(nil, false)
 		mockAdapter.On("SendPrimitive", mock.Anything, mock.Anything, "[]byte", mock.Anything).Return(nil, errors.New("graph error"))
@@ -107,8 +116,12 @@ func TestContentsRepository_Upload(t *testing.T) {
 		mockAdapter := new(MockRequestAdapter)
 		mockContentCache := new(MockContentsCache)
 		mockMetadataCache := new(MockMetadataCache)
+		mockPathIDCache := new(MockPathIDCache)
 
-		repo := NewContentsRepository(mockAdapter, mockContentCache, mockMetadataCache)
+		repo := NewContentsRepository(mockAdapter, mockContentCache, mockMetadataCache, mockPathIDCache)
+
+		mockPathIDCache.On("Get", mock.Anything, path).Return("", false)
+		mockPathIDCache.On("Put", mock.Anything, path, "new-id").Return(nil)
 
 		// 1. Force is false, so check cache for If-Match
 		mockContentCache.On("Get", mock.Anything, path).Return(nil, false)
@@ -128,8 +141,8 @@ func TestContentsRepository_Upload(t *testing.T) {
 		mockAdapter.On("Send", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(mockItem, nil)
 
 		// 3. Mock Cache Puts
-		mockContentCache.On("Put", mock.Anything, path, mock.Anything).Return(nil)
-		mockMetadataCache.On("Put", mock.Anything, mock.Anything).Return(nil)
+		mockContentCache.On("Put", mock.Anything, "new-id", mock.Anything).Return(nil)
+		mockMetadataCache.On("Put", mock.Anything, "new-id", mock.Anything).Return(nil)
 
 		body := bytes.NewReader(contentData)
 		meta, err := repo.Upload(context.Background(), driveID, path, body, file.UploadOptions{})

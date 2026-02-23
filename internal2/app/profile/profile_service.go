@@ -5,9 +5,7 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/michaeldcanady/go-onedrive/internal2/domain/cache"
 	domainprofile "github.com/michaeldcanady/go-onedrive/internal2/domain/profile"
-	"github.com/michaeldcanady/go-onedrive/internal2/infra/cache/core"
 	"github.com/michaeldcanady/go-onedrive/internal2/infra/common/logging"
 	"github.com/michaeldcanady/go-onedrive/internal2/interface/cli/util"
 )
@@ -16,14 +14,12 @@ import (
 var _ domainprofile.ProfileService = (*ProfileService)(nil)
 
 type ProfileService struct {
-	cacheSvc cache.Cache[domainprofile.Profile]
 	logger   logging.Logger
 	repo     domainprofile.Repository
 }
 
-func New(cacheSvc cache.Cache[domainprofile.Profile], logger logging.Logger, repo domainprofile.Repository) *ProfileService {
+func New(logger logging.Logger, repo domainprofile.Repository) *ProfileService {
 	return &ProfileService{
-		cacheSvc: cacheSvc,
 		logger:   logger,
 		repo:     repo,
 	}
@@ -33,7 +29,6 @@ const (
 	eventProfileCreateStart   = "profile.create.start"
 	eventProfileCreateSuccess = "profile.create.success"
 	eventProfileCreateFailure = "profile.create.failure"
-	eventProfileCreateCache   = "profile.create.cache"
 
 	eventProfileDeleteStart   = "profile.delete.start"
 	eventProfileDeleteSuccess = "profile.delete.success"
@@ -48,11 +43,7 @@ const (
 	eventProfileListFailure = "profile.list.failure"
 
 	eventProfileGetStart      = "profile.get.start"
-	eventProfileGetCacheHit   = "profile.get.cache.hit"
-	eventProfileGetCacheMiss  = "profile.get.cache.miss"
 	eventProfileGetRepoLoad   = "profile.get.repo.load"
-	eventProfileGetCacheSave  = "profile.get.cache.save"
-	eventProfileGetCacheError = "profile.get.cache.error"
 	eventProfileGetSuccess    = "profile.get.success"
 	eventProfileGetFailure    = "profile.get.failure"
 )
@@ -85,13 +76,6 @@ func (s *ProfileService) Create(ctx context.Context, name string) (domainprofile
 	logger.Info("profile created successfully",
 		logging.String("event", eventProfileCreateSuccess),
 	)
-
-	if err := s.cacheSvc.Set(ctx, name, profile); err != nil {
-		logger.Warn("failed to cache profile",
-			logging.String("event", eventProfileCreateCache),
-			logging.Error(err),
-		)
-	}
 
 	return profile, nil
 }
@@ -127,11 +111,6 @@ func (s *ProfileService) Delete(ctx context.Context, name string) error {
 	logger.Info("profile deleted successfully",
 		logging.String("event", eventProfileDeleteSuccess),
 	)
-
-	// Optional: delete from cache
-	if err := s.cacheSvc.Delete(ctx, name); err != nil {
-		logger.Warn("failed to delete cached profile", logging.Error(err))
-	}
 
 	return nil
 }
@@ -236,29 +215,8 @@ func (s *ProfileService) GetProfile(ctx context.Context, name string) (domainpro
 
 	logger.Info("retrieving profile")
 
-	// Try cache first
-	profile, err := s.cacheSvc.Get(ctx, name)
-	if err == nil && profile != (domainprofile.Profile{}) {
-		logger.Info("profile retrieved from cache",
-			logging.String("event", eventProfileGetCacheHit),
-		)
-		return profile, nil
-	}
-
-	if err != nil && err != core.ErrKeyNotFound {
-		logger.Error("failed to retrieve profile from cache",
-			logging.String("event", eventProfileGetFailure),
-			logging.Error(err),
-		)
-		return profile, err
-	}
-
-	logger.Info("profile not found in cache",
-		logging.String("event", eventProfileGetCacheMiss),
-	)
-
 	// Load from repository
-	profile, err = s.repo.Get(ctx, name)
+	profile, err := s.repo.Get(ctx, name)
 	if err != nil {
 		logger.Error("failed to load profile from repository",
 			logging.String("event", eventProfileGetFailure),
@@ -269,19 +227,6 @@ func (s *ProfileService) GetProfile(ctx context.Context, name string) (domainpro
 
 	logger.Info("profile loaded from repository",
 		logging.String("event", eventProfileGetRepoLoad),
-	)
-
-	// Cache it
-	if err := s.cacheSvc.Set(ctx, name, profile); err != nil {
-		logger.Warn("failed to cache profile",
-			logging.String("event", eventProfileGetCacheError),
-			logging.Error(err),
-		)
-		return profile, errors.Join(errors.New("unable to cache profile"), err)
-	}
-
-	logger.Info("profile cached successfully",
-		logging.String("event", eventProfileGetCacheSave),
 	)
 
 	logger.Info("profile retrieval complete",

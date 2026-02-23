@@ -31,6 +31,7 @@ import (
 
 	"github.com/michaeldcanady/go-onedrive/internal2/app/common/environment"
 	"github.com/michaeldcanady/go-onedrive/internal2/infra/auth/msal"
+	"github.com/michaeldcanady/go-onedrive/internal2/infra/cache/bolt"
 	"github.com/michaeldcanady/go-onedrive/internal2/infra/common/graph"
 	infralogging "github.com/michaeldcanady/go-onedrive/internal2/infra/common/logging"
 	infraconfig "github.com/michaeldcanady/go-onedrive/internal2/infra/config"
@@ -98,10 +99,29 @@ type Container struct {
 
 	contentsCacheOnce  sync.Once
 	contentsCacheCache infrafile.ContentsCache
+
+	cacheStoreOnce sync.Once
+	sharedStore    *bolt.Store
 }
 
 func NewContainer() *Container {
 	return &Container{}
+}
+
+func (c *Container) cacheStore() *bolt.Store {
+	c.cacheStoreOnce.Do(func() {
+		environmentService := c.EnvironmentService()
+		cachePath, _ := environmentService.CacheDir()
+		dbPath := filepath.Join(cachePath, "cache.db")
+
+		// Create a "root" store with a dummy bucket just to open the DB
+		store, err := bolt.NewStore(dbPath, "root")
+		if err != nil {
+			panic(err) // Critical failure if we can't open the cache
+		}
+		c.sharedStore = store
+	})
+	return c.sharedStore
 }
 
 // Drive implements [di.Container].
@@ -116,35 +136,15 @@ func (c *Container) Drive() domaindrive.DriveService {
 	return c.driveService
 }
 
-func (c *Container) driveCache() domaincache.Cache[*domaincache.CachedChildren] {
-	environmentService := c.EnvironmentService()
-	cachePath, _ := environmentService.CacheDir()
-
-	cacheSvc := c.Cache()
-	rawCache := cacheSvc.CreateCache(context.Background(), "drive", appcache.BoltCacheFactory(filepath.Join(cachePath, "drive.db"), "drive"))
-
-	return appcache.NewTypedCache(rawCache, appcache.NewKiotaJSONSerializerDeserializer[*domaincache.CachedChildren](domaincache.CreateCachedChildrenFromDiscriminatorValue))
-}
-
 // File implements [di.Container].
 func (c *Container) File() domainfile.FileService {
 	c.fileOnce.Do(func() {
 		loggerService := c.Logger()
 		logger, _ := loggerService.CreateLogger("file")
 
-		c.fileService = infrafile.New2(c.clientProvider(), logger, c.driveCache())
+		c.fileService = infrafile.New2(c.clientProvider(), logger, nil)
 	})
 	return c.fileService
-}
-
-func (c *Container) configCache() domaincache.Cache[infraconfig.Configuration3] {
-	environmentService := c.EnvironmentService()
-	cachePath, _ := environmentService.CacheDir()
-
-	cacheSvc := c.Cache()
-	rawCache := cacheSvc.CreateCache(context.Background(), "configuration", appcache.BoltCacheFactory(filepath.Join(cachePath, "configuration.db"), "configuration"))
-
-	return appcache.NewTypedCache(rawCache, &appcache.JSONSerializerDeserializer[infraconfig.Configuration3]{})
 }
 
 // Config implements [di.Container].
@@ -153,7 +153,7 @@ func (c *Container) Config() domainconfig.ConfigService {
 		loggerService := c.Logger()
 		logger, _ := loggerService.CreateLogger("config")
 
-		c.configService = appconfig.New2(c.configCache(), infraconfig.NewYAMLLoader(), logger)
+		c.configService = appconfig.New2(infraconfig.NewYAMLLoader(), logger)
 	})
 	return c.configService
 }
@@ -170,11 +170,8 @@ func (c *Container) Cache() domaincache.Service2 {
 }
 
 func (c *Container) authCache() domaincache.Cache[domainauth.AccessToken] {
-	environmentService := c.EnvironmentService()
-	cachePath, _ := environmentService.CacheDir()
-
 	cacheSvc := c.Cache()
-	rawCache := cacheSvc.CreateCache(context.Background(), "auth_tokens", appcache.BoltCacheFactory(filepath.Join(cachePath, "auth_tokens.db"), "auth_tokens"))
+	rawCache := cacheSvc.CreateCache(context.Background(), "auth_tokens", appcache.SiblingBoltFactory(c.cacheStore(), "auth_tokens"))
 
 	return appcache.NewTypedCache(rawCache, &appcache.JSONSerializerDeserializer[domainauth.AccessToken]{})
 }
@@ -215,11 +212,8 @@ func (c *Container) EnvironmentService() domainenv.EnvironmentService {
 
 func (c *Container) metadataCache() infrafile.MetadataCache {
 	c.metadataCacheOnce.Do(func() {
-		environmentService := c.EnvironmentService()
-		cachePath, _ := environmentService.CacheDir()
-
 		cacheSvc := c.Cache()
-		rawCache := cacheSvc.CreateCache(context.Background(), "metadata", appcache.BoltCacheFactory(filepath.Join(cachePath, "metadata.db"), "metadata"))
+		rawCache := cacheSvc.CreateCache(context.Background(), "metadata", appcache.SiblingBoltFactory(c.cacheStore(), "metadata"))
 
 		typedCache := appcache.NewTypedCache(rawCache, &appcache.JSONSerializerDeserializer[domainfile.Metadata]{})
 		c.metadataCacheCache = infrafile.NewMetadataCacheAdapter(typedCache)
@@ -229,11 +223,8 @@ func (c *Container) metadataCache() infrafile.MetadataCache {
 
 func (c *Container) metadataListingCache() infrafile.ListingCache {
 	c.metadataListingCacheOnce.Do(func() {
-		environmentService := c.EnvironmentService()
-		cachePath, _ := environmentService.CacheDir()
-
 		cacheSvc := c.Cache()
-		rawCache := cacheSvc.CreateCache(context.Background(), "metadatl", appcache.BoltCacheFactory(filepath.Join(cachePath, "metadatl.db"), "metadatl"))
+		rawCache := cacheSvc.CreateCache(context.Background(), "metadatl", appcache.SiblingBoltFactory(c.cacheStore(), "metadatl"))
 
 		typedCache := appcache.NewTypedCache(rawCache, &appcache.JSONSerializerDeserializer[infrafile.Listing]{})
 		c.metadataListingCacheCache = infrafile.NewMetadataListCacheAdapter(typedCache)
@@ -243,11 +234,8 @@ func (c *Container) metadataListingCache() infrafile.ListingCache {
 
 func (c *Container) contentsCache() infrafile.ContentsCache {
 	c.contentsCacheOnce.Do(func() {
-		environmentService := c.EnvironmentService()
-		cachePath, _ := environmentService.CacheDir()
-
 		cacheSvc := c.Cache()
-		rawCache := cacheSvc.CreateCache(context.Background(), "contents", appcache.BoltCacheFactory(filepath.Join(cachePath, "contents.db"), "contents"))
+		rawCache := cacheSvc.CreateCache(context.Background(), "contents", appcache.SiblingBoltFactory(c.cacheStore(), "contents"))
 
 		typedCache := appcache.NewTypedCache(rawCache, &appcache.JSONSerializerDeserializer[domainfile.Contents]{})
 		c.contentsCacheCache = infrafile.NewContentsCacheAdapter(typedCache)
@@ -255,12 +243,20 @@ func (c *Container) contentsCache() infrafile.ContentsCache {
 	return c.contentsCacheCache
 }
 
+func (c *Container) pathIDCache() infrafile.PathIDCache {
+	cacheSvc := c.Cache()
+	rawCache := cacheSvc.CreateCache(context.Background(), "path_id", appcache.SiblingBoltFactory(c.cacheStore(), "path_id"))
+
+	typedCache := appcache.NewTypedCache(rawCache, &appcache.JSONSerializerDeserializer[string]{})
+	return infrafile.NewPathIDCacheAdapter(typedCache)
+}
+
 func (c *Container) metadata() *infrafile.MetadataRepository {
 	c.metadataOnce.Do(func() {
 
 		client, _ := c.clientProvider().Client(context.Background())
 
-		c.metadataRepo = infrafile.NewMetadataRepository(client.RequestAdapter, c.metadataCache(), c.metadataListingCache())
+		c.metadataRepo = infrafile.NewMetadataRepository(client.RequestAdapter, c.metadataCache(), c.metadataListingCache(), c.pathIDCache())
 	})
 	return c.metadataRepo
 }
@@ -269,7 +265,7 @@ func (c *Container) contents() *infrafile.ContentsRepository {
 	c.contentsOnce.Do(func() {
 		client, _ := c.clientProvider().Client(context.Background())
 
-		c.contentsRepo = infrafile.NewContentsRepository(client.RequestAdapter, c.contentsCache(), c.metadataCache())
+		c.contentsRepo = infrafile.NewContentsRepository(client.RequestAdapter, c.contentsCache(), c.metadataCache(), c.pathIDCache())
 	})
 	return c.contentsRepo
 }
@@ -288,11 +284,8 @@ func (c *Container) FS() domainfs.Service {
 }
 
 func (c *Container) accountCache() domaincache.Cache[domainaccount.Account] {
-	environmentService := c.EnvironmentService()
-	cachePath, _ := environmentService.CacheDir()
-
 	cacheSvc := c.Cache()
-	rawCache := cacheSvc.CreateCache(context.Background(), "account", appcache.BoltCacheFactory(filepath.Join(cachePath, "account.db"), "account"))
+	rawCache := cacheSvc.CreateCache(context.Background(), "account", appcache.SiblingBoltFactory(c.cacheStore(), "account"))
 
 	return appcache.NewTypedCache(rawCache, &appcache.JSONSerializerDeserializer[domainaccount.Account]{})
 }
@@ -332,16 +325,6 @@ func (c *Container) Logger() domainlogger.LoggerService {
 	return c.loggerService
 }
 
-func (c *Container) profileCache() domaincache.Cache[domainprofile.Profile] {
-	environmentService := c.EnvironmentService()
-	cachePath, _ := environmentService.CacheDir()
-
-	cacheSvc := c.Cache()
-	rawCache := cacheSvc.CreateCache(context.Background(), "profile", appcache.BoltCacheFactory(filepath.Join(cachePath, "profile.db"), "profile"))
-
-	return appcache.NewTypedCache(rawCache, &appcache.JSONSerializerDeserializer[domainprofile.Profile]{})
-}
-
 // Profile implements [di.Container].
 func (c *Container) Profile() domainprofile.ProfileService {
 	c.profileOnce.Do(func() {
@@ -356,9 +339,8 @@ func (c *Container) Profile() domainprofile.ProfileService {
 		// Infra repository
 		repo := infraprofile.NewFSProfileService(profileBaseDir)
 
-		// App service (cache + repo)
+		// App service (repo only)
 		c.profileService = appprofile.New(
-			c.profileCache(),
 			logger,
 			repo,
 		)
