@@ -2,30 +2,25 @@ package config
 
 import (
 	"context"
-	"errors"
 	"strings"
 
-	"github.com/michaeldcanady/go-onedrive/internal2/domain/cache"
 	domainconfig "github.com/michaeldcanady/go-onedrive/internal2/domain/config"
-	"github.com/michaeldcanady/go-onedrive/internal2/infra/cache/core"
 	"github.com/michaeldcanady/go-onedrive/internal2/infra/common/logging"
 	"github.com/michaeldcanady/go-onedrive/internal2/infra/config"
 	"github.com/michaeldcanady/go-onedrive/internal2/interface/cli/util"
 )
 
 type ConfigService struct {
-	cacheService cache.CacheService
-	paths        map[string]string
-	loader       domainconfig.Loader
-	logger       logging.Logger
+	paths  map[string]string
+	loader domainconfig.Loader
+	logger logging.Logger
 }
 
-func New2(cache cache.CacheService, loader domainconfig.Loader, logger logging.Logger) *ConfigService {
+func New2(loader domainconfig.Loader, logger logging.Logger) *ConfigService {
 	return &ConfigService{
-		cacheService: cache,
-		paths:        make(map[string]string),
-		loader:       loader,
-		logger:       logger,
+		paths:  make(map[string]string),
+		loader: loader,
+		logger: logger,
 	}
 }
 
@@ -35,15 +30,9 @@ func New2(cache cache.CacheService, loader domainconfig.Loader, logger logging.L
 
 const (
 	eventConfigGetStart         = "config.get.start"
-	eventConfigGetCacheHit      = "config.get.cache.hit"
-	eventConfigGetCacheMiss     = "config.get.cache.miss"
-	eventConfigGetCacheEmpty    = "config.get.cache.empty"
 	eventConfigGetLoadStart     = "config.get.load.start"
 	eventConfigGetLoadSuccess   = "config.get.load.success"
 	eventConfigGetLoadFailure   = "config.get.load.failure"
-	eventConfigGetSaveStart     = "config.get.save.start"
-	eventConfigGetSaveSuccess   = "config.get.save.success"
-	eventConfigGetSaveFailure   = "config.get.save.failure"
 	eventConfigGetNotRegistered = "config.get.not_registered"
 	eventConfigGetPathMissing   = "config.get.path_missing"
 )
@@ -83,34 +72,6 @@ func (s *ConfigService) GetConfiguration(ctx context.Context, name string) (conf
 		logging.String("event", eventConfigGetStart),
 	)
 
-	cfg, err := s.cacheService.GetConfiguration(ctx, name)
-	if err == nil {
-		logger.Debug("configuration retrieved from cache",
-			logging.String("event", eventConfigGetCacheHit),
-		)
-
-		if cfg == (config.Configuration3{}) {
-			logger.Warn("cached configuration is empty; using default",
-				logging.String("event", eventConfigGetCacheEmpty),
-			)
-			return s.getDefaultConfig(), nil
-		}
-
-		return cfg, nil
-	}
-
-	if !errors.Is(err, core.ErrKeyNotFound) {
-		logger.Error("failed to retrieve configuration from cache",
-			logging.String("event", eventConfigGetCacheMiss),
-			logging.Error(err),
-		)
-		return config.Configuration3{}, err
-	}
-
-	logger.Info("configuration not found in cache",
-		logging.String("event", eventConfigGetCacheMiss),
-	)
-
 	path, ok := s.paths[name]
 	if !ok {
 		logger.Error("configuration name not registered",
@@ -142,22 +103,6 @@ func (s *ConfigService) GetConfiguration(ctx context.Context, name string) (conf
 
 	logger.Info("configuration loaded successfully",
 		logging.String("event", eventConfigGetLoadSuccess),
-	)
-
-	logger.Debug("saving configuration to cache",
-		logging.String("event", eventConfigGetSaveStart),
-	)
-
-	if err := s.cacheService.SetConfiguration(ctx, name, loadedCfg); err != nil {
-		logger.Error("failed to save configuration to cache",
-			logging.String("event", eventConfigGetSaveFailure),
-			logging.Error(err),
-		)
-		return config.Configuration3{}, err
-	}
-
-	logger.Info("configuration cached successfully",
-		logging.String("event", eventConfigGetSaveSuccess),
 	)
 
 	return loadedCfg, nil

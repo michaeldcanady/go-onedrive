@@ -35,6 +35,7 @@ func TestSetAndGetEntry_TableDriven(t *testing.T) {
 			value: "bar",
 			setupMock: func(keySer, valSer *mocks.SerializerMock[string], key, value string) {
 				keySer.On("Serialize", key).Return([]byte(key), nil).Maybe()
+				keySer.On("Deserialize", []byte(key)).Return(key, nil).Maybe()
 				valSer.On("Serialize", value).Return([]byte(value), nil)
 				valSer.On("Deserialize", []byte(value)).Return(value, nil)
 			},
@@ -45,6 +46,7 @@ func TestSetAndGetEntry_TableDriven(t *testing.T) {
 			value: "world",
 			setupMock: func(keySer, valSer *mocks.SerializerMock[string], key, value string) {
 				keySer.On("Serialize", key).Return([]byte(key), nil).Maybe()
+				keySer.On("Deserialize", []byte(key)).Return(key, nil).Maybe()
 				valSer.On("Serialize", value).Return([]byte(value), nil)
 				valSer.On("Deserialize", []byte(value)).Return(value, nil)
 			},
@@ -104,6 +106,7 @@ func TestWriteMultipleAndReadMultiple(t *testing.T) {
 			// Set up mocks for all writes
 			for k, v := range tt.pairs {
 				keySer.On("Serialize", k).Return([]byte(k), nil).Maybe()
+				keySer.On("Deserialize", []byte(k)).Return(k, nil).Maybe()
 				valSer.On("Serialize", v).Return([]byte(v), nil)
 			}
 
@@ -197,7 +200,9 @@ func TestPersistence_TableDriven(t *testing.T) {
 			value: "beta",
 			setup1: func(keySer, valSer *mocks.SerializerMock[string], key, value string) {
 				keySer.On("Serialize", key).Return([]byte(key), nil)
+				keySer.On("Deserialize", []byte(key)).Return(key, nil).Maybe()
 				valSer.On("Serialize", value).Return([]byte(value), nil)
+				valSer.On("Deserialize", []byte(value)).Return(value, nil).Maybe()
 			},
 			setup2: func(keySer, valSer *mocks.SerializerMock[string], key, value string) {
 				keySer.On("Serialize", key).Return([]byte(key), nil)

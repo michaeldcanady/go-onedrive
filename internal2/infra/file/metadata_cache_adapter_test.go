@@ -2,25 +2,15 @@ package file_test
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"testing"
 
-	domainfile "github.com/michaeldcanady/go-onedrive/internal2/domain/file"
-
-	"github.com/michaeldcanady/go-onedrive/internal2/infra/cache/abstractions"
-	"github.com/michaeldcanady/go-onedrive/internal2/infra/file"
+	"github.com/michaeldcanady/go-onedrive/internal2/domain/file"
+	infrafile "github.com/michaeldcanady/go-onedrive/internal2/infra/file"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
-
-func mustJSON(t *testing.T, v any) []byte {
-	t.Helper()
-	b, err := json.Marshal(v)
-	require.NoError(t, err)
-	return b
-}
 
 func TestMetadataCacheAdapter_Get(t *testing.T) {
 	t.Parallel()
@@ -29,35 +19,28 @@ func TestMetadataCacheAdapter_Get(t *testing.T) {
 		name           string
 		path           string
 		cacheGetErr    error
-		cacheGetBytes  []byte
+		cacheGetVal    any
 		expectOK       bool
-		expectMetadata *domainfile.Metadata
+		expectMetadata *file.Metadata
 	}{
 		{
-			name:          "hit: valid JSON",
-			path:          "/foo/meta.json",
-			cacheGetErr:   nil,
-			cacheGetBytes: mustJSON(t, domainfile.Metadata{Path: "/foo/meta.json", ETag: "etag123"}),
-			expectOK:      true,
-			expectMetadata: &domainfile.Metadata{
+			name:        "hit: valid metadata",
+			path:        "/foo/meta.json",
+			cacheGetErr: nil,
+			cacheGetVal: file.Metadata{Path: "/foo/meta.json", ETag: "etag123"},
+			expectOK:    true,
+			expectMetadata: &file.Metadata{
 				Path: "/foo/meta.json",
 				ETag: "etag123",
 			},
 		},
 		{
-			name:           "miss: invalid JSON",
+			name:           "miss: cache error",
 			path:           "/foo/bad.json",
-			cacheGetErr:    errors.New("invalid json"),
-			cacheGetBytes:  []byte("{not valid json"),
+			cacheGetErr:    errors.New("not found"),
+			cacheGetVal:    file.Metadata{},
 			expectOK:       false,
 			expectMetadata: nil,
-		},
-		{
-			name:           "hit: empty struct",
-			path:           "/foo/empty",
-			cacheGetBytes:  mustJSON(t, domainfile.Metadata{}),
-			expectOK:       true,
-			expectMetadata: &domainfile.Metadata{},
 		},
 	}
 
@@ -65,17 +48,13 @@ func TestMetadataCacheAdapter_Get(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			mockCache := new(MockCache2)
+			mockCache := new(MockCache2[file.Metadata])
 
 			mockCache.
-				On("Get", mock.Anything, mock.AnythingOfType("abstractions.Serializer2"), mock.AnythingOfType("abstractions.Deserializer2")).
-				Run(func(args mock.Arguments) {
-					unmarshalFn := args.Get(2).(abstractions.Deserializer2)
-					_ = unmarshalFn(tt.cacheGetBytes)
-				}).
-				Return(tt.cacheGetErr)
+				On("Get", mock.Anything, tt.path).
+				Return(tt.cacheGetVal.(file.Metadata), tt.cacheGetErr)
 
-			adapter := file.NewMetadataCacheAdapter(mockCache)
+			adapter := infrafile.NewMetadataCacheAdapter(mockCache)
 
 			got, ok := adapter.Get(context.Background(), tt.path)
 
@@ -100,13 +79,13 @@ func TestMetadataCacheAdapter_Put(t *testing.T) {
 
 	tests := []struct {
 		name      string
-		input     *domainfile.Metadata
+		input     *file.Metadata
 		setErr    error
 		expectErr bool
 	}{
 		{
 			name: "success: valid metadata",
-			input: &domainfile.Metadata{
+			input: &file.Metadata{
 				Path: "/foo/meta.json",
 				ETag: "etag123",
 			},
@@ -115,18 +94,12 @@ func TestMetadataCacheAdapter_Put(t *testing.T) {
 		},
 		{
 			name: "error: cache.Set fails",
-			input: &domainfile.Metadata{
+			input: &file.Metadata{
 				Path: "/foo/fail",
 				ETag: "etag",
 			},
 			setErr:    errors.New("cache write failed"),
 			expectErr: true,
-		},
-		{
-			name:      "success: empty metadata",
-			input:     &domainfile.Metadata{},
-			setErr:    nil,
-			expectErr: false,
 		},
 	}
 
@@ -134,17 +107,15 @@ func TestMetadataCacheAdapter_Put(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			mockCache := new(MockCache2)
+			mockCache := new(MockCache2[file.Metadata])
 
-			mockCache.
-				On("Set", mock.Anything, mock.AnythingOfType("abstractions.Serializer2"), mock.AnythingOfType("abstractions.Serializer2")).
-				Run(func(args mock.Arguments) {
-					marshalFn := args.Get(2).(abstractions.Serializer2)
-					_, _ = marshalFn()
-				}).
-				Return(tt.setErr)
+			if tt.input != nil {
+				mockCache.
+					On("Set", mock.Anything, tt.input.Path, *tt.input).
+					Return(tt.setErr)
+			}
 
-			adapter := file.NewMetadataCacheAdapter(mockCache)
+			adapter := infrafile.NewMetadataCacheAdapter(mockCache)
 
 			err := adapter.Put(context.Background(), tt.input.Path, tt.input)
 
@@ -180,25 +151,19 @@ func TestMetadataCacheAdapter_Invalidate(t *testing.T) {
 			deleteErr: errors.New("delete error"),
 			expectErr: true,
 		},
-		{
-			name:      "success: deleting non-existent key returns nil",
-			path:      "/foo/missing",
-			deleteErr: nil,
-			expectErr: false,
-		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			mockCache := new(MockCache2)
+			mockCache := new(MockCache2[file.Metadata])
 
 			mockCache.
-				On("Delete", mock.Anything, mock.AnythingOfType("abstractions.Serializer2")).
+				On("Delete", mock.Anything, tt.path).
 				Return(tt.deleteErr)
 
-			adapter := file.NewMetadataCacheAdapter(mockCache)
+			adapter := infrafile.NewMetadataCacheAdapter(mockCache)
 
 			err := adapter.Invalidate(context.Background(), tt.path)
 

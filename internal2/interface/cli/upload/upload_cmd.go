@@ -67,8 +67,8 @@ func (c *UploadCmd) Run(ctx context.Context, opts Options) error {
 	}
 
 	// 1. Resolve Destination
-	c.logger.Debug("resolving destination path", 
-		infralogging.String("src", opts.Source), 
+	c.logger.Debug("resolving destination path",
+		infralogging.String("src", opts.Source),
 		infralogging.String("dst", opts.Destination))
 	dst := c.resolveDestination(opts.Source, opts.Destination)
 	c.logger.Debug("resolved destination", infralogging.String("resolvedPath", dst))
@@ -77,20 +77,20 @@ func (c *UploadCmd) Run(ctx context.Context, opts Options) error {
 	c.logger.Debug("opening local source file", infralogging.String("path", opts.Source))
 	file, err := os.OpenFile(opts.Source, os.O_RDONLY, 0)
 	if err != nil {
-		c.logger.Error("failed to open local file", 
-			infralogging.String("path", opts.Source), 
+		c.logger.Error("failed to open local file",
+			infralogging.String("path", opts.Source),
 			infralogging.Error(err))
 		return util.NewCommandError(commandName, "failed to open local file", err)
 	}
 	defer file.Close()
 
 	// 3. Perform Upload
-	c.logger.Info("initiating file upload", 
+	c.logger.Info("initiating file upload",
 		infralogging.String("source", opts.Source),
 		infralogging.String("destination", dst))
 	_, err = fsSvc.WriteFile(ctx, dst, file, domainfs.WriteOptions{Overwrite: opts.Overwrite})
 	if err != nil {
-		c.logger.Error("upload failed", 
+		c.logger.Error("upload failed",
 			infralogging.String("destination", dst),
 			infralogging.Error(err))
 		return util.NewCommandError(commandName, "failed to upload file", err)

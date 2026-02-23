@@ -6,6 +6,7 @@ import (
 	"io"
 
 	"github.com/michaeldcanady/go-onedrive/internal2/domain/file"
+	"github.com/michaeldcanady/go-onedrive/internal2/infra/common/logging"
 	abstractions "github.com/microsoft/kiota-abstractions-go"
 	nethttplibrary "github.com/microsoft/kiota-http-go"
 	"github.com/microsoftgraph/msgraph-sdk-go/drives"
@@ -19,15 +20,19 @@ type ContentsRepository struct {
 	client        abstractions.RequestAdapter
 	contentCache  ContentsCache
 	metadataCache MetadataCache
+	pathIDCache   PathIDCache
+	logger        logging.Logger
 }
 
 // NewContentsRepository initializes a new ContentsRepository with the provided
 // request adapter and cache implementations.
-func NewContentsRepository(client abstractions.RequestAdapter, contentCache ContentsCache, metadataCache MetadataCache) *ContentsRepository {
+func NewContentsRepository(client abstractions.RequestAdapter, contentCache ContentsCache, metadataCache MetadataCache, pathIDCache PathIDCache, logger logging.Logger) *ContentsRepository {
 	return &ContentsRepository{
 		client:        client,
 		contentCache:  contentCache,
 		metadataCache: metadataCache,
+		pathIDCache:   pathIDCache,
+		logger:        logger,
 	}
 }
 
@@ -50,6 +55,9 @@ func (r *ContentsRepository) Download(
 		headerOpt *nethttplibrary.HeadersInspectionOptions
 	)
 
+	path = normalizePath(path)
+	r.logger.Debug("Download: starting retrieval", logging.String("path", path), logging.Bool("noCache", opts.NoCache))
+
 	if !opts.NoStore {
 		headerOpt = nethttplibrary.NewHeadersInspectionOptions()
 		headerOpt.InspectResponseHeaders = true
@@ -58,23 +66,38 @@ func (r *ContentsRepository) Download(
 
 	// Try cache
 	if !opts.NoCache {
-		if entry, ok := r.contentCache.Get(ctx, path); ok {
+		// Use ID if we have it
+		cacheKey := path
+		if id, ok := r.pathIDCache.Get(ctx, path); ok {
+			r.logger.Debug("Download: path-to-ID hit", logging.String("path", path), logging.String("id", id))
+			cacheKey = id
+		}
+
+		if entry, ok := r.contentCache.Get(ctx, cacheKey); ok {
+			r.logger.Debug("Download: contents cache hit", logging.String("key", cacheKey))
 			cached = io.NopCloser(bytes.NewReader(entry.Data))
 			if entry.CTag != "" {
 				config.Headers.Add("If-None-Match", entry.CTag)
 			}
+		} else {
+			r.logger.Debug("Download: contents cache miss", logging.String("key", cacheKey))
 		}
 	}
 
-	resp, err := r.relativePathContentsBuilder(r.client, driveID, normalizePath(path)).Get(ctx, &config)
+	r.logger.Debug("Download: requesting from OneDrive", logging.String("path", path))
+	resp, err := r.relativePathContentsBuilder(r.client, driveID, path).Get(ctx, &config)
 	if err := mapGraphError2(err); err != nil {
+		r.logger.Error("Download: request failed", logging.String("path", path), logging.Error(err))
 		return nil, err
 	}
 
 	// 304 Not Modified
 	if resp == nil {
+		r.logger.Info("Download: 304 Not Modified", logging.String("path", path))
 		return cached, nil
 	}
+
+	r.logger.Info("Download: received fresh content", logging.String("path", path), logging.Int("size", len(resp)))
 
 	// Cache new content
 	if !opts.NoStore && headerOpt != nil {
@@ -90,10 +113,19 @@ func (r *ContentsRepository) Download(
 		}
 
 		if len(ctag) > 0 {
-			if err := r.contentCache.Put(ctx, path, &file.Contents{
+			// Prefer ID for cache key if we have it
+			cacheKey := path
+			if id, ok := r.pathIDCache.Get(ctx, path); ok {
+				cacheKey = id
+			}
+
+			r.logger.Debug("Download: updating contents cache", logging.String("key", cacheKey))
+			// update contents cache
+			if err := r.contentCache.Put(ctx, cacheKey, &file.Contents{
 				CTag: ctag,
 				Data: resp,
 			}); err != nil {
+				r.logger.Warn("Download: failed to update cache", logging.Error(err))
 				return nil, err
 			}
 		}
@@ -113,9 +145,18 @@ func (r *ContentsRepository) Upload(
 		Headers: abstractions.NewRequestHeaders(),
 	}
 
+	path = normalizePath(path)
+	r.logger.Info("Upload: starting upload", logging.String("path", path))
+
 	if !opts.Force {
-		if entry, ok := r.contentCache.Get(ctx, path); ok {
+		cacheKey := path
+		if id, ok := r.pathIDCache.Get(ctx, path); ok {
+			cacheKey = id
+		}
+
+		if entry, ok := r.contentCache.Get(ctx, cacheKey); ok {
 			if entry.CTag != "" && len(entry.Data) > 0 {
+				r.logger.Debug("Upload: adding If-Match header", logging.String("ctag", entry.CTag))
 				config.Headers.Add("If-Match", entry.CTag)
 			}
 		}
@@ -123,29 +164,41 @@ func (r *ContentsRepository) Upload(
 
 	data, err := io.ReadAll(body)
 	if err != nil {
+		r.logger.Error("Upload: failed to read upload body", logging.Error(err))
 		return nil, err
 	}
 
 	// 3. Upload
-	item, err := r.relativePathContentsBuilder(r.client, driveID, normalizePath(path)).Put(ctx, data, config)
+	r.logger.Debug("Upload: sending Put request to OneDrive", logging.String("path", path))
+	item, err := r.relativePathContentsBuilder(r.client, driveID, path).Put(ctx, data, config)
 	if err := mapGraphError2(err); err != nil {
+		r.logger.Error("Upload: request failed", logging.String("path", path), logging.Error(err))
 		return nil, err
 	}
 
 	metadata := mapItemToMetadata(item)
+	r.logger.Info("Upload: upload successful", logging.String("path", path), logging.String("id", metadata.ID))
 
 	if !opts.NoStore {
+		r.logger.Debug("Upload: updating caches", logging.String("id", metadata.ID))
 		// update contents cache
-		if err := r.contentCache.Put(ctx, path, &file.Contents{
+		if err := r.contentCache.Put(ctx, metadata.ID, &file.Contents{
 			CTag: *item.GetCTag(),
 			Data: data,
 		}); err != nil {
+			r.logger.Warn("Upload: failed to update contents cache", logging.Error(err))
 			return nil, err
 		}
 
 		// update metadata cache
-		if err := r.metadataCache.Put(ctx, path, metadata); err != nil {
+		if err := r.metadataCache.Put(ctx, metadata.ID, metadata); err != nil {
+			r.logger.Warn("Upload: failed to update metadata cache", logging.Error(err))
 			return nil, err
+		}
+
+		// update path-to-id mapping
+		if err := r.pathIDCache.Put(ctx, path, metadata.ID); err != nil {
+			r.logger.Warn("Upload: failed to update path-to-ID cache", logging.String("path", path), logging.Error(err))
 		}
 	}
 

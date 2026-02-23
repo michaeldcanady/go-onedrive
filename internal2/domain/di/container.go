@@ -16,8 +16,6 @@ import (
 
 type Container interface {
 	Cache() domaincache.Service2
-	// DEPRECATED: use [Cache] instead.
-	CacheService() domaincache.CacheService
 	FS() domainfs.Service
 	EnvironmentService() domainenvironment.EnvironmentService
 	Logger() domainlogger.LoggerService
