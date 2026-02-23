@@ -129,7 +129,7 @@ func TestContentsRepository_Upload(t *testing.T) {
 
 		// 3. Mock Cache Puts
 		mockContentCache.On("Put", mock.Anything, path, mock.Anything).Return(nil)
-		mockMetadataCache.On("Put", mock.Anything, path, mock.Anything).Return(nil)
+		mockMetadataCache.On("Put", mock.Anything, mock.Anything).Return(nil)
 
 		body := bytes.NewReader(contentData)
 		meta, err := repo.Upload(context.Background(), driveID, path, body, file.UploadOptions{})

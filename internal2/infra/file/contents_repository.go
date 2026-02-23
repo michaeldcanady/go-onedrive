@@ -144,7 +144,7 @@ func (r *ContentsRepository) Upload(
 		}
 
 		// update metadata cache
-		if err := r.metadataCache.Put(ctx, path, metadata); err != nil {
+		if err := r.metadataCache.Put(ctx, metadata); err != nil {
 			return nil, err
 		}
 	}
