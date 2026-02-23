@@ -64,13 +64,21 @@ func (c *LsCmd) Run(ctx context.Context, opts Options) error {
 		infralogging.Bool("recursive", opts.Recursive),
 	)
 
+	c.logger.Debug("resolving filesystem service")
 	fsSvc := c.container.FS()
 	if fsSvc == nil {
+		c.logger.Error("filesystem service is nil")
 		return util.NewCommandErrorWithNameWithMessage(commandName, "filesystem service is nil")
 	}
 
+	c.logger.Debug("fetching items from OneDrive", 
+		infralogging.String("path", opts.Path),
+		infralogging.Bool("recursive", opts.Recursive))
 	items, err := c.fetchItems(ctx, fsSvc, opts.Path, opts.Recursive)
 	if err != nil {
+		c.logger.Error("failed to fetch items", 
+			infralogging.String("path", opts.Path),
+			infralogging.Error(err))
 		return util.NewCommandErrorWithNameWithError(commandName, err)
 	}
 

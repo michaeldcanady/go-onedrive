@@ -51,21 +51,29 @@ func (c *CatCmd) Run(ctx context.Context, opts Options) error {
 
 	c.logger.Info("starting cat command", infralogging.String("path", opts.Path))
 
+	c.logger.Debug("resolving filesystem service")
 	fsSvc := c.container.FS()
 	if fsSvc == nil {
+		c.logger.Error("filesystem service is nil")
 		return util.NewCommandErrorWithNameWithMessage(commandName, "filesystem service is nil")
 	}
 
+	c.logger.Debug("requesting file content from OneDrive", infralogging.String("path", opts.Path))
 	reader, err := fsSvc.ReadFile(ctx, opts.Path, fs.ReadOptions{})
 	if err != nil {
-		c.logger.Error("failed to read file", infralogging.Error(err))
+		c.logger.Error("failed to read file from OneDrive", 
+			infralogging.String("path", opts.Path),
+			infralogging.Error(err))
 		return util.NewCommandErrorWithNameWithMessage(commandName, "unable to read path contents")
 	}
 	defer reader.Close()
 
+	c.logger.Debug("streaming file content to stdout", infralogging.String("path", opts.Path))
 	_, err = io.Copy(opts.Stdout, reader)
 	if err != nil {
-		c.logger.Error("failed to write file contents", infralogging.Error(err))
+		c.logger.Error("failed to write file content to output", 
+			infralogging.String("path", opts.Path),
+			infralogging.Error(err))
 		return util.NewCommandErrorWithNameWithMessage(commandName, "failed to write file contents")
 	}
 

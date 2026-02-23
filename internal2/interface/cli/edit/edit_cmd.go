@@ -60,14 +60,20 @@ func (c *EditCmd) Run(ctx context.Context, opts Options) error {
 
 	c.logger.Info("starting edit command", infralogging.String("path", opts.Path))
 
+	c.logger.Debug("resolving filesystem service")
 	fsSvc := c.container.FS()
 	if fsSvc == nil {
+		c.logger.Error("filesystem service is nil")
 		return util.NewCommandErrorWithNameWithMessage(commandName, "filesystem service is nil")
 	}
 
 	// 1. Read File
+	c.logger.Debug("reading file from OneDrive", infralogging.String("path", opts.Path))
 	reader, err := fsSvc.ReadFile(ctx, opts.Path, domainfs.ReadOptions{})
 	if err != nil {
+		c.logger.Error("failed to read file from OneDrive", 
+			infralogging.String("path", opts.Path),
+			infralogging.Error(err))
 		return util.NewCommandError(commandName, "failed to read file from OneDrive", err)
 	}
 	defer reader.Close()
@@ -78,36 +84,59 @@ func (c *EditCmd) Run(ctx context.Context, opts Options) error {
 	ext := filepath.Ext(opts.Path)
 
 	// 3. Launch Editor
+	c.logger.Debug("resolving editor service")
 	editorSvc := NewEditorService(c.container.EnvironmentService(), c.logger).
 		WithIO(opts.Stdin, opts.Stdout, opts.Stderr)
 
+	c.logger.Info("launching local editor", 
+		infralogging.String("file", opts.Path),
+		infralogging.String("extension", ext))
 	editedBytes, tmpPath, err := editorSvc.LaunchTempFile(fmt.Sprintf("%s-edit-", name), ext, io.TeeReader(reader, origHash))
-	defer os.Remove(tmpPath)
+	if tmpPath != "" {
+		defer func() {
+			c.logger.Debug("removing temporary file", infralogging.String("path", tmpPath))
+			os.Remove(tmpPath)
+		}()
+	}
 	if err != nil {
+		c.logger.Error("editor launch or execution failed", infralogging.Error(err))
 		return util.NewCommandErrorWithNameWithError(commandName, err)
 	}
 
 	// 4. Compare Hashes
+	c.logger.Debug("calculating hashes for change detection")
 	origHashSum := hex.EncodeToString(origHash.Sum(nil))
 	editedHash := sha256.Sum256(editedBytes)
+	editedHashSum := hex.EncodeToString(editedHash[:])
 
-	if origHashSum == hex.EncodeToString(editedHash[:]) {
+	c.logger.Debug("hash comparison", 
+		infralogging.String("original", origHashSum),
+		infralogging.String("edited", editedHashSum))
+
+	if origHashSum == editedHashSum {
 		c.logger.Info("no changes detected, skipping upload")
 		fmt.Fprintln(opts.Stdout, "No changes detected.")
 		return nil
 	}
 
 	// 5. Upload Changes
-	c.logger.Info("changes detected, uploading updated file")
+	c.logger.Info("changes detected, uploading updated file", 
+		infralogging.String("path", opts.Path),
+		infralogging.Bool("force", opts.Force))
 	_, err = fsSvc.WriteFile(ctx, opts.Path, bytes.NewReader(editedBytes), domainfs.WriteOptions{Overwrite: opts.Force})
 	if err != nil {
 		if err == domainfs.ErrPrecondition {
+			c.logger.Warn("upload rejected: file modified in cloud", infralogging.String("path", opts.Path))
 			return util.NewCommandErrorWithNameWithMessage(commandName, "failed to upload: the file has been modified in the cloud. Use --force to overwrite anyway.")
 		}
+		c.logger.Error("failed to upload updated file", 
+			infralogging.String("path", opts.Path),
+			infralogging.Error(err))
 		return util.NewCommandError(commandName, "failed to upload updated file", err)
 	}
 
 	c.logger.Info("file updated successfully",
+		infralogging.String("path", opts.Path),
 		infralogging.Duration("duration", time.Since(start)),
 	)
 	fmt.Fprintf(opts.Stdout, "File %q updated successfully.\n", opts.Path)
