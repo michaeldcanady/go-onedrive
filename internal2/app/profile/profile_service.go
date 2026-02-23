@@ -14,14 +14,14 @@ import (
 var _ domainprofile.ProfileService = (*ProfileService)(nil)
 
 type ProfileService struct {
-	logger   logging.Logger
-	repo     domainprofile.Repository
+	logger logging.Logger
+	repo   domainprofile.Repository
 }
 
 func New(logger logging.Logger, repo domainprofile.Repository) *ProfileService {
 	return &ProfileService{
-		logger:   logger,
-		repo:     repo,
+		logger: logger,
+		repo:   repo,
 	}
 }
 
@@ -42,10 +42,9 @@ const (
 	eventProfileListSuccess = "profile.list.success"
 	eventProfileListFailure = "profile.list.failure"
 
-	eventProfileGetStart      = "profile.get.start"
-	eventProfileGetRepoLoad   = "profile.get.repo.load"
-	eventProfileGetSuccess    = "profile.get.success"
-	eventProfileGetFailure    = "profile.get.failure"
+	eventProfileGetRepoLoad = "profile.get.repo.load"
+	eventProfileGetSuccess  = "profile.get.success"
+	eventProfileGetFailure  = "profile.get.failure"
 )
 
 func (s *ProfileService) Create(ctx context.Context, name string) (domainprofile.Profile, error) {
