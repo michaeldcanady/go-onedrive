@@ -158,7 +158,7 @@ func (r *MetadataRepository) ListByPath(ctx context.Context, driveID, path strin
 		Headers: abstractions.NewRequestHeaders(),
 	}
 
-	if !opts.Force && parent != nil && parent.ETag != "" {
+	if !opts.Force && parent.ETag != "" {
 		config.Headers.Add("If-None-Match", parent.ETag)
 	}
 
