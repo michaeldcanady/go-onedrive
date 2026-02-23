@@ -109,6 +109,10 @@ func (m *MockEnvironmentService) Editor() (string, error) {
 	args := m.Called()
 	return args.String(0), args.Error(1)
 }
+func (m *MockEnvironmentService) Visual() (string, error) {
+	args := m.Called()
+	return args.String(0), args.Error(1)
+}
 
 type MockLogProvider struct {
 	mock.Mock
@@ -138,6 +142,20 @@ func (m *MockLogger) With(fields ...infralogging.Field) infralogging.Logger {
 }
 func (m *MockLogger) WithContext(ctx context.Context) infralogging.Logger {
 	return m
+}
+
+type MockEditor struct {
+	mock.Mock
+}
+
+func (m *MockEditor) Launch(path string) error {
+	args := m.Called(path)
+	return args.Error(0)
+}
+
+func (m *MockEditor) LaunchTempFile(prefix, suffix string, reader io.Reader) ([]byte, string, error) {
+	args := m.Called(prefix, suffix, reader)
+	return args.Get(0).([]byte), args.String(1), args.Error(2)
 }
 
 // --- Tests ---
@@ -177,6 +195,7 @@ func TestEditCmd_Run_NoChanges(t *testing.T) {
 		Return(io.NopCloser(strings.NewReader(content)), nil)
 
 	// Mock Env for Editor: 'true' does nothing and succeeds
+	mockEnv.On("Visual").Return("", nil)
 	mockEnv.On("Editor").Return("true", nil)
 	mockEnv.On("Shell").Return("", nil)
 	mockEnv.On("IsWindows").Return(false)
@@ -215,6 +234,7 @@ func TestEditCmd_Run_WithChanges(t *testing.T) {
 		Return(io.NopCloser(strings.NewReader(content)), nil)
 
 	// Mock Env for Editor: replaces 'original' with 'new' in the file
+	mockEnv.On("Visual").Return("", nil)
 	mockEnv.On("Editor").Return("sed -i 's/original/new/'", nil)
 	mockEnv.On("Shell").Return("", nil)
 	mockEnv.On("IsWindows").Return(false)
@@ -233,5 +253,40 @@ func TestEditCmd_Run_WithChanges(t *testing.T) {
 
 	assert.NoError(t, err)
 	assert.Contains(t, buf.String(), "updated successfully")
+	mockFS.AssertExpectations(t)
+}
+
+func TestEditCmd_Run_WithMockEditor(t *testing.T) {
+	mockContainer := new(MockContainer)
+	mockFS := new(MockFSService)
+	mockLogger := new(MockLogger)
+	mockEditor := new(MockEditor)
+
+	mockContainer.On("FS").Return(mockFS)
+	mockLogger.On("Info", mock.Anything, mock.Anything).Return()
+	mockLogger.On("Debug", mock.Anything, mock.Anything).Return()
+
+	// Mock ReadFile
+	content := "original"
+	mockFS.On("ReadFile", mock.Anything, "/file.txt", mock.Anything).
+		Return(io.NopCloser(strings.NewReader(content)), nil)
+
+	// Mock Editor: returns modified content
+	mockEditor.On("LaunchTempFile", mock.Anything, ".txt", mock.Anything).
+		Return([]byte("modified"), "temp-path", nil)
+
+	// Mock WriteFile: should be called because content changed
+	mockFS.On("WriteFile", mock.Anything, "/file.txt", mock.Anything, mock.Anything).
+		Return(domainfs.Item{Name: "file.txt"}, nil)
+
+	buf := new(bytes.Buffer)
+	opts := Options{Path: "/file.txt", Stdout: buf}
+
+	editCmd := NewEditCmd(mockContainer).WithLogger(mockLogger).WithEditor(mockEditor)
+	err := editCmd.Run(context.Background(), opts)
+
+	assert.NoError(t, err)
+	assert.Contains(t, buf.String(), "updated successfully")
+	mockEditor.AssertExpectations(t)
 	mockFS.AssertExpectations(t)
 }

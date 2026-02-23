@@ -195,3 +195,12 @@ func (s *EnvironmentService) Editor() (string, error) {
 
 	return os.Getenv("EDITOR"), nil
 }
+
+func (s *EnvironmentService) Visual() (string, error) {
+	// allow for ODC specific visual editor
+	if visual := os.Getenv(environment.EnvVisual); strings.TrimSpace(visual) != "" {
+		return visual, nil
+	}
+
+	return os.Getenv("VISUAL"), nil
+}

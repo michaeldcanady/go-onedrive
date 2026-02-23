@@ -16,6 +16,12 @@ const (
 	defaultWindowsShell = "cmd"
 )
 
+// Editor defines the interface for launching an external editor.
+type Editor interface {
+	Launch(path string) error
+	LaunchTempFile(prefix, suffix string, reader io.Reader) ([]byte, string, error)
+}
+
 // EditorService provides functionality to launch an external editor.
 type EditorService struct {
 	logger logging.Logger
@@ -54,7 +60,7 @@ func (s *EditorService) getEditor() (string, error) {
 	}
 
 	// 1. Try VISUAL (standard Unix preference for full-screen editors)
-	if visual := os.Getenv("VISUAL"); strings.TrimSpace(visual) != "" {
+	if visual, err := s.envSvc.Visual(); err == nil && strings.TrimSpace(visual) != "" {
 		return visual, nil
 	}
 
