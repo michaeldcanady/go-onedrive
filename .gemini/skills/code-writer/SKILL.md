@@ -1,7 +1,6 @@
 ---
 name: code-writer
-description:
-  Always use this skill when the task involves writing, editing, refactoring, or reviewing Go source code in the odc repository, including files in `cmd/`, `internal/`, `pkg/`, or any `.go`, `.json`, `.yaml`, or configuration files that affect runtime behavior.
+description: Always use this skill when the task involves writing, editing, refactoring, or reviewing Go source code in the odc repository, including files in `cmd/`, `internal2/`, `pkg/`, or any `.go`, `.json`, `.yaml`, or configuration files that affect runtime behavior.
 ---
 
 # `code-writer` skill instructions
@@ -61,7 +60,7 @@ Adhere to these principles when writing or modifying Go code.
 - **Imports:** Group imports into stdlib, external, and internal sections.
 - **Comments:** Use comments to explain *why*, not *what*. Keep GoDoc concise
   and accurate.
-- **Module layout:** Follow odc’s established structure (`cmd/`, `internal/`,
+- **Module layout:** Follow odc’s established structure (`cmd/`, `internal2/`,
   `pkg/`, `testdata/`, etc.).
 
 ---
