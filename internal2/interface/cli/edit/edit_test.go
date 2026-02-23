@@ -20,6 +20,7 @@ import (
 	domainprofile "github.com/michaeldcanady/go-onedrive/internal2/domain/profile"
 	"github.com/michaeldcanady/go-onedrive/internal2/domain/state"
 	infralogging "github.com/michaeldcanady/go-onedrive/internal2/infra/common/logging"
+	infrafile "github.com/michaeldcanady/go-onedrive/internal2/infra/file"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -201,6 +202,9 @@ func TestEditCmd_Run_NoChanges(t *testing.T) {
 	mockLogger.On("Info", mock.Anything, mock.Anything).Return()
 	mockLogger.On("Debug", mock.Anything, mock.Anything).Return()
 
+	// Mock Get
+	mockFS.On("Get", mock.Anything, "/file.txt").Return(domainfs.Item{ETag: "tag1"}, nil)
+
 	// Mock ReadFile
 	content := "original content"
 	mockFS.On("ReadFile", mock.Anything, "/file.txt", mock.Anything).
@@ -238,6 +242,9 @@ func TestEditCmd_Run_WithChanges(t *testing.T) {
 	mockLogger.On("Info", mock.Anything, mock.Anything).Return()
 	mockLogger.On("Debug", mock.Anything, mock.Anything).Return()
 
+	// Mock Get
+	mockFS.On("Get", mock.Anything, "/file.txt").Return(domainfs.Item{ETag: "tag1"}, nil)
+
 	// Mock ReadFile
 	content := "original content"
 	mockFS.On("ReadFile", mock.Anything, "/file.txt", mock.Anything).
@@ -273,6 +280,9 @@ func TestEditCmd_Run_WithMockEditor(t *testing.T) {
 	mockLogger.On("Info", mock.Anything, mock.Anything).Return()
 	mockLogger.On("Debug", mock.Anything, mock.Anything).Return()
 
+	// Mock Get
+	mockFS.On("Get", mock.Anything, "/file.txt").Return(domainfs.Item{ETag: "tag1"}, nil)
+
 	// Mock ReadFile
 	content := "original"
 	mockFS.On("ReadFile", mock.Anything, "/file.txt", mock.Anything).
@@ -296,5 +306,45 @@ func TestEditCmd_Run_WithMockEditor(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Contains(t, buf.String(), "updated successfully")
 	mockEditor.AssertExpectations(t)
+	mockFS.AssertExpectations(t)
+}
+
+func TestEditCmd_Run_ETagMismatch(t *testing.T) {
+	mockContainer := new(MockContainer)
+	mockFS := new(MockFSService)
+	mockLogger := new(MockLogger)
+	mockEditor := new(MockEditor)
+
+	mockContainer.On("FS").Return(mockFS)
+	mockLogger.On("Info", mock.Anything, mock.Anything).Return()
+	mockLogger.On("Debug", mock.Anything, mock.Anything).Return()
+
+	// Mock Get
+	mockFS.On("Get", mock.Anything, "/file.txt").Return(domainfs.Item{ETag: "tag1"}, nil)
+
+	// Mock ReadFile
+	content := "original"
+	mockFS.On("ReadFile", mock.Anything, "/file.txt", mock.Anything).
+		Return(io.NopCloser(strings.NewReader(content)), nil)
+
+	// Mock Editor: returns modified content
+	mockEditor.On("WithIO", mock.Anything, mock.Anything, mock.Anything).Return(mockEditor)
+	mockEditor.On("LaunchTempFile", mock.Anything, ".txt", mock.Anything).
+		Return([]byte("modified"), "temp-path", nil)
+
+	// Mock WriteFile: returns ETag mismatch error
+	mockFS.On("WriteFile", mock.Anything, "/file.txt", mock.Anything, domainfs.WriteOptions{
+		Overwrite: false,
+		IfMatch:   "tag1",
+	}).Return(domainfs.Item{}, infrafile.ErrPrecondition)
+
+	buf := new(bytes.Buffer)
+	opts := Options{Path: "/file.txt", Stdout: buf, Stderr: io.Discard}
+
+	editCmd := NewEditCmd(mockContainer).WithLogger(mockLogger).WithEditor(mockEditor)
+	err := editCmd.Run(context.Background(), opts)
+
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "the file has been modified in the cloud")
 	mockFS.AssertExpectations(t)
 }

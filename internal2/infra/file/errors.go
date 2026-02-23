@@ -67,7 +67,7 @@ func mapGraphError(err error) error {
 			case "conflict":
 				return &DomainError{Kind: ErrConflict, Err: err}
 
-			case "preconditionFailed":
+			case "preconditionFailed", "notAllowed":
 				return &DomainError{Kind: ErrPrecondition, Err: err}
 			}
 		}
@@ -129,7 +129,7 @@ func mapGraphError2(err error) error {
 			case "conflict":
 				return ErrConflict
 
-			case "preconditionFailed":
+			case "preconditionFailed", "notAllowed":
 				return ErrPrecondition
 			}
 		}

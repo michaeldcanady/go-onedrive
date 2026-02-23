@@ -148,7 +148,10 @@ func (r *ContentsRepository) Upload(
 	path = normalizePath(path)
 	r.logger.Info("Upload: starting upload", logging.String("path", path))
 
-	if !opts.Force {
+	if opts.IfMatch != "" {
+		r.logger.Debug("Upload: adding If-Match header from options", logging.String("etag", opts.IfMatch))
+		config.Headers.Add("If-Match", opts.IfMatch)
+	} else if !opts.Force {
 		cacheKey := path
 		if id, ok := r.pathIDCache.Get(ctx, path); ok {
 			cacheKey = id
@@ -156,7 +159,7 @@ func (r *ContentsRepository) Upload(
 
 		if entry, ok := r.contentCache.Get(ctx, cacheKey); ok {
 			if entry.CTag != "" && len(entry.Data) > 0 {
-				r.logger.Debug("Upload: adding If-Match header", logging.String("ctag", entry.CTag))
+				r.logger.Debug("Upload: adding If-Match header from cache", logging.String("ctag", entry.CTag))
 				config.Headers.Add("If-Match", entry.CTag)
 			}
 		}

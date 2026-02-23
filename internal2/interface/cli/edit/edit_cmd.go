@@ -5,6 +5,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"hash"
 	"io"
@@ -16,6 +17,7 @@ import (
 	domaineditor "github.com/michaeldcanady/go-onedrive/internal2/domain/editor"
 	domainfs "github.com/michaeldcanady/go-onedrive/internal2/domain/fs"
 	infralogging "github.com/michaeldcanady/go-onedrive/internal2/infra/common/logging"
+	infrafile "github.com/michaeldcanady/go-onedrive/internal2/infra/file"
 	"github.com/michaeldcanady/go-onedrive/internal2/interface/cli/util"
 )
 
@@ -25,6 +27,7 @@ type EditCmd struct {
 	container di.Container
 	logger    infralogging.Logger
 	editor    domaineditor.Service
+	etag      string
 }
 
 // NewEditCmd creates a new EditCmd instance with the provided dependency container.
@@ -57,11 +60,12 @@ func (c *EditCmd) Run(ctx context.Context, opts Options) error {
 	c.logger.Info("starting edit command", infralogging.String("path", opts.Path))
 
 	// 1. Download
-	reader, err := c.downloadFile(ctx, opts.Path)
+	reader, etag, err := c.downloadFile(ctx, opts.Path)
 	if err != nil {
 		return err
 	}
 	defer reader.Close()
+	c.etag = etag
 
 	// 2. Edit
 	origHash := sha256.New()
@@ -69,9 +73,15 @@ func (c *EditCmd) Run(ctx context.Context, opts Options) error {
 	ext := filepath.Ext(opts.Path)
 
 	editedBytes, tmpPath, err := c.launchEditor(opts, name, ext, io.TeeReader(reader, origHash))
-	if tmpPath != "" {
-		defer os.Remove(tmpPath)
-	}
+	// Always remove the temp file if there's no error, but keep it if upload fails later
+	shouldRemoveTemp := true
+	defer func() {
+		if shouldRemoveTemp && tmpPath != "" {
+			c.logger.Debug("removing temporary file", infralogging.String("path", tmpPath))
+			os.Remove(tmpPath)
+		}
+	}()
+
 	if err != nil {
 		return err
 	}
@@ -79,6 +89,8 @@ func (c *EditCmd) Run(ctx context.Context, opts Options) error {
 	// 3. Compare and Upload
 	if c.hasChanges(origHash, editedBytes) {
 		if err := c.uploadChanges(ctx, opts.Path, editedBytes, opts.Force); err != nil {
+			shouldRemoveTemp = false
+			fmt.Fprintf(opts.Stderr, "\nUpload failed. Your changes are saved locally at: %s\n", tmpPath)
 			return err
 		}
 		c.logger.Info("file updated successfully",
@@ -111,10 +123,19 @@ func (c *EditCmd) ensureDependencies(ctx context.Context) error {
 	return nil
 }
 
-func (c *EditCmd) downloadFile(ctx context.Context, path string) (io.ReadCloser, error) {
+func (c *EditCmd) downloadFile(ctx context.Context, path string) (io.ReadCloser, string, error) {
 	fsSvc := c.container.FS()
 	if fsSvc == nil {
-		return nil, util.NewCommandErrorWithNameWithMessage(commandName, "filesystem service is nil")
+		return nil, "", util.NewCommandErrorWithNameWithMessage(commandName, "filesystem service is nil")
+	}
+
+	c.logger.Debug("retrieving file metadata", infralogging.String("path", path))
+	item, err := fsSvc.Get(ctx, path)
+	if err != nil {
+		c.logger.Error("failed to get file metadata",
+			infralogging.String("path", path),
+			infralogging.Error(err))
+		return nil, "", util.NewCommandError(commandName, "failed to get file metadata", err)
 	}
 
 	c.logger.Debug("reading file from OneDrive", infralogging.String("path", path))
@@ -123,9 +144,9 @@ func (c *EditCmd) downloadFile(ctx context.Context, path string) (io.ReadCloser,
 		c.logger.Error("failed to read file from OneDrive",
 			infralogging.String("path", path),
 			infralogging.Error(err))
-		return nil, util.NewCommandError(commandName, "failed to read file from OneDrive", err)
+		return nil, "", util.NewCommandError(commandName, "failed to read file from OneDrive", err)
 	}
-	return reader, nil
+	return reader, item.ETag, nil
 }
 
 func (c *EditCmd) launchEditor(opts Options, name, ext string, reader io.Reader) ([]byte, string, error) {
@@ -157,12 +178,26 @@ func (c *EditCmd) hasChanges(origHash hash.Hash, editedBytes []byte) bool {
 
 func (c *EditCmd) uploadChanges(ctx context.Context, path string, content []byte, force bool) error {
 	fsSvc := c.container.FS()
+
+	ifMatch := c.etag
+	if force {
+		ifMatch = ""
+	}
+
 	c.logger.Info("uploading updated file",
 		infralogging.String("path", path),
-		infralogging.Bool("force", force))
+		infralogging.Bool("force", force),
+		infralogging.String("ifMatch", ifMatch))
 
-	_, err := fsSvc.WriteFile(ctx, path, bytes.NewReader(content), domainfs.WriteOptions{Overwrite: force})
+	_, err := fsSvc.WriteFile(ctx, path, bytes.NewReader(content), domainfs.WriteOptions{
+		Overwrite: force,
+		IfMatch:   ifMatch,
+	})
 	if err != nil {
+		if errors.Is(err, infrafile.ErrPrecondition) {
+			return util.NewCommandErrorWithNameWithMessage(commandName,
+				"the file has been modified in the cloud; use --force to overwrite")
+		}
 		c.logger.Error("failed to upload updated file",
 			infralogging.String("path", path),
 			infralogging.Error(err))

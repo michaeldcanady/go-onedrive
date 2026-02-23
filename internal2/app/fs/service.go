@@ -176,7 +176,8 @@ func (s *Service2) WriteFile(ctx context.Context, path string, r io.Reader, opts
 	}
 
 	metadata, err := s.contentsRepo.Upload(ctx, driveID, path, r, file.UploadOptions{
-		Force: opts.Overwrite,
+		Force:   opts.Overwrite,
+		IfMatch: opts.IfMatch,
 	})
 
 	return convertMetadataToItem(metadata), err

@@ -34,5 +34,6 @@ func convertMetadataToItem(src *file.Metadata) domainfs.Item {
 		Size:     src.Size,
 		Type:     convertMetadataToFSType(src.Type),
 		Modified: modified,
+		ETag:     src.ETag,
 	}
 }
