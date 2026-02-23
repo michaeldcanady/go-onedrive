@@ -12,6 +12,7 @@ import (
 	domainconfig "github.com/michaeldcanady/go-onedrive/internal2/domain/config"
 	domaindi "github.com/michaeldcanady/go-onedrive/internal2/domain/di"
 	domaindrive "github.com/michaeldcanady/go-onedrive/internal2/domain/drive"
+	domaineditor "github.com/michaeldcanady/go-onedrive/internal2/domain/editor"
 	domainfile "github.com/michaeldcanady/go-onedrive/internal2/domain/file"
 	domainfs "github.com/michaeldcanady/go-onedrive/internal2/domain/fs"
 	domainprofile "github.com/michaeldcanady/go-onedrive/internal2/domain/profile"
@@ -68,6 +69,9 @@ type Container struct {
 
 	fsOnce    sync.Once
 	fsService domainfs.Service
+
+	editorOnce    sync.Once
+	editorService domaineditor.Service
 
 	// Repository Components
 	metadataOnce sync.Once

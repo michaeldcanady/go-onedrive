@@ -14,6 +14,7 @@ import (
 	domainlogger "github.com/michaeldcanady/go-onedrive/internal2/domain/common/logger"
 	"github.com/michaeldcanady/go-onedrive/internal2/domain/config"
 	"github.com/michaeldcanady/go-onedrive/internal2/domain/drive"
+	domaineditor "github.com/michaeldcanady/go-onedrive/internal2/domain/editor"
 	"github.com/michaeldcanady/go-onedrive/internal2/domain/file"
 	domainfs "github.com/michaeldcanady/go-onedrive/internal2/domain/fs"
 	domainprofile "github.com/michaeldcanady/go-onedrive/internal2/domain/profile"
@@ -44,6 +45,10 @@ func (m *MockContainer) File() file.FileService                { return nil }
 func (m *MockContainer) State() state.Service                  { return nil }
 func (m *MockContainer) Drive() drive.DriveService             { return nil }
 func (m *MockContainer) Account() account.Service              { return nil }
+func (m *MockContainer) Editor() domaineditor.Service {
+	args := m.Called()
+	return args.Get(0).(domaineditor.Service)
+}
 
 type MockFSService struct {
 	mock.Mock
@@ -154,8 +159,14 @@ func (m *MockEditor) Launch(path string) error {
 }
 
 func (m *MockEditor) LaunchTempFile(prefix, suffix string, reader io.Reader) ([]byte, string, error) {
+	_, _ = io.ReadAll(reader) // Consume reader for hash calculation
 	args := m.Called(prefix, suffix, reader)
 	return args.Get(0).([]byte), args.String(1), args.Error(2)
+}
+
+func (m *MockEditor) WithIO(stdin io.Reader, stdout, stderr io.Writer) domaineditor.Service {
+	m.Called(stdin, stdout, stderr)
+	return m
 }
 
 // --- Tests ---
@@ -179,6 +190,7 @@ func TestEditCmd_Run_NoChanges(t *testing.T) {
 	mockEnv := new(MockEnvironmentService)
 	mockLogProvider := new(MockLogProvider)
 	mockLogger := new(MockLogger)
+	mockEditor := new(MockEditor)
 
 	mockContainer.On("FS").Return(mockFS)
 	mockContainer.On("EnvironmentService").Return(mockEnv)
@@ -194,18 +206,15 @@ func TestEditCmd_Run_NoChanges(t *testing.T) {
 	mockFS.On("ReadFile", mock.Anything, "/file.txt", mock.Anything).
 		Return(io.NopCloser(strings.NewReader(content)), nil)
 
-	// Mock Env for Editor: 'true' does nothing and succeeds
-	mockEnv.On("Visual").Return("", nil)
-	mockEnv.On("Editor").Return("true", nil)
-	mockEnv.On("Shell").Return("", nil)
-	mockEnv.On("IsWindows").Return(false)
-	mockEnv.On("IsMac").Return(false)
-	mockEnv.On("IsLinux").Return(true)
+	// Mock Editor
+	mockEditor.On("WithIO", mock.Anything, mock.Anything, mock.Anything).Return(mockEditor)
+	mockEditor.On("LaunchTempFile", mock.Anything, ".txt", mock.Anything).
+		Return([]byte(content), "temp-path", nil)
 
 	buf := new(bytes.Buffer)
 	opts := Options{Path: "/file.txt", Stdout: buf}
 
-	editCmd := NewEditCmd(mockContainer).WithLogger(mockLogger)
+	editCmd := NewEditCmd(mockContainer).WithLogger(mockLogger).WithEditor(mockEditor)
 	err := editCmd.Run(context.Background(), opts)
 
 	assert.NoError(t, err)
@@ -218,6 +227,7 @@ func TestEditCmd_Run_WithChanges(t *testing.T) {
 	mockEnv := new(MockEnvironmentService)
 	mockLogProvider := new(MockLogProvider)
 	mockLogger := new(MockLogger)
+	mockEditor := new(MockEditor)
 
 	mockContainer.On("FS").Return(mockFS)
 	mockContainer.On("EnvironmentService").Return(mockEnv)
@@ -233,13 +243,10 @@ func TestEditCmd_Run_WithChanges(t *testing.T) {
 	mockFS.On("ReadFile", mock.Anything, "/file.txt", mock.Anything).
 		Return(io.NopCloser(strings.NewReader(content)), nil)
 
-	// Mock Env for Editor: replaces 'original' with 'new' in the file
-	mockEnv.On("Visual").Return("", nil)
-	mockEnv.On("Editor").Return("sed -i 's/original/new/'", nil)
-	mockEnv.On("Shell").Return("", nil)
-	mockEnv.On("IsWindows").Return(false)
-	mockEnv.On("IsMac").Return(false)
-	mockEnv.On("IsLinux").Return(true)
+	// Mock Editor
+	mockEditor.On("WithIO", mock.Anything, mock.Anything, mock.Anything).Return(mockEditor)
+	mockEditor.On("LaunchTempFile", mock.Anything, ".txt", mock.Anything).
+		Return([]byte("new content"), "temp-path", nil)
 
 	// Mock WriteFile: should be called because content changed
 	mockFS.On("WriteFile", mock.Anything, "/file.txt", mock.Anything, mock.Anything).
@@ -248,7 +255,7 @@ func TestEditCmd_Run_WithChanges(t *testing.T) {
 	buf := new(bytes.Buffer)
 	opts := Options{Path: "/file.txt", Stdout: buf}
 
-	editCmd := NewEditCmd(mockContainer).WithLogger(mockLogger)
+	editCmd := NewEditCmd(mockContainer).WithLogger(mockLogger).WithEditor(mockEditor)
 	err := editCmd.Run(context.Background(), opts)
 
 	assert.NoError(t, err)
@@ -272,6 +279,7 @@ func TestEditCmd_Run_WithMockEditor(t *testing.T) {
 		Return(io.NopCloser(strings.NewReader(content)), nil)
 
 	// Mock Editor: returns modified content
+	mockEditor.On("WithIO", mock.Anything, mock.Anything, mock.Anything).Return(mockEditor)
 	mockEditor.On("LaunchTempFile", mock.Anything, ".txt", mock.Anything).
 		Return([]byte("modified"), "temp-path", nil)
 

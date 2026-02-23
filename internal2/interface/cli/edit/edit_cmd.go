@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/michaeldcanady/go-onedrive/internal2/domain/di"
+	domaineditor "github.com/michaeldcanady/go-onedrive/internal2/domain/editor"
 	domainfs "github.com/michaeldcanady/go-onedrive/internal2/domain/fs"
 	infralogging "github.com/michaeldcanady/go-onedrive/internal2/infra/common/logging"
 	"github.com/michaeldcanady/go-onedrive/internal2/interface/cli/util"
@@ -23,7 +24,7 @@ import (
 type EditCmd struct {
 	container di.Container
 	logger    infralogging.Logger
-	editor    Editor
+	editor    domaineditor.Service
 }
 
 // NewEditCmd creates a new EditCmd instance with the provided dependency container.
@@ -34,7 +35,7 @@ func NewEditCmd(container di.Container) *EditCmd {
 }
 
 // WithEditor allows injecting a custom editor into EditCmd.
-func (c *EditCmd) WithEditor(editor Editor) *EditCmd {
+func (c *EditCmd) WithEditor(editor domaineditor.Service) *EditCmd {
 	c.editor = editor
 	return c
 }
@@ -42,9 +43,6 @@ func (c *EditCmd) WithEditor(editor Editor) *EditCmd {
 // WithLogger allows injecting a logger into EditCmd.
 func (c *EditCmd) WithLogger(logger infralogging.Logger) *EditCmd {
 	c.logger = logger
-	if svc, ok := c.editor.(*EditorService); ok {
-		svc.logger = logger
-	}
 	return c
 }
 
@@ -106,9 +104,7 @@ func (c *EditCmd) ensureDependencies(ctx context.Context) error {
 	}
 
 	if c.editor == nil {
-		c.editor = NewEditorService(c.container.EnvironmentService(), c.logger)
-	} else if svc, ok := c.editor.(*EditorService); ok {
-		svc.logger = c.logger
+		c.editor = c.container.Editor()
 	}
 
 	c.logger = c.logger.WithContext(ctx).With(infralogging.String("correlationID", util.CorrelationIDFromContext(ctx)))
@@ -137,9 +133,7 @@ func (c *EditCmd) launchEditor(opts Options, name, ext string, reader io.Reader)
 		infralogging.String("file", opts.Path),
 		infralogging.String("extension", ext))
 
-	if svc, ok := c.editor.(*EditorService); ok {
-		svc.WithIO(opts.Stdin, opts.Stdout, opts.Stderr)
-	}
+	c.editor.WithIO(opts.Stdin, opts.Stdout, opts.Stderr)
 
 	editedBytes, tmpPath, err := c.editor.LaunchTempFile(fmt.Sprintf("%s-edit-", name), ext, reader)
 	if err != nil {
