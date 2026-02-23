@@ -174,9 +174,9 @@ type MockConflictHandler struct {
 	mock.Mock
 }
 
-func (m *MockConflictHandler) HandleConflict(ctx context.Context, path string, content []byte, tmpPath string) (bool, error) {
+func (m *MockConflictHandler) HandleConflict(ctx context.Context, path string, content []byte, tmpPath string) (bool, string, error) {
 	args := m.Called(ctx, path, content, tmpPath)
-	return args.Bool(0), args.Error(1)
+	return args.Bool(0), args.String(1), args.Error(2)
 }
 
 // --- Tests ---
@@ -350,9 +350,9 @@ func TestEditCmd_Run_ETagMismatch(t *testing.T) {
 	mockFS.On("WriteFile", mock.Anything, "/file.txt", mock.Anything, mock.Anything).
 		Return(domainfs.Item{}, infrafile.ErrPrecondition)
 
-	// Mock Conflict Handler: returns true (remove temp) and no error
+	// Mock Conflict Handler: returns true (remove temp), finalPath, and no error
 	mockConflict.On("HandleConflict", mock.Anything, "/file.txt", []byte("modified"), "temp-path").
-		Return(true, nil)
+		Return(true, "/file.txt", nil)
 
 	buf := new(bytes.Buffer)
 	opts := Options{Path: "/file.txt", Stdout: buf, Stderr: io.Discard}
@@ -364,6 +364,55 @@ func TestEditCmd_Run_ETagMismatch(t *testing.T) {
 	err := editCmd.Run(context.Background(), opts)
 
 	assert.NoError(t, err)
+	assert.Contains(t, buf.String(), "updated successfully")
+	mockFS.AssertExpectations(t)
+	mockConflict.AssertExpectations(t)
+}
+
+func TestEditCmd_Run_SaveAsCopy(t *testing.T) {
+	mockContainer := new(MockContainer)
+	mockFS := new(MockFSService)
+	mockLogger := new(MockLogger)
+	mockEditor := new(MockEditor)
+	mockConflict := new(MockConflictHandler)
+
+	mockContainer.On("FS").Return(mockFS)
+	mockLogger.On("Info", mock.Anything, mock.Anything).Return()
+	mockLogger.On("Debug", mock.Anything, mock.Anything).Return()
+	mockLogger.On("Warn", mock.Anything, mock.Anything).Return()
+
+	// Mock Get
+	mockFS.On("Get", mock.Anything, "/file.txt").Return(domainfs.Item{ETag: "tag1"}, nil)
+
+	// Mock ReadFile
+	content := "original"
+	mockFS.On("ReadFile", mock.Anything, "/file.txt", mock.Anything).
+		Return(io.NopCloser(strings.NewReader(content)), nil)
+
+	// Mock Editor: returns modified content
+	mockEditor.On("WithIO", mock.Anything, mock.Anything, mock.Anything).Return(mockEditor)
+	mockEditor.On("LaunchTempFile", mock.Anything, ".txt", mock.Anything).
+		Return([]byte("modified"), "temp-path", nil)
+
+	// Mock WriteFile: returns ETag mismatch error
+	mockFS.On("WriteFile", mock.Anything, "/file.txt", mock.Anything, mock.Anything).
+		Return(domainfs.Item{}, infrafile.ErrPrecondition)
+
+	// Mock Conflict Handler: returns true (remove temp), DIFFERENT path, and no error
+	mockConflict.On("HandleConflict", mock.Anything, "/file.txt", []byte("modified"), "temp-path").
+		Return(true, "/file-copy.txt", nil)
+
+	buf := new(bytes.Buffer)
+	opts := Options{Path: "/file.txt", Stdout: buf, Stderr: io.Discard}
+
+	editCmd := NewEditCmd(mockContainer).
+		WithLogger(mockLogger).
+		WithEditor(mockEditor).
+		WithConflictHandler(mockConflict)
+	err := editCmd.Run(context.Background(), opts)
+
+	assert.NoError(t, err)
+	assert.Contains(t, buf.String(), "File \"/file-copy.txt\" updated successfully.")
 	mockFS.AssertExpectations(t)
 	mockConflict.AssertExpectations(t)
 }
