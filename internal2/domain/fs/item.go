@@ -9,4 +9,5 @@ type Item struct {
 	Type     ItemType
 	Size     int64
 	Modified time.Time
+	ETag     string
 }

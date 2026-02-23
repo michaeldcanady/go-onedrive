@@ -84,6 +84,7 @@ func CreateLoginCmd(container di.Container) *cobra.Command {
 					infralogging.String("profile", profileName),
 					infralogging.Error(err),
 				)
+				cmd.Printf("Login failed for profile %q: %v\n", profileName, err)
 				return util.NewCommandError(commandName, "failed authentication", err)
 			}
 
@@ -91,6 +92,8 @@ func CreateLoginCmd(container di.Container) *cobra.Command {
 				infralogging.String("profile", profileName),
 				infralogging.Bool("tokenDisplayed", showToken),
 			)
+
+			cmd.Printf("Successfully logged into profile %q\n", profileName)
 
 			if showToken {
 				// Only print token if explicitly requested

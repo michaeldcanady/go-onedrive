@@ -8,6 +8,7 @@ import (
 	domainlogger "github.com/michaeldcanady/go-onedrive/internal2/domain/common/logger"
 	"github.com/michaeldcanady/go-onedrive/internal2/domain/config"
 	"github.com/michaeldcanady/go-onedrive/internal2/domain/drive"
+	"github.com/michaeldcanady/go-onedrive/internal2/domain/editor"
 	"github.com/michaeldcanady/go-onedrive/internal2/domain/file"
 	domainfs "github.com/michaeldcanady/go-onedrive/internal2/domain/fs"
 	domainprofile "github.com/michaeldcanady/go-onedrive/internal2/domain/profile"
@@ -26,4 +27,5 @@ type Container interface {
 	State() state.Service
 	Drive() drive.DriveService
 	Account() account.Service
+	Editor() editor.Service
 }

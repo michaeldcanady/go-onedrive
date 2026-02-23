@@ -11,4 +11,5 @@ const (
 	EnvStateDir  = "ODC_STATE_DIR"
 	EnvShell     = "ODC_SHELL"
 	EnvEditor    = "ODC_EDITOR"
+	EnvVisual    = "ODC_VISUAL"
 )

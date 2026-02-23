@@ -20,4 +20,5 @@ type EnvironmentService interface {
 	LogLevel() (string, error)
 	Shell() (string, error)
 	Editor() (string, error)
+	Visual() (string, error)
 }

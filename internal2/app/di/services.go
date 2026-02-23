@@ -8,6 +8,7 @@ import (
 	appcache "github.com/michaeldcanady/go-onedrive/internal2/app/cache"
 	appconfig "github.com/michaeldcanady/go-onedrive/internal2/app/config"
 	appdrive "github.com/michaeldcanady/go-onedrive/internal2/app/drive"
+	appeditor "github.com/michaeldcanady/go-onedrive/internal2/app/editor"
 	appfs "github.com/michaeldcanady/go-onedrive/internal2/app/fs"
 	applogging "github.com/michaeldcanady/go-onedrive/internal2/app/common/logging"
 	appprofile "github.com/michaeldcanady/go-onedrive/internal2/app/profile"
@@ -21,6 +22,7 @@ import (
 	domainlogger "github.com/michaeldcanady/go-onedrive/internal2/domain/common/logger"
 	domainconfig "github.com/michaeldcanady/go-onedrive/internal2/domain/config"
 	domaindrive "github.com/michaeldcanady/go-onedrive/internal2/domain/drive"
+	domaineditor "github.com/michaeldcanady/go-onedrive/internal2/domain/editor"
 	domainfile "github.com/michaeldcanady/go-onedrive/internal2/domain/file"
 	domainfs "github.com/michaeldcanady/go-onedrive/internal2/domain/fs"
 	domainprofile "github.com/michaeldcanady/go-onedrive/internal2/domain/profile"
@@ -29,6 +31,7 @@ import (
 	"github.com/michaeldcanady/go-onedrive/internal2/infra/auth/msal"
 	infralogging "github.com/michaeldcanady/go-onedrive/internal2/infra/common/logging"
 	infraconfig "github.com/michaeldcanady/go-onedrive/internal2/infra/config"
+	infraeditor "github.com/michaeldcanady/go-onedrive/internal2/infra/editor"
 	infrafile "github.com/michaeldcanady/go-onedrive/internal2/infra/file"
 	infraprofile "github.com/michaeldcanady/go-onedrive/internal2/infra/profile"
 	infrastate "github.com/michaeldcanady/go-onedrive/internal2/infra/state"
@@ -173,6 +176,24 @@ func (c *Container) newAccountService() domainaccount.Service {
 	}
 
 	return appaccount.New(c.accountCache(), logger)
+}
+
+func (c *Container) Editor() domaineditor.Service {
+	c.editorOnce.Do(func() {
+		c.editorService = c.newEditorService()
+	})
+	return c.editorService
+}
+
+func (c *Container) newEditorService() domaineditor.Service {
+	loggerSvc := c.Logger()
+	logger, err := loggerSvc.CreateLogger("editor")
+	if err != nil {
+		logger = infralogging.NewNoopLogger()
+	}
+
+	launcher := infraeditor.NewLauncher(c.EnvironmentService(), logger)
+	return appeditor.NewService(launcher, logger)
 }
 
 // Logger implements [di.Container].
