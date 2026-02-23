@@ -93,6 +93,9 @@ func (s *Service2) List(
 		}
 
 		for _, m := range metadatas {
+			if m == nil {
+				continue
+			}
 			item := convertMetadataToItem(m)
 			results = append(results, item)
 
@@ -146,7 +149,20 @@ func (s *Service2) Remove(ctx context.Context, path string, opts domainfs.Remove
 
 // Stat implements [fs.Service].
 func (s *Service2) Stat(ctx context.Context, path string, opts domainfs.StatOptions) (domainfs.Item, error) {
-	panic("unimplemented")
+	logger := s.buildLogger(ctx).With(logging.String("path", path))
+	logger.Debug("Stat: retrieving metadata")
+
+	driveID, err := s.driveResolver.CurrentDriveID(ctx)
+	if err != nil {
+		return domainfs.Item{}, err
+	}
+
+	metadata, err := s.metadataRepo.GetByPath(ctx, driveID, path, file.MetadataGetOptions{})
+	if err != nil {
+		return domainfs.Item{}, err
+	}
+
+	return convertMetadataToItem(metadata), nil
 }
 
 // WriteFile implements [fs.Service].

@@ -28,7 +28,7 @@ func TestContentsRepository_Download(t *testing.T) {
 		mockMetadataCache := new(MockMetadataCache)
 		mockPathIDCache := new(MockPathIDCache)
 
-		repo := NewContentsRepository(mockAdapter, mockContentCache, mockMetadataCache, mockPathIDCache)
+		repo := NewContentsRepository(mockAdapter, mockContentCache, mockMetadataCache, mockPathIDCache, NewMockLogger())
 
 		mockPathIDCache.On("Get", mock.Anything, path).Return("", false)
 
@@ -56,7 +56,7 @@ func TestContentsRepository_Download(t *testing.T) {
 		mockMetadataCache := new(MockMetadataCache)
 		mockPathIDCache := new(MockPathIDCache)
 
-		repo := NewContentsRepository(mockAdapter, mockContentCache, mockMetadataCache, mockPathIDCache)
+		repo := NewContentsRepository(mockAdapter, mockContentCache, mockMetadataCache, mockPathIDCache, NewMockLogger())
 
 		mockPathIDCache.On("Get", mock.Anything, path).Return("", false)
 
@@ -90,7 +90,7 @@ func TestContentsRepository_Download(t *testing.T) {
 		mockMetadataCache := new(MockMetadataCache)
 		mockPathIDCache := new(MockPathIDCache)
 
-		repo := NewContentsRepository(mockAdapter, mockContentCache, mockMetadataCache, mockPathIDCache)
+		repo := NewContentsRepository(mockAdapter, mockContentCache, mockMetadataCache, mockPathIDCache, NewMockLogger())
 
 		mockPathIDCache.On("Get", mock.Anything, path).Return("", false)
 
@@ -118,7 +118,7 @@ func TestContentsRepository_Upload(t *testing.T) {
 		mockMetadataCache := new(MockMetadataCache)
 		mockPathIDCache := new(MockPathIDCache)
 
-		repo := NewContentsRepository(mockAdapter, mockContentCache, mockMetadataCache, mockPathIDCache)
+		repo := NewContentsRepository(mockAdapter, mockContentCache, mockMetadataCache, mockPathIDCache, NewMockLogger())
 
 		mockPathIDCache.On("Get", mock.Anything, path).Return("", false)
 		mockPathIDCache.On("Put", mock.Anything, path, "new-id").Return(nil)

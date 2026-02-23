@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/michaeldcanady/go-onedrive/internal2/domain/file"
+	"github.com/michaeldcanady/go-onedrive/internal2/infra/common/logging"
 	abstractions "github.com/microsoft/kiota-abstractions-go"
 	"github.com/microsoft/kiota-abstractions-go/serialization"
 	"github.com/microsoft/kiota-abstractions-go/store"
@@ -97,6 +98,42 @@ func (m *MockPathIDCache) Put(ctx context.Context, path string, id string) error
 func (m *MockPathIDCache) Invalidate(ctx context.Context, path string) error {
 	args := m.Called(ctx, path)
 	return args.Error(0)
+}
+
+// MockLogger mocks the logging.Logger interface
+type MockLogger struct {
+	mock.Mock
+}
+
+func (m *MockLogger) Info(msg string, fields ...logging.Field)  { m.Called(msg, fields) }
+func (m *MockLogger) Error(msg string, fields ...logging.Field) { m.Called(msg, fields) }
+func (m *MockLogger) Debug(msg string, fields ...logging.Field) { m.Called(msg, fields) }
+func (m *MockLogger) Warn(msg string, fields ...logging.Field)  { m.Called(msg, fields) }
+
+func NewMockLogger() *MockLogger {
+	m := &MockLogger{}
+	m.On("Info", mock.Anything, mock.Anything).Maybe()
+	m.On("Error", mock.Anything, mock.Anything).Maybe()
+	m.On("Debug", mock.Anything, mock.Anything).Maybe()
+	m.On("Warn", mock.Anything, mock.Anything).Maybe()
+	m.On("With", mock.Anything).Return(m).Maybe()
+	m.On("WithContext", mock.Anything).Return(m).Maybe()
+	return m
+}
+func (m *MockLogger) SetLevel(level string)                     { m.Called(level) }
+func (m *MockLogger) With(fields ...logging.Field) logging.Logger {
+	args := m.Called(fields)
+	if args.Get(0) == nil {
+		return m
+	}
+	return args.Get(0).(logging.Logger)
+}
+func (m *MockLogger) WithContext(ctx context.Context) logging.Logger {
+	args := m.Called(ctx)
+	if args.Get(0) == nil {
+		return m
+	}
+	return args.Get(0).(logging.Logger)
 }
 
 // MockRequestAdapter mocks the abstractions.RequestAdapter interface

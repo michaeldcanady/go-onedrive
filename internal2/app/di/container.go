@@ -128,7 +128,13 @@ func (c *Container) cacheStore() *bolt.Store {
 func (c *Container) Drive() domaindrive.DriveService {
 	c.driveOnce.Do(func() {
 		loggerService := c.Logger()
-		logger, _ := loggerService.CreateLogger("drive")
+		logger, err := loggerService.CreateLogger("drive")
+		if err != nil {
+			// Fallback: use a default logger if creation fails, or at least note it.
+			// Since we can't return an error from Once.Do easily without complex state, 
+			// we'll use the service-level logger as fallback.
+			logger = infralogging.NewNoopLogger()
+		}
 
 		c.driveService = appdrive.NewDriveService(c.clientProvider(), logger)
 	})
@@ -140,7 +146,10 @@ func (c *Container) Drive() domaindrive.DriveService {
 func (c *Container) File() domainfile.FileService {
 	c.fileOnce.Do(func() {
 		loggerService := c.Logger()
-		logger, _ := loggerService.CreateLogger("file")
+		logger, err := loggerService.CreateLogger("file")
+		if err != nil {
+			logger = infralogging.NewNoopLogger()
+		}
 
 		c.fileService = infrafile.New2(c.clientProvider(), logger, nil)
 	})
@@ -151,7 +160,10 @@ func (c *Container) File() domainfile.FileService {
 func (c *Container) Config() domainconfig.ConfigService {
 	c.configOnce.Do(func() {
 		loggerService := c.Logger()
-		logger, _ := loggerService.CreateLogger("config")
+		logger, err := loggerService.CreateLogger("config")
+		if err != nil {
+			logger = infralogging.NewNoopLogger()
+		}
 
 		c.configService = appconfig.New2(infraconfig.NewYAMLLoader(), logger)
 	})
@@ -161,7 +173,10 @@ func (c *Container) Config() domainconfig.ConfigService {
 func (c *Container) Cache() domaincache.Service2 {
 	c.cacheOnce2.Do(func() {
 		loggerService := c.Logger()
-		logger, _ := loggerService.CreateLogger("cache")
+		logger, err := loggerService.CreateLogger("cache")
+		if err != nil {
+			logger = infralogging.NewNoopLogger()
+		}
 
 		c.cacheService2 = appcache.NewService2(logger)
 	})
@@ -182,7 +197,10 @@ func (c *Container) Auth() domainauth.AuthService {
 		credentialFactory := msal.NewMSALCredentialFactory()
 
 		loggerService := c.Logger()
-		logger, _ := loggerService.CreateLogger("auth")
+		logger, err := loggerService.CreateLogger("auth")
+		if err != nil {
+			logger = infralogging.NewNoopLogger()
+		}
 
 		c.authService = appauth.NewService2(c.authCache(), c.Config(), c.State(), logger, credentialFactory, c.Account())
 	})
@@ -253,19 +271,30 @@ func (c *Container) pathIDCache() infrafile.PathIDCache {
 
 func (c *Container) metadata() *infrafile.MetadataRepository {
 	c.metadataOnce.Do(func() {
+		loggerSvc := c.Logger()
+		logger, err := loggerSvc.CreateLogger("repository")
+		if err != nil {
+			logger = infralogging.NewNoopLogger()
+		}
 
 		client, _ := c.clientProvider().Client(context.Background())
 
-		c.metadataRepo = infrafile.NewMetadataRepository(client.RequestAdapter, c.metadataCache(), c.metadataListingCache(), c.pathIDCache())
+		c.metadataRepo = infrafile.NewMetadataRepository(client.RequestAdapter, c.metadataCache(), c.metadataListingCache(), c.pathIDCache(), logger)
 	})
 	return c.metadataRepo
 }
 
 func (c *Container) contents() *infrafile.ContentsRepository {
 	c.contentsOnce.Do(func() {
+		loggerSvc := c.Logger()
+		logger, err := loggerSvc.CreateLogger("repository")
+		if err != nil {
+			logger = infralogging.NewNoopLogger()
+		}
+
 		client, _ := c.clientProvider().Client(context.Background())
 
-		c.contentsRepo = infrafile.NewContentsRepository(client.RequestAdapter, c.contentsCache(), c.metadataCache(), c.pathIDCache())
+		c.contentsRepo = infrafile.NewContentsRepository(client.RequestAdapter, c.contentsCache(), c.metadataCache(), c.pathIDCache(), logger)
 	})
 	return c.contentsRepo
 }
@@ -293,7 +322,10 @@ func (c *Container) accountCache() domaincache.Cache[domainaccount.Account] {
 func (c *Container) Account() domainaccount.Service {
 	c.accountOnce.Do(func() {
 		loggerSvc := c.Logger()
-		logger, _ := loggerSvc.CreateLogger("account")
+		logger, err := loggerSvc.CreateLogger("account")
+		if err != nil {
+			logger = infralogging.NewNoopLogger()
+		}
 
 		c.accountService = appaccount.New(c.accountCache(), logger)
 	})
@@ -331,10 +363,16 @@ func (c *Container) Profile() domainprofile.ProfileService {
 		env := c.EnvironmentService()
 
 		// ~/.config/odc
-		profileBaseDir, _ := env.ConfigDir()
+		profileBaseDir, err := env.ConfigDir()
+		if err != nil {
+			panic(err)
+		}
 
 		loggerService := c.Logger()
-		logger, _ := loggerService.CreateLogger("profile")
+		logger, err := loggerService.CreateLogger("profile")
+		if err != nil {
+			logger = infralogging.NewNoopLogger()
+		}
 
 		// Infra repository
 		repo := infraprofile.NewFSProfileService(profileBaseDir)

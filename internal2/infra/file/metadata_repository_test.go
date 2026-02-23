@@ -24,7 +24,7 @@ func TestMetadataRepository_GetByPath(t *testing.T) {
 		mockListingCache := new(MockListingCache)
 		mockPathIDCache := new(MockPathIDCache)
 
-		repo := NewMetadataRepository(mockAdapter, mockMetadataCache, mockListingCache, mockPathIDCache)
+		repo := NewMetadataRepository(mockAdapter, mockMetadataCache, mockListingCache, mockPathIDCache, NewMockLogger())
 
 		mockPathIDCache.On("Get", mock.Anything, path).Return("", false)
 
@@ -47,7 +47,7 @@ func TestMetadataRepository_GetByPath(t *testing.T) {
 		mockListingCache := new(MockListingCache)
 		mockPathIDCache := new(MockPathIDCache)
 
-		repo := NewMetadataRepository(mockAdapter, mockMetadataCache, mockListingCache, mockPathIDCache)
+		repo := NewMetadataRepository(mockAdapter, mockMetadataCache, mockListingCache, mockPathIDCache, NewMockLogger())
 
 		mockPathIDCache.On("Get", mock.Anything, path).Return("", false)
 		mockPathIDCache.On("Put", mock.Anything, path, "id-1").Return(nil)
@@ -90,7 +90,7 @@ func TestMetadataRepository_ListByPath(t *testing.T) {
 		mockListingCache := new(MockListingCache)
 		mockPathIDCache := new(MockPathIDCache)
 
-		repo := NewMetadataRepository(mockAdapter, mockMetadataCache, mockListingCache, mockPathIDCache)
+		repo := NewMetadataRepository(mockAdapter, mockMetadataCache, mockListingCache, mockPathIDCache, NewMockLogger())
 
 		mockPathIDCache.On("Get", mock.Anything, path).Return("", false)
 
@@ -120,7 +120,7 @@ func TestMetadataRepository_ListByPath(t *testing.T) {
 		mockListingCache := new(MockListingCache)
 		mockPathIDCache := new(MockPathIDCache)
 
-		repo := NewMetadataRepository(mockAdapter, mockMetadataCache, mockListingCache, mockPathIDCache)
+		repo := NewMetadataRepository(mockAdapter, mockMetadataCache, mockListingCache, mockPathIDCache, NewMockLogger())
 
 		mockPathIDCache.On("Get", mock.Anything, path).Return("", false)
 		mockPathIDCache.On("Put", mock.Anything, path, "id-folder").Return(nil)
