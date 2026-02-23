@@ -59,7 +59,7 @@ func (r *MetadataRepository) getByPath(ctx context.Context, driveID, path string
 	metadata := mapItemToMetadata(item)
 
 	if !opts.NoStore {
-		_ = r.metadataCache.Put(ctx, path, metadata)
+		_ = r.metadataCache.Put(ctx, metadata)
 	}
 
 	return metadata, true, nil
@@ -135,7 +135,7 @@ func (r *MetadataRepository) ListByPath(ctx context.Context, driveID, path strin
 		listing.ChildIDs[i] = m.ID
 
 		if !opts.NoStore {
-			_ = r.metadataCache.Put(ctx, m.ID, m)
+			_ = r.metadataCache.Put(ctx, m)
 		}
 	}
 

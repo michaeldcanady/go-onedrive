@@ -146,7 +146,7 @@ func TestMetadataCacheAdapter_Put(t *testing.T) {
 
 			adapter := file.NewMetadataCacheAdapter(mockCache)
 
-			err := adapter.Put(context.Background(), tt.input.Path, tt.input)
+			err := adapter.Put(context.Background(), tt.input)
 
 			if tt.expectErr {
 				require.Error(t, err)

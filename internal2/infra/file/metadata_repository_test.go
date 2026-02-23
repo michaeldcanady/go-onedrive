@@ -60,7 +60,7 @@ func TestMetadataRepository_GetByPath(t *testing.T) {
 		mockAdapter.On("Send", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(mockItem, nil)
 
 		// Store in cache
-		mockMetadataCache.On("Put", mock.Anything, path, mock.Anything).Return(nil)
+		mockMetadataCache.On("Put", mock.Anything, mock.Anything).Return(nil)
 
 		got, err := repo.GetByPath(context.Background(), driveID, path, file.MetadataGetOptions{})
 		assert.NoError(t, err)
@@ -121,7 +121,7 @@ func TestMetadataRepository_ListByPath(t *testing.T) {
 		parentItem.SetETag(&etag)
 		parentItem.SetFolder(models.NewFolder())
 		mockAdapter.On("Send", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(parentItem, nil).Once()
-		mockMetadataCache.On("Put", mock.Anything, path, mock.Anything).Return(nil)
+		mockMetadataCache.On("Put", mock.Anything, mock.Anything).Return(nil)
 
 		// 2. Listing cache miss
 		mockListingCache.On("Get", mock.Anything, path).Return(nil, false)
@@ -139,7 +139,7 @@ func TestMetadataRepository_ListByPath(t *testing.T) {
 		mockAdapter.On("Send", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(coll, nil).Once()
 
 		// 4. Store children and listing in cache
-		mockMetadataCache.On("Put", mock.Anything, cid, mock.Anything).Return(nil)
+		mockMetadataCache.On("Put", mock.Anything, mock.Anything).Return(nil)
 		mockListingCache.On("Put", mock.Anything, path, mock.Anything).Return(nil)
 
 		got, err := repo.ListByPath(context.Background(), driveID, path, file.MetadataListOptions{})

@@ -239,7 +239,7 @@ func (c *Container) metadataListingCache() file.ListingCache {
 }
 
 func (c *Container) contentsCache() file.ContentsCache {
-	c.contentsCacheOnce.Do(func() {
+	c.metadataCacheOnce.Do(func() {
 		environmentService := c.EnvironmentService()
 		cachePath, _ := environmentService.CacheDir()
 
