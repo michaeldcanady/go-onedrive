@@ -2,6 +2,8 @@
 package upload
 
 import (
+	"io"
+
 	"github.com/michaeldcanady/go-onedrive/internal2/interface/cli/util"
 )
 
@@ -18,6 +20,13 @@ type Options struct {
 
 	// Overwrite determines whether to replace an existing file at the destination.
 	Overwrite bool
+
+	// Stdin is the input stream for the command.
+	Stdin io.Reader
+	// Stdout is the output stream for the command.
+	Stdout io.Writer
+	// Stderr is the error stream for the command.
+	Stderr io.Writer
 }
 
 // Validate ensures that the provided options are consistent and valid.

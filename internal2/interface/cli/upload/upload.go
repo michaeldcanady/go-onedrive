@@ -60,6 +60,10 @@ You must be logged in (via 'onedrive auth login') before using this command.
 		},
 
 		RunE: func(cmd *cobra.Command, _ []string) error {
+			opts.Stdin = cmd.InOrStdin()
+			opts.Stdout = cmd.OutOrStdout()
+			opts.Stderr = cmd.ErrOrStderr()
+
 			uploadCmd := NewUploadCmd(c)
 			return uploadCmd.Run(cmd.Context(), opts)
 		},

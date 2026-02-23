@@ -11,7 +11,6 @@ import (
 	"github.com/michaeldcanady/go-onedrive/internal2/interface/filtering"
 	"github.com/michaeldcanady/go-onedrive/internal2/interface/formatting"
 	"github.com/michaeldcanady/go-onedrive/internal2/interface/sorting"
-	"github.com/spf13/cobra"
 )
 
 // LsCmd handles the core execution logic for the 'ls' command.
@@ -40,7 +39,7 @@ func (c *LsCmd) WithLogger(logger infralogging.Logger) *LsCmd {
 // 3. Filters items based on user options.
 // 4. Sorts items (unless in tree format).
 // 5. Formats and writes the output to the command's stdout.
-func (c *LsCmd) Run(ctx context.Context, cmd *cobra.Command, opts Options) error {
+func (c *LsCmd) Run(ctx context.Context, opts Options) error {
 	start := time.Now()
 
 	if ctx == nil {
@@ -87,7 +86,7 @@ func (c *LsCmd) Run(ctx context.Context, cmd *cobra.Command, opts Options) error
 		}
 	}
 
-	if err := c.formatOutput(cmd, items, opts.Format); err != nil {
+	if err := c.formatOutput(items, opts); err != nil {
 		return util.NewCommandError(commandName, "failed to format items", err)
 	}
 
@@ -172,13 +171,13 @@ func (c *LsCmd) sortItems(items []domainfs.Item, opts Options) ([]domainfs.Item,
 }
 
 // formatOutput handles the final rendering of items to the user's terminal.
-func (c *LsCmd) formatOutput(cmd *cobra.Command, items []domainfs.Item, format string) error {
-	c.logger.Debug("initializing formatter", infralogging.String("format", format))
-	formatter, err := formatting.NewFormatterFactory().Create(format)
+func (c *LsCmd) formatOutput(items []domainfs.Item, opts Options) error {
+	c.logger.Debug("initializing formatter", infralogging.String("format", opts.Format))
+	formatter, err := formatting.NewFormatterFactory().Create(opts.Format)
 	if err != nil {
 		return err
 	}
 
 	c.logger.Debug("formatting output")
-	return formatter.Format(cmd.OutOrStdout(), items)
+	return formatter.Format(opts.Stdout, items)
 }

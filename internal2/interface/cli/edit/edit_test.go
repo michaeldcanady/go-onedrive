@@ -19,7 +19,6 @@ import (
 	domainprofile "github.com/michaeldcanady/go-onedrive/internal2/domain/profile"
 	"github.com/michaeldcanady/go-onedrive/internal2/domain/state"
 	infralogging "github.com/michaeldcanady/go-onedrive/internal2/infra/common/logging"
-	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -30,22 +29,22 @@ type MockContainer struct {
 	mock.Mock
 }
 
-func (m *MockContainer) Cache() domaincache.Service2               { return nil }
-func (m *MockContainer) CacheService() domaincache.CacheService    { return nil }
-func (m *MockContainer) FS() domainfs.Service                      { return m.Called().Get(0).(domainfs.Service) }
+func (m *MockContainer) Cache() domaincache.Service2            { return nil }
+func (m *MockContainer) CacheService() domaincache.CacheService { return nil }
+func (m *MockContainer) FS() domainfs.Service                   { return m.Called().Get(0).(domainfs.Service) }
 func (m *MockContainer) EnvironmentService() domainenvironment.EnvironmentService {
 	return m.Called().Get(0).(domainenvironment.EnvironmentService)
 }
 func (m *MockContainer) Logger() domainlogger.LoggerService {
 	return m.Called().Get(0).(domainlogger.LoggerService)
 }
-func (m *MockContainer) Auth() domainauth.AuthService       { return nil }
+func (m *MockContainer) Auth() domainauth.AuthService          { return nil }
 func (m *MockContainer) Profile() domainprofile.ProfileService { return nil }
-func (m *MockContainer) Config() config.ConfigService       { return nil }
-func (m *MockContainer) File() file.FileService             { return nil }
-func (m *MockContainer) State() state.Service               { return nil }
-func (m *MockContainer) Drive() drive.DriveService           { return nil }
-func (m *MockContainer) Account() account.Service           { return nil }
+func (m *MockContainer) Config() config.ConfigService          { return nil }
+func (m *MockContainer) File() file.FileService                { return nil }
+func (m *MockContainer) State() state.Service                  { return nil }
+func (m *MockContainer) Drive() drive.DriveService             { return nil }
+func (m *MockContainer) Account() account.Service              { return nil }
 
 type MockFSService struct {
 	mock.Mock
@@ -69,9 +68,15 @@ func (m *MockFSService) WriteFile(ctx context.Context, path string, r io.Reader,
 	args := m.Called(ctx, path, r, opts)
 	return args.Get(0).(domainfs.Item), args.Error(1)
 }
-func (m *MockFSService) Remove(ctx context.Context, path string, opts domainfs.RemoveOptions) error { return nil }
-func (m *MockFSService) Move(ctx context.Context, src, dst string, opts domainfs.MoveOptions) error  { return nil }
-func (m *MockFSService) Mkdir(ctx context.Context, path string, opts domainfs.MKDirOptions) error   { return nil }
+func (m *MockFSService) Remove(ctx context.Context, path string, opts domainfs.RemoveOptions) error {
+	return nil
+}
+func (m *MockFSService) Move(ctx context.Context, src, dst string, opts domainfs.MoveOptions) error {
+	return nil
+}
+func (m *MockFSService) Mkdir(ctx context.Context, path string, opts domainfs.MKDirOptions) error {
+	return nil
+}
 func (m *MockFSService) Upload(ctx context.Context, src, dst string, opts domainfs.UploadOptions) (domainfs.Item, error) {
 	return domainfs.Item{}, nil
 }
@@ -80,19 +85,19 @@ type MockEnvironmentService struct {
 	mock.Mock
 }
 
-func (m *MockEnvironmentService) CacheDir() (string, error) { return "", nil }
-func (m *MockEnvironmentService) ConfigDir() (string, error) { return "", nil }
-func (m *MockEnvironmentService) DataDir() (string, error)   { return "", nil }
-func (m *MockEnvironmentService) EnsureAll() error           { return nil }
+func (m *MockEnvironmentService) CacheDir() (string, error)   { return "", nil }
+func (m *MockEnvironmentService) ConfigDir() (string, error)  { return "", nil }
+func (m *MockEnvironmentService) DataDir() (string, error)    { return "", nil }
+func (m *MockEnvironmentService) EnsureAll() error            { return nil }
 func (m *MockEnvironmentService) InstallDir() (string, error) { return "", nil }
-func (m *MockEnvironmentService) IsLinux() bool              { return m.Called().Bool(0) }
-func (m *MockEnvironmentService) IsMac() bool                { return m.Called().Bool(0) }
-func (m *MockEnvironmentService) IsWindows() bool            { return m.Called().Bool(0) }
-func (m *MockEnvironmentService) LogDir() (string, error)    { return "", nil }
-func (m *MockEnvironmentService) Name() string               { return "odc" }
-func (m *MockEnvironmentService) OS() string                 { return "linux" }
-func (m *MockEnvironmentService) TempDir() (string, error)   { return "", nil }
-func (m *MockEnvironmentService) StateDir() (string, error)  { return "", nil }
+func (m *MockEnvironmentService) IsLinux() bool               { return m.Called().Bool(0) }
+func (m *MockEnvironmentService) IsMac() bool                 { return m.Called().Bool(0) }
+func (m *MockEnvironmentService) IsWindows() bool             { return m.Called().Bool(0) }
+func (m *MockEnvironmentService) LogDir() (string, error)     { return "", nil }
+func (m *MockEnvironmentService) Name() string                { return "odc" }
+func (m *MockEnvironmentService) OS() string                  { return "linux" }
+func (m *MockEnvironmentService) TempDir() (string, error)    { return "", nil }
+func (m *MockEnvironmentService) StateDir() (string, error)   { return "", nil }
 func (m *MockEnvironmentService) OutputDestination() (infralogging.OutputDestination, error) {
 	return 0, nil
 }
@@ -128,7 +133,7 @@ func (m *MockLogger) Info(msg string, fields ...infralogging.Field)  { m.Called(
 func (m *MockLogger) Error(msg string, fields ...infralogging.Field) { m.Called(msg, fields) }
 func (m *MockLogger) Debug(msg string, fields ...infralogging.Field) { m.Called(msg, fields) }
 func (m *MockLogger) Warn(msg string, fields ...infralogging.Field)  { m.Called(msg, fields) }
-func (m *MockLogger) SetLevel(level string)                         {}
+func (m *MockLogger) SetLevel(level string)                          {}
 func (m *MockLogger) With(fields ...infralogging.Field) infralogging.Logger {
 	return m
 }
@@ -179,14 +184,11 @@ func TestEditCmd_Run_NoChanges(t *testing.T) {
 	mockEnv.On("IsMac").Return(false)
 	mockEnv.On("IsLinux").Return(true)
 
-	opts := Options{Path: "/file.txt"}
-
-	cobraCmd := &cobra.Command{}
 	buf := new(bytes.Buffer)
-	cobraCmd.SetOut(buf)
+	opts := Options{Path: "/file.txt", Stdout: buf}
 
 	editCmd := NewEditCmd(mockContainer).WithLogger(mockLogger)
-	err := editCmd.Run(context.Background(), cobraCmd, opts)
+	err := editCmd.Run(context.Background(), opts)
 
 	assert.NoError(t, err)
 	assert.Contains(t, buf.String(), "No changes detected.")
@@ -224,14 +226,11 @@ func TestEditCmd_Run_WithChanges(t *testing.T) {
 	mockFS.On("WriteFile", mock.Anything, "/file.txt", mock.Anything, mock.Anything).
 		Return(domainfs.Item{Name: "file.txt"}, nil)
 
-	opts := Options{Path: "/file.txt"}
-
-	cobraCmd := &cobra.Command{}
 	buf := new(bytes.Buffer)
-	cobraCmd.SetOut(buf)
+	opts := Options{Path: "/file.txt", Stdout: buf}
 
 	editCmd := NewEditCmd(mockContainer).WithLogger(mockLogger)
-	err := editCmd.Run(context.Background(), cobraCmd, opts)
+	err := editCmd.Run(context.Background(), opts)
 
 	assert.NoError(t, err)
 	assert.Contains(t, buf.String(), "updated successfully")

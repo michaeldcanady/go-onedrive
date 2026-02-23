@@ -146,6 +146,7 @@ func TestUploadCmd_Run(t *testing.T) {
 			Source:      tmpFile.Name(),
 			Destination: "/remote.txt",
 			Overwrite:   true,
+			Stdout:      io.Discard,
 		}
 
 		err := cmd.Run(context.Background(), opts)

@@ -2,6 +2,8 @@
 package edit
 
 import (
+	"io"
+
 	"github.com/michaeldcanady/go-onedrive/internal2/interface/cli/util"
 )
 
@@ -13,6 +15,13 @@ type Options struct {
 
 	// Force determines whether to overwrite the file even if it changed in the cloud.
 	Force bool
+
+	// Stdin is the input stream for the command.
+	Stdin io.Reader
+	// Stdout is the output stream for the command.
+	Stdout io.Writer
+	// Stderr is the error stream for the command.
+	Stderr io.Writer
 }
 
 // Validate ensures that the provided options are valid.

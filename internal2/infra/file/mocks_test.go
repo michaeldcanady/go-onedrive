@@ -46,7 +46,7 @@ func (m *MockMetadataCache) Get(ctx context.Context, id string) (*file.Metadata,
 	return args.Get(0).(*file.Metadata), args.Bool(1)
 }
 
-func (m *MockMetadataCache) Put(ctx context.Context, meta *file.Metadata) error {
+func (m *MockMetadataCache) Put(ctx context.Context, path string, meta *file.Metadata) error {
 	args := m.Called(ctx, meta)
 	return args.Error(0)
 }

@@ -44,8 +44,10 @@ func (r *MetadataRepository) getByPath(ctx context.Context, driveID, path string
 		}
 	}
 
+	path = normalizePath(path)
+
 	// 2. Fetch from OneDrive
-	item, err := r.driveItemBuilder(r.client, driveID, normalizePath(path)).Get(ctx, config)
+	item, err := r.driveItemBuilder(r.client, driveID, path).Get(ctx, config)
 	if err := mapGraphError2(err); err != nil {
 		return nil, false, err
 	}
@@ -59,7 +61,7 @@ func (r *MetadataRepository) getByPath(ctx context.Context, driveID, path string
 	metadata := mapItemToMetadata(item)
 
 	if !opts.NoStore {
-		_ = r.metadataCache.Put(ctx, metadata)
+		_ = r.metadataCache.Put(ctx, path, metadata)
 	}
 
 	return metadata, true, nil
@@ -104,8 +106,10 @@ func (r *MetadataRepository) ListByPath(ctx context.Context, driveID, path strin
 		config.Headers.Add("If-None-Match", parent.ETag)
 	}
 
+	path = normalizePath(path)
+
 	// 4. Fetch children
-	items, err := r.childrenBuilder(r.client, driveID, normalizePath(path)).Get(ctx, config)
+	items, err := r.childrenBuilder(r.client, driveID, path).Get(ctx, config)
 	if err := mapGraphError2(err); err != nil {
 		return nil, err
 	}
@@ -135,7 +139,7 @@ func (r *MetadataRepository) ListByPath(ctx context.Context, driveID, path strin
 		listing.ChildIDs[i] = m.ID
 
 		if !opts.NoStore {
-			_ = r.metadataCache.Put(ctx, m)
+			_ = r.metadataCache.Put(ctx, path, m)
 		}
 	}
 

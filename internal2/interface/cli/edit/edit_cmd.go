@@ -15,7 +15,6 @@ import (
 	domainfs "github.com/michaeldcanady/go-onedrive/internal2/domain/fs"
 	infralogging "github.com/michaeldcanady/go-onedrive/internal2/infra/common/logging"
 	"github.com/michaeldcanady/go-onedrive/internal2/interface/cli/util"
-	"github.com/spf13/cobra"
 )
 
 // EditCmd handles the execution logic for the 'edit' command.
@@ -44,7 +43,7 @@ func (c *EditCmd) WithLogger(logger infralogging.Logger) *EditCmd {
 // 3. Launches the local editor with a temporary file.
 // 4. Checks for changes using SHA-256 hashes.
 // 5. Uploads the updated file if changes were made.
-func (c *EditCmd) Run(ctx context.Context, cmd *cobra.Command, opts Options) error {
+func (c *EditCmd) Run(ctx context.Context, opts Options) error {
 	start := time.Now()
 
 	if ctx == nil {
@@ -80,7 +79,7 @@ func (c *EditCmd) Run(ctx context.Context, cmd *cobra.Command, opts Options) err
 
 	// 3. Launch Editor
 	editorSvc := NewEditorService(c.container.EnvironmentService(), c.logger).
-		WithIO(cmd.InOrStdin(), cmd.OutOrStdout(), cmd.ErrOrStderr())
+		WithIO(opts.Stdin, opts.Stdout, opts.Stderr)
 
 	editedBytes, tmpPath, err := editorSvc.LaunchTempFile(fmt.Sprintf("%s-edit-", name), ext, io.TeeReader(reader, origHash))
 	defer os.Remove(tmpPath)
@@ -94,7 +93,7 @@ func (c *EditCmd) Run(ctx context.Context, cmd *cobra.Command, opts Options) err
 
 	if origHashSum == hex.EncodeToString(editedHash[:]) {
 		c.logger.Info("no changes detected, skipping upload")
-		fmt.Fprintln(cmd.OutOrStdout(), "No changes detected.")
+		fmt.Fprintln(opts.Stdout, "No changes detected.")
 		return nil
 	}
 
@@ -111,7 +110,8 @@ func (c *EditCmd) Run(ctx context.Context, cmd *cobra.Command, opts Options) err
 	c.logger.Info("file updated successfully",
 		infralogging.Duration("duration", time.Since(start)),
 	)
-	fmt.Fprintf(cmd.OutOrStdout(), "File %q updated successfully.\n", opts.Path)
+	fmt.Fprintf(opts.Stdout, "File %q updated successfully.\n", opts.Path)
 
 	return nil
 }
+

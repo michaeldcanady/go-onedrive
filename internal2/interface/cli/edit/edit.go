@@ -45,8 +45,12 @@ You must be logged in (via 'onedrive auth login') before using this command.
 				return err
 			}
 
+			opts.Stdin = cmd.InOrStdin()
+			opts.Stdout = cmd.OutOrStdout()
+			opts.Stderr = cmd.ErrOrStderr()
+
 			editCmd := NewEditCmd(c)
-			return editCmd.Run(cmd.Context(), cmd, opts)
+			return editCmd.Run(cmd.Context(), opts)
 		},
 	}
 
