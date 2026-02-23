@@ -170,6 +170,15 @@ func (m *MockEditor) WithIO(stdin io.Reader, stdout, stderr io.Writer) domainedi
 	return m
 }
 
+type MockConflictHandler struct {
+	mock.Mock
+}
+
+func (m *MockConflictHandler) HandleConflict(ctx context.Context, path string, content []byte, tmpPath string) (bool, error) {
+	args := m.Called(ctx, path, content, tmpPath)
+	return args.Bool(0), args.Error(1)
+}
+
 // --- Tests ---
 
 func TestName(t *testing.T) {
@@ -201,6 +210,7 @@ func TestEditCmd_Run_NoChanges(t *testing.T) {
 
 	mockLogger.On("Info", mock.Anything, mock.Anything).Return()
 	mockLogger.On("Debug", mock.Anything, mock.Anything).Return()
+	mockLogger.On("Warn", mock.Anything, mock.Anything).Return()
 
 	// Mock Get
 	mockFS.On("Get", mock.Anything, "/file.txt").Return(domainfs.Item{ETag: "tag1"}, nil)
@@ -241,6 +251,7 @@ func TestEditCmd_Run_WithChanges(t *testing.T) {
 
 	mockLogger.On("Info", mock.Anything, mock.Anything).Return()
 	mockLogger.On("Debug", mock.Anything, mock.Anything).Return()
+	mockLogger.On("Warn", mock.Anything, mock.Anything).Return()
 
 	// Mock Get
 	mockFS.On("Get", mock.Anything, "/file.txt").Return(domainfs.Item{ETag: "tag1"}, nil)
@@ -279,6 +290,7 @@ func TestEditCmd_Run_WithMockEditor(t *testing.T) {
 	mockContainer.On("FS").Return(mockFS)
 	mockLogger.On("Info", mock.Anything, mock.Anything).Return()
 	mockLogger.On("Debug", mock.Anything, mock.Anything).Return()
+	mockLogger.On("Warn", mock.Anything, mock.Anything).Return()
 
 	// Mock Get
 	mockFS.On("Get", mock.Anything, "/file.txt").Return(domainfs.Item{ETag: "tag1"}, nil)
@@ -314,10 +326,12 @@ func TestEditCmd_Run_ETagMismatch(t *testing.T) {
 	mockFS := new(MockFSService)
 	mockLogger := new(MockLogger)
 	mockEditor := new(MockEditor)
+	mockConflict := new(MockConflictHandler)
 
 	mockContainer.On("FS").Return(mockFS)
 	mockLogger.On("Info", mock.Anything, mock.Anything).Return()
 	mockLogger.On("Debug", mock.Anything, mock.Anything).Return()
+	mockLogger.On("Warn", mock.Anything, mock.Anything).Return()
 
 	// Mock Get
 	mockFS.On("Get", mock.Anything, "/file.txt").Return(domainfs.Item{ETag: "tag1"}, nil)
@@ -333,18 +347,23 @@ func TestEditCmd_Run_ETagMismatch(t *testing.T) {
 		Return([]byte("modified"), "temp-path", nil)
 
 	// Mock WriteFile: returns ETag mismatch error
-	mockFS.On("WriteFile", mock.Anything, "/file.txt", mock.Anything, domainfs.WriteOptions{
-		Overwrite: false,
-		IfMatch:   "tag1",
-	}).Return(domainfs.Item{}, infrafile.ErrPrecondition)
+	mockFS.On("WriteFile", mock.Anything, "/file.txt", mock.Anything, mock.Anything).
+		Return(domainfs.Item{}, infrafile.ErrPrecondition)
+
+	// Mock Conflict Handler: returns true (remove temp) and no error
+	mockConflict.On("HandleConflict", mock.Anything, "/file.txt", []byte("modified"), "temp-path").
+		Return(true, nil)
 
 	buf := new(bytes.Buffer)
 	opts := Options{Path: "/file.txt", Stdout: buf, Stderr: io.Discard}
 
-	editCmd := NewEditCmd(mockContainer).WithLogger(mockLogger).WithEditor(mockEditor)
+	editCmd := NewEditCmd(mockContainer).
+		WithLogger(mockLogger).
+		WithEditor(mockEditor).
+		WithConflictHandler(mockConflict)
 	err := editCmd.Run(context.Background(), opts)
 
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "the file has been modified in the cloud")
+	assert.NoError(t, err)
 	mockFS.AssertExpectations(t)
+	mockConflict.AssertExpectations(t)
 }

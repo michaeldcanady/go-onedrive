@@ -11,8 +11,10 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
+	"github.com/manifoldco/promptui"
 	"github.com/michaeldcanady/go-onedrive/internal2/domain/di"
 	domaineditor "github.com/michaeldcanady/go-onedrive/internal2/domain/editor"
 	domainfs "github.com/michaeldcanady/go-onedrive/internal2/domain/fs"
@@ -21,13 +23,83 @@ import (
 	"github.com/michaeldcanady/go-onedrive/internal2/interface/cli/util"
 )
 
+// ConflictHandler defines the interface for resolving file upload conflicts.
+type ConflictHandler interface {
+	HandleConflict(ctx context.Context, path string, content []byte, tmpPath string) (bool, error)
+}
+
+// DefaultConflictHandler implements ConflictHandler using promptui for user interaction.
+type DefaultConflictHandler struct {
+	cmd    *EditCmd
+	stdout io.Writer
+	stderr io.Writer
+}
+
+func (h *DefaultConflictHandler) HandleConflict(ctx context.Context, path string, content []byte, tmpPath string) (bool, error) {
+	prompt := promptui.Select{
+		Label: "Conflict: The file has been modified in the cloud. How would you like to proceed?",
+		Items: []string{
+			"Overwrite (Force Upload)",
+			"Save as Copy",
+			"Keep Local & Abort",
+			"Discard & Abort",
+		},
+	}
+
+	_, result, err := prompt.Run()
+	if err != nil {
+		return false, util.NewCommandErrorWithNameWithError(commandName, err)
+	}
+
+	switch result {
+	case "Overwrite (Force Upload)":
+		if err := h.cmd.uploadChanges(ctx, path, content, true); err != nil {
+			fmt.Fprintf(h.stderr, "\nUpload failed. Your changes are saved locally at: %s\n", tmpPath)
+			return false, err
+		}
+		return true, nil
+	case "Save as Copy":
+		ext := filepath.Ext(path)
+		base := strings.TrimSuffix(path, ext)
+		copyPath := fmt.Sprintf("%s-copy%s", base, ext)
+
+		// Ask for confirmation/edit of the copy path
+		namePrompt := promptui.Prompt{
+			Label:   "Save copy as",
+			Default: copyPath,
+		}
+		finalPath, err := namePrompt.Run()
+		if err != nil {
+			return false, util.NewCommandErrorWithNameWithError(commandName, err)
+		}
+
+		if err := h.cmd.uploadChanges(ctx, finalPath, content, false); err != nil {
+			fmt.Fprintf(h.stderr, "\nUpload failed. Your changes are saved locally at: %s\n", tmpPath)
+			return false, err
+		}
+		fmt.Fprintf(h.stdout, "Changes saved as copy: %q\n", finalPath)
+		return true, nil
+
+	case "Keep Local & Abort":
+		fmt.Fprintf(h.stderr, "Aborted. Your changes are saved locally at: %s\n", tmpPath)
+		return false, nil
+
+	case "Discard & Abort":
+		return true, nil
+
+	default:
+		return false, util.NewCommandErrorWithNameWithMessage(commandName, "invalid selection")
+	}
+}
+
 // EditCmd handles the execution logic for the 'edit' command.
 // It coordinates downloading a file, launching an editor, and uploading changes.
 type EditCmd struct {
-	container di.Container
-	logger    infralogging.Logger
-	editor    domaineditor.Service
-	etag      string
+	container       di.Container
+	logger          infralogging.Logger
+	editor          domaineditor.Service
+	conflictHandler ConflictHandler
+	etag            string
 }
 
 // NewEditCmd creates a new EditCmd instance with the provided dependency container.
@@ -40,6 +112,12 @@ func NewEditCmd(container di.Container) *EditCmd {
 // WithEditor allows injecting a custom editor into EditCmd.
 func (c *EditCmd) WithEditor(editor domaineditor.Service) *EditCmd {
 	c.editor = editor
+	return c
+}
+
+// WithConflictHandler allows injecting a custom conflict handler into EditCmd.
+func (c *EditCmd) WithConflictHandler(handler ConflictHandler) *EditCmd {
+	c.conflictHandler = handler
 	return c
 }
 
@@ -88,16 +166,28 @@ func (c *EditCmd) Run(ctx context.Context, opts Options) error {
 
 	// 3. Compare and Upload
 	if c.hasChanges(origHash, editedBytes) {
-		if err := c.uploadChanges(ctx, opts.Path, editedBytes, opts.Force); err != nil {
-			shouldRemoveTemp = false
-			fmt.Fprintf(opts.Stderr, "\nUpload failed. Your changes are saved locally at: %s\n", tmpPath)
-			return err
+		err := c.uploadChanges(ctx, opts.Path, editedBytes, opts.Force)
+		if err != nil {
+			if errors.Is(err, infrafile.ErrPrecondition) && !opts.Force {
+				c.logger.Warn("conflict detected, initiating interactive resolution")
+				shouldRemoveTemp, err = c.conflictHandler.HandleConflict(ctx, opts.Path, editedBytes, tmpPath)
+				if err != nil {
+					return err
+				}
+			} else {
+				shouldRemoveTemp = false
+				fmt.Fprintf(opts.Stderr, "\nUpload failed. Your changes are saved locally at: %s\n", tmpPath)
+				return err
+			}
 		}
-		c.logger.Info("file updated successfully",
-			infralogging.String("path", opts.Path),
-			infralogging.Duration("duration", time.Since(start)),
-		)
-		fmt.Fprintf(opts.Stdout, "File %q updated successfully.\n", opts.Path)
+
+		if shouldRemoveTemp {
+			c.logger.Info("file updated successfully",
+				infralogging.String("path", opts.Path),
+				infralogging.Duration("duration", time.Since(start)),
+			)
+			fmt.Fprintf(opts.Stdout, "File %q updated successfully.\n", opts.Path)
+		}
 	} else {
 		c.logger.Info("no changes detected, skipping upload")
 		fmt.Fprintln(opts.Stdout, "No changes detected.")
@@ -117,6 +207,10 @@ func (c *EditCmd) ensureDependencies(ctx context.Context) error {
 
 	if c.editor == nil {
 		c.editor = c.container.Editor()
+	}
+
+	if c.conflictHandler == nil {
+		c.conflictHandler = &DefaultConflictHandler{cmd: c, stdout: os.Stdout, stderr: os.Stderr}
 	}
 
 	c.logger = c.logger.WithContext(ctx).With(infralogging.String("correlationID", util.CorrelationIDFromContext(ctx)))
@@ -194,14 +288,70 @@ func (c *EditCmd) uploadChanges(ctx context.Context, path string, content []byte
 		IfMatch:   ifMatch,
 	})
 	if err != nil {
-		if errors.Is(err, infrafile.ErrPrecondition) {
-			return util.NewCommandErrorWithNameWithMessage(commandName,
-				"the file has been modified in the cloud; use --force to overwrite")
+		if !errors.Is(err, infrafile.ErrPrecondition) {
+			c.logger.Error("failed to upload updated file",
+				infralogging.String("path", path),
+				infralogging.Error(err))
 		}
-		c.logger.Error("failed to upload updated file",
-			infralogging.String("path", path),
-			infralogging.Error(err))
-		return util.NewCommandError(commandName, "failed to upload updated file", err)
+		return err
 	}
 	return nil
+}
+
+func (c *EditCmd) handleConflict(ctx context.Context, opts Options, content []byte, tmpPath string) (bool, error) {
+	prompt := promptui.Select{
+		Label: "Conflict: The file has been modified in the cloud. How would you like to proceed?",
+		Items: []string{
+			"Overwrite (Force Upload)",
+			"Save as Copy",
+			"Keep Local & Abort",
+			"Discard & Abort",
+		},
+	}
+
+	_, result, err := prompt.Run()
+	if err != nil {
+		return false, util.NewCommandErrorWithNameWithError(commandName, err)
+	}
+
+	switch result {
+	case "Overwrite (Force Upload)":
+		if err := c.uploadChanges(ctx, opts.Path, content, true); err != nil {
+			fmt.Fprintf(opts.Stderr, "\nUpload failed. Your changes are saved locally at: %s\n", tmpPath)
+			return false, err
+		}
+		return true, nil
+
+	case "Save as Copy":
+		ext := filepath.Ext(opts.Path)
+		base := strings.TrimSuffix(opts.Path, ext)
+		copyPath := fmt.Sprintf("%s-copy%s", base, ext)
+
+		// Ask for confirmation/edit of the copy path
+		namePrompt := promptui.Prompt{
+			Label:   "Save copy as",
+			Default: copyPath,
+		}
+		finalPath, err := namePrompt.Run()
+		if err != nil {
+			return false, util.NewCommandErrorWithNameWithError(commandName, err)
+		}
+
+		if err := c.uploadChanges(ctx, finalPath, content, false); err != nil {
+			fmt.Fprintf(opts.Stderr, "\nUpload failed. Your changes are saved locally at: %s\n", tmpPath)
+			return false, err
+		}
+		fmt.Fprintf(opts.Stdout, "Changes saved as copy: %q\n", finalPath)
+		return true, nil
+
+	case "Keep Local & Abort":
+		fmt.Fprintf(opts.Stderr, "Aborted. Your changes are saved locally at: %s\n", tmpPath)
+		return false, nil
+
+	case "Discard & Abort":
+		return true, nil
+
+	default:
+		return false, util.NewCommandErrorWithNameWithMessage(commandName, "invalid selection")
+	}
 }

@@ -129,6 +129,7 @@ func mapGraphError2(err error) error {
 			case "conflict":
 				return ErrConflict
 
+			// equated due to graph returning notAllowed error when it should return preconditions
 			case "preconditionFailed", "notAllowed":
 				return ErrPrecondition
 			}
