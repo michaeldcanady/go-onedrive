@@ -16,12 +16,12 @@ import (
 var _ domainprofile.ProfileService = (*ProfileService)(nil)
 
 type ProfileService struct {
-	cacheSvc cache.CacheService
+	cacheSvc cache.Cache[domainprofile.Profile]
 	logger   logging.Logger
 	repo     domainprofile.Repository
 }
 
-func New(cacheSvc cache.CacheService, logger logging.Logger, repo domainprofile.Repository) *ProfileService {
+func New(cacheSvc cache.Cache[domainprofile.Profile], logger logging.Logger, repo domainprofile.Repository) *ProfileService {
 	return &ProfileService{
 		cacheSvc: cacheSvc,
 		logger:   logger,
@@ -86,8 +86,7 @@ func (s *ProfileService) Create(ctx context.Context, name string) (domainprofile
 		logging.String("event", eventProfileCreateSuccess),
 	)
 
-	// Cache it
-	if err := s.cacheSvc.SetCLIProfile(ctx, name, profile); err != nil {
+	if err := s.cacheSvc.Set(ctx, name, profile); err != nil {
 		logger.Warn("failed to cache profile",
 			logging.String("event", eventProfileCreateCache),
 			logging.Error(err),
@@ -130,9 +129,9 @@ func (s *ProfileService) Delete(ctx context.Context, name string) error {
 	)
 
 	// Optional: delete from cache
-	// if err := s.cacheSvc.DeleteCLIProfile(ctx, name); err != nil {
-	//     logger.Warn("failed to delete cached profile", logging.Error(err))
-	// }
+	if err := s.cacheSvc.Delete(ctx, name); err != nil {
+		logger.Warn("failed to delete cached profile", logging.Error(err))
+	}
 
 	return nil
 }
@@ -238,7 +237,7 @@ func (s *ProfileService) GetProfile(ctx context.Context, name string) (domainpro
 	logger.Info("retrieving profile")
 
 	// Try cache first
-	profile, err := s.cacheSvc.GetCLIProfile(ctx, name)
+	profile, err := s.cacheSvc.Get(ctx, name)
 	if err == nil && profile != (domainprofile.Profile{}) {
 		logger.Info("profile retrieved from cache",
 			logging.String("event", eventProfileGetCacheHit),
@@ -273,7 +272,7 @@ func (s *ProfileService) GetProfile(ctx context.Context, name string) (domainpro
 	)
 
 	// Cache it
-	if err := s.cacheSvc.SetCLIProfile(ctx, name, profile); err != nil {
+	if err := s.cacheSvc.Set(ctx, name, profile); err != nil {
 		logger.Warn("failed to cache profile",
 			logging.String("event", eventProfileGetCacheError),
 			logging.Error(err),

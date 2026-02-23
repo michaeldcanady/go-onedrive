@@ -2,7 +2,6 @@ package auth
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"time"
@@ -11,9 +10,9 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
 	accountdomain "github.com/michaeldcanady/go-onedrive/internal2/domain/account"
 	authdomain "github.com/michaeldcanady/go-onedrive/internal2/domain/auth"
+	domaincache "github.com/michaeldcanady/go-onedrive/internal2/domain/cache"
 	domainconfig "github.com/michaeldcanady/go-onedrive/internal2/domain/config"
 	"github.com/michaeldcanady/go-onedrive/internal2/domain/state"
-	"github.com/michaeldcanady/go-onedrive/internal2/infra/cache/abstractions"
 	"github.com/michaeldcanady/go-onedrive/internal2/infra/cache/core"
 	"github.com/michaeldcanady/go-onedrive/internal2/infra/common/logging"
 	"github.com/michaeldcanady/go-onedrive/internal2/infra/config"
@@ -26,8 +25,14 @@ var (
 	ErrEmptyToken            = errors.New("empty token returned from provider")
 )
 
+const (
+	eventAuthSilentStart = "auth.silent.start"
+	eventAuthLoginStart  = "auth.login.start"
+	eventAuthLogoutStart = "auth.logout.start"
+)
+
 type Service2 struct {
-	cache   *abstractions.Cache2
+	cache   domaincache.Cache[authdomain.AccessToken]
 	config  domainconfig.ConfigService
 	state   state.Service
 	logger  logging.Logger
@@ -36,7 +41,7 @@ type Service2 struct {
 }
 
 func NewService2(
-	cache *abstractions.Cache2,
+	cache domaincache.Cache[authdomain.AccessToken],
 	config domainconfig.ConfigService,
 	state state.Service,
 	logger logging.Logger,
@@ -134,9 +139,8 @@ func (s *Service2) needsInteractiveAuth(opts authdomain.LoginOptions, record acc
 }
 
 func (s *Service2) getCachedToken(ctx context.Context, account accountdomain.Account) (authdomain.AccessToken, error) {
-	var token authdomain.AccessToken
-
-	if err := s.cache.Get(ctx, func() ([]byte, error) { return json.Marshal(account.HomeAccountID) }, func(b []byte) error { return json.Unmarshal(b, &token) }); err != nil {
+	token, err := s.cache.Get(ctx, account.HomeAccountID)
+	if err != nil {
 		if !errors.Is(err, core.ErrKeyNotFound) {
 			return authdomain.AccessToken{}, err
 		}
@@ -249,7 +253,9 @@ func (s *Service2) Login(ctx context.Context, profileName string, opts authdomai
 		logger.Warn("failed to cache account", logging.Error(err))
 	}
 
-	s.cache.Set(ctx, func() ([]byte, error) { return json.Marshal(record.HomeAccountID) }, func() ([]byte, error) { return json.Marshal(token) })
+	if err := s.cache.Set(ctx, record.HomeAccountID, token); err != nil {
+		logger.Warn("failed to cache token", logging.Error(err))
+	}
 
 	logger.Info("login successful")
 
@@ -376,7 +382,7 @@ func (s *Service2) Logout(ctx context.Context, profileName string, force bool) e
 		return fmt.Errorf("failed to delete account: %w", err)
 	}
 
-	if err := s.cache.Delete(ctx, func() ([]byte, error) { return json.Marshal(account.HomeAccountID) }); err != nil {
+	if err := s.cache.Delete(ctx, account.HomeAccountID); err != nil {
 		logger.Warn("failed to delete token", logging.Error(err))
 		return fmt.Errorf("failed to delete token: %w", err)
 	}

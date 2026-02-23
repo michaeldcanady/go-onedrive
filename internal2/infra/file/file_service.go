@@ -7,6 +7,7 @@ import (
 	"io"
 
 	domaincache "github.com/michaeldcanady/go-onedrive/internal2/domain/cache"
+	"github.com/michaeldcanady/go-onedrive/internal2/infra/cache/core"
 	"github.com/michaeldcanady/go-onedrive/internal2/infra/common/logging"
 	abstractions "github.com/microsoft/kiota-abstractions-go"
 	msgraphsdkgo "github.com/microsoftgraph/msgraph-sdk-go"
@@ -19,11 +20,11 @@ import (
 type Service2 struct {
 	graph  clienter
 	logger logging.Logger
-	cache  domaincache.CacheService
+	cache  domaincache.Cache[*domaincache.CachedChildren]
 }
 
 // DEPRECATED
-func New2(graph clienter, logger logging.Logger, cache domaincache.CacheService) *Service2 {
+func New2(graph clienter, logger logging.Logger, cache domaincache.Cache[*domaincache.CachedChildren]) *Service2 {
 	s := &Service2{
 		graph:  graph,
 		cache:  cache,
@@ -123,8 +124,8 @@ func (s *Service2) getDriveRoot(ctx context.Context, driveID, normalizedPath str
 
 	// Load cached ETag
 	cacheKey := s.cacheKey(driveID, normalizedPath)
-	cached, err := s.cache.GetDrive(ctx, cacheKey)
-	if err != nil {
+	cached, err := s.cache.Get(ctx, cacheKey)
+	if err != nil && !errors.Is(err, core.ErrKeyNotFound) {
 		return nil, err
 	}
 
@@ -165,7 +166,7 @@ func (s *Service2) getChildren(ctx context.Context, driveID, folderPath string) 
 
 	// 304 Not Modified → use cached children
 	if driveItem == nil {
-		cached, err := s.cache.GetDrive(ctx, cacheKey)
+		cached, err := s.cache.Get(ctx, cacheKey)
 		if err != nil {
 			return nil, err
 		}
@@ -186,7 +187,7 @@ func (s *Service2) getChildren(ctx context.Context, driveID, folderPath string) 
 
 	// Cache updated children
 	if etag := driveItem.GetETag(); etag != nil && *etag != "" {
-		s.cache.SetDrive(ctx, cacheKey, domaincache.CachedChildren{
+		s.cache.Set(ctx, cacheKey, &domaincache.CachedChildren{
 			ETag:  *etag,
 			Items: resp,
 		})

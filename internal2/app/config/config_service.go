@@ -14,13 +14,13 @@ import (
 )
 
 type ConfigService struct {
-	cacheService cache.CacheService
+	cacheService cache.Cache[config.Configuration3]
 	paths        map[string]string
 	loader       domainconfig.Loader
 	logger       logging.Logger
 }
 
-func New2(cache cache.CacheService, loader domainconfig.Loader, logger logging.Logger) *ConfigService {
+func New2(cache cache.Cache[config.Configuration3], loader domainconfig.Loader, logger logging.Logger) *ConfigService {
 	return &ConfigService{
 		cacheService: cache,
 		paths:        make(map[string]string),
@@ -83,7 +83,7 @@ func (s *ConfigService) GetConfiguration(ctx context.Context, name string) (conf
 		logging.String("event", eventConfigGetStart),
 	)
 
-	cfg, err := s.cacheService.GetConfiguration(ctx, name)
+	cfg, err := s.cacheService.Get(ctx, name)
 	if err == nil {
 		logger.Debug("configuration retrieved from cache",
 			logging.String("event", eventConfigGetCacheHit),
@@ -148,7 +148,7 @@ func (s *ConfigService) GetConfiguration(ctx context.Context, name string) (conf
 		logging.String("event", eventConfigGetSaveStart),
 	)
 
-	if err := s.cacheService.SetConfiguration(ctx, name, loadedCfg); err != nil {
+	if err := s.cacheService.Set(ctx, name, loadedCfg); err != nil {
 		logger.Error("failed to save configuration to cache",
 			logging.String("event", eventConfigGetSaveFailure),
 			logging.Error(err),

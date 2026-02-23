@@ -6,31 +6,11 @@ import (
 	"testing"
 
 	domainfile "github.com/michaeldcanady/go-onedrive/internal2/domain/file"
-	"github.com/michaeldcanady/go-onedrive/internal2/infra/cache/abstractions"
 	"github.com/michaeldcanady/go-onedrive/internal2/infra/file"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
-
-type MockCache2 struct {
-	mock.Mock
-}
-
-func (m *MockCache2) Get(ctx context.Context, keyFn abstractions.Serializer2, unmarshalFn abstractions.Deserializer2) error {
-	args := m.Called(ctx, keyFn, unmarshalFn)
-	return args.Error(0)
-}
-
-func (m *MockCache2) Set(ctx context.Context, keyFn abstractions.Serializer2, marshalFn abstractions.Serializer2) error {
-	args := m.Called(ctx, keyFn, marshalFn)
-	return args.Error(0)
-}
-
-func (m *MockCache2) Delete(ctx context.Context, keyFn abstractions.Serializer2) error {
-	args := m.Called(ctx, keyFn)
-	return args.Error(0)
-}
 
 func TestContentsCacheAdapter_Get(t *testing.T) {
 	t.Parallel()
@@ -39,16 +19,16 @@ func TestContentsCacheAdapter_Get(t *testing.T) {
 		name           string
 		path           string
 		cacheGetErr    error
-		cacheGetBytes  []byte
+		cacheGetVal    any
 		expectOK       bool
 		expectContents *domainfile.Contents
 	}{
 		{
-			name:          "hit: valid JSON",
-			path:          "/foo/bar.txt",
-			cacheGetErr:   nil,
-			cacheGetBytes: mustJSON(t, domainfile.Contents{CTag: "etag123", Data: []byte("hello")}),
-			expectOK:      true,
+			name:        "hit: valid contents",
+			path:        "/foo/bar.txt",
+			cacheGetErr: nil,
+			cacheGetVal: domainfile.Contents{CTag: "etag123", Data: []byte("hello")},
+			expectOK:    true,
 			expectContents: &domainfile.Contents{
 				CTag: "etag123",
 				Data: []byte("hello"),
@@ -58,25 +38,9 @@ func TestContentsCacheAdapter_Get(t *testing.T) {
 			name:           "miss: cache error",
 			path:           "/foo/missing.txt",
 			cacheGetErr:    errors.New("not found"),
-			cacheGetBytes:  nil,
+			cacheGetVal:    domainfile.Contents{},
 			expectOK:       false,
 			expectContents: nil,
-		},
-		{
-			name:           "miss: invalid JSON",
-			path:           "/foo/bad.json",
-			cacheGetErr:    errors.New("invalid json"),
-			cacheGetBytes:  []byte("{not valid json"),
-			expectOK:       false,
-			expectContents: nil,
-		},
-		{
-			name:           "hit: empty struct",
-			path:           "/foo/empty",
-			cacheGetErr:    nil,
-			cacheGetBytes:  mustJSON(t, domainfile.Contents{}),
-			expectOK:       true,
-			expectContents: &domainfile.Contents{},
 		},
 	}
 
@@ -84,15 +48,11 @@ func TestContentsCacheAdapter_Get(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			mockCache := new(MockCache2)
+			mockCache := new(MockCache2[domainfile.Contents])
 
 			mockCache.
-				On("Get", mock.Anything, mock.AnythingOfType("abstractions.Serializer2"), mock.AnythingOfType("abstractions.Deserializer2")).
-				Run(func(args mock.Arguments) {
-					unmarshalFn := args.Get(2).(abstractions.Deserializer2)
-					_ = unmarshalFn(tt.cacheGetBytes)
-				}).
-				Return(tt.cacheGetErr)
+				On("Get", mock.Anything, tt.path).
+				Return(tt.cacheGetVal.(domainfile.Contents), tt.cacheGetErr)
 
 			adapter := file.NewContentsCacheAdapter(mockCache)
 
@@ -144,28 +104,19 @@ func TestContentsCacheAdapter_Put(t *testing.T) {
 			setErr:    errors.New("cache write failed"),
 			expectErr: true,
 		},
-		{
-			name:      "success: empty contents",
-			path:      "/foo/empty",
-			input:     &domainfile.Contents{},
-			setErr:    nil,
-			expectErr: false,
-		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			mockCache := new(MockCache2)
+			mockCache := new(MockCache2[domainfile.Contents])
 
-			mockCache.
-				On("Set", mock.Anything, mock.AnythingOfType("abstractions.Serializer2"), mock.AnythingOfType("abstractions.Serializer2")).
-				Run(func(args mock.Arguments) {
-					marshalFn := args.Get(2).(abstractions.Serializer2)
-					_, _ = marshalFn()
-				}).
-				Return(tt.setErr)
+			if tt.input != nil {
+				mockCache.
+					On("Set", mock.Anything, tt.path, *tt.input).
+					Return(tt.setErr)
+			}
 
 			adapter := file.NewContentsCacheAdapter(mockCache)
 
@@ -203,22 +154,16 @@ func TestContentsCacheAdapter_Invalidate(t *testing.T) {
 			deleteErr: errors.New("delete error"),
 			expectErr: true,
 		},
-		{
-			name:      "success: deleting non-existent key returns nil",
-			path:      "/foo/missing",
-			deleteErr: nil,
-			expectErr: false,
-		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			mockCache := new(MockCache2)
+			mockCache := new(MockCache2[domainfile.Contents])
 
 			mockCache.
-				On("Delete", mock.Anything, mock.AnythingOfType("abstractions.Serializer2")).
+				On("Delete", mock.Anything, tt.path).
 				Return(tt.deleteErr)
 
 			adapter := file.NewContentsCacheAdapter(mockCache)

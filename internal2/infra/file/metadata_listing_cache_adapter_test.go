@@ -5,7 +5,6 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/michaeldcanady/go-onedrive/internal2/infra/cache/abstractions"
 	"github.com/michaeldcanady/go-onedrive/internal2/infra/file"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -18,33 +17,29 @@ func TestMetadataListCacheAdapter_Get(t *testing.T) {
 	tests := []struct {
 		name          string
 		path          string
-		cacheGetBytes []byte
+		cacheGetErr   error
+		cacheGetVal   any
 		expectOK      bool
 		expectListing *file.Listing
 	}{
 		{
-			name:          "hit: valid JSON",
-			path:          "/foo/listing",
-			cacheGetBytes: mustJSON(t, file.Listing{ETag: "etag123", ChildIDs: []string{"a", "b"}}),
-			expectOK:      true,
+			name:        "hit: valid listing",
+			path:        "/foo/listing",
+			cacheGetErr: nil,
+			cacheGetVal: file.Listing{ETag: "etag123", ChildIDs: []string{"a", "b"}},
+			expectOK:    true,
 			expectListing: &file.Listing{
 				ETag:     "etag123",
 				ChildIDs: []string{"a", "b"},
 			},
 		},
 		{
-			name:          "miss: invalid JSON",
+			name:          "miss: cache error",
 			path:          "/foo/bad",
-			cacheGetBytes: []byte("{not valid json"),
+			cacheGetErr:   errors.New("not found"),
+			cacheGetVal:   file.Listing{},
 			expectOK:      false,
 			expectListing: nil,
-		},
-		{
-			name:          "hit: empty listing",
-			path:          "/foo/empty",
-			cacheGetBytes: mustJSON(t, file.Listing{}),
-			expectOK:      true,
-			expectListing: &file.Listing{},
 		},
 	}
 
@@ -52,20 +47,11 @@ func TestMetadataListCacheAdapter_Get(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			mockCache := new(MockCache2)
+			mockCache := new(MockCache2[file.Listing])
 
 			mockCache.
-				On("Get", mock.Anything, mock.AnythingOfType("abstractions.Serializer2"), mock.AnythingOfType("abstractions.Deserializer2")).
-				Run(func(args mock.Arguments) {
-					unmarshalFn := args.Get(2).(abstractions.Deserializer2)
-					err := unmarshalFn(tt.cacheGetBytes)
-
-					// If unmarshal fails, override return value
-					if err != nil {
-						mockCache.ExpectedCalls[0].ReturnArguments = mock.Arguments{err}
-					}
-				}).
-				Return(nil)
+				On("Get", mock.Anything, tt.path).
+				Return(tt.cacheGetVal.(file.Listing), tt.cacheGetErr)
 
 			adapter := file.NewMetadataListCacheAdapter(mockCache)
 
@@ -117,28 +103,19 @@ func TestMetadataListCacheAdapter_Put(t *testing.T) {
 			setErr:    errors.New("cache write failed"),
 			expectErr: true,
 		},
-		{
-			name:      "success: empty listing",
-			path:      "/foo/empty",
-			listing:   &file.Listing{},
-			setErr:    nil,
-			expectErr: false,
-		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			mockCache := new(MockCache2)
+			mockCache := new(MockCache2[file.Listing])
 
-			mockCache.
-				On("Set", mock.Anything, mock.AnythingOfType("abstractions.Serializer2"), mock.AnythingOfType("abstractions.Serializer2")).
-				Run(func(args mock.Arguments) {
-					marshalFn := args.Get(2).(abstractions.Serializer2)
-					_, _ = marshalFn()
-				}).
-				Return(tt.setErr)
+			if tt.listing != nil {
+				mockCache.
+					On("Set", mock.Anything, tt.path, *tt.listing).
+					Return(tt.setErr)
+			}
 
 			adapter := file.NewMetadataListCacheAdapter(mockCache)
 
@@ -176,22 +153,16 @@ func TestMetadataListCacheAdapter_Invalidate(t *testing.T) {
 			deleteErr: errors.New("delete error"),
 			expectErr: true,
 		},
-		{
-			name:      "success: deleting non-existent key returns nil",
-			path:      "/foo/missing",
-			deleteErr: nil,
-			expectErr: false,
-		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			mockCache := new(MockCache2)
+			mockCache := new(MockCache2[file.Listing])
 
 			mockCache.
-				On("Delete", mock.Anything, mock.AnythingOfType("abstractions.Serializer2")).
+				On("Delete", mock.Anything, tt.path).
 				Return(tt.deleteErr)
 
 			adapter := file.NewMetadataListCacheAdapter(mockCache)

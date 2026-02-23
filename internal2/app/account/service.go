@@ -2,11 +2,10 @@ package account
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 
 	"github.com/michaeldcanady/go-onedrive/internal2/domain/account"
-	"github.com/michaeldcanady/go-onedrive/internal2/infra/cache/abstractions"
+	"github.com/michaeldcanady/go-onedrive/internal2/domain/cache"
 	"github.com/michaeldcanady/go-onedrive/internal2/infra/cache/core"
 	"github.com/michaeldcanady/go-onedrive/internal2/infra/common/logging"
 	"github.com/michaeldcanady/go-onedrive/internal2/interface/cli/util"
@@ -16,14 +15,12 @@ const (
 	accountKey = "account"
 )
 
-var accountKeySerializer = func() ([]byte, error) { return json.Marshal(accountKey) }
-
 type Service struct {
-	cache  *abstractions.Cache2
+	cache  cache.Cache[account.Account]
 	logger logging.Logger
 }
 
-func New(cache *abstractions.Cache2, logger logging.Logger) *Service {
+func New(cache cache.Cache[account.Account], logger logging.Logger) *Service {
 	return &Service{
 		cache:  cache,
 		logger: logger,
@@ -39,12 +36,11 @@ func (s *Service) buildLogger(ctx context.Context) logging.Logger {
 }
 
 func (s *Service) Get(ctx context.Context) (account.Account, error) {
-	var acct account.Account
-
 	logger := s.buildLogger(ctx)
 
 	logger.Debug("retrieving account from cache")
-	if err := s.cache.Get(ctx, accountKeySerializer, func(b []byte) error { return json.Unmarshal(b, &acct) }); err != nil {
+	acct, err := s.cache.Get(ctx, accountKey)
+	if err != nil {
 		if !errors.Is(err, core.ErrKeyNotFound) {
 			logger.Warn("failed to retrieve cached account",
 				logging.Error(err),
@@ -67,7 +63,7 @@ func (s *Service) Put(ctx context.Context, acct account.Account) error {
 	logger.Debug("caching account",
 		logging.String("username", acct.Username),
 	)
-	if err := s.cache.Set(ctx, accountKeySerializer, func() ([]byte, error) { return json.Marshal(acct) }); err != nil {
+	if err := s.cache.Set(ctx, accountKey, acct); err != nil {
 		logger.Warn("failed to cache account",
 			logging.String("username", acct.Username),
 			logging.Error(err),
@@ -85,7 +81,7 @@ func (s *Service) Delete(ctx context.Context) error {
 	logger := s.buildLogger(ctx)
 
 	logger.Debug("deleting cached account")
-	if err := s.cache.Delete(ctx, accountKeySerializer); err != nil {
+	if err := s.cache.Delete(ctx, accountKey); err != nil {
 		logger.Warn("failed to delete cached account",
 			logging.Error(err),
 		)

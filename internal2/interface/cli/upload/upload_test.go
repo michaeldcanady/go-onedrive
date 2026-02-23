@@ -30,7 +30,6 @@ type MockContainer struct {
 }
 
 func (m *MockContainer) Cache() domaincache.Service2               { return nil }
-func (m *MockContainer) CacheService() domaincache.CacheService    { return nil }
 func (m *MockContainer) FS() domainfs.Service                      { return m.Called().Get(0).(domainfs.Service) }
 func (m *MockContainer) EnvironmentService() domainenvironment.EnvironmentService {
 	return nil
