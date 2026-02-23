@@ -1,7 +1,6 @@
 package formatting
 
 import (
-	"fmt"
 	"io"
 
 	domainfs "github.com/michaeldcanady/go-onedrive/internal2/domain/fs"
@@ -15,15 +14,19 @@ const (
 type HumanLongFormatter struct{}
 
 func (f *HumanLongFormatter) Format(w io.Writer, items []domainfs.Item) error {
-	for _, it := range items {
-		mod := it.Modified.Format(dateFormat)
+	formatter := NewTableFormatter(
+		NewColumn("Modified", func(it domainfs.Item) string { return it.Modified.Format(dateFormat) }),
+		NewColumn("Size", func(it domainfs.Item) string {
+			if it.Type == domainfs.ItemTypeFile {
+				return FormatSize(it.Size)
+			}
+			return emptySize
+		}),
+		NewRenderColumn("Name",
+			func(it domainfs.Item) string { return displayName(it) },
+			func(w io.Writer, it domainfs.Item) string { return ColorizeItem(w, it) },
+		),
+	)
 
-		size := emptySize
-		if it.Type == domainfs.ItemTypeFile {
-			size = fmt.Sprintf("%d", it.Size)
-		}
-
-		fmt.Fprintf(w, "%-20s %10s  %s\n", mod, size, displayName(it))
-	}
-	return nil
+	return formatter.Format(w, items)
 }

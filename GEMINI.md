@@ -1,44 +1,100 @@
-# GEMINI.md
+# go-onedrive Project Context
 
-This file provides project-specific mandates and guidance for Gemini CLI when working on the `go-onedrive` project. These instructions take precedence over general defaults.
+go-onedrive (odc) is a CLI tool for interacting with OneDrive items as a unix‑style file system.
 
-## Architectural Mandates
+## Project Overview
 
-- **Three-Layer Pattern:** Strictly adhere to the Domain, Application, and Infrastructure layers in `internal2`.
-  - **Domain:** No external imports (e.g., standard libraries or third-party APIs). Defines interfaces.
-  - **App:** Orchestrates domain logic and implements service interfaces.
-  - **Infra:** Implements technical details (DB, API, SDKs).
-- **Dependency Injection:** Use the central `Container` in `internal2/app/di/container.go` for all service lifecycles and wiring.
-  - Services must be lazily initialized using `sync.Once`.
-  - Prefer constructor injection (e.g., `NewService(dep1, dep2)`) in the container.
-- **Interface-First:** Always define or update interfaces in the `domain` layer before modifying implementations.
+- **Purpose:** Provide users with a terminal‑native way to browse, read, edit, and manipulate OneDrive items as if they were part of a local filesystem.
+- **Main Technologies:**
+  - **Runtime:** Go (>= 1.25.0)
+  - **Testing:** `go test`
+  - **Linting/Formatting:** `go vet`, `golangci-lint`
+- **Architecture:** Monorepo structure with clear layering:
+  - `internal2/interface/cli`: User‑facing terminal UI, input parsing, and display rendering.
+  - `pkg/odc`: Entrypoint for the odc CLI.
+  - `internal2/app`: Application layer containing orchestrating services.
+  - `internal2/domain`: Domain data types, value objects, and interfaces.
+  - `internal2/infra`: Infrastructure for interacting with Microsoft Graph, caching, HTTP, identity, and persistence.
 
-## Engineering Standards
+## Building and Running
 
-- **Go 1.25:** Leverage Go 1.25 features where appropriate.
-- **Error Handling:**
-  - Define errors as package-level variables in `errors.go`.
-  - Use `fmt.Errorf("...: %w", err)` for wrapping.
-  - Use `errors.Join` for multiple errors.
-- **Logging:**
-  - Use the structured `logging.Logger` interface from `internal2/infra/common/logging`.
-  - Always use `logger.WithContext(ctx)` to ensure correlation IDs are propagated.
-- **Testing:**
-  - **Parallelism:** Always use `t.Parallel()`.
-  - **Test Packages:** Use the `_test` package suffix (e.g., `package auth_test`).
-  - **Assertions:** Prefer `stretchr/testify/require` for setup and `assert` for outcomes.
-  - **Mocks:** Use `testify/mock`. Define mocks in the test files or `mocks_test.go`.
+- **Install Dependencies:**  
+  `go get`
+- **Build CLI:**  
+  `just build`
 
-## Documentation
+## Testing and Quality
 
-- **Diátaxis Framework:** All documentation in `docs/` must follow the Diátaxis structure (Tutorials, How-to, Explanation, Reference).
-- **Mermaid:** Use Mermaid diagrams for complex interactions or architecture overviews.
-- **Internal Reference:** Keep `docs/developer/reference/domain-interfaces.md` updated when adding new core services.
+- **Run all unit tests:**  
+  `go test ./...`
 
-## Validation Routine
+- **Static analysis:**  
+  `go vet ./...`  
+  `golangci-lint run`
 
-Before marking a task as complete:
-1. Run unit tests for the affected package: `go test -v ./internal2/app/your_package/...`
-2. Run the full test suite: `go test ./...`
-3. Check linting: `golangci-lint run ./internal2/...` (if available in the environment)
-4. Verify build: `go build ./cmd/odc/main.go`
+## Development Conventions
+
+- **Contributions:** Follow the process in `CONTRIBUTING.md`.  
+  Requires signing the Google CLA.
+- **Commit Messages:** Follow the
+  [Conventional Commits](https://www.conventionalcommits.org/) standard.
+- **Coding Style:**  
+  - Go code must follow idiomatic Go patterns and odc’s established layering rules.
+- **Imports:**  
+  - Group imports (stdlib → external → internal).  
+  - Avoid unused imports; keep import blocks clean and consistent.
+
+## Testing Conventions
+
+- **Go tests:**  
+  - Prefer table‑driven tests.  
+  - Use mocks for Graph API, caching, and identity providers.  
+  - Tests must be deterministic and must not hit the real network.  
+  - Use realistic OneDrive metadata and content fixtures.
+
+---
+
+# **Skill Usage in This Project**
+
+The odc project uses two specialized skills to ensure consistent, high‑quality contributions: **`docs-writer`** and **`code-writer`**.
+
+These skills must be invoked based on the type of work being performed.
+
+## When to use the `docs-writer` skill
+
+Use the `docs-writer` skill **whenever the task involves documentation**, including:
+
+- Writing new documentation in the `docs/` directory.
+- Editing or reviewing existing `.md` files anywhere in the repo.
+- Updating docs to reflect changes in code behavior.
+- Improving clarity, structure, or consistency of documentation.
+- Suggesting documentation updates when code changes make existing docs incomplete.
+
+If the task touches **any documentation**, the `docs-writer` skill is required.
+
+## When to use the `code-writer` skill
+
+Use the `code-writer` skill **whenever the task involves Go code or runtime behavior**, including:
+
+- Writing new Go files in `cmd/`, `pkg/odc`, or `internal2/`.
+- Editing or refactoring existing Go code.
+- Implementing new services, domain types, or infra adapters.
+- Updating CLI commands or wiring in `interface/cli`.
+- Modifying configuration files that affect runtime behavior (`.json`, `.yaml`, etc.).
+- Writing or updating Go tests.
+- Performing architectural changes across domain/app/infra layers.
+
+If the task modifies **any Go code or runtime‑affecting configuration**, the `code-writer` skill is required.
+
+## When both skills may be needed
+
+Some tasks require **both** skills, such as:
+
+- Adding a new CLI command (code) and documenting it (docs).
+- Changing behavior in `internal2/app` and updating user‑facing docs.
+- Introducing a new feature that requires both implementation and documentation.
+
+In these cases, the assistant should:
+
+1. Use the **`code-writer`** skill for all code changes.  
+2. Use the **`docs-writer`** skill for all documentation changes.

@@ -41,10 +41,10 @@ func (c *MetadataCacheAdapter) Get(ctx context.Context, path string) (*file.Meta
 
 // Put stores a *[file.Metadata] value in the cache. The item's path is used
 // as the cache key.
-func (c *MetadataCacheAdapter) Put(ctx context.Context, m *file.Metadata) error {
+func (c *MetadataCacheAdapter) Put(ctx context.Context, path string, m *file.Metadata) error {
 	return c.cache.Set(
 		ctx,
-		func() ([]byte, error) { return []byte(m.Path), nil },
+		func() ([]byte, error) { return []byte(path), nil },
 		func() ([]byte, error) { return json.Marshal(m) },
 	)
 }

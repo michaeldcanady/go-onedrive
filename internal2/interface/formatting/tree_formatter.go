@@ -24,13 +24,9 @@ func (f *TreeFormatter) Format(w io.Writer, items []fs.Item) error {
 
 	root := f.buildTree(items)
 
-	visitor := &TreeNodeVisitor{}
+	visitor := NewTreeNodeVisitor(w)
 
-	if err := visitor.VisitNode(root); err != nil {
-		return err
-	}
-	_, err := w.Write([]byte(visitor.String() + "\n"))
-	return err
+	return visitor.VisitNode(root)
 }
 
 func (f *TreeFormatter) buildTree(items []domainfs.Item) *treeNode {
@@ -114,6 +110,10 @@ func (f *TreeFormatter) buildTree(items []domainfs.Item) *treeNode {
 	}
 
 	// 5. Sort children recursively
+	sort.Slice(roots, func(i, j int) bool {
+		return roots[i].Name < roots[j].Name
+	})
+
 	for _, r := range roots {
 		sortTree(r)
 	}
