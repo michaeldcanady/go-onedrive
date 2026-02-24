@@ -33,6 +33,9 @@ Adhere to these principles when writing or modifying Go code.
   unnecessary shared state.
 - **Interfaces:** Define small, behavior‑focused interfaces in the consumer
   package, not the provider.
+- **Type organization:** Each type should be within it's own file of the same name in camel-case.
+- **Function, variable, and constant organization:** Non-types (functions, variables, and constants) should be organized by function (i.e., like with like).
+- **Enum implementation:** All enums should be an int enum, if it needs a string value give it a `String()` method.
 
 ## Architecture and design
 
@@ -43,6 +46,16 @@ Adhere to these principles when writing or modifying Go code.
   auth flows, and filesystem operations without breaking existing behavior.
 - **Consistency:** Match existing odc patterns for services, repositories,
   adapters, and command wiring.
+- **CLI command structure:** All new CLI commands must follow the template pattern
+  found in the `templates/` directory of this skill. This includes separating the
+  command factory, execution logic, and options into distinct files:
+  - `command.go`: Cobra command initialization and flag definition.
+  - `command_cmd.go`: Command execution logic and dependency resolution.
+  - `options.go`: Option structure and validation logic.
+- **Subcommand nesting:** Each command and subcommand must be contained within
+  its own directory named after the command. Subcommands must be nested
+  recursively within their parent command's directory (e.g.,
+  `interface/cli/edit/sessions/list/`).
 
 ## Testing and reliability
 
@@ -52,18 +65,19 @@ Adhere to these principles when writing or modifying Go code.
   providers for deterministic tests.
 - **No network:** Tests must never hit the real Graph API.
 - **Fixtures:** Use realistic OneDrive metadata and content fixtures.
-- **Coverage:** Add or update tests when modifying behavior.
+- **Coverage:** Add or update tests when modifying or adding behavior.
 
 ## Formatting and structure
 
 - **Formatting:** All code must pass `gofmt` and `go vet`.
 - **Imports:** Group imports into stdlib, external, and internal sections.
 - **Comments:** Use comments to explain *why*, not *what*. Keep GoDoc concise
-  and accurate.
+  and accurate. All functions, methods, types, constants, and variables should have GoDocs.
 - **Module layout:** Follow odc’s established structure (`cmd/`, `internal2/`,
   `pkg/`, `testdata/`, etc.).
 
 ---
+
 
 # **Phase 2: Preparation**
 

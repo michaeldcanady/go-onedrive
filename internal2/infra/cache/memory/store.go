@@ -63,3 +63,22 @@ func (m *Store) Delete(ctx context.Context, key []byte) error {
 
 	return nil
 }
+
+func (m *Store) List(ctx context.Context) ([][]byte, [][]byte, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, nil, err
+	}
+
+	var keys [][]byte
+	var values [][]byte
+
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+
+	for k, v := range m.store {
+		keys = append(keys, []byte(k))
+		values = append(values, append([]byte(nil), v...))
+	}
+
+	return keys, values, nil
+}
