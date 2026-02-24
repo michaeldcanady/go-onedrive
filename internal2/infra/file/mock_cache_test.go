@@ -24,3 +24,8 @@ func (m *MockCache2[T]) Delete(ctx context.Context, key string) error {
 	args := m.Called(ctx, key)
 	return args.Error(0)
 }
+
+func (m *MockCache2[T]) List(ctx context.Context, callback func(key string, value T) error) error {
+	args := m.Called(ctx, callback)
+	return args.Error(0)
+}

@@ -104,3 +104,23 @@ func (s *Store) Delete(ctx context.Context, key []byte) error {
 		return b.Delete(key)
 	})
 }
+
+func (s *Store) List(ctx context.Context) ([][]byte, [][]byte, error) {
+	var keys [][]byte
+	var values [][]byte
+
+	err := s.db.View(func(tx *bbolt.Tx) error {
+		b := tx.Bucket(s.bucket)
+		if b == nil {
+			return core.ErrKeyNotFound
+		}
+
+		return b.ForEach(func(k, v []byte) error {
+			keys = append(keys, append([]byte(nil), k...))
+			values = append(values, append([]byte(nil), v...))
+			return nil
+		})
+	})
+
+	return keys, values, err
+}

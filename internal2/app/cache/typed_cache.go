@@ -50,3 +50,17 @@ func (c *TypedCache[T]) Set(ctx context.Context, key string, value T) error {
 func (c *TypedCache[T]) Delete(ctx context.Context, key string) error {
 	return c.cache.Delete(ctx, func() ([]byte, error) { return json.Marshal(key) })
 }
+
+func (c *TypedCache[T]) List(ctx context.Context, callback func(key string, value T) error) error {
+	return c.cache.List(ctx, func(keyBytes []byte, valueBytes []byte) error {
+		var key string
+		if err := json.Unmarshal(keyBytes, &key); err != nil {
+			return err
+		}
+		value, err := c.serializer.Deserialize(valueBytes)
+		if err != nil {
+			return err
+		}
+		return callback(key, value)
+	})
+}

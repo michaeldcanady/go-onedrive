@@ -71,3 +71,21 @@ func (c *Cache2) Delete(
 	}
 	return c.store.Delete(ctx, keyBytes)
 }
+
+func (c *Cache2) List(
+	ctx context.Context,
+	callback func(key []byte, value []byte) error,
+) error {
+	keys, values, err := c.store.List(ctx)
+	if err != nil {
+		return err
+	}
+
+	for i := range keys {
+		if err := callback(keys[i], values[i]); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
