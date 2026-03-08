@@ -4,6 +4,7 @@ import (
 	"context"
 	"io"
 	"os"
+	"path/filepath"
 
 	domainDrive "github.com/michaeldcanady/go-onedrive/internal2/domain/drive"
 	"github.com/michaeldcanady/go-onedrive/internal2/domain/file"
@@ -121,7 +122,26 @@ func (s *Service2) List(
 
 // Mkdir implements [fs.Service].
 func (s *Service2) Mkdir(ctx context.Context, path string, opts domainfs.MKDirOptions) error {
-	panic("unimplemented")
+	logger := s.buildLogger(ctx)
+
+	driveID, err := s.driveResolver.CurrentDriveID(ctx)
+	if err != nil {
+		logger.Warn("failed to resolve driveID", logging.Error(err))
+		return err
+	}
+
+	parentPath, name := filepath.Split(path)
+
+	request := file.MetadataCreateRequest{
+		Name: name,
+		Type: file.ItemTypeFolder,
+	}
+
+	_, err = s.metadataRepo.CreateByPath(ctx, driveID, parentPath, request, file.MetadataCreateOptions{
+		CreateParents: opts.Parents,
+	})
+
+	return err
 }
 
 // Move implements [fs.Service].
