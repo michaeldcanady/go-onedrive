@@ -15,11 +15,13 @@ const (
 )
 
 const (
-	charHash   = '#'
-	charBang   = '!'
-	charSlash  = '/'
-	charSpace  = ' '
-	charEscape = '\\'
+	charHash    = '#'
+	charBang    = '!'
+	charSlash   = '/'
+	charSpace   = ' '
+	charEscape  = '\\'
+	charNewLine = '\n'
+	charReturn  = '\r'
 )
 
 // Token represents a lexical unit in the ignore file.

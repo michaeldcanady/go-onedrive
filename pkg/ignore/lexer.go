@@ -57,7 +57,7 @@ func (l *Lexer) readText() Token {
 
 func isSpecial(ch byte) bool {
 	switch ch {
-	case charHash, charBang, charSlash, charSpace, '\n', '\r':
+	case charHash, charBang, charSlash, charSpace, charNewLine, charReturn:
 		return true
 	}
 	return false
