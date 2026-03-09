@@ -9,4 +9,9 @@ type Service interface {
 	GetCurrentDrive() (string, error)
 	SetCurrentDrive(name string) error
 	ClearCurrentDrive() error
+
+	GetDriveAlias(alias string) (string, error)
+	SetDriveAlias(alias, driveID string) error
+	RemoveDriveAlias(alias string) error
+	ListDriveAliases() (map[string]string, error)
 }

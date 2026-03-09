@@ -2,263 +2,150 @@ package fs
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"io"
-	"os"
-	"path/filepath"
+	"strings"
 
-	domainDrive "github.com/michaeldcanady/go-onedrive/internal2/domain/drive"
-	"github.com/michaeldcanady/go-onedrive/internal2/domain/file"
+	"github.com/michaeldcanady/go-onedrive/internal2/app/fs/registry"
 	domainfs "github.com/michaeldcanady/go-onedrive/internal2/domain/fs"
-	"github.com/michaeldcanady/go-onedrive/internal2/infra/common/logging"
-	"github.com/michaeldcanady/go-onedrive/internal2/interface/cli/util"
 )
 
-var _ domainfs.Service = (*Service2)(nil)
+var _ domainfs.Service = (*FileSystemManager)(nil)
 
-type Service2 struct {
-	metadataRepo  file.MetadataRepository
-	contentsRepo  file.FileContentsRepository
-	logger        logging.Logger
-	driveResolver domainDrive.DriveResolver
+type FileSystemManager struct {
+	registry *registry.Registry
 }
 
-func NewService2(metadataRepo file.MetadataRepository, contentsRepo file.FileContentsRepository, driveResolver domainDrive.DriveResolver, logger logging.Logger) *Service2 {
-	return &Service2{
-		metadataRepo:  metadataRepo,
-		contentsRepo:  contentsRepo,
-		logger:        logger,
-		driveResolver: driveResolver,
+func NewFileSystemManager(registry *registry.Registry) *FileSystemManager {
+	return &FileSystemManager{
+		registry: registry,
 	}
 }
 
-func (s *Service2) buildLogger(ctx context.Context) logging.Logger {
-	correlationID := util.CorrelationIDFromContext(ctx)
-	return s.logger.WithContext(ctx).With(
-		logging.String("correlation_id", correlationID),
-	)
+func parsePath(path string) (string, string) {
+	prefix, rest, found := strings.Cut(path, ":")
+	if !found {
+		return "onedrive", path
+	}
+
+	rest = strings.TrimPrefix(rest, "//")
+
+	return strings.ToLower(prefix), rest
 }
 
-func (s *Service2) Get(
-	ctx context.Context,
-	path string,
-) (domainfs.Item, error) {
-	logger := s.buildLogger(ctx).With(logging.String("path", path))
+func (m *FileSystemManager) getProvider(ctx context.Context, name, fullPath string) (domainfs.Service, string, error) {
+	p, err := m.registry.Get(name)
+	if err == nil {
+		_, subPath := parsePath(fullPath)
+		return p, subPath, nil
+	}
 
-	logger.Debug("retrieving metadata", logging.String("event", eventFSGetStart))
+	// Fallback to onedrive provider
+	p, err = m.registry.Get("onedrive")
+	if err != nil {
+		return nil, "", err
+	}
+	return p, fullPath, nil
+}
 
-	driveID, err := s.driveResolver.CurrentDriveID(ctx)
+func (m *FileSystemManager) Get(ctx context.Context, path string) (domainfs.Item, error) {
+	providerName, _ := parsePath(path)
+	p, subPath, err := m.getProvider(ctx, providerName, path)
 	if err != nil {
 		return domainfs.Item{}, err
 	}
+	return p.Get(ctx, subPath)
+}
 
-	metadata, err := s.metadataRepo.GetByPath(ctx, driveID, path, file.MetadataGetOptions{})
+func (m *FileSystemManager) List(ctx context.Context, path string, opts domainfs.ListOptions) ([]domainfs.Item, error) {
+	providerName, _ := parsePath(path)
+	p, subPath, err := m.getProvider(ctx, providerName, path)
+	if err != nil {
+		return nil, err
+	}
+	return p.List(ctx, subPath, opts)
+}
+
+func (m *FileSystemManager) Stat(ctx context.Context, path string, opts domainfs.StatOptions) (domainfs.Item, error) {
+	providerName, _ := parsePath(path)
+	p, subPath, err := m.getProvider(ctx, providerName, path)
 	if err != nil {
 		return domainfs.Item{}, err
 	}
-
-	return convertMetadataToItem(metadata), nil
+	return p.Stat(ctx, subPath, opts)
 }
 
-// List implements [fs.Service].
-func (s *Service2) List(
-	ctx context.Context,
-	path string,
-	opts domainfs.ListOptions,
-) ([]domainfs.Item, error) {
-	logger := s.buildLogger(ctx).With(logging.String("path", path))
-
-	driveID, err := s.driveResolver.CurrentDriveID(ctx)
+func (m *FileSystemManager) ReadFile(ctx context.Context, path string, opts domainfs.ReadOptions) (io.ReadCloser, error) {
+	providerName, _ := parsePath(path)
+	p, subPath, err := m.getProvider(ctx, providerName, path)
 	if err != nil {
 		return nil, err
 	}
-
-	metadataOpts := file.MetadataListOptions{
-		NoCache: opts.SkipCache,
-		NoStore: opts.NoCache,
-	}
-
-	var results []domainfs.Item
-
-	visited := map[string]bool{}
-
-	var walk func(string) error
-	walk = func(currentPath string) error {
-		if visited[currentPath] {
-			return nil
-		}
-		visited[currentPath] = true
-
-		metadatas, err := s.metadataRepo.ListByPath(ctx, driveID, currentPath, metadataOpts)
-		if err != nil {
-			return err
-		}
-
-		for _, m := range metadatas {
-			if m == nil {
-				continue
-			}
-			item := convertMetadataToItem(m)
-			results = append(results, item)
-
-			// Recurse only into folders
-			if m.Type == file.ItemTypeFolder && opts.Recursive {
-				childPath := currentPath + "/" + m.Name
-				if err := walk(childPath); err != nil {
-					return err
-				}
-			}
-		}
-
-		return nil
-	}
-
-	if err := walk(path); err != nil {
-		logger.Error("listing failed", logging.Error(err))
-		return nil, err
-	}
-
-	return results, nil
+	return p.ReadFile(ctx, subPath, opts)
 }
 
-// Mkdir implements [fs.Service].
-func (s *Service2) Mkdir(ctx context.Context, path string, opts domainfs.MKDirOptions) error {
-	logger := s.buildLogger(ctx)
-
-	driveID, err := s.driveResolver.CurrentDriveID(ctx)
+func (m *FileSystemManager) WriteFile(ctx context.Context, path string, r io.Reader, opts domainfs.WriteOptions) (domainfs.Item, error) {
+	providerName, _ := parsePath(path)
+	p, subPath, err := m.getProvider(ctx, providerName, path)
 	if err != nil {
-		logger.Warn("failed to resolve driveID", logging.Error(err))
+		return domainfs.Item{}, err
+	}
+	return p.WriteFile(ctx, subPath, r, opts)
+}
+
+func (m *FileSystemManager) Mkdir(ctx context.Context, path string, opts domainfs.MKDirOptions) error {
+	providerName, _ := parsePath(path)
+	p, subPath, err := m.getProvider(ctx, providerName, path)
+	if err != nil {
 		return err
 	}
-
-	parentPath, name := filepath.Split(path)
-
-	request := file.MetadataCreateRequest{
-		Name: name,
-		Type: file.ItemTypeFolder,
-	}
-
-	_, err = s.metadataRepo.CreateByPath(ctx, driveID, parentPath, request, file.MetadataCreateOptions{
-		CreateParents: opts.Parents,
-	})
-
-	return err
+	return p.Mkdir(ctx, subPath, opts)
 }
 
-// Move implements [fs.Service].
-func (s *Service2) Move(ctx context.Context, src string, dst string, opts domainfs.MoveOptions) error {
-	logger := s.buildLogger(ctx).With(
-		logging.String("src", src),
-		logging.String("dst", dst),
-	)
-	logger.Debug("Move: starting")
+func (m *FileSystemManager) Remove(ctx context.Context, path string, opts domainfs.RemoveOptions) error {
+	providerName, _ := parsePath(path)
+	p, subPath, err := m.getProvider(ctx, providerName, path)
+	if err != nil {
+		return err
+	}
+	return p.Remove(ctx, subPath, opts)
+}
 
-	driveID, err := s.driveResolver.CurrentDriveID(ctx)
+func (m *FileSystemManager) Move(ctx context.Context, src, dst string, opts domainfs.MoveOptions) error {
+	srcProviderName, _ := parsePath(src)
+	pSrc, srcSubPath, err := m.getProvider(ctx, srcProviderName, src)
 	if err != nil {
 		return err
 	}
 
-	parentPath, name := filepath.Split(dst)
-
-	request := file.MetadataUpdateRequest{
-		Name:       name,
-		ParentPath: parentPath,
-	}
-
-	_, err = s.metadataRepo.UpdateByPath(ctx, driveID, src, request, file.MetadataUpdateOptions{})
-	fmt.Println(err.Error())
-	return err
-}
-
-// ReadFile implements [fs.Service].
-func (s *Service2) ReadFile(ctx context.Context, path string, opts domainfs.ReadOptions) (io.ReadCloser, error) {
-	logger := s.buildLogger(ctx)
-	logger = logger.With(logging.String("path", path))
-
-	driveID, err := s.driveResolver.CurrentDriveID(ctx)
+	dstProviderName, _ := parsePath(dst)
+	pDst, dstSubPath, err := m.getProvider(ctx, dstProviderName, dst)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	return s.contentsRepo.Download(ctx, driveID, path, file.DownloadOptions{})
+	if pSrc == pDst {
+		return pSrc.Move(ctx, srcSubPath, dstSubPath, opts)
+	}
+
+	return errors.New("cross-provider move not supported yet")
 }
 
-// Remove implements [fs.Service].
-func (s *Service2) Remove(ctx context.Context, path string, opts domainfs.RemoveOptions) error {
-	panic("unimplemented")
-}
-
-// Stat implements [fs.Service].
-func (s *Service2) Stat(ctx context.Context, path string, opts domainfs.StatOptions) (domainfs.Item, error) {
-	logger := s.buildLogger(ctx).With(logging.String("path", path))
-	logger.Debug("Stat: retrieving metadata")
-
-	driveID, err := s.driveResolver.CurrentDriveID(ctx)
+func (m *FileSystemManager) Upload(ctx context.Context, src, dst string, opts domainfs.UploadOptions) (domainfs.Item, error) {
+	providerName, _ := parsePath(dst)
+	pDst, dstSubPath, err := m.getProvider(ctx, providerName, dst)
 	if err != nil {
 		return domainfs.Item{}, err
 	}
-
-	metadata, err := s.metadataRepo.GetByPath(ctx, driveID, path, file.MetadataGetOptions{})
-	if err != nil {
-		return domainfs.Item{}, err
-	}
-
-	return convertMetadataToItem(metadata), nil
+	// src is local path in current implementation of Upload in odc
+	return pDst.Upload(ctx, src, dstSubPath, opts)
 }
 
-// WriteFile implements [fs.Service].
-func (s *Service2) WriteFile(ctx context.Context, path string, r io.Reader, opts domainfs.WriteOptions) (domainfs.Item, error) {
-	logger := s.buildLogger(ctx)
-	logger = logger.With(logging.String("path", path))
-
-	driveID, err := s.driveResolver.CurrentDriveID(ctx)
+func (m *FileSystemManager) Touch(ctx context.Context, path string, opts domainfs.TouchOptions) (domainfs.Item, error) {
+	providerName, _ := parsePath(path)
+	p, subPath, err := m.getProvider(ctx, providerName, path)
 	if err != nil {
 		return domainfs.Item{}, err
 	}
-
-	metadata, err := s.contentsRepo.Upload(ctx, driveID, path, r, file.UploadOptions{
-		Force:   opts.Overwrite,
-		IfMatch: opts.IfMatch,
-	})
-
-	return convertMetadataToItem(metadata), err
-}
-
-func (s *Service2) Upload(ctx context.Context, src, dst string, opts domainfs.UploadOptions) (domainfs.Item, error) {
-	_ = s.buildLogger(ctx)
-
-	file, err := os.Open(src)
-	if err != nil {
-		return domainfs.Item{}, err
-	}
-	defer file.Close()
-
-	return s.WriteFile(ctx, dst, file, domainfs.WriteOptions{
-		Overwrite: opts.Overwrite,
-	})
-}
-
-// Touch implements [fs.Service].
-func (s *Service2) Touch(ctx context.Context, path string, opts domainfs.TouchOptions) (domainfs.Item, error) {
-	logger := s.buildLogger(ctx).With(logging.String("path", path))
-	logger.Debug("Touch: starting")
-
-	driveID, err := s.driveResolver.CurrentDriveID(ctx)
-	if err != nil {
-		return domainfs.Item{}, err
-	}
-
-	parentPath, name := filepath.Split(path)
-
-	request := file.MetadataCreateRequest{
-		Name: name,
-		Type: file.ItemTypeFile,
-	}
-
-	metadata, err := s.metadataRepo.CreateByPath(ctx, driveID, parentPath, request, file.MetadataCreateOptions{})
-	if err != nil {
-		return domainfs.Item{}, err
-	}
-
-	return convertMetadataToItem(metadata), nil
+	return p.Touch(ctx, subPath, opts)
 }

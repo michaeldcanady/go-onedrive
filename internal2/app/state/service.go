@@ -92,3 +92,53 @@ func (s *Service) ClearCurrentDrive() error {
 	st.CurrentDrive = ""
 	return s.repo.Save(st)
 }
+
+func (s *Service) GetDriveAlias(alias string) (string, error) {
+	st, err := s.getState()
+	if err != nil {
+		return "", err
+	}
+
+	if st.DriveAliases == nil {
+		return "", nil
+	}
+
+	return st.DriveAliases[alias], nil
+}
+
+func (s *Service) SetDriveAlias(alias, driveID string) error {
+	st, err := s.getState()
+	if err != nil {
+		return err
+	}
+
+	if st.DriveAliases == nil {
+		st.DriveAliases = make(map[string]string)
+	}
+
+	st.DriveAliases[alias] = driveID
+	return s.repo.Save(st)
+}
+
+func (s *Service) RemoveDriveAlias(alias string) error {
+	st, err := s.getState()
+	if err != nil {
+		return err
+	}
+
+	if st.DriveAliases == nil {
+		return nil
+	}
+
+	delete(st.DriveAliases, alias)
+	return s.repo.Save(st)
+}
+
+func (s *Service) ListDriveAliases() (map[string]string, error) {
+	st, err := s.getState()
+	if err != nil {
+		return nil, err
+	}
+
+	return st.DriveAliases, nil
+}

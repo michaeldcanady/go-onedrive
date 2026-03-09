@@ -2,6 +2,7 @@ package drive
 
 import (
 	"github.com/michaeldcanady/go-onedrive/internal2/domain/di"
+	"github.com/michaeldcanady/go-onedrive/internal2/interface/cli/drive/alias"
 	"github.com/michaeldcanady/go-onedrive/internal2/interface/cli/drive/list"
 	"github.com/michaeldcanady/go-onedrive/internal2/interface/cli/drive/use"
 	"github.com/spf13/cobra"
@@ -10,16 +11,17 @@ import (
 // CreateDriveCmd constructs the `drive` parent command, which groups all
 // drive-related subcommands.
 func CreateDriveCmd(container di.Container) *cobra.Command {
-	authCmd := &cobra.Command{
+	driveCmd := &cobra.Command{
 		Use:   "drive <subcommand>",
 		Short: "Manage OneDrive drives",
 	}
 
 	// Subcommands
-	authCmd.AddCommand(
+	driveCmd.AddCommand(
 		list.CreateListCmd(container),
 		use.CreateUseCmd(container),
+		alias.CreateAliasCmd(container),
 	)
 
-	return authCmd
+	return driveCmd
 }

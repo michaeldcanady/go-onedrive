@@ -32,11 +32,17 @@ func NewRenderColumn[T any](header string, value func(item T) string, render fun
 }
 
 type TableFormatter[T any] struct {
-	Columns []Column[T]
+	Columns  []Column[T]
+	Truncate bool
 }
 
 func NewTableFormatter[T any](cols ...Column[T]) *TableFormatter[T] {
 	return &TableFormatter[T]{Columns: cols}
+}
+
+func (tf *TableFormatter[T]) WithTruncate(truncate bool) *TableFormatter[T] {
+	tf.Truncate = truncate
+	return tf
 }
 
 func (tf *TableFormatter[T]) Format(w io.Writer, items []T) error {
@@ -59,6 +65,9 @@ func (tf *TableFormatter[T]) Format(w io.Writer, items []T) error {
 	// Write header
 	tf.writeRow(w, widths, func(i int) (string, int) {
 		h := tf.Columns[i].Header
+		if tf.Truncate && len(h) > widths[i] {
+			h = truncate(h, widths[i])
+		}
 		return h, len(h)
 	})
 
@@ -69,8 +78,15 @@ func (tf *TableFormatter[T]) Format(w io.Writer, items []T) error {
 	for _, item := range items {
 		tf.writeRow(w, widths, func(i int) (string, int) {
 			val := tf.Columns[i].Value(item)
+			if tf.Truncate && len(val) > widths[i] {
+				val = truncate(val, widths[i])
+			}
 			visibleLen := len(val)
 			if tf.Columns[i].Render != nil {
+				// We pass a modified writer or use a different approach if Render needs the truncated value.
+				// Currently Render takes the full item T.
+				// If we want Render to respect truncation, we might need to change its signature
+				// or assume it uses the Value function internally.
 				return tf.Columns[i].Render(w, item), visibleLen
 			}
 			return val, visibleLen

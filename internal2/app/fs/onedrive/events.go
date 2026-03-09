@@ -1,4 +1,4 @@
-package fs
+package onedrive
 
 const (
 	eventFSGetStart = "fs.get.start"

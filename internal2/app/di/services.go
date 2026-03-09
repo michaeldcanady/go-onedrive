@@ -10,6 +10,9 @@ import (
 	appdrive "github.com/michaeldcanady/go-onedrive/internal2/app/drive"
 	appeditor "github.com/michaeldcanady/go-onedrive/internal2/app/editor"
 	appfs "github.com/michaeldcanady/go-onedrive/internal2/app/fs"
+	applocal "github.com/michaeldcanady/go-onedrive/internal2/app/fs/local"
+	apponedrive "github.com/michaeldcanady/go-onedrive/internal2/app/fs/onedrive"
+	appregistry "github.com/michaeldcanady/go-onedrive/internal2/app/fs/registry"
 	applogging "github.com/michaeldcanady/go-onedrive/internal2/app/common/logging"
 	appprofile "github.com/michaeldcanady/go-onedrive/internal2/app/profile"
 	appstate "github.com/michaeldcanady/go-onedrive/internal2/app/state"
@@ -156,9 +159,22 @@ func (c *Container) newFSService() domainfs.Service {
 	loggerService := c.Logger()
 	logger, _ := loggerService.CreateLogger("filesystem")
 
-	resolver := appstate.NewDriverResolverAdapter(c.State())
+	resolver := appstate.NewDriverResolverAdapter(c.State(), c.Drive())
+	aliasSvc := appdrive.NewAliasService(c.State())
 
-	return appfs.NewService2(c.metadata(), c.contents(), resolver, logger)
+	// Create registry
+	reg := appregistry.NewRegistry()
+
+	// Register OneDrive provider
+	oneDriveProvider := apponedrive.NewProvider(c.metadata(), c.contents(), resolver, aliasSvc, logger)
+	reg.Register("onedrive", oneDriveProvider)
+
+	// Register Local provider
+	localProvider := applocal.NewProvider()
+	reg.Register("local", localProvider)
+
+	// Create manager
+	return appfs.NewFileSystemManager(reg)
 }
 
 func (c *Container) Account() domainaccount.Service {
