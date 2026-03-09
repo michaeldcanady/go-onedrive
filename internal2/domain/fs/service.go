@@ -16,4 +16,5 @@ type Service interface {
 	Remove(ctx context.Context, path string, opts RemoveOptions) error
 	Move(ctx context.Context, src, dst string, opts MoveOptions) error
 	Upload(ctx context.Context, src, dst string, opts UploadOptions) (Item, error)
+	Touch(ctx context.Context, path string, opts TouchOptions) (Item, error)
 }
