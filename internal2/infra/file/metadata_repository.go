@@ -9,7 +9,6 @@ import (
 	abstractions "github.com/microsoft/kiota-abstractions-go"
 	"github.com/microsoftgraph/msgraph-sdk-go/drives"
 	"github.com/microsoftgraph/msgraph-sdk-go/models"
-	stduritemplate "github.com/std-uritemplate/std-uritemplate/go/v2"
 )
 
 // MetadataRepository provides methods for fetching and listing drive item
@@ -33,6 +32,14 @@ func NewMetadataRepository(client abstractions.RequestAdapter, metadataCache Met
 		pathIDCache:          pathIDCache,
 		logger:               logger,
 	}
+}
+
+// Listing represents a cached collection of drive item IDs at a specific path.
+type Listing struct {
+	// ETag is the entity tag of the parent folder when the listing was fetched.
+	ETag string
+	// ChildIDs is a slice of IDs for the items contained within the folder.
+	ChildIDs []string
 }
 
 func (r *MetadataRepository) getByPath(ctx context.Context, driveID, path string, opts file.MetadataGetOptions) (*file.Metadata, bool, error) {
@@ -75,7 +82,10 @@ func (r *MetadataRepository) getByPath(ctx context.Context, driveID, path string
 
 	// 2. Fetch from OneDrive
 	logger.Debug("getByPath: requesting from OneDrive", logging.String("path", path))
-	item, err := r.driveItemBuilder(r.client, driveID, path).Get(ctx, config)
+	uri := expandPathTemplate(rootURITemplate2, rootRelativeURITemplate2, driveID, path)
+	builder := drives.NewItemRootRequestBuilder(uri, r.client)
+
+	item, err := builder.Get(ctx, config)
 	if err := mapGraphError2(err); err != nil {
 		logger.Error("getByPath: request failed", logging.String("path", path), logging.Error(err))
 		return nil, false, err
@@ -172,7 +182,10 @@ func (r *MetadataRepository) ListByPath(ctx context.Context, driveID, path strin
 
 	// 4. Fetch children
 	logger.Debug("ListByPath: requesting children from OneDrive", logging.String("path", path))
-	items, err := r.childrenBuilder(r.client, driveID, path).Get(ctx, config)
+	uri := expandPathTemplate(rootChildrenURITemplate2, rootRelativeChildrenURITemplate2, driveID, path)
+	builder := drives.NewItemItemsRequestBuilder(uri, r.client)
+
+	items, err := builder.Get(ctx, config)
 	if err := mapGraphError2(err); err != nil {
 		logger.Error("ListByPath: failed to fetch children", logging.String("path", path), logging.Error(err))
 		return nil, err
@@ -269,7 +282,10 @@ func (r *MetadataRepository) CreateByPath(ctx context.Context, driveID, parentPa
 
 	config := &drives.ItemItemsRequestBuilderPostRequestConfiguration{}
 
-	item, err := r.childrenBuilder(r.client, driveID, normalizePath(parentPath)).Post(ctx, requestBody, config)
+	uri := expandPathTemplate(rootChildrenURITemplate2, rootRelativeChildrenURITemplate2, driveID, parentPath)
+	builder := drives.NewItemItemsRequestBuilder(uri, r.client)
+
+	item, err := builder.Post(ctx, requestBody, config)
 	if err := mapGraphError2(err); err != nil {
 		logger.Error("CreateByPath: request failed", logging.String("path", parentPath), logging.Error(err))
 		return nil, err
@@ -311,7 +327,10 @@ func (r *MetadataRepository) UpdateByPath(ctx context.Context, driveID, path str
 
 	config := &drives.ItemItemsDriveItemItemRequestBuilderPatchRequestConfiguration{}
 
-	item, err := r.driveItemsBuilder(r.client, driveID, normalizePath(path)).Patch(ctx, requestBody, config)
+	uri := expandPathTemplate(rootURITemplate2, rootRelativeURITemplate2, driveID, path)
+	builder := drives.NewItemItemsDriveItemItemRequestBuilder(uri, r.client)
+
+	item, err := builder.Patch(ctx, requestBody, config)
 	if err := mapGraphError2(err); err != nil {
 		logger.Error("UpdateByPath: request failed", logging.String("path", path), logging.Error(err))
 		return nil, err
@@ -325,62 +344,10 @@ func (r *MetadataRepository) UpdateByPath(ctx context.Context, driveID, path str
 		if err := r.metadataCache.Put(ctx, metadata.ID, metadata); err != nil {
 			logger.Warn("UpdateByPath: failed to update metadata cache", logging.String("id", metadata.ID), logging.Error(err))
 		}
-		// Since the path might have changed, we should probably invalidate the old path in pathIDCache
-		// or update it. For now, let's at least update it for the new path.
-		// NOTE: normalizePath(path) is the OLD path. metadata.Path (if populated) or re-deriving it would be the new one.
-		// mapItemToMetadata should have set the new FullPath.
 		if err := r.pathIDCache.Put(ctx, metadata.FullPath, metadata.ID); err != nil {
 			logger.Warn("UpdateByPath: failed to update path-to-ID cache", logging.String("path", metadata.FullPath), logging.Error(err))
 		}
 	}
 
 	return metadata, nil
-}
-
-func (s *MetadataRepository) driveItemBuilder(client abstractions.RequestAdapter, driveID, normalizedPath string) *drives.ItemRootRequestBuilder {
-	urlTemplate := rootURITemplate2
-	subs := make(stduritemplate.Substitutions)
-	subs["baseurl"] = baseURL
-	subs["drive_id"] = driveID
-
-	if normalizedPath != "" {
-		urlTemplate = rootRelativeURITemplate2
-		subs["path"] = normalizedPath
-	}
-
-	uri, _ := stduritemplate.Expand(urlTemplate, subs)
-
-	return drives.NewItemRootRequestBuilder(uri, client)
-}
-
-func (s *MetadataRepository) childrenBuilder(client abstractions.RequestAdapter, driveID, normalizedPath string) *drives.ItemItemsRequestBuilder {
-	urlTemplate := rootChildrenURITemplate2
-	subs := make(stduritemplate.Substitutions)
-	subs["baseurl"] = baseURL
-	subs["drive_id"] = driveID
-
-	if normalizedPath != "" {
-		urlTemplate = rootRelativeChildrenURITemplate2
-		subs["path"] = normalizedPath
-	}
-
-	uri, _ := stduritemplate.Expand(urlTemplate, subs)
-
-	return drives.NewItemItemsRequestBuilder(uri, client)
-}
-
-func (s *MetadataRepository) driveItemsBuilder(client abstractions.RequestAdapter, driveID, normalizedPath string) *drives.ItemItemsDriveItemItemRequestBuilder {
-	urlTemplate := rootChildrenURITemplate2
-	subs := make(stduritemplate.Substitutions)
-	subs["baseurl"] = baseURL
-	subs["drive_id"] = driveID
-
-	if normalizedPath != "" {
-		urlTemplate = rootRelativeURITemplate2
-		subs["path"] = normalizedPath
-	}
-
-	uri, _ := stduritemplate.Expand(urlTemplate, subs)
-
-	return drives.NewItemItemsDriveItemItemRequestBuilder(uri, client)
 }

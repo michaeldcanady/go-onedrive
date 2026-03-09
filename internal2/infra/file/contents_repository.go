@@ -10,7 +10,6 @@ import (
 	abstractions "github.com/microsoft/kiota-abstractions-go"
 	nethttplibrary "github.com/microsoft/kiota-http-go"
 	"github.com/microsoftgraph/msgraph-sdk-go/drives"
-	stduritemplate "github.com/std-uritemplate/std-uritemplate/go/v2"
 )
 
 // ContentsRepository provides methods for downloading and uploading file
@@ -85,7 +84,10 @@ func (r *ContentsRepository) Download(
 	}
 
 	r.logger.Debug("Download: requesting from OneDrive", logging.String("path", path))
-	resp, err := r.relativePathContentsBuilder(r.client, driveID, path).Get(ctx, &config)
+	uri := expandPathTemplate("", rootRelativeContentURITemplate2, driveID, path)
+	builder := drives.NewItemRootContentRequestBuilder(uri, r.client)
+
+	resp, err := builder.Get(ctx, &config)
 	if err := mapGraphError2(err); err != nil {
 		r.logger.Error("Download: request failed", logging.String("path", path), logging.Error(err))
 		return nil, err
@@ -173,7 +175,10 @@ func (r *ContentsRepository) Upload(
 
 	// 3. Upload
 	r.logger.Debug("Upload: sending Put request to OneDrive", logging.String("path", path))
-	item, err := r.relativePathContentsBuilder(r.client, driveID, path).Put(ctx, data, config)
+	uri := expandPathTemplate("", rootRelativeContentURITemplate2, driveID, path)
+	builder := drives.NewItemRootContentRequestBuilder(uri, r.client)
+
+	item, err := builder.Put(ctx, data, config)
 	if err := mapGraphError2(err); err != nil {
 		r.logger.Error("Upload: request failed", logging.String("path", path), logging.Error(err))
 		return nil, err
@@ -206,16 +211,4 @@ func (r *ContentsRepository) Upload(
 	}
 
 	return metadata, nil
-}
-
-func (s *ContentsRepository) relativePathContentsBuilder(client abstractions.RequestAdapter, driveID, normalizedPath string) *drives.ItemRootContentRequestBuilder {
-	urlTemplate := rootRelativeContentURITemplate2
-	subs := make(stduritemplate.Substitutions)
-	subs["baseurl"] = baseURL
-	subs["drive_id"] = driveID
-	subs["path"] = normalizedPath
-
-	uri, _ := stduritemplate.Expand(urlTemplate, subs)
-
-	return drives.NewItemRootContentRequestBuilder(uri, client)
 }

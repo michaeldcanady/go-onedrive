@@ -32,24 +32,25 @@ func parsePath(path string) (string, string) {
 	return strings.ToLower(prefix), rest
 }
 
-func (m *FileSystemManager) getProvider(_ context.Context, name, fullPath string) (domainfs.Service, string, error) {
-	p, err := m.registry.Get(name)
+func (m *FileSystemManager) resolve(_ context.Context, path string) (domainfs.Service, string, error) {
+	providerName, subPath := parsePath(path)
+
+	p, err := m.registry.Get(providerName)
 	if err == nil {
-		_, subPath := parsePath(fullPath)
 		return p, subPath, nil
 	}
 
-	// Fallback to onedrive provider
+	// Fallback to onedrive provider if the prefix was not a registered provider
+	// but only if there was no prefix (handled by parsePath) or if the prefix lookup failed.
 	p, err = m.registry.Get("onedrive")
 	if err != nil {
 		return nil, "", err
 	}
-	return p, fullPath, nil
+	return p, path, nil
 }
 
 func (m *FileSystemManager) Get(ctx context.Context, path string) (domainfs.Item, error) {
-	providerName, _ := parsePath(path)
-	p, subPath, err := m.getProvider(ctx, providerName, path)
+	p, subPath, err := m.resolve(ctx, path)
 	if err != nil {
 		return domainfs.Item{}, err
 	}
@@ -57,8 +58,7 @@ func (m *FileSystemManager) Get(ctx context.Context, path string) (domainfs.Item
 }
 
 func (m *FileSystemManager) List(ctx context.Context, path string, opts domainfs.ListOptions) ([]domainfs.Item, error) {
-	providerName, _ := parsePath(path)
-	p, subPath, err := m.getProvider(ctx, providerName, path)
+	p, subPath, err := m.resolve(ctx, path)
 	if err != nil {
 		return nil, err
 	}
@@ -66,8 +66,7 @@ func (m *FileSystemManager) List(ctx context.Context, path string, opts domainfs
 }
 
 func (m *FileSystemManager) Stat(ctx context.Context, path string, opts domainfs.StatOptions) (domainfs.Item, error) {
-	providerName, _ := parsePath(path)
-	p, subPath, err := m.getProvider(ctx, providerName, path)
+	p, subPath, err := m.resolve(ctx, path)
 	if err != nil {
 		return domainfs.Item{}, err
 	}
@@ -75,8 +74,7 @@ func (m *FileSystemManager) Stat(ctx context.Context, path string, opts domainfs
 }
 
 func (m *FileSystemManager) ReadFile(ctx context.Context, path string, opts domainfs.ReadOptions) (io.ReadCloser, error) {
-	providerName, _ := parsePath(path)
-	p, subPath, err := m.getProvider(ctx, providerName, path)
+	p, subPath, err := m.resolve(ctx, path)
 	if err != nil {
 		return nil, err
 	}
@@ -84,8 +82,7 @@ func (m *FileSystemManager) ReadFile(ctx context.Context, path string, opts doma
 }
 
 func (m *FileSystemManager) WriteFile(ctx context.Context, path string, r io.Reader, opts domainfs.WriteOptions) (domainfs.Item, error) {
-	providerName, _ := parsePath(path)
-	p, subPath, err := m.getProvider(ctx, providerName, path)
+	p, subPath, err := m.resolve(ctx, path)
 	if err != nil {
 		return domainfs.Item{}, err
 	}
@@ -93,8 +90,7 @@ func (m *FileSystemManager) WriteFile(ctx context.Context, path string, r io.Rea
 }
 
 func (m *FileSystemManager) Mkdir(ctx context.Context, path string, opts domainfs.MKDirOptions) error {
-	providerName, _ := parsePath(path)
-	p, subPath, err := m.getProvider(ctx, providerName, path)
+	p, subPath, err := m.resolve(ctx, path)
 	if err != nil {
 		return err
 	}
@@ -102,8 +98,7 @@ func (m *FileSystemManager) Mkdir(ctx context.Context, path string, opts domainf
 }
 
 func (m *FileSystemManager) Remove(ctx context.Context, path string, opts domainfs.RemoveOptions) error {
-	providerName, _ := parsePath(path)
-	p, subPath, err := m.getProvider(ctx, providerName, path)
+	p, subPath, err := m.resolve(ctx, path)
 	if err != nil {
 		return err
 	}
@@ -111,14 +106,12 @@ func (m *FileSystemManager) Remove(ctx context.Context, path string, opts domain
 }
 
 func (m *FileSystemManager) Copy(ctx context.Context, src, dst string, opts domainfs.CopyOptions) error {
-	srcProviderName, _ := parsePath(src)
-	pSrc, srcSubPath, err := m.getProvider(ctx, srcProviderName, src)
+	pSrc, srcSubPath, err := m.resolve(ctx, src)
 	if err != nil {
 		return err
 	}
 
-	dstProviderName, _ := parsePath(dst)
-	pDst, dstSubPath, err := m.getProvider(ctx, dstProviderName, dst)
+	pDst, dstSubPath, err := m.resolve(ctx, dst)
 	if err != nil {
 		return err
 	}
@@ -141,14 +134,12 @@ func (m *FileSystemManager) Copy(ctx context.Context, src, dst string, opts doma
 }
 
 func (m *FileSystemManager) Move(ctx context.Context, src, dst string, opts domainfs.MoveOptions) error {
-	srcProviderName, _ := parsePath(src)
-	pSrc, srcSubPath, err := m.getProvider(ctx, srcProviderName, src)
+	pSrc, srcSubPath, err := m.resolve(ctx, src)
 	if err != nil {
 		return err
 	}
 
-	dstProviderName, _ := parsePath(dst)
-	pDst, dstSubPath, err := m.getProvider(ctx, dstProviderName, dst)
+	pDst, dstSubPath, err := m.resolve(ctx, dst)
 	if err != nil {
 		return err
 	}
@@ -166,8 +157,7 @@ func (m *FileSystemManager) Move(ctx context.Context, src, dst string, opts doma
 }
 
 func (m *FileSystemManager) Upload(ctx context.Context, src, dst string, opts domainfs.UploadOptions) (domainfs.Item, error) {
-	providerName, _ := parsePath(dst)
-	pDst, dstSubPath, err := m.getProvider(ctx, providerName, dst)
+	pDst, dstSubPath, err := m.resolve(ctx, dst)
 	if err != nil {
 		return domainfs.Item{}, err
 	}
@@ -176,8 +166,7 @@ func (m *FileSystemManager) Upload(ctx context.Context, src, dst string, opts do
 }
 
 func (m *FileSystemManager) Touch(ctx context.Context, path string, opts domainfs.TouchOptions) (domainfs.Item, error) {
-	providerName, _ := parsePath(path)
-	p, subPath, err := m.getProvider(ctx, providerName, path)
+	p, subPath, err := m.resolve(ctx, path)
 	if err != nil {
 		return domainfs.Item{}, err
 	}

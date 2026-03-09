@@ -6,6 +6,7 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/michaeldcanady/go-onedrive/internal2/infra/common/logging"
+	abstractions "github.com/microsoft/kiota-abstractions-go"
 
 	msgraphsdkgo "github.com/microsoftgraph/msgraph-sdk-go"
 )
@@ -57,4 +58,12 @@ func (s *GraphClientService) Client(ctx context.Context) (*msgraphsdkgo.GraphSer
 	s.logger.Debug("graph client instance", logging.Any("client", client))
 
 	return client, nil
+}
+
+func (s *GraphClientService) RequestAdapter(ctx context.Context) (abstractions.RequestAdapter, error) {
+	client, err := s.Client(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return client.GetAdapter(), nil
 }

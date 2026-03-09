@@ -14,9 +14,9 @@ func (c *Container) metadata() *infrafile.MetadataRepository {
 }
 
 func (c *Container) newMetadataRepository() *infrafile.MetadataRepository {
-	client, _ := c.clientProvider().Client(context.Background())
+	adapter, _ := c.clientProvider().RequestAdapter(context.Background())
 
-	return infrafile.NewMetadataRepository(client.RequestAdapter, c.metadataCache(), c.metadataListingCache(), c.pathIDCache(), c.getLogger("repository"))
+	return infrafile.NewMetadataRepository(adapter, c.metadataCache(), c.metadataListingCache(), c.pathIDCache(), c.getLogger("repository"))
 }
 
 func (c *Container) contents() *infrafile.ContentsRepository {
@@ -27,7 +27,7 @@ func (c *Container) contents() *infrafile.ContentsRepository {
 }
 
 func (c *Container) newContentsRepository() *infrafile.ContentsRepository {
-	client, _ := c.clientProvider().Client(context.Background())
+	adapter, _ := c.clientProvider().RequestAdapter(context.Background())
 
-	return infrafile.NewContentsRepository(client.RequestAdapter, c.contentsCache(), c.metadataCache(), c.pathIDCache(), c.getLogger("repository"))
+	return infrafile.NewContentsRepository(adapter, c.contentsCache(), c.metadataCache(), c.pathIDCache(), c.getLogger("repository"))
 }
