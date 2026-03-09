@@ -291,6 +291,52 @@ func (r *MetadataRepository) CreateByPath(ctx context.Context, driveID, parentPa
 	return metadata, nil
 }
 
+func (r *MetadataRepository) UpdateByPath(ctx context.Context, driveID, path string, body file.MetadataUpdateRequest, opts file.MetadataUpdateOptions) (*file.Metadata, error) {
+	logger := r.logger.WithContext(ctx)
+
+	requestBody := models.NewDriveItem()
+	if body.Name != "" {
+		requestBody.SetName(&body.Name)
+	}
+
+	if body.ParentPath != "" {
+		parentRef := models.NewItemReference()
+		p := normalizePath(body.ParentPath)
+		if p == "" {
+			p = "/"
+		}
+		parentRef.SetPath(&p)
+		requestBody.SetParentReference(parentRef)
+	}
+
+	config := &drives.ItemItemsDriveItemItemRequestBuilderPatchRequestConfiguration{}
+
+	item, err := r.driveItemsBuilder(r.client, driveID, normalizePath(path)).Patch(ctx, requestBody, config)
+	if err := mapGraphError2(err); err != nil {
+		logger.Error("UpdateByPath: request failed", logging.String("path", path), logging.Error(err))
+		return nil, err
+	}
+
+	metadata := mapItemToMetadata(item)
+	logger.Info("UpdateByPath: fresh metadata received", logging.String("path", path), logging.String("id", metadata.ID))
+
+	if !opts.NoStore {
+		logger.Debug("UpdateByPath: updating cache", logging.String("id", metadata.ID))
+		if err := r.metadataCache.Put(ctx, metadata.ID, metadata); err != nil {
+			logger.Warn("UpdateByPath: failed to update metadata cache", logging.String("id", metadata.ID), logging.Error(err))
+		}
+		// Since the path might have changed, we should probably invalidate the old path in pathIDCache
+		// or update it. For now, let's at least update it for the new path.
+		// NOTE: normalizePath(path) is the OLD path. metadata.Path (if populated) or re-deriving it would be the new one.
+		// mapItemToMetadata should have set the new FullPath.
+		if err := r.pathIDCache.Put(ctx, metadata.FullPath, metadata.ID); err != nil {
+			logger.Warn("UpdateByPath: failed to update path-to-ID cache", logging.String("path", metadata.FullPath), logging.Error(err))
+		}
+	}
+
+	return metadata, nil
+}
+
 func (s *MetadataRepository) driveItemBuilder(client abstractions.RequestAdapter, driveID, normalizedPath string) *drives.ItemRootRequestBuilder {
 	urlTemplate := rootURITemplate2
 	subs := make(stduritemplate.Substitutions)
@@ -321,4 +367,20 @@ func (s *MetadataRepository) childrenBuilder(client abstractions.RequestAdapter,
 	uri, _ := stduritemplate.Expand(urlTemplate, subs)
 
 	return drives.NewItemItemsRequestBuilder(uri, client)
+}
+
+func (s *MetadataRepository) driveItemsBuilder(client abstractions.RequestAdapter, driveID, normalizedPath string) *drives.ItemItemsDriveItemItemRequestBuilder {
+	urlTemplate := rootChildrenURITemplate2
+	subs := make(stduritemplate.Substitutions)
+	subs["baseurl"] = baseURL
+	subs["drive_id"] = driveID
+
+	if normalizedPath != "" {
+		urlTemplate = rootRelativeURITemplate2
+		subs["path"] = normalizedPath
+	}
+
+	uri, _ := stduritemplate.Expand(urlTemplate, subs)
+
+	return drives.NewItemItemsDriveItemItemRequestBuilder(uri, client)
 }

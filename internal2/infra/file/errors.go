@@ -2,6 +2,7 @@ package file
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/microsoftgraph/msgraph-sdk-go/models/odataerrors"
 )
@@ -24,7 +25,8 @@ var (
 	// ErrPrecondition indicates a precondition (like ETag) check failed.
 	ErrPrecondition = errors.New("precondition error")
 	// ErrTransient indicates a temporary error that can be retried.
-	ErrTransient = errors.New("transient")
+	ErrTransient      = errors.New("transient")
+	ErrInvalidRequest = errors.New("invalid request")
 )
 
 // mapGraphError converts a raw Microsoft Graph or Kiota error into a structured
@@ -115,6 +117,7 @@ func mapGraphError2(err error) error {
 	if errors.As(err, &odataErr) {
 		if odataErr.GetErrorEscaped() != nil && odataErr.GetErrorEscaped().GetCode() != nil {
 			code := deref(odataErr.GetErrorEscaped().GetCode())
+			fmt.Println(code)
 
 			switch code {
 			case "itemNotFound", "ErrorItemNotFound":
@@ -132,6 +135,8 @@ func mapGraphError2(err error) error {
 			// equated due to graph returning notAllowed error when it should return preconditions
 			case "preconditionFailed", "notAllowed":
 				return ErrPrecondition
+			case "invalidRequest":
+				return ErrInvalidRequest
 			}
 		}
 	}

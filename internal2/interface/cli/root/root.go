@@ -13,6 +13,7 @@ import (
 	lscmd "github.com/michaeldcanady/go-onedrive/internal2/interface/cli/ls"
 	"github.com/michaeldcanady/go-onedrive/internal2/interface/cli/middleware"
 	"github.com/michaeldcanady/go-onedrive/internal2/interface/cli/mkdir"
+	"github.com/michaeldcanady/go-onedrive/internal2/interface/cli/mv"
 	profilecmd "github.com/michaeldcanady/go-onedrive/internal2/interface/cli/profile"
 	"github.com/michaeldcanady/go-onedrive/internal2/interface/cli/touch"
 	"github.com/michaeldcanady/go-onedrive/internal2/interface/cli/upload"
@@ -99,6 +100,7 @@ func CreateRootCmd(container di.Container) (*cobra.Command, error) {
 		upload.CreateUploadCmd(container),
 		mkdir.CreateCmd(container),
 		touch.CreateCmd(container),
+		mv.CreateCmd(container),
 	)
 
 	middleware.ApplyMiddlewareRecursively(rootCmd, middleware.WithCorrelationID)
