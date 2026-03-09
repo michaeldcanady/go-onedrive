@@ -216,3 +216,28 @@ func (s *Service2) Upload(ctx context.Context, src, dst string, opts domainfs.Up
 		Overwrite: opts.Overwrite,
 	})
 }
+
+// Touch implements [fs.Service].
+func (s *Service2) Touch(ctx context.Context, path string, opts domainfs.TouchOptions) (domainfs.Item, error) {
+	logger := s.buildLogger(ctx).With(logging.String("path", path))
+	logger.Debug("Touch: starting")
+
+	driveID, err := s.driveResolver.CurrentDriveID(ctx)
+	if err != nil {
+		return domainfs.Item{}, err
+	}
+
+	parentPath, name := filepath.Split(path)
+
+	request := file.MetadataCreateRequest{
+		Name: name,
+		Type: file.ItemTypeFile,
+	}
+
+	metadata, err := s.metadataRepo.CreateByPath(ctx, driveID, parentPath, request, file.MetadataCreateOptions{})
+	if err != nil {
+		return domainfs.Item{}, err
+	}
+
+	return convertMetadataToItem(metadata), nil
+}
