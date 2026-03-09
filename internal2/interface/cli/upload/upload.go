@@ -2,8 +2,10 @@ package upload
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/michaeldcanady/go-onedrive/internal2/domain/di"
+	"github.com/michaeldcanady/go-onedrive/internal2/interface/cli/cp"
 	"github.com/spf13/cobra"
 )
 
@@ -16,29 +18,17 @@ const (
 )
 
 // CreateUploadCmd constructs and returns the cobra.Command for the upload operation.
-// It initializes flags and sets up the execution logic using UploadCmd.
+// It initializes flags and sets up the execution logic using CpCmd.
 func CreateUploadCmd(c di.Container) *cobra.Command {
 	var opts Options
 
 	cmd := &cobra.Command{
-		Use:   fmt.Sprintf("%s [src] [dst]", commandName),
-		Short: "Upload a local file to a OneDrive path.",
+		Use:        fmt.Sprintf("%s [src] [dst]", commandName),
+		Short:      "Upload a local file to a OneDrive path.",
+		Deprecated: "use 'cp local:[src] onedrive:[dst]' instead",
 		Long: `
 Upload a local file to a OneDrive path.
-
-This command copies a file from your local filesystem into your OneDrive
-account. It behaves similarly to the Unix 'cp' command, but with cloud-aware
-semantics:
-
-  • The first argument (src) must be a path to a local file.
-  • The second argument (dst) is the destination path in OneDrive.
-  • If the destination ends with a slash ("/"), the source file's basename
-    is automatically appended.
-  • Existing files at the destination path are overwritten if '--force' is used.
-  • Parent folders must already exist.
-
-Authentication:
-You must be logged in (via 'onedrive auth login') before using this command.
+This is an alias for 'cp local:[src] onedrive:[dst]'.
 `,
 		Example: `
   # Upload a file to the root of OneDrive
@@ -60,12 +50,27 @@ You must be logged in (via 'onedrive auth login') before using this command.
 		},
 
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			opts.Stdin = cmd.InOrStdin()
-			opts.Stdout = cmd.OutOrStdout()
-			opts.Stderr = cmd.ErrOrStderr()
+			src := opts.Source
+			if !strings.HasPrefix(src, "local:") {
+				src = "local:" + src
+			}
 
-			uploadCmd := NewUploadCmd(c)
-			return uploadCmd.Run(cmd.Context(), opts)
+			dst := opts.Destination
+			if !strings.HasPrefix(dst, "onedrive:") {
+				dst = "onedrive:" + dst
+			}
+
+			cpOpts := cp.Options{
+				Source:    src,
+				Dest:      dst,
+				Overwrite: opts.Overwrite,
+				Stdin:     cmd.InOrStdin(),
+				Stdout:    cmd.OutOrStdout(),
+				Stderr:    cmd.ErrOrStderr(),
+			}
+
+			cpCmd := cp.NewCpCmd(c)
+			return cpCmd.Run(cmd.Context(), cpOpts)
 		},
 	}
 

@@ -161,6 +161,25 @@ func (s *Provider) Mkdir(ctx context.Context, path string, opts domainfs.MKDirOp
 	return err
 }
 
+func (s *Provider) Copy(ctx context.Context, src, dst string, opts domainfs.CopyOptions) error {
+	logger := s.buildLogger(ctx).With(
+		logging.String("src", src),
+		logging.String("dst", dst),
+	)
+	logger.Debug("Copy: starting")
+
+	r, err := s.ReadFile(ctx, src, domainfs.ReadOptions{})
+	if err != nil {
+		return err
+	}
+	defer r.Close()
+
+	_, err = s.WriteFile(ctx, dst, r, domainfs.WriteOptions{
+		Overwrite: opts.Overwrite,
+	})
+	return err
+}
+
 // Move implements [fs.Service].
 func (s *Provider) Move(ctx context.Context, src string, dst string, opts domainfs.MoveOptions) error {
 	logger := s.buildLogger(ctx).With(
