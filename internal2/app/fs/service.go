@@ -2,6 +2,7 @@ package fs
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -146,7 +147,27 @@ func (s *Service2) Mkdir(ctx context.Context, path string, opts domainfs.MKDirOp
 
 // Move implements [fs.Service].
 func (s *Service2) Move(ctx context.Context, src string, dst string, opts domainfs.MoveOptions) error {
-	panic("unimplemented")
+	logger := s.buildLogger(ctx).With(
+		logging.String("src", src),
+		logging.String("dst", dst),
+	)
+	logger.Debug("Move: starting")
+
+	driveID, err := s.driveResolver.CurrentDriveID(ctx)
+	if err != nil {
+		return err
+	}
+
+	parentPath, name := filepath.Split(dst)
+
+	request := file.MetadataUpdateRequest{
+		Name:       name,
+		ParentPath: parentPath,
+	}
+
+	_, err = s.metadataRepo.UpdateByPath(ctx, driveID, src, request, file.MetadataUpdateOptions{})
+	fmt.Println(err.Error())
+	return err
 }
 
 // ReadFile implements [fs.Service].
