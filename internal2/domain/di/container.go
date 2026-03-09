@@ -9,7 +9,6 @@ import (
 	"github.com/michaeldcanady/go-onedrive/internal2/domain/config"
 	"github.com/michaeldcanady/go-onedrive/internal2/domain/drive"
 	"github.com/michaeldcanady/go-onedrive/internal2/domain/editor"
-	"github.com/michaeldcanady/go-onedrive/internal2/domain/file"
 	domainfs "github.com/michaeldcanady/go-onedrive/internal2/domain/fs"
 	domainprofile "github.com/michaeldcanady/go-onedrive/internal2/domain/profile"
 	"github.com/michaeldcanady/go-onedrive/internal2/domain/state"
@@ -23,7 +22,6 @@ type Container interface {
 	Auth() domainauth.AuthService
 	Profile() domainprofile.ProfileService
 	Config() config.ConfigService
-	File() file.FileService
 	State() state.Service
 	Drive() drive.DriveService
 	Account() account.Service

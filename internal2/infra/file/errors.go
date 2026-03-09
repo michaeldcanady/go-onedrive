@@ -4,30 +4,33 @@ import (
 	"errors"
 	"fmt"
 
+	commonerrors "github.com/michaeldcanady/go-onedrive/internal2/domain/common/errors"
 	"github.com/microsoftgraph/msgraph-sdk-go/models/odataerrors"
 )
 
 var (
 	// ErrNotFound indicates the item (file or folder) was not found.
-	ErrNotFound = errors.New("not found")
+	ErrNotFound = commonerrors.ErrNotFound
 	// ErrNotFolder indicates the specified item is not a folder.
-	ErrNotFolder = errors.New("not a folder")
+	ErrNotFolder = commonerrors.ErrNotFolder
 	// ErrUnauthorized indicates the user is not authenticated.
-	ErrUnauthorized = errors.New("unauthorized")
+	ErrUnauthorized = commonerrors.ErrUnauthorized
 	// ErrForbidden indicates the user is authenticated but does not have
 	// permission for the operation.
-	ErrForbidden = errors.New("forbidden")
+	ErrForbidden = commonerrors.ErrForbidden
 	// ErrConflict indicates the operation failed because of a resource conflict,
 	// such as a file with the same name.
-	ErrConflict = errors.New("conflict")
+	ErrConflict = commonerrors.ErrConflict
 	// ErrInternal indicates an unexpected internal error.
-	ErrInternal = errors.New("internal error")
+	ErrInternal = commonerrors.ErrInternal
 	// ErrPrecondition indicates a precondition (like ETag) check failed.
-	ErrPrecondition = errors.New("precondition error")
+	ErrPrecondition = commonerrors.ErrPrecondition
 	// ErrTransient indicates a temporary error that can be retried.
-	ErrTransient      = errors.New("transient")
-	ErrInvalidRequest = errors.New("invalid request")
+	ErrTransient      = commonerrors.ErrTransient
+	ErrInvalidRequest = commonerrors.ErrInvalidRequest
 )
+
+type DomainError = commonerrors.DomainError
 
 // mapGraphError converts a raw Microsoft Graph or Kiota error into a structured
 // DomainError with a specific Kind classification.

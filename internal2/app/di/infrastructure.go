@@ -44,9 +44,7 @@ func (c *Container) clientProvider() domaingraph.ClientProvider {
 }
 
 func (c *Container) newClientProvider() domaingraph.ClientProvider {
-	loggerService := c.Logger()
-	graphLogger, _ := loggerService.CreateLogger("graph")
-	return graph.New(c.Auth(), graphLogger)
+	return graph.New(c.Auth(), c.getLogger("graph"))
 }
 
 func (c *Container) metadataCache() infrafile.MetadataCache {

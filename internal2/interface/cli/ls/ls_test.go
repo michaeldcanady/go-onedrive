@@ -13,7 +13,6 @@ import (
 	"github.com/michaeldcanady/go-onedrive/internal2/domain/config"
 	"github.com/michaeldcanady/go-onedrive/internal2/domain/drive"
 	domaineditor "github.com/michaeldcanady/go-onedrive/internal2/domain/editor"
-	"github.com/michaeldcanady/go-onedrive/internal2/domain/file"
 	domainfs "github.com/michaeldcanady/go-onedrive/internal2/domain/fs"
 	domainprofile "github.com/michaeldcanady/go-onedrive/internal2/domain/profile"
 	"github.com/michaeldcanady/go-onedrive/internal2/domain/state"
@@ -39,7 +38,6 @@ func (m *MockContainer) Logger() domainlogger.LoggerService {
 func (m *MockContainer) Auth() domainauth.AuthService          { return nil }
 func (m *MockContainer) Profile() domainprofile.ProfileService { return nil }
 func (m *MockContainer) Config() config.ConfigService          { return nil }
-func (m *MockContainer) File() file.FileService                { return nil }
 func (m *MockContainer) State() state.Service                  { return m.Called().Get(0).(state.Service) }
 func (m *MockContainer) Drive() drive.DriveService             { return nil }
 func (m *MockContainer) Account() account.Service              { return nil }

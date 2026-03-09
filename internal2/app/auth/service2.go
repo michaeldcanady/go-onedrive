@@ -15,7 +15,6 @@ import (
 	"github.com/michaeldcanady/go-onedrive/internal2/domain/state"
 	"github.com/michaeldcanady/go-onedrive/internal2/infra/cache/core"
 	"github.com/michaeldcanady/go-onedrive/internal2/infra/common/logging"
-	"github.com/michaeldcanady/go-onedrive/internal2/infra/config"
 	"github.com/michaeldcanady/go-onedrive/internal2/interface/cli/util"
 )
 
@@ -76,12 +75,12 @@ func (s *Service2) loadProfileConfig(
 	ctx context.Context,
 	logger logging.Logger,
 	profileName string,
-) (string, config.Configuration3, error) {
+) (string, domainconfig.Configuration, error) {
 
 	profile, err := s.resolveProfile(profileName)
 	if err != nil {
 		logger.Warn("failed to resolve profile", logging.Error(err))
-		return "", config.Configuration3{}, fmt.Errorf("failed to resolve profile: %w", err)
+		return "", domainconfig.Configuration{}, fmt.Errorf("failed to resolve profile: %w", err)
 	}
 
 	cfg, err := s.config.GetConfiguration(ctx, profile)
@@ -90,7 +89,7 @@ func (s *Service2) loadProfileConfig(
 			logging.String("profile", profile),
 			logging.Error(err),
 		)
-		return "", config.Configuration3{}, fmt.Errorf("failed to load configuration: %w", err)
+		return "", domainconfig.Configuration{}, fmt.Errorf("failed to load configuration: %w", err)
 	}
 
 	return profile, cfg, nil
@@ -98,7 +97,7 @@ func (s *Service2) loadProfileConfig(
 
 func (s *Service2) buildCredentialProvider(
 	logger logging.Logger,
-	cfg config.Configuration3,
+	cfg domainconfig.Configuration,
 	account accountdomain.Account,
 ) (authdomain.CredentialProvider, error) {
 

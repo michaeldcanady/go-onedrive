@@ -15,7 +15,6 @@ import (
 	"github.com/michaeldcanady/go-onedrive/internal2/domain/config"
 	"github.com/michaeldcanady/go-onedrive/internal2/domain/drive"
 	domaineditor "github.com/michaeldcanady/go-onedrive/internal2/domain/editor"
-	"github.com/michaeldcanady/go-onedrive/internal2/domain/file"
 	domainfs "github.com/michaeldcanady/go-onedrive/internal2/domain/fs"
 	domainprofile "github.com/michaeldcanady/go-onedrive/internal2/domain/profile"
 	"github.com/michaeldcanady/go-onedrive/internal2/domain/state"
@@ -42,7 +41,6 @@ func (m *MockContainer) Logger() domainlogger.LoggerService {
 func (m *MockContainer) Auth() domainauth.AuthService          { return nil }
 func (m *MockContainer) Profile() domainprofile.ProfileService { return nil }
 func (m *MockContainer) Config() config.ConfigService          { return nil }
-func (m *MockContainer) File() file.FileService                { return nil }
 func (m *MockContainer) State() state.Service                  { return nil }
 func (m *MockContainer) Drive() drive.DriveService             { return nil }
 func (m *MockContainer) Account() account.Service              { return nil }
@@ -83,6 +81,12 @@ func (m *MockFSService) Mkdir(ctx context.Context, path string, opts domainfs.MK
 	return nil
 }
 func (m *MockFSService) Upload(ctx context.Context, src, dst string, opts domainfs.UploadOptions) (domainfs.Item, error) {
+	return domainfs.Item{}, nil
+}
+func (m *MockFSService) Copy(ctx context.Context, src, dst string, opts domainfs.CopyOptions) error {
+	return nil
+}
+func (m *MockFSService) Touch(ctx context.Context, path string, opts domainfs.TouchOptions) (domainfs.Item, error) {
 	return domainfs.Item{}, nil
 }
 

@@ -13,7 +13,6 @@ import (
 	domaindi "github.com/michaeldcanady/go-onedrive/internal2/domain/di"
 	domaindrive "github.com/michaeldcanady/go-onedrive/internal2/domain/drive"
 	domaineditor "github.com/michaeldcanady/go-onedrive/internal2/domain/editor"
-	domainfile "github.com/michaeldcanady/go-onedrive/internal2/domain/file"
 	domainfs "github.com/michaeldcanady/go-onedrive/internal2/domain/fs"
 	domainprofile "github.com/michaeldcanady/go-onedrive/internal2/domain/profile"
 	domainstate "github.com/michaeldcanady/go-onedrive/internal2/domain/state"
@@ -89,10 +88,6 @@ type Container struct {
 
 	contentsCacheOnce  sync.Once
 	contentsCacheCache infrafile.ContentsCache
-
-	// Legacy / Deprecated
-	fileOnce    sync.Once
-	fileService domainfile.FileService
 }
 
 // NewContainer creates a new instance of the dependency injection container.

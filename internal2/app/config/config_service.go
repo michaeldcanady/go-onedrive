@@ -6,7 +6,6 @@ import (
 
 	domainconfig "github.com/michaeldcanady/go-onedrive/internal2/domain/config"
 	"github.com/michaeldcanady/go-onedrive/internal2/infra/common/logging"
-	"github.com/michaeldcanady/go-onedrive/internal2/infra/config"
 	"github.com/michaeldcanady/go-onedrive/internal2/interface/cli/util"
 )
 
@@ -39,15 +38,15 @@ const (
 
 func (s *ConfigService) AddPath(name, path string) error {
 	if _, exists := s.paths[name]; exists {
-		return ErrAlreadyRegistered
+		return domainconfig.ErrAlreadyRegistered
 	}
 	s.paths[name] = path
 	return nil
 }
 
-func (s *ConfigService) getDefaultConfig() config.Configuration3 {
-	return config.Configuration3{
-		Auth: config.AuthenticationConfigImpl{
+func (s *ConfigService) getDefaultConfig() domainconfig.Configuration {
+	return domainconfig.Configuration{
+		Auth: domainconfig.AuthenticationConfig{
 			Type:        "interactiveBrowser",
 			ClientID:    "6b1e6ec0-ad93-4175-a0e0-84c02e13f206",
 			TenantID:    "common",
@@ -56,9 +55,9 @@ func (s *ConfigService) getDefaultConfig() config.Configuration3 {
 	}
 }
 
-func (s *ConfigService) GetConfiguration(ctx context.Context, name string) (config.Configuration3, error) {
+func (s *ConfigService) GetConfiguration(ctx context.Context, name string) (domainconfig.Configuration, error) {
 	if err := ctx.Err(); err != nil {
-		return config.Configuration3{}, err
+		return domainconfig.Configuration{}, err
 	}
 
 	correlationID := util.CorrelationIDFromContext(ctx)
@@ -77,14 +76,14 @@ func (s *ConfigService) GetConfiguration(ctx context.Context, name string) (conf
 		logger.Error("configuration name not registered",
 			logging.String("event", eventConfigGetNotRegistered),
 		)
-		return config.Configuration3{}, ErrNotRegistered
+		return domainconfig.Configuration{}, domainconfig.ErrNotRegistered
 	}
 
 	if strings.TrimSpace(path) == "" {
 		logger.Error("registered configuration path is empty",
 			logging.String("event", eventConfigGetPathMissing),
 		)
-		return config.Configuration3{}, ErrPathMissing
+		return domainconfig.Configuration{}, domainconfig.ErrPathMissing
 	}
 
 	logger.Info("loading configuration from disk",
@@ -98,7 +97,7 @@ func (s *ConfigService) GetConfiguration(ctx context.Context, name string) (conf
 			logging.String("event", eventConfigGetLoadFailure),
 			logging.Error(err),
 		)
-		return config.Configuration3{}, err
+		return domainconfig.Configuration{}, err
 	}
 
 	logger.Info("configuration loaded successfully",
