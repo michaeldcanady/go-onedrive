@@ -41,12 +41,19 @@ func CompileReader(r io.Reader) (*Matcher, error) {
 
 // Match checks if a path is ignored.
 func (m *Matcher) Match(path string, isDir bool) bool {
+	ignored, _ := m.MatchWithRule(path, isDir)
+	return ignored
+}
+
+// MatchWithRule checks if a path is ignored and returns the rule that triggered it.
+func (m *Matcher) MatchWithRule(path string, isDir bool) (bool, *Rule) {
 	path = strings.TrimPrefix(path, "./")
 	path = strings.TrimPrefix(path, string(charSlash))
 	
 	// Split path into segments
 	segments := strings.Split(path, string(charSlash))
 	ignored := false
+	var matchedRule *Rule
 	
 	currentPath := ""
 	for i, segment := range segments {
@@ -63,7 +70,8 @@ func (m *Matcher) Match(path string, isDir bool) bool {
 			isSegmentDir = true
 		}
 		
-		for _, rule := range m.rules {
+		for i := range m.rules {
+			rule := &m.rules[i]
 			// Optimization: if rule is directory-only but this segment is not a dir, skip
 			if rule.DirOnly && !isSegmentDir {
 				continue
@@ -73,14 +81,24 @@ func (m *Matcher) Match(path string, isDir bool) bool {
 			if matched {
 				if rule.Negate {
 					ignored = false
+					matchedRule = rule
 				} else {
 					ignored = true
+					matchedRule = rule
 				}
 			}
 		}
 	}
 	
-	return ignored
+	if !ignored {
+		return false, nil
+	}
+	return true, matchedRule
+}
+
+// Rules returns the slice of rules used by this matcher.
+func (m *Matcher) Rules() []Rule {
+	return m.rules
 }
 
 func matchPattern(pattern, fullPath, segment string) bool {
