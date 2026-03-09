@@ -2,7 +2,6 @@ package fs
 
 import (
 	"context"
-	"errors"
 	"io"
 	"strings"
 
@@ -33,7 +32,7 @@ func parsePath(path string) (string, string) {
 	return strings.ToLower(prefix), rest
 }
 
-func (m *FileSystemManager) getProvider(ctx context.Context, name, fullPath string) (domainfs.Service, string, error) {
+func (m *FileSystemManager) getProvider(_ context.Context, name, fullPath string) (domainfs.Service, string, error) {
 	p, err := m.registry.Get(name)
 	if err == nil {
 		_, subPath := parsePath(fullPath)
@@ -111,6 +110,36 @@ func (m *FileSystemManager) Remove(ctx context.Context, path string, opts domain
 	return p.Remove(ctx, subPath, opts)
 }
 
+func (m *FileSystemManager) Copy(ctx context.Context, src, dst string, opts domainfs.CopyOptions) error {
+	srcProviderName, _ := parsePath(src)
+	pSrc, srcSubPath, err := m.getProvider(ctx, srcProviderName, src)
+	if err != nil {
+		return err
+	}
+
+	dstProviderName, _ := parsePath(dst)
+	pDst, dstSubPath, err := m.getProvider(ctx, dstProviderName, dst)
+	if err != nil {
+		return err
+	}
+
+	if pSrc == pDst {
+		return pSrc.Copy(ctx, srcSubPath, dstSubPath, opts)
+	}
+
+	// Cross-provider copy
+	r, err := pSrc.ReadFile(ctx, srcSubPath, domainfs.ReadOptions{})
+	if err != nil {
+		return err
+	}
+	defer r.Close()
+
+	_, err = pDst.WriteFile(ctx, dstSubPath, r, domainfs.WriteOptions{
+		Overwrite: opts.Overwrite,
+	})
+	return err
+}
+
 func (m *FileSystemManager) Move(ctx context.Context, src, dst string, opts domainfs.MoveOptions) error {
 	srcProviderName, _ := parsePath(src)
 	pSrc, srcSubPath, err := m.getProvider(ctx, srcProviderName, src)
@@ -128,7 +157,12 @@ func (m *FileSystemManager) Move(ctx context.Context, src, dst string, opts doma
 		return pSrc.Move(ctx, srcSubPath, dstSubPath, opts)
 	}
 
-	return errors.New("cross-provider move not supported yet")
+	// Cross-provider move: Copy + Delete
+	if err := m.Copy(ctx, src, dst, domainfs.CopyOptions{Overwrite: true}); err != nil {
+		return err
+	}
+
+	return pSrc.Remove(ctx, srcSubPath, domainfs.RemoveOptions{})
 }
 
 func (m *FileSystemManager) Upload(ctx context.Context, src, dst string, opts domainfs.UploadOptions) (domainfs.Item, error) {
