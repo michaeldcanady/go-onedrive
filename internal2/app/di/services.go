@@ -159,13 +159,14 @@ func (c *Container) newFSService() domainfs.Service {
 	loggerService := c.Logger()
 	logger, _ := loggerService.CreateLogger("filesystem")
 
-	resolver := appstate.NewDriverResolverAdapter(c.State())
+	resolver := appstate.NewDriverResolverAdapter(c.State(), c.Drive())
+	aliasSvc := appdrive.NewAliasService(c.State())
 
 	// Create registry
 	reg := appregistry.NewRegistry()
 
 	// Register OneDrive provider
-	oneDriveProvider := apponedrive.NewProvider(c.metadata(), c.contents(), resolver, logger)
+	oneDriveProvider := apponedrive.NewProvider(c.metadata(), c.contents(), resolver, aliasSvc, logger)
 	reg.Register("onedrive", oneDriveProvider)
 
 	// Register Local provider

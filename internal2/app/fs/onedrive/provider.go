@@ -2,9 +2,11 @@ package onedrive
 
 import (
 	"context"
+	"errors"
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 
 	domainDrive "github.com/michaeldcanady/go-onedrive/internal2/domain/drive"
 	"github.com/michaeldcanady/go-onedrive/internal2/domain/file"
@@ -16,19 +18,34 @@ import (
 var _ domainfs.Service = (*Provider)(nil)
 
 type Provider struct {
-	metadataRepo  file.MetadataRepository
-	contentsRepo  file.FileContentsRepository
-	logger        logging.Logger
-	driveResolver domainDrive.DriveResolver
+	metadataRepo      file.MetadataRepository
+	contentsRepo      file.FileContentsRepository
+	logger            logging.Logger
+	driveResolver     domainDrive.DriveResolver
+	driveAliasService domainDrive.DriveAliasService
 }
 
-func NewProvider(metadataRepo file.MetadataRepository, contentsRepo file.FileContentsRepository, driveResolver domainDrive.DriveResolver, logger logging.Logger) *Provider {
+func NewProvider(metadataRepo file.MetadataRepository, contentsRepo file.FileContentsRepository, driveResolver domainDrive.DriveResolver, driveAliasService domainDrive.DriveAliasService, logger logging.Logger) *Provider {
 	return &Provider{
-		metadataRepo:  metadataRepo,
-		contentsRepo:  contentsRepo,
-		logger:        logger,
-		driveResolver: driveResolver,
+		metadataRepo:      metadataRepo,
+		contentsRepo:      contentsRepo,
+		logger:            logger,
+		driveResolver:     driveResolver,
+		driveAliasService: driveAliasService,
 	}
+}
+
+func (s *Provider) resolveDrive(ctx context.Context, path string) (string, string, error) {
+	// If path is "shared-docs:/Folder/File.txt"
+	if !strings.HasPrefix(path, "/") && strings.Contains(path, ":") {
+		driveAlias, cleanPath, _ := strings.Cut(path, ":")
+		driveID, err := s.driveAliasService.Resolve(ctx, driveAlias)
+		return driveID, cleanPath, err
+	}
+
+	// Default to the current selected drive
+	driveID, err := s.driveResolver.CurrentDriveID(ctx)
+	return driveID, path, err
 }
 
 func (s *Provider) buildLogger(ctx context.Context) logging.Logger {
@@ -46,12 +63,12 @@ func (s *Provider) Get(
 
 	logger.Debug("retrieving metadata", logging.String("event", eventFSGetStart))
 
-	driveID, err := s.driveResolver.CurrentDriveID(ctx)
+	driveID, cleanPath, err := s.resolveDrive(ctx, path)
 	if err != nil {
 		return domainfs.Item{}, err
 	}
 
-	metadata, err := s.metadataRepo.GetByPath(ctx, driveID, path, file.MetadataGetOptions{})
+	metadata, err := s.metadataRepo.GetByPath(ctx, driveID, cleanPath, file.MetadataGetOptions{})
 	if err != nil {
 		return domainfs.Item{}, err
 	}
@@ -67,7 +84,7 @@ func (s *Provider) List(
 ) ([]domainfs.Item, error) {
 	logger := s.buildLogger(ctx).With(logging.String("path", path))
 
-	driveID, err := s.driveResolver.CurrentDriveID(ctx)
+	driveID, cleanPath, err := s.resolveDrive(ctx, path)
 	if err != nil {
 		return nil, err
 	}
@@ -112,7 +129,7 @@ func (s *Provider) List(
 		return nil
 	}
 
-	if err := walk(path); err != nil {
+	if err := walk(cleanPath); err != nil {
 		logger.Error("listing failed", logging.Error(err))
 		return nil, err
 	}
@@ -124,13 +141,13 @@ func (s *Provider) List(
 func (s *Provider) Mkdir(ctx context.Context, path string, opts domainfs.MKDirOptions) error {
 	logger := s.buildLogger(ctx)
 
-	driveID, err := s.driveResolver.CurrentDriveID(ctx)
+	driveID, cleanPath, err := s.resolveDrive(ctx, path)
 	if err != nil {
 		logger.Warn("failed to resolve driveID", logging.Error(err))
 		return err
 	}
 
-	parentPath, name := filepath.Split(path)
+	parentPath, name := filepath.Split(cleanPath)
 
 	request := file.MetadataCreateRequest{
 		Name: name,
@@ -152,19 +169,29 @@ func (s *Provider) Move(ctx context.Context, src string, dst string, opts domain
 	)
 	logger.Debug("Move: starting")
 
-	driveID, err := s.driveResolver.CurrentDriveID(ctx)
+	srcDriveID, cleanSrc, err := s.resolveDrive(ctx, src)
 	if err != nil {
 		return err
 	}
 
-	parentPath, name := filepath.Split(dst)
+	dstDriveID, cleanDst, err := s.resolveDrive(ctx, dst)
+	if err != nil {
+		return err
+	}
+
+	if srcDriveID != dstDriveID {
+		// Cross-drive move: Copy + Delete (not implemented here yet)
+		return errors.New("cross-drive move not supported yet")
+	}
+
+	parentPath, name := filepath.Split(cleanDst)
 
 	request := file.MetadataUpdateRequest{
 		Name:       name,
 		ParentPath: parentPath,
 	}
 
-	_, err = s.metadataRepo.UpdateByPath(ctx, driveID, src, request, file.MetadataUpdateOptions{})
+	_, err = s.metadataRepo.UpdateByPath(ctx, srcDriveID, cleanSrc, request, file.MetadataUpdateOptions{})
 	return err
 }
 
@@ -173,12 +200,12 @@ func (s *Provider) ReadFile(ctx context.Context, path string, opts domainfs.Read
 	logger := s.buildLogger(ctx)
 	logger = logger.With(logging.String("path", path))
 
-	driveID, err := s.driveResolver.CurrentDriveID(ctx)
+	driveID, cleanPath, err := s.resolveDrive(ctx, path)
 	if err != nil {
 		return nil, err
 	}
 
-	return s.contentsRepo.Download(ctx, driveID, path, file.DownloadOptions{})
+	return s.contentsRepo.Download(ctx, driveID, cleanPath, file.DownloadOptions{})
 }
 
 // Remove implements [fs.Service].
@@ -191,12 +218,12 @@ func (s *Provider) Stat(ctx context.Context, path string, opts domainfs.StatOpti
 	logger := s.buildLogger(ctx).With(logging.String("path", path))
 	logger.Debug("Stat: retrieving metadata")
 
-	driveID, err := s.driveResolver.CurrentDriveID(ctx)
+	driveID, cleanPath, err := s.resolveDrive(ctx, path)
 	if err != nil {
 		return domainfs.Item{}, err
 	}
 
-	metadata, err := s.metadataRepo.GetByPath(ctx, driveID, path, file.MetadataGetOptions{})
+	metadata, err := s.metadataRepo.GetByPath(ctx, driveID, cleanPath, file.MetadataGetOptions{})
 	if err != nil {
 		return domainfs.Item{}, err
 	}
@@ -209,12 +236,12 @@ func (s *Provider) WriteFile(ctx context.Context, path string, r io.Reader, opts
 	logger := s.buildLogger(ctx)
 	logger = logger.With(logging.String("path", path))
 
-	driveID, err := s.driveResolver.CurrentDriveID(ctx)
+	driveID, cleanPath, err := s.resolveDrive(ctx, path)
 	if err != nil {
 		return domainfs.Item{}, err
 	}
 
-	metadata, err := s.contentsRepo.Upload(ctx, driveID, path, r, file.UploadOptions{
+	metadata, err := s.contentsRepo.Upload(ctx, driveID, cleanPath, r, file.UploadOptions{
 		Force:   opts.Overwrite,
 		IfMatch: opts.IfMatch,
 	})
@@ -241,12 +268,12 @@ func (s *Provider) Touch(ctx context.Context, path string, opts domainfs.TouchOp
 	logger := s.buildLogger(ctx).With(logging.String("path", path))
 	logger.Debug("Touch: starting")
 
-	driveID, err := s.driveResolver.CurrentDriveID(ctx)
+	driveID, cleanPath, err := s.resolveDrive(ctx, path)
 	if err != nil {
 		return domainfs.Item{}, err
 	}
 
-	parentPath, name := filepath.Split(path)
+	parentPath, name := filepath.Split(cleanPath)
 
 	request := file.MetadataCreateRequest{
 		Name: name,
