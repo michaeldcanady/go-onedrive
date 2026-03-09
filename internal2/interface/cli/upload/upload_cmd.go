@@ -36,8 +36,7 @@ func (c *UploadCmd) WithLogger(logger infralogging.Logger) *UploadCmd {
 // Run executes the upload lifecycle.
 // 1. Ensures a logger is available.
 // 2. Resolves the final destination path.
-// 3. Opens the local source file.
-// 4. Uploads the file via the filesystem service.
+// 3. Uploads the file or folder via the filesystem service.
 func (c *UploadCmd) Run(ctx context.Context, opts Options) error {
 	start := time.Now()
 
@@ -57,6 +56,7 @@ func (c *UploadCmd) Run(ctx context.Context, opts Options) error {
 		infralogging.String("source", opts.Source),
 		infralogging.String("destination", opts.Destination),
 		infralogging.Bool("overwrite", opts.Overwrite),
+		infralogging.Bool("recursive", opts.Recursive),
 	)
 
 	c.logger.Debug("resolving filesystem service")
@@ -73,27 +73,19 @@ func (c *UploadCmd) Run(ctx context.Context, opts Options) error {
 	dst := c.resolveDestination(opts.Source, opts.Destination)
 	c.logger.Debug("resolved destination", infralogging.String("resolvedPath", dst))
 
-	// 2. Open Local File
-	c.logger.Debug("opening local source file", infralogging.String("path", opts.Source))
-	file, err := os.OpenFile(opts.Source, os.O_RDONLY, 0)
-	if err != nil {
-		c.logger.Error("failed to open local file",
-			infralogging.String("path", opts.Source),
-			infralogging.Error(err))
-		return util.NewCommandError(commandName, "failed to open local file", err)
-	}
-	defer file.Close()
-
-	// 3. Perform Upload
-	c.logger.Info("initiating file upload",
+	// 2. Perform Upload
+	c.logger.Info("initiating upload",
 		infralogging.String("source", opts.Source),
 		infralogging.String("destination", dst))
-	_, err = fsSvc.WriteFile(ctx, dst, file, domainfs.WriteOptions{Overwrite: opts.Overwrite})
+	_, err := fsSvc.Upload(ctx, opts.Source, dst, domainfs.UploadOptions{
+		Overwrite: opts.Overwrite,
+		Recursive: opts.Recursive,
+	})
 	if err != nil {
 		c.logger.Error("upload failed",
 			infralogging.String("destination", dst),
 			infralogging.Error(err))
-		return util.NewCommandError(commandName, "failed to upload file", err)
+		return util.NewCommandError(commandName, "failed to upload", err)
 	}
 
 	c.logger.Info("upload completed successfully",

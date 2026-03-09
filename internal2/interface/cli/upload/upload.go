@@ -13,6 +13,9 @@ const (
 
 	overwriteFlagName  = "force"
 	overwriteFlagShort = "f"
+
+	recursiveFlagName  = "recursive"
+	recursiveFlagShort = "r"
 )
 
 // CreateUploadCmd constructs and returns the cobra.Command for the upload operation.
@@ -22,20 +25,20 @@ func CreateUploadCmd(c di.Container) *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   fmt.Sprintf("%s [src] [dst]", commandName),
-		Short: "Upload a local file to a OneDrive path.",
+		Short: "Upload a local file or folder to a OneDrive path.",
 		Long: `
-Upload a local file to a OneDrive path.
+Upload a local file or folder to a OneDrive path.
 
-This command copies a file from your local filesystem into your OneDrive
+This command copies a file or folder from your local filesystem into your OneDrive
 account. It behaves similarly to the Unix 'cp' command, but with cloud-aware
 semantics:
 
-  • The first argument (src) must be a path to a local file.
+  • The first argument (src) must be a path to a local file or folder.
   • The second argument (dst) is the destination path in OneDrive.
   • If the destination ends with a slash ("/"), the source file's basename
     is automatically appended.
   • Existing files at the destination path are overwritten if '--force' is used.
-  • Parent folders must already exist.
+  • Use '--recursive' to upload a folder and its contents.
 
 Authentication:
 You must be logged in (via 'onedrive auth login') before using this command.
@@ -49,6 +52,9 @@ You must be logged in (via 'onedrive auth login') before using this command.
 
   # Upload and overwrite an existing file
   odc upload --force ./report.pdf /Documents/report.pdf
+
+  # Upload a folder recursively
+  odc upload --recursive ./my-folder /Backup/
 `,
 
 		Args: cobra.ExactArgs(2),
@@ -70,6 +76,7 @@ You must be logged in (via 'onedrive auth login') before using this command.
 	}
 
 	cmd.Flags().BoolVarP(&opts.Overwrite, overwriteFlagName, overwriteFlagShort, false, "Overwrite an existing file at the destination")
+	cmd.Flags().BoolVarP(&opts.Recursive, recursiveFlagName, recursiveFlagShort, false, "Upload a folder and its contents recursively")
 
 	return cmd
 }

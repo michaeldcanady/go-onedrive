@@ -21,6 +21,9 @@ type Options struct {
 	// Overwrite determines whether to replace an existing file at the destination.
 	Overwrite bool
 
+	// Recursive determines whether to upload a directory and its contents recursively.
+	Recursive bool
+
 	// Stdin is the input stream for the command.
 	Stdin io.Reader
 	// Stdout is the output stream for the command.

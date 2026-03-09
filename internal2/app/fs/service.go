@@ -204,15 +204,75 @@ func (s *Service2) WriteFile(ctx context.Context, path string, r io.Reader, opts
 }
 
 func (s *Service2) Upload(ctx context.Context, src, dst string, opts domainfs.UploadOptions) (domainfs.Item, error) {
-	_ = s.buildLogger(ctx)
+	logger := s.buildLogger(ctx).With(
+		logging.String("src", src),
+		logging.String("dst", dst),
+	)
 
-	file, err := os.Open(src)
+	info, err := os.Stat(src)
+	if err != nil {
+		logger.Error("failed to stat source", logging.Error(err))
+		return domainfs.Item{}, err
+	}
+
+	if !info.IsDir() {
+		return s.uploadFile(ctx, src, dst, opts)
+	}
+
+	// It's a directory
+	return s.uploadDir(ctx, src, dst, opts)
+}
+
+func (s *Service2) uploadFile(ctx context.Context, src, dst string, opts domainfs.UploadOptions) (domainfs.Item, error) {
+	f, err := os.Open(src)
 	if err != nil {
 		return domainfs.Item{}, err
 	}
-	defer file.Close()
+	defer f.Close()
 
-	return s.WriteFile(ctx, dst, file, domainfs.WriteOptions{
+	return s.WriteFile(ctx, dst, f, domainfs.WriteOptions{
 		Overwrite: opts.Overwrite,
 	})
+}
+
+func (s *Service2) uploadDir(ctx context.Context, src, dst string, opts domainfs.UploadOptions) (domainfs.Item, error) {
+	logger := s.buildLogger(ctx).With(
+		logging.String("src", src),
+		logging.String("dst", dst),
+	)
+
+	// 1. Ensure the directory exists in OneDrive
+	if err := s.Mkdir(ctx, dst, domainfs.MKDirOptions{Parents: true}); err != nil {
+		// If it's already a folder, Mkdir might fail depending on implementation.
+		// For now we assume Mkdir handles "already exists" or we ignore it.
+		logger.Debug("Mkdir possibly failed or directory already exists", logging.Error(err))
+	}
+
+	entries, err := os.ReadDir(src)
+	if err != nil {
+		return domainfs.Item{}, err
+	}
+
+	for _, entry := range entries {
+		entrySrc := filepath.Join(src, entry.Name())
+		entryDst := dst + "/" + entry.Name()
+
+		if entry.IsDir() {
+			if opts.Recursive {
+				if _, err := s.uploadDir(ctx, entrySrc, entryDst, opts); err != nil {
+					return domainfs.Item{}, err
+				}
+			}
+			continue
+		}
+
+		// It's a file
+		_, err := s.uploadFile(ctx, entrySrc, entryDst, opts)
+		if err != nil {
+			return domainfs.Item{}, err
+		}
+	}
+
+	// For a directory upload, returning the item for the directory itself might be more appropriate.
+	return s.Get(ctx, dst)
 }

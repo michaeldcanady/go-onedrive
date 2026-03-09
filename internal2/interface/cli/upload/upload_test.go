@@ -3,7 +3,6 @@ package upload
 import (
 	"context"
 	"io"
-	"os"
 	"testing"
 
 	"github.com/michaeldcanady/go-onedrive/internal2/domain/account"
@@ -21,7 +20,6 @@ import (
 	"github.com/michaeldcanady/go-onedrive/internal2/infra/common/logging"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"github.com/stretchr/testify/require"
 )
 
 // --- Mocks ---
@@ -52,7 +50,8 @@ type MockFSService struct {
 }
 
 func (m *MockFSService) Get(ctx context.Context, path string) (domainfs.Item, error) {
-	return domainfs.Item{}, nil
+	args := m.Called(ctx, path)
+	return args.Get(0).(domainfs.Item), args.Error(1)
 }
 func (m *MockFSService) List(ctx context.Context, path string, opts domainfs.ListOptions) ([]domainfs.Item, error) {
 	return nil, nil
@@ -64,8 +63,7 @@ func (m *MockFSService) ReadFile(ctx context.Context, path string, opts domainfs
 	return nil, nil
 }
 func (m *MockFSService) WriteFile(ctx context.Context, path string, r io.Reader, opts domainfs.WriteOptions) (domainfs.Item, error) {
-	args := m.Called(ctx, path, r, opts)
-	return args.Get(0).(domainfs.Item), args.Error(1)
+	return domainfs.Item{}, nil
 }
 func (m *MockFSService) Mkdir(ctx context.Context, path string, opts domainfs.MKDirOptions) error {
 	return nil
@@ -77,7 +75,8 @@ func (m *MockFSService) Move(ctx context.Context, src, dst string, opts domainfs
 	return nil
 }
 func (m *MockFSService) Upload(ctx context.Context, src, dst string, opts domainfs.UploadOptions) (domainfs.Item, error) {
-	return domainfs.Item{}, nil
+	args := m.Called(ctx, src, dst, opts)
+	return args.Get(0).(domainfs.Item), args.Error(1)
 }
 
 type MockLogProvider struct {
@@ -117,14 +116,6 @@ func (m *MockLogger) WithContext(ctx context.Context) logging.Logger {
 }
 
 func TestUploadCmd_Run(t *testing.T) {
-	// We need a real file to open, or we can mock os.OpenFile (which is harder).
-	// Let's create a temporary file for the test.
-	tmpFile, err := os.CreateTemp("", "testupload-*.txt")
-	require.NoError(t, err)
-	defer os.Remove(tmpFile.Name())
-	tmpFile.WriteString("hello world")
-	tmpFile.Close()
-
 	t.Run("Success", func(t *testing.T) {
 		mockContainer := new(MockContainer)
 		mockFS := new(MockFSService)
@@ -139,14 +130,45 @@ func TestUploadCmd_Run(t *testing.T) {
 		mockLogger.On("Info", mock.Anything, mock.Anything).Return()
 		mockLogger.On("Debug", mock.Anything, mock.Anything).Return()
 
-		mockFS.On("WriteFile", mock.Anything, "/remote.txt", mock.Anything, domainfs.WriteOptions{Overwrite: true}).
+		mockFS.On("Upload", mock.Anything, "local.txt", "/remote.txt", domainfs.UploadOptions{Overwrite: true, Recursive: false}).
 			Return(domainfs.Item{Name: "remote.txt"}, nil)
 
 		cmd := NewUploadCmd(mockContainer).WithLogger(mockLogger)
 		opts := Options{
-			Source:      tmpFile.Name(),
+			Source:      "local.txt",
 			Destination: "/remote.txt",
 			Overwrite:   true,
+			Stdout:      io.Discard,
+		}
+
+		err := cmd.Run(context.Background(), opts)
+		assert.NoError(t, err)
+		mockFS.AssertExpectations(t)
+	})
+
+	t.Run("Recursive Success", func(t *testing.T) {
+		mockContainer := new(MockContainer)
+		mockFS := new(MockFSService)
+		mockLogProvider := new(MockLogProvider)
+		mockLogger := new(MockLogger)
+
+		mockContainer.On("FS").Return(mockFS)
+		mockContainer.On("Logger").Return(mockLogProvider)
+		mockLogProvider.On("GetLogger", mock.Anything).Return(mockLogger, nil)
+		mockLogProvider.On("CreateLogger", mock.Anything).Return(mockLogger, nil)
+
+		mockLogger.On("Info", mock.Anything, mock.Anything).Return()
+		mockLogger.On("Debug", mock.Anything, mock.Anything).Return()
+
+		mockFS.On("Upload", mock.Anything, "local-dir", "/remote-dir", domainfs.UploadOptions{Overwrite: false, Recursive: true}).
+			Return(domainfs.Item{Name: "remote-dir"}, nil)
+
+		cmd := NewUploadCmd(mockContainer).WithLogger(mockLogger)
+		opts := Options{
+			Source:      "local-dir",
+			Destination: "/remote-dir",
+			Overwrite:   false,
+			Recursive:   true,
 			Stdout:      io.Discard,
 		}
 
