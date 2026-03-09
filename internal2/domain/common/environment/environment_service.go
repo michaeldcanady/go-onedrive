@@ -21,4 +21,5 @@ type EnvironmentService interface {
 	Shell() (string, error)
 	Editor() (string, error)
 	Visual() (string, error)
+	GlobalIgnoreFile() (string, error)
 }

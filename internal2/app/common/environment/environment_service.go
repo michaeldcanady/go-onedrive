@@ -204,3 +204,16 @@ func (s *EnvironmentService) Visual() (string, error) {
 
 	return os.Getenv("VISUAL"), nil
 }
+
+func (s *EnvironmentService) GlobalIgnoreFile() (string, error) {
+	if ignoreFile := os.Getenv(environment.EnvGlobalIgnoreFile); strings.TrimSpace(ignoreFile) != "" {
+		return ignoreFile, nil
+	}
+
+	configDir, err := s.ConfigDir()
+	if err != nil {
+		return "", err
+	}
+
+	return filepath.Join(configDir, ".odcignore"), nil
+}

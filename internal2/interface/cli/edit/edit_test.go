@@ -92,6 +92,7 @@ type MockEnvironmentService struct {
 
 func (m *MockEnvironmentService) CacheDir() (string, error)   { return "", nil }
 func (m *MockEnvironmentService) ConfigDir() (string, error)  { return "", nil }
+func (m *MockEnvironmentService) GlobalIgnoreFile() (string, error) { return "", nil }
 func (m *MockEnvironmentService) DataDir() (string, error)    { return "", nil }
 func (m *MockEnvironmentService) EnsureAll() error            { return nil }
 func (m *MockEnvironmentService) InstallDir() (string, error) { return "", nil }

@@ -12,4 +12,5 @@ const (
 	EnvShell     = "ODC_SHELL"
 	EnvEditor    = "ODC_EDITOR"
 	EnvVisual    = "ODC_VISUAL"
+	EnvGlobalIgnoreFile = "ODC_IGNORE_FILE"
 )
