@@ -91,6 +91,19 @@ func (p *Provider) Remove(ctx context.Context, path string, opts domainfs.Remove
 	return os.RemoveAll(path)
 }
 
+func (p *Provider) Copy(ctx context.Context, src, dst string, opts domainfs.CopyOptions) error {
+	r, err := p.ReadFile(ctx, src, domainfs.ReadOptions{})
+	if err != nil {
+		return err
+	}
+	defer r.Close()
+
+	_, err = p.WriteFile(ctx, dst, r, domainfs.WriteOptions{
+		Overwrite: opts.Overwrite,
+	})
+	return err
+}
+
 func (p *Provider) Move(ctx context.Context, src, dst string, opts domainfs.MoveOptions) error {
 	return os.Rename(src, dst)
 }
