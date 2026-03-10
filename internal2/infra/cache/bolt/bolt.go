@@ -2,9 +2,14 @@ package bolt
 
 import (
 	"context"
+	"errors"
 
-	"github.com/michaeldcanady/go-onedrive/internal2/infra/cache/core"
+	domaincache "github.com/michaeldcanady/go-onedrive/internal2/domain/cache"
 	bbolt "go.etcd.io/bbolt"
+)
+
+var (
+	ErrKeyNotFound = errors.New("key not found")
 )
 
 type Store struct {
@@ -70,12 +75,12 @@ func (s *Store) Get(ctx context.Context, key []byte) ([]byte, error) {
 	err := s.db.View(func(tx *bbolt.Tx) error {
 		b := tx.Bucket(s.bucket)
 		if b == nil {
-			return core.ErrKeyNotFound
+			return ErrKeyNotFound
 		}
 
 		v := b.Get(key)
 		if v == nil {
-			return core.ErrKeyNotFound
+			return ErrKeyNotFound
 		}
 
 		out = append([]byte(nil), v...)
@@ -89,7 +94,7 @@ func (s *Store) Set(ctx context.Context, key, value []byte) error {
 	return s.db.Update(func(tx *bbolt.Tx) error {
 		b := tx.Bucket(s.bucket)
 		if b == nil {
-			return core.ErrKeyNotFound
+			return ErrKeyNotFound
 		}
 		return b.Put(key, value)
 	})
@@ -99,7 +104,7 @@ func (s *Store) Delete(ctx context.Context, key []byte) error {
 	return s.db.Update(func(tx *bbolt.Tx) error {
 		b := tx.Bucket(s.bucket)
 		if b == nil {
-			return core.ErrKeyNotFound
+			return ErrKeyNotFound
 		}
 		return b.Delete(key)
 	})
@@ -112,7 +117,7 @@ func (s *Store) List(ctx context.Context) ([][]byte, [][]byte, error) {
 	err := s.db.View(func(tx *bbolt.Tx) error {
 		b := tx.Bucket(s.bucket)
 		if b == nil {
-			return core.ErrKeyNotFound
+			return ErrKeyNotFound
 		}
 
 		return b.ForEach(func(k, v []byte) error {
@@ -124,3 +129,5 @@ func (s *Store) List(ctx context.Context) ([][]byte, [][]byte, error) {
 
 	return keys, values, err
 }
+
+var _ domaincache.KeyValueStore = (*Store)(nil)

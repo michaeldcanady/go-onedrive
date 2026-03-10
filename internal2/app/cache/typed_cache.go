@@ -6,18 +6,17 @@ import (
 	"errors"
 
 	domaincache "github.com/michaeldcanady/go-onedrive/internal2/domain/cache"
-	"github.com/michaeldcanady/go-onedrive/internal2/infra/cache/abstractions"
-	"github.com/michaeldcanady/go-onedrive/internal2/infra/cache/core"
+	"github.com/michaeldcanady/go-onedrive/internal2/infra/cache/bolt"
 )
 
 var _ domaincache.Cache[any] = (*TypedCache[any])(nil)
 
 type TypedCache[T any] struct {
-	cache      *abstractions.Cache2
-	serializer abstractions.SerializerDeserializer[T]
+	cache      *domaincache.Store
+	serializer domaincache.SerializerDeserializer[T]
 }
 
-func NewTypedCache[T any](cache *abstractions.Cache2, serializer abstractions.SerializerDeserializer[T]) *TypedCache[T] {
+func NewTypedCache[T any](cache *domaincache.Store, serializer domaincache.SerializerDeserializer[T]) *TypedCache[T] {
 	return &TypedCache[T]{
 		cache:      cache,
 		serializer: serializer,
@@ -34,7 +33,7 @@ func (c *TypedCache[T]) Get(ctx context.Context, key string) (T, error) {
 			return err
 		},
 	)
-	if errors.Is(err, core.ErrKeyNotFound) {
+	if errors.Is(err, bolt.ErrKeyNotFound) {
 		return v, err
 	}
 	return v, err

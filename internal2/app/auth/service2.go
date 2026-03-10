@@ -13,7 +13,7 @@ import (
 	domaincache "github.com/michaeldcanady/go-onedrive/internal2/domain/cache"
 	domainconfig "github.com/michaeldcanady/go-onedrive/internal2/domain/config"
 	"github.com/michaeldcanady/go-onedrive/internal2/domain/state"
-	"github.com/michaeldcanady/go-onedrive/internal2/infra/cache/core"
+	"github.com/michaeldcanady/go-onedrive/internal2/infra/cache/bolt"
 	"github.com/michaeldcanady/go-onedrive/internal2/infra/common/logging"
 	"github.com/michaeldcanady/go-onedrive/internal2/interface/cli/util"
 )
@@ -34,7 +34,7 @@ type Service2 struct {
 	cache   domaincache.Cache[authdomain.AccessToken]
 	config  domainconfig.ConfigService
 	state   state.Service
-	logger  logging.Logger
+	log     logging.Logger
 	factory authdomain.CredentialFactory
 	account accountdomain.Service
 }
@@ -51,7 +51,7 @@ func NewService2(
 		cache:   cache,
 		config:  config,
 		state:   state,
-		logger:  logger,
+		log:     logger,
 		factory: factory,
 		account: account,
 	}
@@ -59,7 +59,7 @@ func NewService2(
 
 func (s *Service2) buildLogger(ctx context.Context) logging.Logger {
 	correlationID := util.CorrelationIDFromContext(ctx)
-	return s.logger.WithContext(ctx).With(
+	return s.log.WithContext(ctx).With(
 		logging.String("correlation_id", correlationID),
 	)
 }
@@ -140,7 +140,7 @@ func (s *Service2) needsInteractiveAuth(opts authdomain.LoginOptions, record acc
 func (s *Service2) getCachedToken(ctx context.Context, account accountdomain.Account) (authdomain.AccessToken, error) {
 	token, err := s.cache.Get(ctx, account.HomeAccountID)
 	if err != nil {
-		if !errors.Is(err, core.ErrKeyNotFound) {
+		if !errors.Is(err, bolt.ErrKeyNotFound) {
 			return authdomain.AccessToken{}, err
 		}
 	}

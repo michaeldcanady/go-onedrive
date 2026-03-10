@@ -4,7 +4,7 @@ import (
 	"context"
 	"sync"
 
-	"github.com/michaeldcanady/go-onedrive/internal2/infra/cache/abstractions"
+	domaincache "github.com/michaeldcanady/go-onedrive/internal2/domain/cache"
 	"github.com/michaeldcanady/go-onedrive/internal2/infra/common/logging"
 	"github.com/michaeldcanady/go-onedrive/internal2/interface/cli/util"
 )
@@ -12,12 +12,12 @@ import (
 type Service2 struct {
 	mu       sync.RWMutex
 	logger   logging.Logger
-	registry map[string]*abstractions.Cache2
+	registry map[string]*domaincache.Store
 }
 
 func NewService2(logger logging.Logger) *Service2 {
 	return &Service2{
-		registry: make(map[string]*abstractions.Cache2),
+		registry: make(map[string]*domaincache.Store),
 		logger:   logger,
 	}
 }
@@ -36,7 +36,7 @@ const (
 	eventCacheGetMiss  = "cache.registry.get.miss"
 )
 
-func (s *Service2) CreateCache(ctx context.Context, name string, storeFactory func() abstractions.KeyValueStore) *abstractions.Cache2 {
+func (s *Service2) CreateCache(ctx context.Context, name string, storeFactory func() domaincache.KeyValueStore) *domaincache.Store {
 	correlationID := util.CorrelationIDFromContext(ctx)
 
 	logger := s.logger.WithContext(ctx).With(
@@ -59,7 +59,7 @@ func (s *Service2) CreateCache(ctx context.Context, name string, storeFactory fu
 		return s.registry[name]
 	}
 
-	cache := abstractions.NewCache2(storeFactory())
+	cache := domaincache.NewStore(storeFactory())
 	s.registry[name] = cache
 
 	logger.Info("cache created successfully",
@@ -69,7 +69,7 @@ func (s *Service2) CreateCache(ctx context.Context, name string, storeFactory fu
 	return cache
 }
 
-func (s *Service2) GetCache(ctx context.Context, name string) (*abstractions.Cache2, bool) {
+func (s *Service2) GetCache(ctx context.Context, name string) (*domaincache.Store, bool) {
 	correlationID := util.CorrelationIDFromContext(ctx)
 
 	logger := s.logger.WithContext(ctx).With(

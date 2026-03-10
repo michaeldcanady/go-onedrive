@@ -1,13 +1,13 @@
 package cache
 
 import (
-	"github.com/michaeldcanady/go-onedrive/internal2/infra/cache/abstractions"
+	domaincache "github.com/michaeldcanady/go-onedrive/internal2/domain/cache"
 	"github.com/michaeldcanady/go-onedrive/internal2/infra/cache/bolt"
 )
 
 // BoltCacheFactory returns a factory function that creates a new BoltDB-backed KeyValueStore.
-func BoltCacheFactory(path, bucket string) func() abstractions.KeyValueStore {
-	return func() abstractions.KeyValueStore {
+func BoltCacheFactory(path, bucket string) func() domaincache.KeyValueStore {
+	return func() domaincache.KeyValueStore {
 		store, err := bolt.NewStore(path, bucket)
 		if err != nil {
 			return nil
@@ -18,8 +18,8 @@ func BoltCacheFactory(path, bucket string) func() abstractions.KeyValueStore {
 
 // SiblingBoltFactory returns a factory function that creates a new BoltDB-backed KeyValueStore
 // using an existing BoltDB instance but a different bucket.
-func SiblingBoltFactory(store *bolt.Store, bucket string) func() abstractions.KeyValueStore {
-	return func() abstractions.KeyValueStore {
+func SiblingBoltFactory(store *bolt.Store, bucket string) func() domaincache.KeyValueStore {
+	return func() domaincache.KeyValueStore {
 		siblingStore, err := bolt.NewSiblingStore(store, bucket)
 		if err != nil {
 			return nil

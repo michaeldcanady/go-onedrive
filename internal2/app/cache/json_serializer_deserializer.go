@@ -3,21 +3,21 @@ package cache
 import (
 	"encoding/json"
 
-	"github.com/michaeldcanady/go-onedrive/internal2/infra/cache/abstractions"
+	domaincache "github.com/michaeldcanady/go-onedrive/internal2/domain/cache"
 )
 
-var _ abstractions.SerializerDeserializer[any] = (*JSONSerializerDeserializer[any])(nil)
+var _ domaincache.SerializerDeserializer[any] = (*JSONSerializerDeserializer[any])(nil)
 
 type JSONSerializerDeserializer[T any] struct{}
 
-// Deserialize implements [abstractions.SerializerDeserializer].
+// Deserialize implements [domaincache.SerializerDeserializer].
 func (j *JSONSerializerDeserializer[T]) Deserialize(data []byte) (T, error) {
 	var v T
 	err := json.Unmarshal(data, &v)
 	return v, err
 }
 
-// Serialize implements [abstractions.SerializerDeserializer].
+// Serialize implements [domaincache.SerializerDeserializer].
 func (j *JSONSerializerDeserializer[T]) Serialize(value T) ([]byte, error) {
 	return json.Marshal(value)
 }

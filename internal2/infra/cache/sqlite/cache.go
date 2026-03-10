@@ -3,21 +3,21 @@ package sqlite
 import (
 	"context"
 	"database/sql"
-	"errors"
 
-	"github.com/michaeldcanady/go-onedrive/internal2/infra/cache/abstractions"
+	domaincache "github.com/michaeldcanady/go-onedrive/internal2/domain/cache"
+	"github.com/michaeldcanady/go-onedrive/internal2/infra/cache/bolt"
 )
 
 type Cache[K comparable, V any] struct {
 	db              *sql.DB
-	keySerializer   abstractions.SerializerDeserializer[K]
-	valueSerializer abstractions.SerializerDeserializer[V]
+	keySerializer   domaincache.SerializerDeserializer[K]
+	valueSerializer domaincache.SerializerDeserializer[V]
 }
 
 func New[K comparable, V any](
 	path string,
-	keySer abstractions.SerializerDeserializer[K],
-	valueSer abstractions.SerializerDeserializer[V],
+	keySer domaincache.SerializerDeserializer[K],
+	valueSer domaincache.SerializerDeserializer[V],
 ) (*Cache[K, V], error) {
 
 	db, err := sql.Open("sqlite3", path)
@@ -41,7 +41,7 @@ func New[K comparable, V any](
 func (c *Cache[K, V]) GetEntry(
 	ctx context.Context,
 	key K,
-) (*abstractions.Entry[K, V], error) {
+) (*domaincache.Entry[K, V], error) {
 
 	serializedKey, err := c.keySerializer.Serialize(key)
 	if err != nil {
@@ -55,8 +55,8 @@ func (c *Cache[K, V]) GetEntry(
 
 	var raw []byte
 	if err := row.Scan(&raw); err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil, nil
+		if err == sql.ErrNoRows {
+			return nil, bolt.ErrKeyNotFound
 		}
 		return nil, err
 	}
@@ -66,12 +66,12 @@ func (c *Cache[K, V]) GetEntry(
 		return nil, err
 	}
 
-	return abstractions.NewEntry(key, value), nil
+	return domaincache.NewEntry(key, value), nil
 }
 
 func (c *Cache[K, V]) SetEntry(
 	ctx context.Context,
-	entry *abstractions.Entry[K, V],
+	entry *domaincache.Entry[K, V],
 ) error {
 
 	serializedKey, err := c.keySerializer.Serialize(entry.GetKey())
@@ -103,17 +103,9 @@ func (c *Cache[K, V]) Remove(key K) error {
 	return err
 }
 
-func (c *Cache[K, V]) NewEntry(ctx context.Context, key K) (*abstractions.Entry[K, V], error) {
-	entry, err := c.GetEntry(ctx, key)
-	if err != nil {
-		return nil, err
-	}
-	if entry != nil {
-		return nil, errors.New("key already exists")
-	}
-
+func (c *Cache[K, V]) NewEntry(ctx context.Context, key K) (*domaincache.Entry[K, V], error) {
 	var zero V
-	return abstractions.NewEntry(key, zero), nil
+	return domaincache.NewEntry(key, zero), nil
 }
 
 func (c *Cache[K, V]) Clear(ctx context.Context) error {
@@ -121,6 +113,6 @@ func (c *Cache[K, V]) Clear(ctx context.Context) error {
 	return err
 }
 
-func (c *Cache[K, V]) KeySerializer() abstractions.Serializer[K] {
+func (c *Cache[K, V]) KeySerializer() domaincache.Serializer[K] {
 	return c.keySerializer
 }

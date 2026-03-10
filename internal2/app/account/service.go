@@ -6,7 +6,7 @@ import (
 
 	"github.com/michaeldcanady/go-onedrive/internal2/domain/account"
 	"github.com/michaeldcanady/go-onedrive/internal2/domain/cache"
-	"github.com/michaeldcanady/go-onedrive/internal2/infra/cache/core"
+	"github.com/michaeldcanady/go-onedrive/internal2/infra/cache/bolt"
 	"github.com/michaeldcanady/go-onedrive/internal2/infra/common/logging"
 	"github.com/michaeldcanady/go-onedrive/internal2/interface/cli/util"
 )
@@ -16,21 +16,21 @@ const (
 )
 
 type Service struct {
-	cache  cache.Cache[account.Account]
-	logger logging.Logger
+	cache cache.Cache[account.Account]
+	log   logging.Logger
 }
 
 func New(cache cache.Cache[account.Account], logger logging.Logger) *Service {
 	return &Service{
-		cache:  cache,
-		logger: logger,
+		cache: cache,
+		log:   logger,
 	}
 }
 
 func (s *Service) buildLogger(ctx context.Context) logging.Logger {
 	correlationID := util.CorrelationIDFromContext(ctx)
 
-	return s.logger.WithContext(ctx).With(
+	return s.log.WithContext(ctx).With(
 		logging.String("correlation_id", correlationID),
 	)
 }
@@ -41,7 +41,7 @@ func (s *Service) Get(ctx context.Context) (account.Account, error) {
 	logger.Debug("retrieving account from cache")
 	acct, err := s.cache.Get(ctx, accountKey)
 	if err != nil {
-		if !errors.Is(err, core.ErrKeyNotFound) {
+		if !errors.Is(err, bolt.ErrKeyNotFound) {
 			logger.Warn("failed to retrieve cached account",
 				logging.Error(err),
 			)
