@@ -6,8 +6,8 @@ import (
 	"strings"
 
 	domaingraph "github.com/michaeldcanady/go-onedrive/internal2/domain/common/graph"
-	"github.com/michaeldcanady/go-onedrive/internal2/domain/drive"
 	"github.com/michaeldcanady/go-onedrive/internal2/domain/common/logger"
+	"github.com/michaeldcanady/go-onedrive/internal2/domain/drive"
 	"github.com/michaeldcanady/go-onedrive/internal2/interface/cli/util"
 )
 
@@ -35,6 +35,7 @@ const (
 	eventDrivePersonalFailure = "drive.personal.failure"
 )
 
+// ListDrives lists available onedrive drives.
 func (s *driveService) ListDrives(ctx context.Context) ([]*drive.Drive, error) {
 	correlationID := util.CorrelationIDFromContext(ctx)
 
@@ -77,6 +78,7 @@ func (s *driveService) ListDrives(ctx context.Context) ([]*drive.Drive, error) {
 	return out, nil
 }
 
+// ResolveDrive resolves drive from ref (id).
 func (s *driveService) ResolveDrive(ctx context.Context, driveRef string) (*drive.Drive, error) {
 	correlationID := util.CorrelationIDFromContext(ctx)
 
@@ -116,6 +118,7 @@ func (s *driveService) ResolveDrive(ctx context.Context, driveRef string) (*driv
 	return nil, errors.New("not found")
 }
 
+// ResolvePersonalDrive resolves logged in user
 func (s *driveService) ResolvePersonalDrive(ctx context.Context) (*drive.Drive, error) {
 	correlationID := util.CorrelationIDFromContext(ctx)
 

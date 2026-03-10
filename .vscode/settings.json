@@ -13,6 +13,7 @@
         "cachev",
         "Clienter",
         "cliprofileservicego",
+        "commonerrors",
         "configurationservice",
         "coreutils",
         "credentialservice",

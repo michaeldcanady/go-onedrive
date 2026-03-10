@@ -4,6 +4,7 @@ import (
 	"context"
 	"strings"
 
+	"github.com/michaeldcanady/go-onedrive/internal2/domain/auth"
 	"github.com/michaeldcanady/go-onedrive/internal2/domain/common/logger"
 	domainconfig "github.com/michaeldcanady/go-onedrive/internal2/domain/config"
 	"github.com/michaeldcanady/go-onedrive/internal2/interface/cli/util"
@@ -47,7 +48,7 @@ func (s *ConfigService) AddPath(name, path string) error {
 func (s *ConfigService) getDefaultConfig() domainconfig.Configuration {
 	return domainconfig.Configuration{
 		Auth: domainconfig.AuthenticationConfig{
-			Type:        "interactiveBrowser",
+			Type:        auth.MethodInteractiveBrowser,
 			ClientID:    "6b1e6ec0-ad93-4175-a0e0-84c02e13f206",
 			TenantID:    "common",
 			RedirectURI: "http://localhost:8400",

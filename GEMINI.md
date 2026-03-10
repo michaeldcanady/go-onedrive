@@ -8,7 +8,7 @@ go-onedrive (odc) is a CLI tool for interacting with OneDrive items as a unix‑
 - **Main Technologies:**
   - **Runtime:** Go (>= 1.25.0)
   - **Testing:** `go test`
-  - **Linting/Formatting:** `go vet`, `golangci-lint`
+  - **Linting/Formatting:** `go vet`, `golangci-lint`, `gofmt`
 - **Architecture:** Monorepo structure with clear layering:
   - `internal2/interface/cli`: User‑facing terminal UI, input parsing, and display rendering.
   - `pkg/odc`: Entrypoint for the odc CLI.

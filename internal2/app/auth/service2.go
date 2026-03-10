@@ -102,7 +102,7 @@ func (s *Service2) buildCredentialProvider(
 ) (authdomain.CredentialProvider, error) {
 
 	opts := &authdomain.Options{
-		Method:   authdomain.ParseMethod(cfg.Auth.Type),
+		Method:   cfg.Auth.Type,
 		TenantID: cfg.Auth.TenantID,
 		ClientID: cfg.Auth.ClientID,
 	}
