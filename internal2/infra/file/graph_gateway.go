@@ -12,4 +12,5 @@ type GraphGateway interface {
 	ListByPath(ctx context.Context, driveID, path string, parentEtag string) ([]*file.Metadata, error)
 	CreateByPath(ctx context.Context, driveID, parentPath string, request file.MetadataCreateRequest) (*file.Metadata, error)
 	UpdateByPath(ctx context.Context, driveID, path string, request file.MetadataUpdateRequest) (*file.Metadata, error)
+	DeleteByPath(ctx context.Context, driveID, path string) error
 }

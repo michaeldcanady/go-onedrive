@@ -55,10 +55,7 @@ func (s *Provider) buildLogger(ctx context.Context) logger.Logger {
 	)
 }
 
-func (s *Provider) Get(
-	ctx context.Context,
-	path string,
-) (domainfs.Item, error) {
+func (s *Provider) Get(ctx context.Context, path string) (domainfs.Item, error) {
 	log := s.buildLogger(ctx).With(logger.String("path", path))
 
 	log.Debug("retrieving metadata")
@@ -77,11 +74,7 @@ func (s *Provider) Get(
 }
 
 // List implements [fs.Service].
-func (s *Provider) List(
-	ctx context.Context,
-	path string,
-	opts domainfs.ListOptions,
-) ([]domainfs.Item, error) {
+func (s *Provider) List(ctx context.Context, path string, opts domainfs.ListOptions) ([]domainfs.Item, error) {
 	log := s.buildLogger(ctx).With(logger.String("path", path))
 
 	driveID, cleanPath, err := s.resolveDrive(ctx, path)
@@ -228,7 +221,15 @@ func (s *Provider) ReadFile(ctx context.Context, path string, opts domainfs.Read
 
 // Remove implements [fs.Service].
 func (s *Provider) Remove(ctx context.Context, path string, opts domainfs.RemoveOptions) error {
-	panic("unimplemented")
+	log := s.buildLogger(ctx).With(logger.String("path", path))
+	log.Debug("Remove: deleting file")
+
+	driveID, cleanPath, err := s.resolveDrive(ctx, path)
+	if err != nil {
+		return err
+	}
+
+	return s.metadataRepo.DeleteByPath(ctx, driveID, cleanPath, file.MetadataDeleteOptions{})
 }
 
 // Stat implements [fs.Service].
