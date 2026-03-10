@@ -36,6 +36,7 @@ const (
 	eventCacheGetMiss  = "cache.registry.get.miss"
 )
 
+// CreateCache instantiates a new cache store and adds it to the registry.
 func (s *Service2) CreateCache(ctx context.Context, name string, storeFactory func() domaincache.KeyValueStore) *domaincache.Store {
 	correlationID := util.CorrelationIDFromContext(ctx)
 
@@ -69,6 +70,7 @@ func (s *Service2) CreateCache(ctx context.Context, name string, storeFactory fu
 	return cache
 }
 
+// GetCache returns the cache with the provided name.
 func (s *Service2) GetCache(ctx context.Context, name string) (*domaincache.Store, bool) {
 	correlationID := util.CorrelationIDFromContext(ctx)
 

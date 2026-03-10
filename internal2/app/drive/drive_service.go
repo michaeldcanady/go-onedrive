@@ -51,7 +51,7 @@ func (s *driveService) ListDrives(ctx context.Context) ([]*drive.Drive, error) {
 			logger.String("event", eventDriveListFailure),
 			logger.Error(err),
 		)
-		return nil, mapGraphError(err)
+		return nil, err
 	}
 
 	log.Info("drive list retrieved successfully",
@@ -118,7 +118,7 @@ func (s *driveService) ResolvePersonalDrive(ctx context.Context) (*drive.Drive, 
 			logger.String("event", eventDrivePersonalFailure),
 			logger.Error(err),
 		)
-		return nil, mapGraphError(err)
+		return nil, err
 	}
 
 	log.Info("personal drive resolved successfully",

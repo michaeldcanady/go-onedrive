@@ -10,14 +10,14 @@ var _ domaincache.SerializerDeserializer[any] = (*JSONSerializerDeserializer[any
 
 type JSONSerializerDeserializer[T any] struct{}
 
-// Deserialize implements [domaincache.SerializerDeserializer].
+// Deserialize converts the provided json data to the specified type.
 func (j *JSONSerializerDeserializer[T]) Deserialize(data []byte) (T, error) {
 	var v T
 	err := json.Unmarshal(data, &v)
 	return v, err
 }
 
-// Serialize implements [domaincache.SerializerDeserializer].
+// Serialize converts the provided value to json data.
 func (j *JSONSerializerDeserializer[T]) Serialize(value T) ([]byte, error) {
 	return json.Marshal(value)
 }

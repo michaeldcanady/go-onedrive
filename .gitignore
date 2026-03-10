@@ -1,7 +1,7 @@
 output/**
 .test
 profile.json
-config.yaml
+config*.yaml
 profile.cache
 *.skill
 hostbrowserpipe
