@@ -2,6 +2,7 @@ package rm
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/michaeldcanady/go-onedrive/internal2/domain/common/logger"
@@ -34,6 +35,16 @@ func (c *Command) Run(ctx context.Context, opts Options) error {
 
 	if opts.Permanent {
 		c.RenderWarning(opts.Stdout, "This action will permanently delete \"%s\" and cannot be undone.", opts.Path)
+		if !opts.Force {
+			confirmed, err := c.PromptConfirm(opts.Stdout, "Are you sure you want to proceed")
+			if err != nil {
+				return util.NewCommandError(c.Name, "failed to get confirmation", err)
+			}
+			if !confirmed {
+				fmt.Fprintln(opts.Stdout, "Aborted.")
+				return nil
+			}
+		}
 	}
 
 	fsSvc := c.Container.FS()
@@ -44,6 +55,7 @@ func (c *Command) Run(ctx context.Context, opts Options) error {
 	if err := fsSvc.Remove(ctx, opts.Path, fs.RemoveOptions{
 		Permanent: opts.Permanent,
 	}); err != nil {
+		c.RenderError(opts.Stderr, err)
 		return util.NewCommandError(c.Name, "failed to move item", err)
 	}
 

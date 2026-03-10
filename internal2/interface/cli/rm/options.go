@@ -8,6 +8,7 @@ import (
 type Options struct {
 	Path      string
 	Permanent bool
+	Force     bool
 	Stdin     io.Reader
 	Stdout    io.Writer
 	Stderr    io.Writer

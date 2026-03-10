@@ -6,6 +6,7 @@ import (
 	"io"
 
 	"github.com/fatih/color"
+	"github.com/manifoldco/promptui"
 	domainerrors "github.com/michaeldcanady/go-onedrive/internal2/domain/common/errors"
 	"github.com/michaeldcanady/go-onedrive/internal2/domain/common/logger"
 	"github.com/michaeldcanady/go-onedrive/internal2/domain/di"
@@ -87,4 +88,23 @@ func (c *BaseCommand) RenderSuccess(w io.Writer, format string, a ...any) {
 	green := color.New(color.FgGreen, color.Bold).SprintFunc()
 	msg := fmt.Sprintf(format, a...)
 	fmt.Fprintf(w, "%s %s\n", green("Success:"), msg)
+}
+
+// PromptConfirm asks the user for confirmation.
+func (c *BaseCommand) PromptConfirm(w io.Writer, label string) (bool, error) {
+	prompt := promptui.Prompt{
+		Label:     label,
+		IsConfirm: true,
+		Stdout:    NewNopWriteCloser(w),
+	}
+
+	_, err := prompt.Run()
+	if err != nil {
+		if errors.Is(err, promptui.ErrAbort) {
+			return false, nil
+		}
+		return false, err
+	}
+
+	return true, nil
 }
