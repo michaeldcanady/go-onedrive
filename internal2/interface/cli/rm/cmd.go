@@ -32,6 +32,10 @@ func (c *Command) Run(ctx context.Context, opts Options) error {
 		logger.String("path", opts.Path),
 	)
 
+	if opts.Permanent {
+		c.RenderWarning(opts.Stdout, "This action will permanently delete \"%s\" and cannot be undone.", opts.Path)
+	}
+
 	fsSvc := c.Container.FS()
 	if fsSvc == nil {
 		return util.NewCommandErrorWithNameWithMessage(c.Name, "filesystem service is nil")
@@ -40,7 +44,6 @@ func (c *Command) Run(ctx context.Context, opts Options) error {
 	if err := fsSvc.Remove(ctx, opts.Path, fs.RemoveOptions{
 		Permanent: opts.Permanent,
 	}); err != nil {
-		c.RenderError(opts.Stderr, err)
 		return util.NewCommandError(c.Name, "failed to move item", err)
 	}
 
