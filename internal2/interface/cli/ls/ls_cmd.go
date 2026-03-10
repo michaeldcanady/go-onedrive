@@ -2,6 +2,7 @@ package ls
 
 import (
 	"context"
+	"os"
 	"time"
 
 	"github.com/michaeldcanady/go-onedrive/internal2/domain/di"
@@ -42,6 +43,7 @@ func (c *LsCmd) Run(ctx context.Context, opts Options) error {
 		logger.String("sortProperty", opts.SortProperty),
 		logger.String("sortDirection", opts.SortOrder.String()),
 		logger.Bool("recursive", opts.Recursive),
+		logger.String("ignoreFile", opts.IgnoreFile),
 	)
 
 	fsSvc := c.Container.FS()
@@ -55,7 +57,12 @@ func (c *LsCmd) Run(ctx context.Context, opts Options) error {
 		return util.NewCommandErrorWithNameWithError(c.Name, err)
 	}
 
-	items, err = c.filterItems(items, opts)
+	matcher, err := c.loadIgnoreMatcher(ctx, opts.IgnoreFile)
+	if err != nil {
+		c.Log.Warn("failed to load ignore file", logger.String("path", opts.IgnoreFile), logger.Error(err))
+	}
+
+	items, err = c.filterItems(items, opts, matcher)
 	if err != nil {
 		return util.NewCommandError(c.Name, "failed to filter items", err)
 	}
@@ -99,8 +106,27 @@ func (c *LsCmd) fetchItems(ctx context.Context, fsSvc domainfs.Service, path str
 	return items, nil
 }
 
+func (c *LsCmd) loadIgnoreMatcher(ctx context.Context, path string) (domainfs.IgnoreMatcher, error) {
+	if path == "" {
+		return nil, nil
+	}
+
+	f, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+
+	factory := c.Container.IgnoreMatcherFactory()
+	if factory == nil {
+		return nil, nil
+	}
+
+	return factory.CreateMatcher(ctx, f)
+}
+
 // filterItems applies inclusion/exclusion filters to the retrieved items.
-func (c *LsCmd) filterItems(items []domainfs.Item, opts Options) ([]domainfs.Item, error) {
+func (c *LsCmd) filterItems(items []domainfs.Item, opts Options, matcher domainfs.IgnoreMatcher) ([]domainfs.Item, error) {
 	var filterOpts []filtering.FilterOption
 
 	if opts.IncludeAll {
@@ -120,7 +146,22 @@ func (c *LsCmd) filterItems(items []domainfs.Item, opts Options) ([]domainfs.Ite
 		return nil, err
 	}
 
-	return filterer.Filter(items)
+	items, err = filterer.Filter(items)
+	if err != nil {
+		return nil, err
+	}
+
+	if matcher != nil {
+		var filtered []domainfs.Item
+		for _, item := range items {
+			if !matcher.ShouldIgnore(item.Path, item.Type == domainfs.ItemTypeFolder) {
+				filtered = append(filtered, item)
+			}
+		}
+		return filtered, nil
+	}
+
+	return items, nil
 }
 
 // sortItems sorts the items based on the property and direction specified in Options.

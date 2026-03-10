@@ -17,6 +17,7 @@ import (
 type Container interface {
 	Cache() domaincache.Service2
 	FS() domainfs.Service
+	IgnoreMatcherFactory() domainfs.IgnoreMatcherFactory
 	EnvironmentService() domainenvironment.EnvironmentService
 	Logger() domainlogger.LoggerService
 	Auth() domainauth.AuthService

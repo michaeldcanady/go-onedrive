@@ -3,10 +3,10 @@ package fs
 import (
 	"context"
 	"io"
-	"strings"
 
 	"github.com/michaeldcanady/go-onedrive/internal2/app/fs/registry"
 	domainfs "github.com/michaeldcanady/go-onedrive/internal2/domain/fs"
+	"github.com/michaeldcanady/go-onedrive/internal2/interface/cli/util"
 )
 
 var _ domainfs.Service = (*FileSystemManager)(nil)
@@ -21,19 +21,8 @@ func NewFileSystemManager(registry *registry.Registry) *FileSystemManager {
 	}
 }
 
-func parsePath(path string) (string, string) {
-	prefix, rest, found := strings.Cut(path, ":")
-	if !found {
-		return "onedrive", path
-	}
-
-	rest = strings.TrimPrefix(rest, "//")
-
-	return strings.ToLower(prefix), rest
-}
-
 func (m *FileSystemManager) resolve(_ context.Context, path string) (domainfs.Service, string, error) {
-	providerName, subPath := parsePath(path)
+	providerName, subPath := util.ParsePath(path)
 
 	p, err := m.registry.Get(providerName)
 	if err == nil {

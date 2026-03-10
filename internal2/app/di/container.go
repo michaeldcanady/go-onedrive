@@ -17,6 +17,7 @@ import (
 	domainprofile "github.com/michaeldcanady/go-onedrive/internal2/domain/profile"
 	domainstate "github.com/michaeldcanady/go-onedrive/internal2/domain/state"
 
+	apponedrive "github.com/michaeldcanady/go-onedrive/internal2/app/fs/onedrive"
 	"github.com/michaeldcanady/go-onedrive/internal2/infra/cache/bolt"
 	infrafile "github.com/michaeldcanady/go-onedrive/internal2/infra/file"
 )
@@ -69,6 +70,9 @@ type Container struct {
 	fsOnce    sync.Once
 	fsService domainfs.Service
 
+	ignoreMatcherFactoryOnce    sync.Once
+	ignoreMatcherFactoryService domainfs.IgnoreMatcherFactory
+
 	editorOnce    sync.Once
 	editorService domaineditor.Service
 
@@ -88,6 +92,17 @@ type Container struct {
 
 	contentsCacheOnce  sync.Once
 	contentsCacheCache infrafile.ContentsCache
+}
+
+func (c *Container) IgnoreMatcherFactory() domainfs.IgnoreMatcherFactory {
+	c.ignoreMatcherFactoryOnce.Do(func() {
+		c.ignoreMatcherFactoryService = c.newIgnoreMatcherFactory()
+	})
+	return c.ignoreMatcherFactoryService
+}
+
+func (c *Container) newIgnoreMatcherFactory() domainfs.IgnoreMatcherFactory {
+	return apponedrive.NewIgnoreMatcherFactory()
 }
 
 // NewContainer creates a new instance of the dependency injection container.

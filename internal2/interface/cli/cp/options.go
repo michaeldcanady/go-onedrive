@@ -9,9 +9,10 @@ import (
 
 // Options defines the configuration for the cp command.
 type Options struct {
-	Source    string
-	Dest      string
-	Overwrite bool
+	Source     string
+	Dest       string
+	Overwrite  bool
+	IgnoreFile string
 
 	// Stdin is the input stream for the command.
 	Stdin io.Reader

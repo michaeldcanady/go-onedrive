@@ -7,6 +7,7 @@ import (
 
 	"github.com/michaeldcanady/go-onedrive/internal2/app/fs/registry"
 	domainfs "github.com/michaeldcanady/go-onedrive/internal2/domain/fs"
+	"github.com/michaeldcanady/go-onedrive/internal2/interface/cli/util"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -83,7 +84,7 @@ func TestParsePath(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		prov, subPath := parsePath(tt.path)
+		prov, subPath := util.ParsePath(tt.path)
 		assert.Equal(t, tt.expectedProv, prov)
 		assert.Equal(t, tt.expectedPath, subPath)
 	}

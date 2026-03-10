@@ -21,6 +21,9 @@ type Options struct {
 	// Overwrite determines whether to replace an existing file at the destination.
 	Overwrite bool
 
+	// IgnoreFile is the path to a .gitignore-style file for filtering.
+	IgnoreFile string
+
 	// Stdin is the input stream for the command.
 	Stdin io.Reader
 	// Stdout is the output stream for the command.

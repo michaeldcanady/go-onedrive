@@ -37,7 +37,10 @@ func (m *MockContainer) EnvironmentService() domainenvironment.EnvironmentServic
 func (m *MockContainer) Logger() logger.LoggerService {
 	return m.Called().Get(0).(logger.LoggerService)
 }
-func (m *MockContainer) Auth() domainauth.AuthService          { return nil }
+func (m *MockContainer) IgnoreMatcherFactory() domainfs.IgnoreMatcherFactory {
+	return nil
+}
+func (m *MockContainer) Auth() domainauth.AuthService { return nil }
 func (m *MockContainer) Profile() domainprofile.ProfileService { return nil }
 func (m *MockContainer) Config() config.ConfigService          { return nil }
 func (m *MockContainer) State() state.Service                  { return nil }
