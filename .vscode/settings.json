@@ -1,6 +1,7 @@
 {
     "cSpell.words": [
         "accountdomain",
+        "appcache",
         "applogging",
         "appprofile",
         "appstate",
@@ -12,6 +13,7 @@
         "cachev",
         "Clienter",
         "cliprofileservicego",
+        "commonerrors",
         "configurationservice",
         "coreutils",
         "credentialservice",
@@ -19,6 +21,7 @@
         "domainaccount",
         "domainconfig",
         "domaindrive",
+        "domaineditor",
         "domainenv",
         "domainenvironment",
         "domainformatting",

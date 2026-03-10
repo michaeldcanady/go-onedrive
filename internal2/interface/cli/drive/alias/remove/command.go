@@ -25,7 +25,7 @@ func CreateRemoveCmd(container di.Container) *cobra.Command {
 			opts.Stdout = cmd.OutOrStdout()
 			opts.Stderr = cmd.ErrOrStderr()
 
-			c := NewCmd(container)
+			c := NewRemoveCmd(container)
 			return c.Run(cmd.Context(), opts)
 		},
 	}

@@ -24,7 +24,7 @@ func CreateListCmd(container di.Container) *cobra.Command {
 			opts.Stdout = cmd.OutOrStdout()
 			opts.Stderr = cmd.ErrOrStderr()
 
-			c := NewCmd(container)
+			c := NewListCmd(container)
 			return c.Run(cmd.Context(), opts)
 		},
 	}

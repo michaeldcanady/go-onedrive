@@ -3,6 +3,7 @@ package config
 import (
 	"os"
 
+	domainconfig "github.com/michaeldcanady/go-onedrive/internal2/domain/config"
 	"github.com/stretchr/testify/assert/yaml"
 )
 
@@ -12,15 +13,15 @@ func NewYAMLLoader() *YAMLLoader {
 	return &YAMLLoader{}
 }
 
-func (l *YAMLLoader) Load(path string) (Configuration3, error) {
+func (l *YAMLLoader) Load(path string) (domainconfig.Configuration, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
-		return Configuration3{}, err
+		return domainconfig.Configuration{}, err
 	}
 
-	var cfg Configuration3
+	var cfg domainconfig.Configuration
 	if err := yaml.Unmarshal(data, &cfg); err != nil {
-		return Configuration3{}, err
+		return domainconfig.Configuration{}, err
 	}
 
 	return cfg, nil

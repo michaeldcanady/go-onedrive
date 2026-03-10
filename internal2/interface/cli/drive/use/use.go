@@ -1,10 +1,12 @@
 package use
 
 import (
-	"strings"
+	"context"
+	"fmt"
+	"time"
 
 	"github.com/michaeldcanady/go-onedrive/internal2/domain/di"
-	"github.com/michaeldcanady/go-onedrive/internal2/infra/common/logging"
+	"github.com/michaeldcanady/go-onedrive/internal2/domain/common/logger"
 	"github.com/michaeldcanady/go-onedrive/internal2/interface/cli/util"
 	"github.com/spf13/cobra"
 )
@@ -14,36 +16,63 @@ const (
 	loggerID    = "cli"
 )
 
+type UseCmd struct {
+	util.BaseCommand
+}
+
+func NewUseCmd(container di.Container) *UseCmd {
+	return &UseCmd{
+		BaseCommand: util.NewBaseCommand(container, commandName),
+	}
+}
+
+func (c *UseCmd) Run(ctx context.Context, opts Options) error {
+	start := time.Now()
+
+	if err := c.Initialize(loggerID); err != nil {
+		return err
+	}
+
+	c.Log.Info("starting drive use command", logger.String("target", opts.DriveIDOrAlias))
+
+	resolvedDrive, err := c.Container.Drive().ResolveDrive(ctx, opts.DriveIDOrAlias)
+	if err != nil {
+		c.Log.Warn("failed to resolve drive",
+			logger.Error(err),
+			logger.String("target", opts.DriveIDOrAlias),
+		)
+		return util.NewCommandErrorWithNameWithError(c.Name, err)
+	}
+
+	if err := c.Container.State().SetCurrentDrive(resolvedDrive.ID); err != nil {
+		c.Log.Warn("failed to update current drive state",
+			logger.Error(err),
+			logger.String("driveID", resolvedDrive.ID),
+		)
+		return util.NewCommandErrorWithNameWithError(c.Name, err)
+	}
+
+	fmt.Fprintf(opts.Stdout, "Now using drive: %s (%s)\n", resolvedDrive.Name, resolvedDrive.ID)
+
+	c.Log.Info("drive use completed successfully",
+		logger.Duration("duration", time.Since(start)),
+	)
+	return nil
+}
+
 func CreateUseCmd(container di.Container) *cobra.Command {
 	return &cobra.Command{
-		Use:   "use <id>",
-		Short: "Set current drive",
+		Use:   "use [drive-id|alias]",
+		Short: "Sets the active drive",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			logger, err := util.EnsureLogger(container, loggerID)
-			if err != nil {
-				return util.NewCommandErrorWithNameWithError(commandName, err)
+			opts := Options{
+				DriveIDOrAlias: args[0],
+				Stdout:         cmd.OutOrStdout(),
+				Stderr:         cmd.ErrOrStderr(),
 			}
 
-			id := strings.ToLower(strings.TrimSpace(args[0]))
-			if id == "" {
-				logger.Warn("id is empty", logging.String("command", commandName))
-				return util.NewCommandErrorWithNameWithMessage(commandName, "id is empty")
-			}
-
-			drive, err := container.Drive().ResolveDrive(cmd.Context(), id)
-			if err != nil {
-				logger.Warn("failed to resolve drive", logging.Error(err), logging.String("drive_id", id))
-				return util.NewCommandErrorWithNameWithError(commandName, err)
-			}
-
-			if err := container.State().SetCurrentDrive(drive.ID); err != nil {
-				logger.Warn("failed to set current drive", logging.Error(err), logging.String("drive_id", id))
-				return util.NewCommandErrorWithNameWithMessage(commandName, "failed to set current drive")
-			}
-
-			cmd.Printf("Active drive set to %q\n", drive.ID)
-			return nil
+			return NewUseCmd(container).Run(cmd.Context(), opts)
 		},
 	}
 }

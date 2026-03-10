@@ -1,60 +1,89 @@
 package editor
 
 import (
+	"bytes"
+	"crypto/sha256"
 	"fmt"
 	"io"
 	"os"
-	"strings"
 
+	"github.com/michaeldcanady/go-onedrive/internal2/domain/common/logger"
 	domaineditor "github.com/michaeldcanady/go-onedrive/internal2/domain/editor"
-	"github.com/michaeldcanady/go-onedrive/internal2/infra/common/logging"
 )
 
 var _ domaineditor.Service = (*Service)(nil)
 
-// Service coordinates temporary file management and editor launching.
 type Service struct {
 	launcher domaineditor.Launcher
-	logger   logging.Logger
+	log      logger.Logger
+	stdin    io.Reader
+	stdout   io.Writer
+	stderr   io.Writer
 }
 
-func NewService(launcher domaineditor.Launcher, logger logging.Logger) *Service {
+func NewService(launcher domaineditor.Launcher, l logger.Logger) *Service {
 	return &Service{
 		launcher: launcher,
-		logger:   logger,
+		log:      l,
+		stdin:    os.Stdin,
+		stdout:   os.Stdout,
+		stderr:   os.Stderr,
 	}
 }
 
 func (s *Service) WithIO(stdin io.Reader, stdout, stderr io.Writer) domaineditor.Service {
-	s.launcher.WithIO(stdin, stdout, stderr)
-	return s
+	return &Service{
+		launcher: s.launcher.WithIO(stdin, stdout, stderr),
+		log:      s.log,
+		stdin:    stdin,
+		stdout:   stdout,
+		stderr:   stderr,
+	}
 }
 
-// LaunchTempFile creates a temporary file with the given content, launches the editor,
-// and returns the updated content after the editor closes.
-func (s *Service) LaunchTempFile(prefix, suffix string, reader io.Reader) ([]byte, string, error) {
-	if !strings.HasPrefix(suffix, ".") {
-		suffix = fmt.Sprintf(".%s", suffix)
-	}
+func (s *Service) Launch(path string) error {
+	return s.launcher.Launch(path)
+}
 
-	f, err := os.CreateTemp("", prefix+"*"+suffix)
+func (s *Service) LaunchTempFile(prefix, suffix string, r io.Reader) ([]byte, string, error) {
+	data, err := io.ReadAll(r)
 	if err != nil {
-		return nil, "", err
-	}
-	defer f.Close()
-
-	path := f.Name()
-	if _, err := io.Copy(f, reader); err != nil {
-		os.Remove(path)
-		return nil, path, err
+		return nil, "", fmt.Errorf("failed to read data: %w", err)
 	}
 
-	f.Close()
+	tmpFile, err := os.CreateTemp("", prefix+"-*"+suffix)
+	if err != nil {
+		return nil, "", fmt.Errorf("failed to create temp file: %w", err)
+	}
+	tmpPath := tmpFile.Name()
+	defer func() {
+		_ = os.Remove(tmpPath)
+	}()
 
-	if err := s.launcher.Launch(path); err != nil {
-		return nil, path, err
+	if _, err := tmpFile.Write(data); err != nil {
+		_ = tmpFile.Close()
+		return nil, "", fmt.Errorf("failed to write to temp file: %w", err)
+	}
+	if err := tmpFile.Close(); err != nil {
+		return nil, "", fmt.Errorf("failed to close temp file: %w", err)
 	}
 
-	bytes, err := os.ReadFile(path)
-	return bytes, path, err
+	initialHash := sha256.Sum256(data)
+
+	if err := s.Launch(tmpPath); err != nil {
+		return nil, "", fmt.Errorf("failed to launch editor: %w", err)
+	}
+
+	newData, err := os.ReadFile(tmpPath)
+	if err != nil {
+		return nil, "", fmt.Errorf("failed to read modified file: %w", err)
+	}
+
+	newHash := sha256.Sum256(newData)
+
+	if bytes.Equal(initialHash[:], newHash[:]) {
+		return nil, "", nil
+	}
+
+	return newData, tmpPath, nil
 }

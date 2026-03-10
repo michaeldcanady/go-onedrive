@@ -4,12 +4,12 @@ import (
 	"context"
 	"path/filepath"
 
+	appcache "github.com/michaeldcanady/go-onedrive/internal2/app/cache"
+	domainaccount "github.com/michaeldcanady/go-onedrive/internal2/domain/account"
 	domainauth "github.com/michaeldcanady/go-onedrive/internal2/domain/auth"
 	domaincache "github.com/michaeldcanady/go-onedrive/internal2/domain/cache"
 	domaingraph "github.com/michaeldcanady/go-onedrive/internal2/domain/common/graph"
 	domainfile "github.com/michaeldcanady/go-onedrive/internal2/domain/file"
-	domainaccount "github.com/michaeldcanady/go-onedrive/internal2/domain/account"
-	appcache "github.com/michaeldcanady/go-onedrive/internal2/app/cache"
 	"github.com/michaeldcanady/go-onedrive/internal2/infra/cache/bolt"
 	"github.com/michaeldcanady/go-onedrive/internal2/infra/common/graph"
 	infrafile "github.com/michaeldcanady/go-onedrive/internal2/infra/file"
@@ -44,9 +44,7 @@ func (c *Container) clientProvider() domaingraph.ClientProvider {
 }
 
 func (c *Container) newClientProvider() domaingraph.ClientProvider {
-	loggerService := c.Logger()
-	graphLogger, _ := loggerService.CreateLogger("graph")
-	return graph.New(c.Auth(), graphLogger)
+	return graph.New(c.Auth(), c.getLogger("graph"))
 }
 
 func (c *Container) metadataCache() infrafile.MetadataCache {
@@ -75,8 +73,8 @@ func (c *Container) newMetadataListingCache() infrafile.ListingCache {
 	cacheSvc := c.Cache()
 	rawCache := cacheSvc.CreateCache(context.Background(), "metadatl", appcache.SiblingBoltFactory(c.cacheStore(), "metadatl"))
 
-	typedCache := appcache.NewTypedCache(rawCache, &appcache.JSONSerializerDeserializer[infrafile.Listing]{})
-	return infrafile.NewMetadataListCacheAdapter(typedCache)
+	typedCache := appcache.NewTypedCache(rawCache, &appcache.JSONSerializerDeserializer[domainfile.Listing]{})
+	return infrafile.NewMetadataListingCacheAdapter(typedCache)
 }
 
 func (c *Container) contentsCache() infrafile.ContentsCache {

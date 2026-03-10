@@ -7,74 +7,48 @@ import (
 
 	"github.com/michaeldcanady/go-onedrive/internal2/domain/di"
 	"github.com/michaeldcanady/go-onedrive/internal2/domain/fs"
-	infralogging "github.com/michaeldcanady/go-onedrive/internal2/infra/common/logging"
+	logger "github.com/michaeldcanady/go-onedrive/internal2/domain/common/logger"
 	"github.com/michaeldcanady/go-onedrive/internal2/interface/cli/util"
 )
 
 type Command struct {
-	container di.Container
-	logger    infralogging.Logger
+	util.BaseCommand
 }
 
 // NewCmd creates a new Command instance with the provided dependency container.
 func NewCmd(container di.Container) *Command {
 	return &Command{
-		container: container,
+		BaseCommand: util.NewBaseCommand(container, commandName),
 	}
-}
-
-// WithLogger allows injecting a logger into Command for testing.
-func (c *Command) WithLogger(logger infralogging.Logger) *Command {
-	c.logger = logger
-	return c
 }
 
 func (c *Command) Run(ctx context.Context, opts Options) error {
 	start := time.Now()
 
-	if ctx == nil {
-		ctx = context.Background()
+	if err := c.Initialize(loggerID); err != nil {
+		return err
 	}
 
-	if c.logger == nil {
-		logger, err := util.EnsureLogger(c.container, loggerID)
-		if err != nil {
-			return util.NewCommandErrorWithNameWithError(commandName, err)
-		}
-		c.logger = logger
-	}
-
-	c.logger.Info("starting mv command",
-		infralogging.String("src", opts.Source),
-		infralogging.String("dst", opts.Destination),
+	c.Log.Info("starting mv command",
+		logger.String("src", opts.Source),
+		logger.String("dst", opts.Destination),
 	)
 
-	c.logger.Debug("resolving filesystem service")
-	fsSvc := c.container.FS()
+	fsSvc := c.Container.FS()
 	if fsSvc == nil {
-		c.logger.Error("filesystem service is nil")
-		return util.NewCommandErrorWithNameWithMessage(commandName, "filesystem service is nil")
+		return util.NewCommandErrorWithNameWithMessage(c.Name, "filesystem service is nil")
 	}
-
-	c.logger.Info("initiating move",
-		infralogging.String("src", opts.Source),
-		infralogging.String("dst", opts.Destination),
-	)
 
 	if err := fsSvc.Move(ctx, opts.Source, opts.Destination, fs.MoveOptions{}); err != nil {
-		c.logger.Error("failed to move",
-			infralogging.String("src", opts.Source),
-			infralogging.String("dst", opts.Destination),
-			infralogging.Error(err),
-		)
-		return util.NewCommandError(commandName, "failed to move", err)
+		c.RenderError(opts.Stderr, err)
+		return util.NewCommandError(c.Name, "failed to move item", err)
 	}
 
-	c.logger.Info("mv completed successfully",
-		infralogging.Duration("duration", time.Since(start)),
+	c.Log.Info("mv completed successfully",
+		logger.Duration("duration", time.Since(start)),
 	)
 
-	fmt.Fprintf(opts.Stdout, "Moved \"%s\" to \"%s\"\n", opts.Source, opts.Destination)
+	fmt.Fprintf(opts.Stdout, "Successfully moved \"%s\" to \"%s\"\n", opts.Source, opts.Destination)
 
 	return nil
 }

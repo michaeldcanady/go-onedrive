@@ -1,19 +1,17 @@
 package logger
 
-import "github.com/michaeldcanady/go-onedrive/internal2/infra/common/logging"
-
 type Options struct {
 	LogLevel          string
 	LogsHome          string
-	OutputDestination logging.OutputDestination
-	Type              logging.Type
+	OutputDestination OutputDestination
+	Type              Type
 }
 
 func NewOptions() *Options {
 	return &Options{
-		LogLevel:          logging.DefaultLoggerLevel,
-		OutputDestination: logging.DefaultLoggerOutputDestination,
-		Type:              logging.DefaultLoggerType,
+		LogLevel:          DefaultLoggerLevel,
+		OutputDestination: DefaultLoggerOutputDestination,
+		Type:              DefaultLoggerType,
 	}
 }
 
@@ -35,7 +33,7 @@ func WithLogLevel(level string) Option {
 	}
 }
 
-func WithType(ype logging.Type) Option {
+func WithType(ype Type) Option {
 	return func(opts *Options) error {
 		opts.Type = ype
 		return nil
@@ -44,7 +42,7 @@ func WithType(ype logging.Type) Option {
 
 func WithOutputDestinationFile(logsHome string) Option {
 	return func(o *Options) error {
-		o.OutputDestination = logging.OutputDestinationFile
+		o.OutputDestination = OutputDestinationFile
 		o.LogsHome = logsHome
 		return nil
 	}
@@ -52,14 +50,14 @@ func WithOutputDestinationFile(logsHome string) Option {
 
 func WithOutputDestinationStandardOut() Option {
 	return func(o *Options) error {
-		o.OutputDestination = logging.OutputDestinationStandardOut
+		o.OutputDestination = OutputDestinationStandardOut
 		return nil
 	}
 }
 
 func WithOutputDestinationStandardError() Option {
 	return func(o *Options) error {
-		o.OutputDestination = logging.OutputDestinationStandardError
+		o.OutputDestination = OutputDestinationStandardError
 		return nil
 	}
 }

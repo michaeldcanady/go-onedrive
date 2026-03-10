@@ -1,14 +1,14 @@
 package file
 
-import "context"
+import (
+	"context"
 
-// ListingCache defines the interface for caching lists of drive items.
-// It maps a path to a Listing, which contains the IDs of the children.
+	"github.com/michaeldcanady/go-onedrive/internal2/domain/file"
+)
+
+// ListingCache defines the interface for a cache that stores directory listings.
 type ListingCache interface {
-	// Get retrieves a cached listing for the given path.
-	Get(ctx context.Context, path string) (*Listing, bool)
-	// Put stores a listing in the cache for the given path.
-	Put(ctx context.Context, path string, l *Listing) error
-	// Invalidate removes a cached listing for the given path.
+	Get(ctx context.Context, path string) (*file.Listing, bool)
+	Put(ctx context.Context, path string, listing *file.Listing) error
 	Invalidate(ctx context.Context, path string) error
 }

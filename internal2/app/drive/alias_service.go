@@ -19,6 +19,7 @@ func NewAliasService(stateSvc state.Service) *AliasService {
 	}
 }
 
+// Resolve resolves the alias to its drive id.
 func (s *AliasService) Resolve(ctx context.Context, alias string) (string, error) {
 	// 1. Try to get driveID from state (persistent aliases)
 	driveID, err := s.stateSvc.GetDriveAlias(alias)

@@ -3,12 +3,12 @@ package cache
 import (
 	"fmt"
 
-	"github.com/michaeldcanady/go-onedrive/internal2/infra/cache/abstractions"
+	domaincache "github.com/michaeldcanady/go-onedrive/internal2/domain/cache"
 	"github.com/microsoft/kiota-abstractions-go/serialization"
 	jsonserialization "github.com/microsoft/kiota-serialization-json-go"
 )
 
-var _ abstractions.SerializerDeserializer[serialization.Parsable] = (*KiotaJSONSerializerDeserializer[serialization.Parsable])(nil)
+var _ domaincache.SerializerDeserializer[serialization.Parsable] = (*KiotaJSONSerializerDeserializer[serialization.Parsable])(nil)
 
 type KiotaJSONSerializerDeserializer[T serialization.Parsable] struct {
 	factory serialization.ParsableFactory
@@ -20,7 +20,7 @@ func NewKiotaJSONSerializerDeserializer[T serialization.Parsable](factory serial
 	}
 }
 
-// Deserialize implements [abstractions.SerializerDeserializer].
+// Deserialize implements [domaincache.SerializerDeserializer].
 func (j *KiotaJSONSerializerDeserializer[T]) Deserialize(data []byte) (T, error) {
 	var v T
 
@@ -42,7 +42,7 @@ func (j *KiotaJSONSerializerDeserializer[T]) Deserialize(data []byte) (T, error)
 	return v, nil
 }
 
-// Serialize implements [abstractions.SerializerDeserializer].
+// Serialize implements [domaincache.SerializerDeserializer].
 func (j *KiotaJSONSerializerDeserializer[T]) Serialize(value T) ([]byte, error) {
 	writer := jsonserialization.NewJsonSerializationWriter()
 

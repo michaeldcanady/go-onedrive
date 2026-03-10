@@ -2,10 +2,12 @@ package login
 
 import (
 	"context"
+	"fmt"
+	"time"
 
 	"github.com/michaeldcanady/go-onedrive/internal2/domain/auth"
 	"github.com/michaeldcanady/go-onedrive/internal2/domain/di"
-	infralogging "github.com/michaeldcanady/go-onedrive/internal2/infra/common/logging"
+	logger "github.com/michaeldcanady/go-onedrive/internal2/domain/common/logger"
 	"github.com/michaeldcanady/go-onedrive/internal2/interface/cli/util"
 	"github.com/spf13/cobra"
 )
@@ -26,87 +28,98 @@ const (
 	loggerID    = "cli"
 )
 
-func CreateLoginCmd(container di.Container) *cobra.Command {
-	var (
-		showToken bool
-		force     bool
+type LoginCmd struct {
+	util.BaseCommand
+}
+
+func NewLoginCmd(container di.Container) *LoginCmd {
+	return &LoginCmd{
+		BaseCommand: util.NewBaseCommand(container, commandName),
+	}
+}
+
+func (c *LoginCmd) Run(ctx context.Context, opts Options) error {
+	start := time.Now()
+
+	if err := c.Initialize(loggerID); err != nil {
+		return err
+	}
+
+	c.Log.Info("starting login flow")
+
+	profileName, err := c.Container.State().GetCurrentProfile()
+	if err != nil {
+		c.Log.Error("failed to get current profile", logger.Error(err))
+		return util.NewCommandErrorWithNameWithError(c.Name, err)
+	}
+
+	c.Log.Info("resolved current profile",
+		logger.String("profile", profileName),
+		logger.Bool("force", opts.Force),
+		logger.Bool("showToken", opts.ShowToken),
 	)
+
+	authService := c.Container.Auth()
+
+	loginOpts := auth.LoginOptions{
+		Force: opts.Force,
+		Scopes: []string{
+			FilesReadWriteAllScope,
+			UserReadScope,
+		},
+		EnableCAE: true,
+	}
+
+	c.Log.Info("initiating authentication",
+		logger.String("profile", profileName),
+		logger.Bool("force", loginOpts.Force),
+		logger.Strings("scopes", loginOpts.Scopes),
+		logger.Bool("enableCAE", loginOpts.EnableCAE),
+	)
+
+	result, err := authService.Login(ctx, profileName, loginOpts)
+	if err != nil {
+		c.Log.Error("authentication failed",
+			logger.String("profile", profileName),
+			logger.Error(err),
+		)
+		fmt.Fprintf(opts.Stderr, "Login failed for profile %q: %v\n", profileName, err)
+		return util.NewCommandError(c.Name, "failed authentication", err)
+	}
+
+	c.Log.Info("authentication successful",
+		logger.String("profile", profileName),
+		logger.Bool("tokenDisplayed", opts.ShowToken),
+	)
+
+	fmt.Fprintf(opts.Stdout, "Successfully logged into profile %q\n", profileName)
+
+	if opts.ShowToken {
+		fmt.Fprintf(opts.Stdout, "Access Token: %s\n", result.AccessToken)
+	}
+
+	c.Log.Info("login flow completed successfully",
+		logger.Duration("duration", time.Since(start)),
+	)
+	return nil
+}
+
+func CreateLoginCmd(container di.Container) *cobra.Command {
+	var opts Options
 
 	cmd := &cobra.Command{
 		Use:   "login",
 		Short: "Authenticate with OneDrive",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			ctx := cmd.Context()
-			if ctx == nil {
-				ctx = context.Background()
-			}
+			opts.Stdout = cmd.OutOrStdout()
+			opts.Stderr = cmd.ErrOrStderr()
 
-			logger, err := util.EnsureLogger(container, loggerID)
-			if err != nil {
-				return util.NewCommandErrorWithNameWithError(commandName, err)
-			}
-
-			logger.Info("starting login flow")
-
-			profileName, err := container.State().GetCurrentProfile()
-			if err != nil {
-				logger.Error("failed to get current profile", infralogging.Error(err))
-				return util.NewCommandErrorWithNameWithError(commandName, err)
-			}
-
-			logger.Info("resolved current profile",
-				infralogging.String("profile", profileName),
-				infralogging.Bool("force", force),
-				infralogging.Bool("showToken", showToken),
-			)
-
-			authService := container.Auth()
-
-			opts := auth.LoginOptions{
-				Force: force,
-				Scopes: []string{
-					FilesReadWriteAllScope,
-					UserReadScope,
-				},
-				EnableCAE: true,
-			}
-
-			logger.Info("initiating authentication",
-				infralogging.String("profile", profileName),
-				infralogging.Bool("force", opts.Force),
-				infralogging.Strings("scopes", opts.Scopes),
-				infralogging.Bool("enableCAE", opts.EnableCAE),
-			)
-
-			result, err := authService.Login(ctx, profileName, opts)
-			if err != nil {
-				logger.Error("authentication failed",
-					infralogging.String("profile", profileName),
-					infralogging.Error(err),
-				)
-				cmd.Printf("Login failed for profile %q: %v\n", profileName, err)
-				return util.NewCommandError(commandName, "failed authentication", err)
-			}
-
-			logger.Info("authentication successful",
-				infralogging.String("profile", profileName),
-				infralogging.Bool("tokenDisplayed", showToken),
-			)
-
-			cmd.Printf("Successfully logged into profile %q\n", profileName)
-
-			if showToken {
-				// Only print token if explicitly requested
-				cmd.Printf("Access Token: %s\n", result.AccessToken)
-			}
-
-			logger.Info("login flow completed successfully")
-			return nil
+			return NewLoginCmd(container).Run(cmd.Context(), opts)
 		},
 	}
 
-	cmd.Flags().BoolVar(&showToken, showTokenLongFlag, false, showTokenUsage)
-	cmd.Flags().BoolVarP(&force, forceLongFlag, forceShortFlag, false, forceUsage)
+	cmd.Flags().BoolVar(&opts.ShowToken, showTokenLongFlag, false, showTokenUsage)
+	cmd.Flags().BoolVarP(&opts.Force, forceLongFlag, forceShortFlag, false, forceUsage)
 
 	return cmd
 }

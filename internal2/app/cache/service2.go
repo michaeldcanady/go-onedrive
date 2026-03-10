@@ -4,21 +4,21 @@ import (
 	"context"
 	"sync"
 
-	"github.com/michaeldcanady/go-onedrive/internal2/infra/cache/abstractions"
-	"github.com/michaeldcanady/go-onedrive/internal2/infra/common/logging"
+	domaincache "github.com/michaeldcanady/go-onedrive/internal2/domain/cache"
+	"github.com/michaeldcanady/go-onedrive/internal2/domain/common/logger"
 	"github.com/michaeldcanady/go-onedrive/internal2/interface/cli/util"
 )
 
 type Service2 struct {
 	mu       sync.RWMutex
-	logger   logging.Logger
-	registry map[string]*abstractions.Cache2
+	log      logger.Logger
+	registry map[string]*domaincache.Store
 }
 
-func NewService2(logger logging.Logger) *Service2 {
+func NewService2(log logger.Logger) *Service2 {
 	return &Service2{
-		registry: make(map[string]*abstractions.Cache2),
-		logger:   logger,
+		registry: make(map[string]*domaincache.Store),
+		log:      log,
 	}
 }
 
@@ -36,49 +36,51 @@ const (
 	eventCacheGetMiss  = "cache.registry.get.miss"
 )
 
-func (s *Service2) CreateCache(ctx context.Context, name string, storeFactory func() abstractions.KeyValueStore) *abstractions.Cache2 {
+// CreateCache instantiates a new cache store and adds it to the registry.
+func (s *Service2) CreateCache(ctx context.Context, name string, storeFactory func() domaincache.KeyValueStore) *domaincache.Store {
 	correlationID := util.CorrelationIDFromContext(ctx)
 
-	logger := s.logger.WithContext(ctx).With(
-		logging.String("correlation_id", correlationID),
-		logging.String("cache_name", name),
+	log := s.log.WithContext(ctx).With(
+		logger.String("correlation_id", correlationID),
+		logger.String("cache_name", name),
 	)
 
-	logger.Info(
+	log.Info(
 		"creating cache instance",
-		logging.String("event", eventCacheCreateStart),
+		logger.String("event", eventCacheCreateStart),
 	)
 
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	if _, exists := s.registry[name]; exists {
-		logger.Warn("cache already exists",
-			logging.String("event", eventCacheCreateExists),
+		log.Warn("cache already exists",
+			logger.String("event", eventCacheCreateExists),
 		)
 		return s.registry[name]
 	}
 
-	cache := abstractions.NewCache2(storeFactory())
+	cache := domaincache.NewStore(storeFactory())
 	s.registry[name] = cache
 
-	logger.Info("cache created successfully",
-		logging.String("event", eventCacheCreateFinish),
+	log.Info("cache created successfully",
+		logger.String("event", eventCacheCreateFinish),
 	)
 
 	return cache
 }
 
-func (s *Service2) GetCache(ctx context.Context, name string) (*abstractions.Cache2, bool) {
+// GetCache returns the cache with the provided name.
+func (s *Service2) GetCache(ctx context.Context, name string) (*domaincache.Store, bool) {
 	correlationID := util.CorrelationIDFromContext(ctx)
 
-	logger := s.logger.WithContext(ctx).With(
-		logging.String("correlation_id", correlationID),
-		logging.String("cache_name", name),
+	log := s.log.WithContext(ctx).With(
+		logger.String("correlation_id", correlationID),
+		logger.String("cache_name", name),
 	)
 
-	logger.Debug("retrieving cache instance",
-		logging.String("event", eventCacheGetStart),
+	log.Debug("retrieving cache instance",
+		logger.String("event", eventCacheGetStart),
 	)
 
 	s.mu.RLock()
@@ -86,14 +88,14 @@ func (s *Service2) GetCache(ctx context.Context, name string) (*abstractions.Cac
 
 	cache, exists := s.registry[name]
 	if exists {
-		logger.Debug("cache found",
-			logging.String("event", eventCacheGetHit),
+		log.Debug("cache found",
+			logger.String("event", eventCacheGetHit),
 		)
 		return cache, true
 	}
 
-	logger.Debug("cache not found",
-		logging.String("event", eventCacheGetMiss),
+	log.Debug("cache not found",
+		logger.String("event", eventCacheGetMiss),
 	)
 
 	return nil, false

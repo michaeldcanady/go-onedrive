@@ -1,9 +1,57 @@
 package show
 
 import (
+	"context"
+	"fmt"
+	"time"
+
 	"github.com/michaeldcanady/go-onedrive/internal2/domain/di"
+	logger "github.com/michaeldcanady/go-onedrive/internal2/domain/common/logger"
+	"github.com/michaeldcanady/go-onedrive/internal2/interface/cli/util"
 	"github.com/spf13/cobra"
 )
+
+const (
+	commandName = "show"
+	loggerID    = "cli"
+)
+
+type ShowCmd struct {
+	util.BaseCommand
+}
+
+func NewShowCmd(container di.Container) *ShowCmd {
+	return &ShowCmd{
+		BaseCommand: util.NewBaseCommand(container, commandName),
+	}
+}
+
+func (c *ShowCmd) Run(ctx context.Context, opts Options) error {
+	start := time.Now()
+
+	if err := c.Initialize(loggerID); err != nil {
+		return err
+	}
+
+	c.Log.Info("showing profile details", logger.String("profile", opts.Name))
+
+	p, err := c.Container.Profile().Get(ctx, opts.Name)
+	if err != nil {
+		c.RenderError(opts.Stderr, err)
+		return err
+	}
+
+	fmt.Fprintf(opts.Stdout, "Name: %s\n", p.Name)
+	fmt.Fprintf(opts.Stdout, "Path: %s\n", p.Path)
+	if p.ConfigurationPath != "" {
+		fmt.Fprintf(opts.Stdout, "Config: %s\n", p.ConfigurationPath)
+	}
+
+	c.Log.Info("profile show completed successfully",
+		logger.Duration("duration", time.Since(start)),
+	)
+	return nil
+}
 
 func CreateShowCmd(container di.Container) *cobra.Command {
 	return &cobra.Command{
@@ -11,20 +59,13 @@ func CreateShowCmd(container di.Container) *cobra.Command {
 		Short: "Show details for a profile",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			name := args[0]
-
-			p, err := container.Profile().Get(cmd.Context(), name)
-			if err != nil {
-				return err
+			opts := Options{
+				Name:   args[0],
+				Stdout: cmd.OutOrStdout(),
+				Stderr: cmd.ErrOrStderr(),
 			}
 
-			cmd.Printf("Name: %s\n", p.Name)
-			cmd.Printf("Path: %s\n", p.Path)
-			if p.ConfigurationPath != "" {
-				cmd.Printf("Config: %s\n", p.ConfigurationPath)
-			}
-
-			return nil
+			return NewShowCmd(container).Run(cmd.Context(), opts)
 		},
 	}
 }

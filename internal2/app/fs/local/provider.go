@@ -6,18 +6,34 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/michaeldcanady/go-onedrive/internal2/domain/common/logger"
 	domainfs "github.com/michaeldcanady/go-onedrive/internal2/domain/fs"
+	"github.com/michaeldcanady/go-onedrive/internal2/interface/cli/util"
 )
 
 var _ domainfs.Service = (*Provider)(nil)
 
-type Provider struct{}
+type Provider struct {
+	log logger.Logger
+}
 
-func NewProvider() *Provider {
-	return &Provider{}
+func NewProvider(l logger.Logger) *Provider {
+	return &Provider{
+		log: l,
+	}
+}
+
+func (p *Provider) buildLogger(ctx context.Context) logger.Logger {
+	correlationID := util.CorrelationIDFromContext(ctx)
+	return p.log.WithContext(ctx).With(
+		logger.String("correlation_id", correlationID),
+	)
 }
 
 func (p *Provider) Get(ctx context.Context, path string) (domainfs.Item, error) {
+	log := p.buildLogger(ctx).With(logger.String("path", path))
+	log.Debug("local.Get")
+
 	info, err := os.Stat(path)
 	if err != nil {
 		return domainfs.Item{}, err
@@ -26,6 +42,9 @@ func (p *Provider) Get(ctx context.Context, path string) (domainfs.Item, error) 
 }
 
 func (p *Provider) List(ctx context.Context, path string, opts domainfs.ListOptions) ([]domainfs.Item, error) {
+	log := p.buildLogger(ctx).With(logger.String("path", path))
+	log.Debug("local.List", logger.Bool("recursive", opts.Recursive))
+
 	entries, err := os.ReadDir(path)
 	if err != nil {
 		return nil, err
@@ -55,10 +74,16 @@ func (p *Provider) Stat(ctx context.Context, path string, opts domainfs.StatOpti
 }
 
 func (p *Provider) ReadFile(ctx context.Context, path string, opts domainfs.ReadOptions) (io.ReadCloser, error) {
+	log := p.buildLogger(ctx).With(logger.String("path", path))
+	log.Debug("local.ReadFile")
+
 	return os.Open(path)
 }
 
 func (p *Provider) WriteFile(ctx context.Context, path string, r io.Reader, opts domainfs.WriteOptions) (domainfs.Item, error) {
+	log := p.buildLogger(ctx).With(logger.String("path", path))
+	log.Debug("local.WriteFile", logger.Bool("overwrite", opts.Overwrite))
+
 	flag := os.O_WRONLY | os.O_CREATE
 	if opts.Overwrite {
 		flag |= os.O_TRUNC
@@ -81,6 +106,9 @@ func (p *Provider) WriteFile(ctx context.Context, path string, r io.Reader, opts
 }
 
 func (p *Provider) Mkdir(ctx context.Context, path string, opts domainfs.MKDirOptions) error {
+	log := p.buildLogger(ctx).With(logger.String("path", path))
+	log.Debug("local.Mkdir", logger.Bool("parents", opts.Parents))
+
 	if opts.Parents {
 		return os.MkdirAll(path, 0755)
 	}
@@ -88,10 +116,16 @@ func (p *Provider) Mkdir(ctx context.Context, path string, opts domainfs.MKDirOp
 }
 
 func (p *Provider) Remove(ctx context.Context, path string, opts domainfs.RemoveOptions) error {
+	log := p.buildLogger(ctx).With(logger.String("path", path))
+	log.Debug("local.Remove")
+
 	return os.RemoveAll(path)
 }
 
 func (p *Provider) Copy(ctx context.Context, src, dst string, opts domainfs.CopyOptions) error {
+	log := p.buildLogger(ctx).With(logger.String("src", src), logger.String("dst", dst))
+	log.Debug("local.Copy")
+
 	r, err := p.ReadFile(ctx, src, domainfs.ReadOptions{})
 	if err != nil {
 		return err
@@ -105,10 +139,16 @@ func (p *Provider) Copy(ctx context.Context, src, dst string, opts domainfs.Copy
 }
 
 func (p *Provider) Move(ctx context.Context, src, dst string, opts domainfs.MoveOptions) error {
+	log := p.buildLogger(ctx).With(logger.String("src", src), logger.String("dst", dst))
+	log.Debug("local.Move")
+
 	return os.Rename(src, dst)
 }
 
 func (p *Provider) Upload(ctx context.Context, src, dst string, opts domainfs.UploadOptions) (domainfs.Item, error) {
+	log := p.buildLogger(ctx).With(logger.String("src", src), logger.String("dst", dst))
+	log.Debug("local.Upload")
+
 	f, err := os.Open(src)
 	if err != nil {
 		return domainfs.Item{}, err
@@ -119,6 +159,9 @@ func (p *Provider) Upload(ctx context.Context, src, dst string, opts domainfs.Up
 }
 
 func (p *Provider) Touch(ctx context.Context, path string, opts domainfs.TouchOptions) (domainfs.Item, error) {
+	log := p.buildLogger(ctx).With(logger.String("path", path))
+	log.Debug("local.Touch")
+
 	f, err := os.OpenFile(path, os.O_RDONLY|os.O_CREATE, 0644)
 	if err != nil {
 		return domainfs.Item{}, err

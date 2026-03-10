@@ -3,8 +3,8 @@ package file
 import (
 	"context"
 
+	"github.com/michaeldcanady/go-onedrive/internal2/domain/common/logger"
 	"github.com/michaeldcanady/go-onedrive/internal2/domain/file"
-	"github.com/michaeldcanady/go-onedrive/internal2/infra/common/logging"
 	abstractions "github.com/microsoft/kiota-abstractions-go"
 	"github.com/microsoft/kiota-abstractions-go/serialization"
 	"github.com/microsoft/kiota-abstractions-go/store"
@@ -62,15 +62,15 @@ type MockListingCache struct {
 	mock.Mock
 }
 
-func (m *MockListingCache) Get(ctx context.Context, path string) (*Listing, bool) {
+func (m *MockListingCache) Get(ctx context.Context, path string) (*file.Listing, bool) {
 	args := m.Called(ctx, path)
 	if args.Get(0) == nil {
 		return nil, args.Bool(1)
 	}
-	return args.Get(0).(*Listing), args.Bool(1)
+	return args.Get(0).(*file.Listing), args.Bool(1)
 }
 
-func (m *MockListingCache) Put(ctx context.Context, path string, l *Listing) error {
+func (m *MockListingCache) Put(ctx context.Context, path string, l *file.Listing) error {
 	args := m.Called(ctx, path, l)
 	return args.Error(0)
 }
@@ -100,15 +100,15 @@ func (m *MockPathIDCache) Invalidate(ctx context.Context, path string) error {
 	return args.Error(0)
 }
 
-// MockLogger mocks the logging.Logger interface
+// MockLogger mocks the logger.Logger interface
 type MockLogger struct {
 	mock.Mock
 }
 
-func (m *MockLogger) Info(msg string, fields ...logging.Field)  { m.Called(msg, fields) }
-func (m *MockLogger) Error(msg string, fields ...logging.Field) { m.Called(msg, fields) }
-func (m *MockLogger) Debug(msg string, fields ...logging.Field) { m.Called(msg, fields) }
-func (m *MockLogger) Warn(msg string, fields ...logging.Field)  { m.Called(msg, fields) }
+func (m *MockLogger) Info(msg string, fields ...logger.Field)  { m.Called(msg, fields) }
+func (m *MockLogger) Error(msg string, fields ...logger.Field) { m.Called(msg, fields) }
+func (m *MockLogger) Debug(msg string, fields ...logger.Field) { m.Called(msg, fields) }
+func (m *MockLogger) Warn(msg string, fields ...logger.Field)  { m.Called(msg, fields) }
 
 func NewMockLogger() *MockLogger {
 	m := &MockLogger{}
@@ -120,20 +120,20 @@ func NewMockLogger() *MockLogger {
 	m.On("WithContext", mock.Anything).Return(m).Maybe()
 	return m
 }
-func (m *MockLogger) SetLevel(level string)                     { m.Called(level) }
-func (m *MockLogger) With(fields ...logging.Field) logging.Logger {
+func (m *MockLogger) SetLevel(level string) { m.Called(level) }
+func (m *MockLogger) With(fields ...logger.Field) logger.Logger {
 	args := m.Called(fields)
 	if args.Get(0) == nil {
 		return m
 	}
-	return args.Get(0).(logging.Logger)
+	return args.Get(0).(logger.Logger)
 }
-func (m *MockLogger) WithContext(ctx context.Context) logging.Logger {
+func (m *MockLogger) WithContext(ctx context.Context) logger.Logger {
 	args := m.Called(ctx)
 	if args.Get(0) == nil {
 		return m
 	}
-	return args.Get(0).(logging.Logger)
+	return args.Get(0).(logger.Logger)
 }
 
 // MockRequestAdapter mocks the abstractions.RequestAdapter interface

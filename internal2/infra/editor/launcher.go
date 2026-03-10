@@ -8,8 +8,8 @@ import (
 	"strings"
 
 	domainenvironment "github.com/michaeldcanady/go-onedrive/internal2/domain/common/environment"
+	"github.com/michaeldcanady/go-onedrive/internal2/domain/common/logger"
 	"github.com/michaeldcanady/go-onedrive/internal2/domain/editor"
-	"github.com/michaeldcanady/go-onedrive/internal2/infra/common/logging"
 )
 
 const (
@@ -22,16 +22,16 @@ var _ editor.Launcher = (*Launcher)(nil)
 // Launcher implements domain.editor.Launcher using os/exec.
 type Launcher struct {
 	envSvc domainenvironment.EnvironmentService
-	logger logging.Logger
+	log    logger.Logger
 	stdin  io.Reader
 	stdout io.Writer
 	stderr io.Writer
 }
 
-func NewLauncher(envSvc domainenvironment.EnvironmentService, logger logging.Logger) *Launcher {
+func NewLauncher(envSvc domainenvironment.EnvironmentService, l logger.Logger) *Launcher {
 	return &Launcher{
 		envSvc: envSvc,
-		logger: logger,
+		log:    l,
 		stdin:  os.Stdin,
 		stdout: os.Stdout,
 		stderr: os.Stderr,
