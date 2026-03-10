@@ -161,6 +161,35 @@ func (s *Provider) Copy(ctx context.Context, src, dst string, opts domainfs.Copy
 	)
 	log.Debug("Copy: starting")
 
+	srcItem, err := s.Stat(ctx, src, domainfs.StatOptions{})
+	if err != nil {
+		return err
+	}
+
+	if srcItem.Type == domainfs.ItemTypeFolder {
+		if !opts.Recursive {
+			return errors.New("source is a directory, use recursive flag")
+		}
+
+		if err := s.Mkdir(ctx, dst, domainfs.MKDirOptions{Parents: true}); err != nil {
+			return err
+		}
+
+		children, err := s.List(ctx, src, domainfs.ListOptions{Recursive: false})
+		if err != nil {
+			return err
+		}
+
+		for _, child := range children {
+			childSrc := src + "/" + child.Name
+			childDst := dst + "/" + child.Name
+			if err := s.Copy(ctx, childSrc, childDst, opts); err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+
 	r, err := s.ReadFile(ctx, src, domainfs.ReadOptions{})
 	if err != nil {
 		return err

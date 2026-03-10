@@ -6,3 +6,4 @@ profile.cache
 *.skill
 hostbrowserpipe
 odc
+!cmd/odc/

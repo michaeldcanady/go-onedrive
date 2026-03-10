@@ -2,6 +2,7 @@ package local
 
 import (
 	"context"
+	"errors"
 	"io"
 	"os"
 	"path/filepath"
@@ -125,6 +126,35 @@ func (p *Provider) Remove(ctx context.Context, path string, opts domainfs.Remove
 func (p *Provider) Copy(ctx context.Context, src, dst string, opts domainfs.CopyOptions) error {
 	log := p.buildLogger(ctx).With(logger.String("src", src), logger.String("dst", dst))
 	log.Debug("local.Copy")
+
+	srcItem, err := p.Stat(ctx, src, domainfs.StatOptions{})
+	if err != nil {
+		return err
+	}
+
+	if srcItem.Type == domainfs.ItemTypeFolder {
+		if !opts.Recursive {
+			return errors.New("source is a directory, use recursive flag")
+		}
+
+		if err := p.Mkdir(ctx, dst, domainfs.MKDirOptions{Parents: true}); err != nil {
+			return err
+		}
+
+		children, err := p.List(ctx, src, domainfs.ListOptions{Recursive: false})
+		if err != nil {
+			return err
+		}
+
+		for _, child := range children {
+			childSrc := child.Path
+			childDst := filepath.Join(dst, child.Name)
+			if err := p.Copy(ctx, childSrc, childDst, opts); err != nil {
+				return err
+			}
+		}
+		return nil
+	}
 
 	r, err := p.ReadFile(ctx, src, domainfs.ReadOptions{})
 	if err != nil {

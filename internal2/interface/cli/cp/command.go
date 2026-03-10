@@ -29,8 +29,8 @@ Paths can be prefixed with 'local:' or 'onedrive:' (default).
   # Copy local file to OneDrive
   odc cp local:file.txt onedrive:/folder/file.txt
 
-  # Copy OneDrive file to local
-  odc cp onedrive:/folder/file.txt local:file.txt
+  # Copy OneDrive folder to local
+  odc cp -r onedrive:/folder local:./folder
 
   # Copy within OneDrive
   odc cp /folder/file1.txt /folder/file2.txt
@@ -55,6 +55,7 @@ Paths can be prefixed with 'local:' or 'onedrive:' (default).
 	}
 
 	cmd.Flags().BoolVarP(&opts.Overwrite, "overwrite", "f", false, "Overwrite destination if it exists")
+	cmd.Flags().BoolVarP(&opts.Recursive, "recursive", "r", false, "Copy directories recursively")
 
 	return cmd
 }
