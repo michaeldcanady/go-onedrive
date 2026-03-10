@@ -62,11 +62,22 @@ func (c *Container) newFSService() domainfs.Service {
 	reg.Register("onedrive", oneDriveProvider)
 
 	// Register Local provider
-	localProvider := applocal.NewProvider()
+	localProvider := applocal.NewProvider(c.getLogger("localfs"))
 	reg.Register("local", localProvider)
 
 	// Create manager
 	return appfs.NewFileSystemManager(reg)
+}
+
+func (c *Container) IgnoreMatcherFactory() domainfs.IgnoreMatcherFactory {
+	c.ignoreMatcherFactoryOnce.Do(func() {
+		c.ignoreMatcherFactoryService = c.newIgnoreMatcherFactory()
+	})
+	return c.ignoreMatcherFactoryService
+}
+
+func (c *Container) newIgnoreMatcherFactory() domainfs.IgnoreMatcherFactory {
+	return apponedrive.NewIgnoreMatcherFactory()
 }
 
 func (c *Container) Editor() domaineditor.Service {
