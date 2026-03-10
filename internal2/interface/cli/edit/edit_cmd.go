@@ -7,10 +7,10 @@ import (
 	"time"
 
 	domainerrors "github.com/michaeldcanady/go-onedrive/internal2/domain/common/errors"
+	logger "github.com/michaeldcanady/go-onedrive/internal2/domain/common/logger"
 	"github.com/michaeldcanady/go-onedrive/internal2/domain/di"
 	"github.com/michaeldcanady/go-onedrive/internal2/domain/editor"
 	"github.com/michaeldcanady/go-onedrive/internal2/domain/fs"
-	logger "github.com/michaeldcanady/go-onedrive/internal2/domain/common/logger"
 	"github.com/michaeldcanady/go-onedrive/internal2/interface/cli/util"
 )
 

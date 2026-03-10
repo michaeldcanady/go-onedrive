@@ -42,7 +42,7 @@ func TestHumanLongFormatter_Format(t *testing.T) {
 	assert.Contains(t, output, "folder")
 	assert.Contains(t, output, "1.00 KiB")
 	assert.Contains(t, output, "-")
-	
+
 	lines := strings.Split(strings.TrimSpace(output), "\n")
 	assert.Equal(t, 4, len(lines)) // Header + Separator + 2 Items
 }

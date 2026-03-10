@@ -2,12 +2,11 @@ package mv
 
 import (
 	"context"
-	"fmt"
 	"time"
 
+	logger "github.com/michaeldcanady/go-onedrive/internal2/domain/common/logger"
 	"github.com/michaeldcanady/go-onedrive/internal2/domain/di"
 	"github.com/michaeldcanady/go-onedrive/internal2/domain/fs"
-	logger "github.com/michaeldcanady/go-onedrive/internal2/domain/common/logger"
 	"github.com/michaeldcanady/go-onedrive/internal2/interface/cli/util"
 )
 
@@ -48,7 +47,7 @@ func (c *Command) Run(ctx context.Context, opts Options) error {
 		logger.Duration("duration", time.Since(start)),
 	)
 
-	fmt.Fprintf(opts.Stdout, "Successfully moved \"%s\" to \"%s\"\n", opts.Source, opts.Destination)
+	c.RenderSuccess(opts.Stdout, "Successfully moved \"%s\" to \"%s\"\n", opts.Source, opts.Destination)
 
 	return nil
 }

@@ -41,7 +41,7 @@ func (m *Matcher) ShouldIgnore(path string, isDir bool) bool {
 
 	// Split path into segments to check each parent
 	segments := strings.Split(path, string(charSlash))
-	
+
 	ignored := false
 	currentPath := ""
 

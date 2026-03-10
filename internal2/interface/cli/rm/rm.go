@@ -16,9 +16,9 @@ func CreateCmd(c di.Container) *cobra.Command {
 	var opts Options
 
 	cmd := &cobra.Command{
-		Use:     fmt.Sprintf("%s [path]", commandName),
-		Short:   "Remove a file or directory from your OneDrive filesystem.",
-		Long:    "Remove a file or directory from your OneDrive filesystem. By default, items are moved to the recycle bin.",
+		Use:   fmt.Sprintf("%s [path]", commandName),
+		Short: "Remove a file or directory from your OneDrive filesystem.",
+		Long:  "Remove a file or directory from your OneDrive filesystem. By default, items are moved to the recycle bin.",
 		Example: `  # Remove a file (moves to recycle bin)
   odc rm /path/to/file.txt
 

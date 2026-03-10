@@ -2,7 +2,6 @@ package rm
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/michaeldcanady/go-onedrive/internal2/domain/common/logger"
@@ -49,7 +48,7 @@ func (c *Command) Run(ctx context.Context, opts Options) error {
 		logger.Duration("duration", time.Since(start)),
 	)
 
-	fmt.Fprintf(opts.Stdout, "Successfully removed \"%s\"\n", opts.Path)
+	c.RenderSuccess(opts.Stdout, "Successfully removed \"%s\"\n", opts.Path)
 
 	return nil
 }

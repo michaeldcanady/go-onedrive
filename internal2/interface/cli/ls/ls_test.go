@@ -9,6 +9,7 @@ import (
 	domainauth "github.com/michaeldcanady/go-onedrive/internal2/domain/auth"
 	domaincache "github.com/michaeldcanady/go-onedrive/internal2/domain/cache"
 	domainenvironment "github.com/michaeldcanady/go-onedrive/internal2/domain/common/environment"
+	"github.com/michaeldcanady/go-onedrive/internal2/domain/common/logger"
 	domainlogger "github.com/michaeldcanady/go-onedrive/internal2/domain/common/logger"
 	"github.com/michaeldcanady/go-onedrive/internal2/domain/config"
 	"github.com/michaeldcanady/go-onedrive/internal2/domain/drive"
@@ -16,7 +17,6 @@ import (
 	domainfs "github.com/michaeldcanady/go-onedrive/internal2/domain/fs"
 	domainprofile "github.com/michaeldcanady/go-onedrive/internal2/domain/profile"
 	"github.com/michaeldcanady/go-onedrive/internal2/domain/state"
-	"github.com/michaeldcanady/go-onedrive/internal2/domain/common/logger"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -27,8 +27,8 @@ type MockContainer struct {
 	mock.Mock
 }
 
-func (m *MockContainer) Cache() domaincache.Service2            { return nil }
-func (m *MockContainer) FS() domainfs.Service                   { return m.Called().Get(0).(domainfs.Service) }
+func (m *MockContainer) Cache() domaincache.Service2 { return nil }
+func (m *MockContainer) FS() domainfs.Service        { return m.Called().Get(0).(domainfs.Service) }
 func (m *MockContainer) EnvironmentService() domainenvironment.EnvironmentService {
 	return m.Called().Get(0).(domainenvironment.EnvironmentService)
 }
@@ -108,7 +108,7 @@ func (m *MockLogger) Info(msg string, fields ...logger.Field)  { m.Called(msg, f
 func (m *MockLogger) Error(msg string, fields ...logger.Field) { m.Called(msg, fields) }
 func (m *MockLogger) Debug(msg string, fields ...logger.Field) { m.Called(msg, fields) }
 func (m *MockLogger) Warn(msg string, fields ...logger.Field)  { m.Called(msg, fields) }
-func (m *MockLogger) SetLevel(level string)                     { m.Called(level) }
+func (m *MockLogger) SetLevel(level string)                    { m.Called(level) }
 func (m *MockLogger) With(fields ...logger.Field) logger.Logger {
 	args := m.Called(fields)
 	if v := args.Get(0); v != nil {

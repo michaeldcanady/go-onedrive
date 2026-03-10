@@ -7,9 +7,9 @@ import (
 	"path"
 	"time"
 
+	logger "github.com/michaeldcanady/go-onedrive/internal2/domain/common/logger"
 	"github.com/michaeldcanady/go-onedrive/internal2/domain/di"
 	"github.com/michaeldcanady/go-onedrive/internal2/domain/fs"
-	logger "github.com/michaeldcanady/go-onedrive/internal2/domain/common/logger"
 	"github.com/michaeldcanady/go-onedrive/internal2/interface/cli/util"
 )
 
@@ -66,7 +66,7 @@ func (c *CpCmd) Run(ctx context.Context, opts Options) error {
 		logger.Duration("duration", time.Since(start)),
 	)
 
-	fmt.Fprintf(opts.Stdout, "Successfully copied \"%s\" to \"%s\"\n", opts.Source, opts.Dest)
+	c.RenderSuccess(opts.Stdout, "Successfully copied \"%s\" to \"%s\"\n", opts.Source, opts.Dest)
 
 	return nil
 }
@@ -121,13 +121,13 @@ func (c *CpCmd) copyRecursive(ctx context.Context, fsSvc fs.Service, src, dst st
 		// childDst := path.Join(dst, child.Name)
 		// How to get provider-aware child path?
 		// For now, assume simple join if it's the same provider
-		
+
 		// If src is "local:./foo", and child.Name is "bar.txt"
 		// we want "local:./foo/bar.txt"
-		
+
 		provider, subPath := util.ParsePath(src)
 		newSrc := fmt.Sprintf("%s:%s", provider, path.Join(subPath, child.Name))
-		
+
 		dstProvider, dstSubPath := util.ParsePath(dst)
 		newDst := fmt.Sprintf("%s:%s", dstProvider, path.Join(dstSubPath, child.Name))
 

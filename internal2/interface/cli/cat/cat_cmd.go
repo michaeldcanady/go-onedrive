@@ -5,9 +5,9 @@ import (
 	"io"
 	"time"
 
+	logger "github.com/michaeldcanady/go-onedrive/internal2/domain/common/logger"
 	"github.com/michaeldcanady/go-onedrive/internal2/domain/di"
 	domainfs "github.com/michaeldcanady/go-onedrive/internal2/domain/fs"
-	logger "github.com/michaeldcanady/go-onedrive/internal2/domain/common/logger"
 	"github.com/michaeldcanady/go-onedrive/internal2/interface/cli/util"
 )
 

@@ -11,6 +11,7 @@ import (
 	domainauth "github.com/michaeldcanady/go-onedrive/internal2/domain/auth"
 	domaincache "github.com/michaeldcanady/go-onedrive/internal2/domain/cache"
 	domainenvironment "github.com/michaeldcanady/go-onedrive/internal2/domain/common/environment"
+	domainerrors "github.com/michaeldcanady/go-onedrive/internal2/domain/common/errors"
 	"github.com/michaeldcanady/go-onedrive/internal2/domain/common/logger"
 	"github.com/michaeldcanady/go-onedrive/internal2/domain/config"
 	"github.com/michaeldcanady/go-onedrive/internal2/domain/drive"
@@ -18,7 +19,6 @@ import (
 	domainfs "github.com/michaeldcanady/go-onedrive/internal2/domain/fs"
 	domainprofile "github.com/michaeldcanady/go-onedrive/internal2/domain/profile"
 	"github.com/michaeldcanady/go-onedrive/internal2/domain/state"
-	domainerrors "github.com/michaeldcanady/go-onedrive/internal2/domain/common/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -29,8 +29,8 @@ type MockContainer struct {
 	mock.Mock
 }
 
-func (m *MockContainer) Cache() domaincache.Service2            { return nil }
-func (m *MockContainer) FS() domainfs.Service                   { return m.Called().Get(0).(domainfs.Service) }
+func (m *MockContainer) Cache() domaincache.Service2 { return nil }
+func (m *MockContainer) FS() domainfs.Service        { return m.Called().Get(0).(domainfs.Service) }
 func (m *MockContainer) EnvironmentService() domainenvironment.EnvironmentService {
 	return m.Called().Get(0).(domainenvironment.EnvironmentService)
 }
@@ -40,7 +40,7 @@ func (m *MockContainer) Logger() logger.LoggerService {
 func (m *MockContainer) IgnoreMatcherFactory() domainfs.IgnoreMatcherFactory {
 	return nil
 }
-func (m *MockContainer) Auth() domainauth.AuthService { return nil }
+func (m *MockContainer) Auth() domainauth.AuthService          { return nil }
 func (m *MockContainer) Profile() domainprofile.ProfileService { return nil }
 func (m *MockContainer) Config() config.ConfigService          { return nil }
 func (m *MockContainer) State() state.Service                  { return nil }

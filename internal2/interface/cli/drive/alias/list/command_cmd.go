@@ -6,8 +6,8 @@ import (
 	"sort"
 	"time"
 
-	"github.com/michaeldcanady/go-onedrive/internal2/domain/di"
 	logger "github.com/michaeldcanady/go-onedrive/internal2/domain/common/logger"
+	"github.com/michaeldcanady/go-onedrive/internal2/domain/di"
 	"github.com/michaeldcanady/go-onedrive/internal2/interface/cli/util"
 )
 

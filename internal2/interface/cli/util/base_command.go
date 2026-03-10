@@ -7,8 +7,8 @@ import (
 
 	"github.com/fatih/color"
 	domainerrors "github.com/michaeldcanady/go-onedrive/internal2/domain/common/errors"
-	"github.com/michaeldcanady/go-onedrive/internal2/domain/di"
 	"github.com/michaeldcanady/go-onedrive/internal2/domain/common/logger"
+	"github.com/michaeldcanady/go-onedrive/internal2/domain/di"
 )
 
 // BaseCommand provides common functionality for all CLI commands.
@@ -66,4 +66,25 @@ func (c *BaseCommand) RenderError(w io.Writer, err error) {
 
 	// Fallback for regular errors
 	fmt.Fprintf(w, "%s %v\n", red("Error:"), err)
+}
+
+// RenderWarning renders a warning message in a user-friendly way.
+func (c *BaseCommand) RenderWarning(w io.Writer, format string, a ...any) {
+	yellow := color.New(color.FgYellow, color.Bold).SprintFunc()
+	msg := fmt.Sprintf(format, a...)
+	fmt.Fprintf(w, "%s %s\n", yellow("Warning:"), msg)
+}
+
+// RenderInfo renders an informational message in a user-friendly way.
+func (c *BaseCommand) RenderInfo(w io.Writer, format string, a ...any) {
+	blue := color.New(color.FgBlue, color.Bold).SprintFunc()
+	msg := fmt.Sprintf(format, a...)
+	fmt.Fprintf(w, "%s %s\n", blue("Info:"), msg)
+}
+
+// RenderSuccess renders a success message in a user-friendly way.
+func (c *BaseCommand) RenderSuccess(w io.Writer, format string, a ...any) {
+	green := color.New(color.FgGreen, color.Bold).SprintFunc()
+	msg := fmt.Sprintf(format, a...)
+	fmt.Fprintf(w, "%s %s\n", green("Success:"), msg)
 }
