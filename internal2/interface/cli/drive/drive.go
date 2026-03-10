@@ -3,6 +3,7 @@ package drive
 import (
 	"github.com/michaeldcanady/go-onedrive/internal2/domain/di"
 	"github.com/michaeldcanady/go-onedrive/internal2/interface/cli/drive/alias"
+	"github.com/michaeldcanady/go-onedrive/internal2/interface/cli/drive/get"
 	"github.com/michaeldcanady/go-onedrive/internal2/interface/cli/drive/list"
 	"github.com/michaeldcanady/go-onedrive/internal2/interface/cli/drive/use"
 	"github.com/spf13/cobra"
@@ -21,6 +22,7 @@ func CreateDriveCmd(container di.Container) *cobra.Command {
 		list.CreateListCmd(container),
 		use.CreateUseCmd(container),
 		alias.CreateAliasCmd(container),
+		get.CreateGetCmd(container),
 	)
 
 	return driveCmd

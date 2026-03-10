@@ -6,79 +6,51 @@ import (
 	"time"
 
 	"github.com/michaeldcanady/go-onedrive/internal2/domain/di"
-	"github.com/michaeldcanady/go-onedrive/internal2/domain/fs"
-	"github.com/michaeldcanady/go-onedrive/internal2/infra/common/logging"
-	infralogging "github.com/michaeldcanady/go-onedrive/internal2/infra/common/logging"
+	domainfs "github.com/michaeldcanady/go-onedrive/internal2/domain/fs"
+	logger "github.com/michaeldcanady/go-onedrive/internal2/domain/common/logger"
 	"github.com/michaeldcanady/go-onedrive/internal2/interface/cli/util"
 )
 
-// CatCmd handles the execution logic for the 'cat' command.
 type CatCmd struct {
-	container di.Container
-	logger    infralogging.Logger
+	util.BaseCommand
 }
 
-// NewCatCmd creates a new CatCmd instance with the provided dependency container.
 func NewCatCmd(container di.Container) *CatCmd {
 	return &CatCmd{
-		container: container,
+		BaseCommand: util.NewBaseCommand(container, commandName),
 	}
 }
 
-// WithLogger allows injecting a logger into CatCmd for testing.
-func (c *CatCmd) WithLogger(logger infralogging.Logger) *CatCmd {
-	c.logger = logger
-	return c
-}
-
-// Run executes the cat lifecycle.
 func (c *CatCmd) Run(ctx context.Context, opts Options) error {
 	start := time.Now()
 
-	if ctx == nil {
-		ctx = context.Background()
+	if err := c.Initialize(loggerID); err != nil {
+		return err
 	}
 
-	if c.logger == nil {
-		logger, err := util.EnsureLogger(c.container, loggerID)
-		if err != nil {
-			return util.NewCommandErrorWithNameWithError(commandName, err)
-		}
-		c.logger = logger
-	}
+	c.Log.Info("starting cat command",
+		logger.String("path", opts.Path),
+	)
 
-	c.logger = c.logger.WithContext(ctx).With(logging.String("correlationID", util.CorrelationIDFromContext(ctx)))
-
-	c.logger.Info("starting cat command", infralogging.String("path", opts.Path))
-
-	c.logger.Debug("resolving filesystem service")
-	fsSvc := c.container.FS()
+	fsSvc := c.Container.FS()
 	if fsSvc == nil {
-		c.logger.Error("filesystem service is nil")
-		return util.NewCommandErrorWithNameWithMessage(commandName, "filesystem service is nil")
+		return util.NewCommandErrorWithNameWithMessage(c.Name, "filesystem service is nil")
 	}
 
-	c.logger.Debug("requesting file content from OneDrive", infralogging.String("path", opts.Path))
-	reader, err := fsSvc.ReadFile(ctx, opts.Path, fs.ReadOptions{})
+	reader, err := fsSvc.ReadFile(ctx, opts.Path, domainfs.ReadOptions{})
 	if err != nil {
-		c.logger.Error("failed to read file from OneDrive", 
-			infralogging.String("path", opts.Path),
-			infralogging.Error(err))
-		return util.NewCommandErrorWithNameWithMessage(commandName, "unable to read path contents")
+		c.RenderError(opts.Stderr, err)
+		return util.NewCommandError(c.Name, "failed to read file", err)
 	}
 	defer reader.Close()
 
-	c.logger.Debug("streaming file content to stdout", infralogging.String("path", opts.Path))
-	_, err = io.Copy(opts.Stdout, reader)
-	if err != nil {
-		c.logger.Error("failed to write file content to output", 
-			infralogging.String("path", opts.Path),
-			infralogging.Error(err))
-		return util.NewCommandErrorWithNameWithMessage(commandName, "failed to write file contents")
+	if _, err := io.Copy(opts.Stdout, reader); err != nil {
+		c.RenderError(opts.Stderr, err)
+		return util.NewCommandError(c.Name, "failed to write output", err)
 	}
 
-	c.logger.Info("cat command completed successfully",
-		infralogging.Duration("duration", time.Since(start)),
+	c.Log.Info("cat completed successfully",
+		logger.Duration("duration", time.Since(start)),
 	)
 
 	return nil

@@ -35,6 +35,9 @@ type Options struct {
 	// Recursive determines whether to list subdirectories and their contents recursively.
 	Recursive bool
 
+	// IgnoreFile is the path to a .gitignore-style file for filtering.
+	IgnoreFile string
+
 	// SortProperty specifies the property used for sorting the results.
 	// Supported values include "name", "size", and "modified".
 	SortProperty string

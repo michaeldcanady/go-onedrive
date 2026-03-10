@@ -11,16 +11,14 @@ import (
 	domainauth "github.com/michaeldcanady/go-onedrive/internal2/domain/auth"
 	domaincache "github.com/michaeldcanady/go-onedrive/internal2/domain/cache"
 	domainenvironment "github.com/michaeldcanady/go-onedrive/internal2/domain/common/environment"
-	domainlogger "github.com/michaeldcanady/go-onedrive/internal2/domain/common/logger"
+	"github.com/michaeldcanady/go-onedrive/internal2/domain/common/logger"
 	"github.com/michaeldcanady/go-onedrive/internal2/domain/config"
 	"github.com/michaeldcanady/go-onedrive/internal2/domain/drive"
 	domaineditor "github.com/michaeldcanady/go-onedrive/internal2/domain/editor"
-	"github.com/michaeldcanady/go-onedrive/internal2/domain/file"
 	domainfs "github.com/michaeldcanady/go-onedrive/internal2/domain/fs"
 	domainprofile "github.com/michaeldcanady/go-onedrive/internal2/domain/profile"
 	"github.com/michaeldcanady/go-onedrive/internal2/domain/state"
-	infralogging "github.com/michaeldcanady/go-onedrive/internal2/infra/common/logging"
-	infrafile "github.com/michaeldcanady/go-onedrive/internal2/infra/file"
+	domainerrors "github.com/michaeldcanady/go-onedrive/internal2/domain/common/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -36,13 +34,15 @@ func (m *MockContainer) FS() domainfs.Service                   { return m.Calle
 func (m *MockContainer) EnvironmentService() domainenvironment.EnvironmentService {
 	return m.Called().Get(0).(domainenvironment.EnvironmentService)
 }
-func (m *MockContainer) Logger() domainlogger.LoggerService {
-	return m.Called().Get(0).(domainlogger.LoggerService)
+func (m *MockContainer) Logger() logger.LoggerService {
+	return m.Called().Get(0).(logger.LoggerService)
 }
-func (m *MockContainer) Auth() domainauth.AuthService          { return nil }
+func (m *MockContainer) IgnoreMatcherFactory() domainfs.IgnoreMatcherFactory {
+	return nil
+}
+func (m *MockContainer) Auth() domainauth.AuthService { return nil }
 func (m *MockContainer) Profile() domainprofile.ProfileService { return nil }
 func (m *MockContainer) Config() config.ConfigService          { return nil }
-func (m *MockContainer) File() file.FileService                { return nil }
 func (m *MockContainer) State() state.Service                  { return nil }
 func (m *MockContainer) Drive() drive.DriveService             { return nil }
 func (m *MockContainer) Account() account.Service              { return nil }
@@ -85,6 +85,12 @@ func (m *MockFSService) Mkdir(ctx context.Context, path string, opts domainfs.MK
 func (m *MockFSService) Upload(ctx context.Context, src, dst string, opts domainfs.UploadOptions) (domainfs.Item, error) {
 	return domainfs.Item{}, nil
 }
+func (m *MockFSService) Copy(ctx context.Context, src, dst string, opts domainfs.CopyOptions) error {
+	return nil
+}
+func (m *MockFSService) Touch(ctx context.Context, path string, opts domainfs.TouchOptions) (domainfs.Item, error) {
+	return domainfs.Item{}, nil
+}
 
 type MockEnvironmentService struct {
 	mock.Mock
@@ -103,7 +109,7 @@ func (m *MockEnvironmentService) Name() string                { return "odc" }
 func (m *MockEnvironmentService) OS() string                  { return "linux" }
 func (m *MockEnvironmentService) TempDir() (string, error)    { return "", nil }
 func (m *MockEnvironmentService) StateDir() (string, error)   { return "", nil }
-func (m *MockEnvironmentService) OutputDestination() (infralogging.OutputDestination, error) {
+func (m *MockEnvironmentService) OutputDestination() (logger.OutputDestination, error) {
 	return 0, nil
 }
 func (m *MockEnvironmentService) LogLevel() (string, error) { return "info", nil }
@@ -124,13 +130,13 @@ type MockLogProvider struct {
 	mock.Mock
 }
 
-func (m *MockLogProvider) CreateLogger(name string) (infralogging.Logger, error) {
+func (m *MockLogProvider) CreateLogger(name string) (logger.Logger, error) {
 	args := m.Called(name)
-	return args.Get(0).(infralogging.Logger), args.Error(1)
+	return args.Get(0).(logger.Logger), args.Error(1)
 }
-func (m *MockLogProvider) GetLogger(name string) (infralogging.Logger, error) {
+func (m *MockLogProvider) GetLogger(name string) (logger.Logger, error) {
 	args := m.Called(name)
-	return args.Get(0).(infralogging.Logger), args.Error(1)
+	return args.Get(0).(logger.Logger), args.Error(1)
 }
 func (m *MockLogProvider) SetAllLevel(level string) {}
 
@@ -138,15 +144,15 @@ type MockLogger struct {
 	mock.Mock
 }
 
-func (m *MockLogger) Info(msg string, fields ...infralogging.Field)  { m.Called(msg, fields) }
-func (m *MockLogger) Error(msg string, fields ...infralogging.Field) { m.Called(msg, fields) }
-func (m *MockLogger) Debug(msg string, fields ...infralogging.Field) { m.Called(msg, fields) }
-func (m *MockLogger) Warn(msg string, fields ...infralogging.Field)  { m.Called(msg, fields) }
-func (m *MockLogger) SetLevel(level string)                          {}
-func (m *MockLogger) With(fields ...infralogging.Field) infralogging.Logger {
+func (m *MockLogger) Info(msg string, fields ...logger.Field)  { m.Called(msg, fields) }
+func (m *MockLogger) Error(msg string, fields ...logger.Field) { m.Called(msg, fields) }
+func (m *MockLogger) Debug(msg string, fields ...logger.Field) { m.Called(msg, fields) }
+func (m *MockLogger) Warn(msg string, fields ...logger.Field)  { m.Called(msg, fields) }
+func (m *MockLogger) SetLevel(level string)                    {}
+func (m *MockLogger) With(fields ...logger.Field) logger.Logger {
 	return m
 }
-func (m *MockLogger) WithContext(ctx context.Context) infralogging.Logger {
+func (m *MockLogger) WithContext(ctx context.Context) logger.Logger {
 	return m
 }
 
@@ -160,9 +166,12 @@ func (m *MockEditor) Launch(path string) error {
 }
 
 func (m *MockEditor) LaunchTempFile(prefix, suffix string, reader io.Reader) ([]byte, string, error) {
-	_, _ = io.ReadAll(reader) // Consume reader for hash calculation
 	args := m.Called(prefix, suffix, reader)
-	return args.Get(0).([]byte), args.String(1), args.Error(2)
+	var data []byte
+	if args.Get(0) != nil {
+		data = args.Get(0).([]byte)
+	}
+	return data, args.String(1), args.Error(2)
 }
 
 func (m *MockEditor) WithIO(stdin io.Reader, stdout, stderr io.Writer) domaineditor.Service {
@@ -221,9 +230,8 @@ func TestEditCmd_Run_NoChanges(t *testing.T) {
 		Return(io.NopCloser(strings.NewReader(content)), nil)
 
 	// Mock Editor
-	mockEditor.On("WithIO", mock.Anything, mock.Anything, mock.Anything).Return(mockEditor)
 	mockEditor.On("LaunchTempFile", mock.Anything, ".txt", mock.Anything).
-		Return([]byte(content), "temp-path", nil)
+		Return(nil, "", nil)
 
 	buf := new(bytes.Buffer)
 	opts := Options{Path: "/file.txt", Stdout: buf}
@@ -262,7 +270,6 @@ func TestEditCmd_Run_WithChanges(t *testing.T) {
 		Return(io.NopCloser(strings.NewReader(content)), nil)
 
 	// Mock Editor
-	mockEditor.On("WithIO", mock.Anything, mock.Anything, mock.Anything).Return(mockEditor)
 	mockEditor.On("LaunchTempFile", mock.Anything, ".txt", mock.Anything).
 		Return([]byte("new content"), "temp-path", nil)
 
@@ -301,7 +308,6 @@ func TestEditCmd_Run_WithMockEditor(t *testing.T) {
 		Return(io.NopCloser(strings.NewReader(content)), nil)
 
 	// Mock Editor: returns modified content
-	mockEditor.On("WithIO", mock.Anything, mock.Anything, mock.Anything).Return(mockEditor)
 	mockEditor.On("LaunchTempFile", mock.Anything, ".txt", mock.Anything).
 		Return([]byte("modified"), "temp-path", nil)
 
@@ -342,15 +348,14 @@ func TestEditCmd_Run_ETagMismatch(t *testing.T) {
 		Return(io.NopCloser(strings.NewReader(content)), nil)
 
 	// Mock Editor: returns modified content
-	mockEditor.On("WithIO", mock.Anything, mock.Anything, mock.Anything).Return(mockEditor)
 	mockEditor.On("LaunchTempFile", mock.Anything, ".txt", mock.Anything).
 		Return([]byte("modified"), "temp-path", nil)
 
 	// Mock WriteFile: returns ETag mismatch error
 	mockFS.On("WriteFile", mock.Anything, "/file.txt", mock.Anything, mock.Anything).
-		Return(domainfs.Item{}, infrafile.ErrPrecondition)
+		Return(domainfs.Item{}, domainerrors.ErrPrecondition)
 
-	// Mock Conflict Handler: returns true (remove temp), finalPath, and no error
+	// Mock HandleConflict
 	mockConflict.On("HandleConflict", mock.Anything, "/file.txt", []byte("modified"), "temp-path").
 		Return(true, "/file.txt", nil)
 
@@ -390,17 +395,16 @@ func TestEditCmd_Run_SaveAsCopy(t *testing.T) {
 		Return(io.NopCloser(strings.NewReader(content)), nil)
 
 	// Mock Editor: returns modified content
-	mockEditor.On("WithIO", mock.Anything, mock.Anything, mock.Anything).Return(mockEditor)
 	mockEditor.On("LaunchTempFile", mock.Anything, ".txt", mock.Anything).
 		Return([]byte("modified"), "temp-path", nil)
 
 	// Mock WriteFile: returns ETag mismatch error
 	mockFS.On("WriteFile", mock.Anything, "/file.txt", mock.Anything, mock.Anything).
-		Return(domainfs.Item{}, infrafile.ErrPrecondition)
+		Return(domainfs.Item{}, domainerrors.ErrPrecondition)
 
-	// Mock Conflict Handler: returns true (remove temp), DIFFERENT path, and no error
+	// Mock HandleConflict: returns a different path (copy)
 	mockConflict.On("HandleConflict", mock.Anything, "/file.txt", []byte("modified"), "temp-path").
-		Return(true, "/file-copy.txt", nil)
+		Return(true, "/file (copy).txt", nil)
 
 	buf := new(bytes.Buffer)
 	opts := Options{Path: "/file.txt", Stdout: buf, Stderr: io.Discard}
@@ -412,7 +416,8 @@ func TestEditCmd_Run_SaveAsCopy(t *testing.T) {
 	err := editCmd.Run(context.Background(), opts)
 
 	assert.NoError(t, err)
-	assert.Contains(t, buf.String(), "File \"/file-copy.txt\" updated successfully.")
+	assert.Contains(t, buf.String(), "updated successfully")
+	assert.Contains(t, buf.String(), "/file (copy).txt")
 	mockFS.AssertExpectations(t)
 	mockConflict.AssertExpectations(t)
 }

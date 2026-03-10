@@ -8,10 +8,10 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/michaeldcanady/go-onedrive/internal2/domain/common/logger"
 	domainDrive "github.com/michaeldcanady/go-onedrive/internal2/domain/drive"
 	"github.com/michaeldcanady/go-onedrive/internal2/domain/file"
 	domainfs "github.com/michaeldcanady/go-onedrive/internal2/domain/fs"
-	"github.com/michaeldcanady/go-onedrive/internal2/infra/common/logging"
 	"github.com/michaeldcanady/go-onedrive/internal2/interface/cli/util"
 )
 
@@ -20,16 +20,16 @@ var _ domainfs.Service = (*Provider)(nil)
 type Provider struct {
 	metadataRepo      file.MetadataRepository
 	contentsRepo      file.FileContentsRepository
-	logger            logging.Logger
+	log               logger.Logger
 	driveResolver     domainDrive.DriveResolver
 	driveAliasService domainDrive.DriveAliasService
 }
 
-func NewProvider(metadataRepo file.MetadataRepository, contentsRepo file.FileContentsRepository, driveResolver domainDrive.DriveResolver, driveAliasService domainDrive.DriveAliasService, logger logging.Logger) *Provider {
+func NewProvider(metadataRepo file.MetadataRepository, contentsRepo file.FileContentsRepository, driveResolver domainDrive.DriveResolver, driveAliasService domainDrive.DriveAliasService, l logger.Logger) *Provider {
 	return &Provider{
 		metadataRepo:      metadataRepo,
 		contentsRepo:      contentsRepo,
-		logger:            logger,
+		log:               l,
 		driveResolver:     driveResolver,
 		driveAliasService: driveAliasService,
 	}
@@ -48,20 +48,17 @@ func (s *Provider) resolveDrive(ctx context.Context, path string) (string, strin
 	return driveID, path, err
 }
 
-func (s *Provider) buildLogger(ctx context.Context) logging.Logger {
+func (s *Provider) buildLogger(ctx context.Context) logger.Logger {
 	correlationID := util.CorrelationIDFromContext(ctx)
-	return s.logger.WithContext(ctx).With(
-		logging.String("correlation_id", correlationID),
+	return s.log.WithContext(ctx).With(
+		logger.String("correlation_id", correlationID),
 	)
 }
 
-func (s *Provider) Get(
-	ctx context.Context,
-	path string,
-) (domainfs.Item, error) {
-	logger := s.buildLogger(ctx).With(logging.String("path", path))
+func (s *Provider) Get(ctx context.Context, path string) (domainfs.Item, error) {
+	log := s.buildLogger(ctx).With(logger.String("path", path))
 
-	logger.Debug("retrieving metadata", logging.String("event", eventFSGetStart))
+	log.Debug("retrieving metadata")
 
 	driveID, cleanPath, err := s.resolveDrive(ctx, path)
 	if err != nil {
@@ -77,12 +74,8 @@ func (s *Provider) Get(
 }
 
 // List implements [fs.Service].
-func (s *Provider) List(
-	ctx context.Context,
-	path string,
-	opts domainfs.ListOptions,
-) ([]domainfs.Item, error) {
-	logger := s.buildLogger(ctx).With(logging.String("path", path))
+func (s *Provider) List(ctx context.Context, path string, opts domainfs.ListOptions) ([]domainfs.Item, error) {
+	log := s.buildLogger(ctx).With(logger.String("path", path))
 
 	driveID, cleanPath, err := s.resolveDrive(ctx, path)
 	if err != nil {
@@ -130,7 +123,7 @@ func (s *Provider) List(
 	}
 
 	if err := walk(cleanPath); err != nil {
-		logger.Error("listing failed", logging.Error(err))
+		log.Error("listing failed", logger.Error(err))
 		return nil, err
 	}
 
@@ -139,11 +132,11 @@ func (s *Provider) List(
 
 // Mkdir implements [fs.Service].
 func (s *Provider) Mkdir(ctx context.Context, path string, opts domainfs.MKDirOptions) error {
-	logger := s.buildLogger(ctx)
+	log := s.buildLogger(ctx)
 
 	driveID, cleanPath, err := s.resolveDrive(ctx, path)
 	if err != nil {
-		logger.Warn("failed to resolve driveID", logging.Error(err))
+		log.Warn("failed to resolve driveID", logger.Error(err))
 		return err
 	}
 
@@ -162,11 +155,11 @@ func (s *Provider) Mkdir(ctx context.Context, path string, opts domainfs.MKDirOp
 }
 
 func (s *Provider) Copy(ctx context.Context, src, dst string, opts domainfs.CopyOptions) error {
-	logger := s.buildLogger(ctx).With(
-		logging.String("src", src),
-		logging.String("dst", dst),
+	log := s.buildLogger(ctx).With(
+		logger.String("src", src),
+		logger.String("dst", dst),
 	)
-	logger.Debug("Copy: starting")
+	log.Debug("Copy: starting")
 
 	r, err := s.ReadFile(ctx, src, domainfs.ReadOptions{})
 	if err != nil {
@@ -182,11 +175,11 @@ func (s *Provider) Copy(ctx context.Context, src, dst string, opts domainfs.Copy
 
 // Move implements [fs.Service].
 func (s *Provider) Move(ctx context.Context, src string, dst string, opts domainfs.MoveOptions) error {
-	logger := s.buildLogger(ctx).With(
-		logging.String("src", src),
-		logging.String("dst", dst),
+	log := s.buildLogger(ctx).With(
+		logger.String("src", src),
+		logger.String("dst", dst),
 	)
-	logger.Debug("Move: starting")
+	log.Debug("Move: starting")
 
 	srcDriveID, cleanSrc, err := s.resolveDrive(ctx, src)
 	if err != nil {
@@ -216,8 +209,7 @@ func (s *Provider) Move(ctx context.Context, src string, dst string, opts domain
 
 // ReadFile implements [fs.Service].
 func (s *Provider) ReadFile(ctx context.Context, path string, opts domainfs.ReadOptions) (io.ReadCloser, error) {
-	logger := s.buildLogger(ctx)
-	logger = logger.With(logging.String("path", path))
+	s.buildLogger(ctx).With(logger.String("path", path))
 
 	driveID, cleanPath, err := s.resolveDrive(ctx, path)
 	if err != nil {
@@ -229,13 +221,21 @@ func (s *Provider) ReadFile(ctx context.Context, path string, opts domainfs.Read
 
 // Remove implements [fs.Service].
 func (s *Provider) Remove(ctx context.Context, path string, opts domainfs.RemoveOptions) error {
-	panic("unimplemented")
+	log := s.buildLogger(ctx).With(logger.String("path", path))
+	log.Debug("Remove: deleting file")
+
+	driveID, cleanPath, err := s.resolveDrive(ctx, path)
+	if err != nil {
+		return err
+	}
+
+	return s.metadataRepo.DeleteByPath(ctx, driveID, cleanPath, file.MetadataDeleteOptions{})
 }
 
 // Stat implements [fs.Service].
 func (s *Provider) Stat(ctx context.Context, path string, opts domainfs.StatOptions) (domainfs.Item, error) {
-	logger := s.buildLogger(ctx).With(logging.String("path", path))
-	logger.Debug("Stat: retrieving metadata")
+	log := s.buildLogger(ctx).With(logger.String("path", path))
+	log.Debug("Stat: retrieving metadata")
 
 	driveID, cleanPath, err := s.resolveDrive(ctx, path)
 	if err != nil {
@@ -252,8 +252,7 @@ func (s *Provider) Stat(ctx context.Context, path string, opts domainfs.StatOpti
 
 // WriteFile implements [fs.Service].
 func (s *Provider) WriteFile(ctx context.Context, path string, r io.Reader, opts domainfs.WriteOptions) (domainfs.Item, error) {
-	logger := s.buildLogger(ctx)
-	logger = logger.With(logging.String("path", path))
+	s.buildLogger(ctx).With(logger.String("path", path))
 
 	driveID, cleanPath, err := s.resolveDrive(ctx, path)
 	if err != nil {
@@ -284,8 +283,8 @@ func (s *Provider) Upload(ctx context.Context, src, dst string, opts domainfs.Up
 
 // Touch implements [fs.Service].
 func (s *Provider) Touch(ctx context.Context, path string, opts domainfs.TouchOptions) (domainfs.Item, error) {
-	logger := s.buildLogger(ctx).With(logging.String("path", path))
-	logger.Debug("Touch: starting")
+	log := s.buildLogger(ctx).With(logger.String("path", path))
+	log.Debug("Touch: starting")
 
 	driveID, cleanPath, err := s.resolveDrive(ctx, path)
 	if err != nil {

@@ -5,7 +5,8 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/michaeldcanady/go-onedrive/internal2/infra/file"
+	"github.com/michaeldcanady/go-onedrive/internal2/domain/file"
+	infrafile "github.com/michaeldcanady/go-onedrive/internal2/infra/file"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -53,7 +54,7 @@ func TestMetadataListCacheAdapter_Get(t *testing.T) {
 				On("Get", mock.Anything, tt.path).
 				Return(tt.cacheGetVal.(file.Listing), tt.cacheGetErr)
 
-			adapter := file.NewMetadataListCacheAdapter(mockCache)
+			adapter := infrafile.NewMetadataListingCacheAdapter(mockCache)
 
 			got, ok := adapter.Get(context.Background(), tt.path)
 
@@ -117,7 +118,7 @@ func TestMetadataListCacheAdapter_Put(t *testing.T) {
 					Return(tt.setErr)
 			}
 
-			adapter := file.NewMetadataListCacheAdapter(mockCache)
+			adapter := infrafile.NewMetadataListingCacheAdapter(mockCache)
 
 			err := adapter.Put(context.Background(), tt.path, tt.listing)
 
@@ -165,7 +166,7 @@ func TestMetadataListCacheAdapter_Invalidate(t *testing.T) {
 				On("Delete", mock.Anything, tt.path).
 				Return(tt.deleteErr)
 
-			adapter := file.NewMetadataListCacheAdapter(mockCache)
+			adapter := infrafile.NewMetadataListingCacheAdapter(mockCache)
 
 			err := adapter.Invalidate(context.Background(), tt.path)
 

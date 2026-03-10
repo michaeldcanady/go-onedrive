@@ -1,10 +1,8 @@
 package file
 
 import (
-	"bytes"
 	"context"
 	"errors"
-	"io"
 	"testing"
 
 	"github.com/michaeldcanady/go-onedrive/internal2/domain/file"
@@ -25,10 +23,9 @@ func TestContentsRepository_Download(t *testing.T) {
 		t.Parallel()
 		mockAdapter := new(MockRequestAdapter)
 		mockContentCache := new(MockContentsCache)
-		mockMetadataCache := new(MockMetadataCache)
 		mockPathIDCache := new(MockPathIDCache)
 
-		repo := NewContentsRepository(mockAdapter, mockContentCache, mockMetadataCache, mockPathIDCache, NewMockLogger())
+		repo := NewGraphFileContentsGateway(mockAdapter, NewMockLogger())
 
 		mockPathIDCache.On("Get", mock.Anything, path).Return("", false)
 
@@ -41,22 +38,19 @@ func TestContentsRepository_Download(t *testing.T) {
 		// Graph returns 304 (nil response)
 		mockAdapter.On("SendPrimitive", mock.Anything, mock.Anything, "[]byte", mock.Anything).Return(nil, nil)
 
-		r, err := repo.Download(context.Background(), driveID, path, file.DownloadOptions{})
+		content, _, err := repo.Download(context.Background(), driveID, path, "")
 		assert.NoError(t, err)
-		defer r.Close()
 
-		gotData, _ := io.ReadAll(r)
-		assert.Equal(t, contentData, gotData)
+		assert.Equal(t, contentData, content)
 	})
 
 	t.Run("cache miss, fetch fresh", func(t *testing.T) {
 		t.Parallel()
 		mockAdapter := new(MockRequestAdapter)
 		mockContentCache := new(MockContentsCache)
-		mockMetadataCache := new(MockMetadataCache)
 		mockPathIDCache := new(MockPathIDCache)
 
-		repo := NewContentsRepository(mockAdapter, mockContentCache, mockMetadataCache, mockPathIDCache, NewMockLogger())
+		repo := NewGraphFileContentsGateway(mockAdapter, NewMockLogger())
 
 		mockPathIDCache.On("Get", mock.Anything, path).Return("", false)
 
@@ -75,29 +69,26 @@ func TestContentsRepository_Download(t *testing.T) {
 		// unless `SendPrimitive` logic in the real adapter populates it.
 		// For now, we'll assume no cache Put if we can't simulate headers easily, or just verify the download.
 
-		r, err := repo.Download(context.Background(), driveID, path, file.DownloadOptions{})
+		content, _, err := repo.Download(context.Background(), driveID, path, "")
 		assert.NoError(t, err)
-		defer r.Close()
 
-		gotData, _ := io.ReadAll(r)
-		assert.Equal(t, contentData, gotData)
+		assert.Equal(t, contentData, content)
 	})
 
 	t.Run("graph error", func(t *testing.T) {
 		t.Parallel()
 		mockAdapter := new(MockRequestAdapter)
 		mockContentCache := new(MockContentsCache)
-		mockMetadataCache := new(MockMetadataCache)
 		mockPathIDCache := new(MockPathIDCache)
 
-		repo := NewContentsRepository(mockAdapter, mockContentCache, mockMetadataCache, mockPathIDCache, NewMockLogger())
+		repo := NewGraphFileContentsGateway(mockAdapter, NewMockLogger())
 
 		mockPathIDCache.On("Get", mock.Anything, path).Return("", false)
 
 		mockContentCache.On("Get", mock.Anything, path).Return(nil, false)
 		mockAdapter.On("SendPrimitive", mock.Anything, mock.Anything, "[]byte", mock.Anything).Return(nil, errors.New("graph error"))
 
-		r, err := repo.Download(context.Background(), driveID, path, file.DownloadOptions{})
+		r, _, err := repo.Download(context.Background(), driveID, path, "")
 		assert.Error(t, err)
 		assert.Nil(t, r)
 	})
@@ -118,7 +109,7 @@ func TestContentsRepository_Upload(t *testing.T) {
 		mockMetadataCache := new(MockMetadataCache)
 		mockPathIDCache := new(MockPathIDCache)
 
-		repo := NewContentsRepository(mockAdapter, mockContentCache, mockMetadataCache, mockPathIDCache, NewMockLogger())
+		repo := NewGraphFileContentsGateway(mockAdapter, NewMockLogger())
 
 		mockPathIDCache.On("Get", mock.Anything, path).Return("", false)
 		mockPathIDCache.On("Put", mock.Anything, path, "new-id").Return(nil)
@@ -144,8 +135,7 @@ func TestContentsRepository_Upload(t *testing.T) {
 		mockContentCache.On("Put", mock.Anything, "new-id", mock.Anything).Return(nil)
 		mockMetadataCache.On("Put", mock.Anything, "new-id", mock.Anything).Return(nil)
 
-		body := bytes.NewReader(contentData)
-		meta, err := repo.Upload(context.Background(), driveID, path, body, file.UploadOptions{})
+		meta, _, err := repo.Upload(context.Background(), driveID, path, contentData, "")
 
 		assert.NoError(t, err)
 		assert.NotNil(t, meta)
@@ -156,4 +146,3 @@ func TestContentsRepository_Upload(t *testing.T) {
 		mockMetadataCache.AssertExpectations(t)
 	})
 }
-

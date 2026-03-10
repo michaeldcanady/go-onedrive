@@ -4,44 +4,39 @@ import (
 	"context"
 	"fmt"
 	"sort"
+	"time"
 
 	"github.com/michaeldcanady/go-onedrive/internal2/domain/di"
-	infralogging "github.com/michaeldcanady/go-onedrive/internal2/infra/common/logging"
+	logger "github.com/michaeldcanady/go-onedrive/internal2/domain/common/logger"
 	"github.com/michaeldcanady/go-onedrive/internal2/interface/cli/util"
 )
 
-type Command struct {
-	container di.Container
-	logger    infralogging.Logger
+type ListCmd struct {
+	util.BaseCommand
 }
 
-func NewCmd(container di.Container) *Command {
-	return &Command{
-		container: container,
+func NewListCmd(container di.Container) *ListCmd {
+	return &ListCmd{
+		BaseCommand: util.NewBaseCommand(container, commandName),
 	}
 }
 
-func (c *Command) Run(ctx context.Context, opts Options) error {
-	if ctx == nil {
-		ctx = context.Background()
+func (c *ListCmd) Run(ctx context.Context, opts Options) error {
+	start := time.Now()
+
+	if err := c.Initialize(loggerID); err != nil {
+		return err
 	}
 
-	if c.logger == nil {
-		logger, err := util.EnsureLogger(c.container, loggerID)
-		if err != nil {
-			return util.NewCommandErrorWithNameWithError(commandName, err)
-		}
-		c.logger = logger
-	}
+	c.Log.Info("listing drive aliases")
 
-	c.logger.Info("listing drive aliases")
-
-	aliases, err := c.container.State().ListDriveAliases()
+	aliases, err := c.Container.State().ListDriveAliases()
 	if err != nil {
-		c.logger.Error("failed to list drive aliases",
-			infralogging.Error(err),
+		c.Log.Error("failed to list drive aliases",
+			logger.Error(err),
 		)
-		return util.NewCommandError(commandName, "failed to list drive aliases", err)
+		c.RenderError(opts.Stderr, err)
+		return util.NewCommandError(c.Name, "failed to list drive aliases", err)
 	}
 
 	if len(aliases) == 0 {
@@ -62,5 +57,8 @@ func (c *Command) Run(ctx context.Context, opts Options) error {
 		fmt.Fprintf(opts.Stdout, "%-20s %-20s\n", k, aliases[k])
 	}
 
+	c.Log.Info("drive alias list completed successfully",
+		logger.Duration("duration", time.Since(start)),
+	)
 	return nil
 }

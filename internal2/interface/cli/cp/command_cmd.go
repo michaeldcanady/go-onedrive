@@ -2,72 +2,135 @@ package cp
 
 import (
 	"context"
+	"fmt"
+	"os"
+	"path"
 	"time"
 
 	"github.com/michaeldcanady/go-onedrive/internal2/domain/di"
-	domainfs "github.com/michaeldcanady/go-onedrive/internal2/domain/fs"
-	infralogging "github.com/michaeldcanady/go-onedrive/internal2/infra/common/logging"
+	"github.com/michaeldcanady/go-onedrive/internal2/domain/fs"
+	logger "github.com/michaeldcanady/go-onedrive/internal2/domain/common/logger"
 	"github.com/michaeldcanady/go-onedrive/internal2/interface/cli/util"
 )
 
-// CpCmd handles the execution logic for the 'cp' command.
 type CpCmd struct {
-	container di.Container
-	logger    infralogging.Logger
+	util.BaseCommand
 }
 
-// NewCpCmd creates a new CpCmd instance with the provided dependency container.
 func NewCpCmd(container di.Container) *CpCmd {
 	return &CpCmd{
-		container: container,
+		BaseCommand: util.NewBaseCommand(container, commandName),
 	}
 }
 
-// WithLogger allows injecting a logger into CpCmd for testing.
-func (c *CpCmd) WithLogger(logger infralogging.Logger) *CpCmd {
-	c.logger = logger
-	return c
-}
-
-// Run executes the cp lifecycle.
 func (c *CpCmd) Run(ctx context.Context, opts Options) error {
 	start := time.Now()
 
-	if ctx == nil {
-		ctx = context.Background()
+	if err := c.Initialize(loggerID); err != nil {
+		return err
 	}
 
-	if c.logger == nil {
-		logger, err := util.EnsureLogger(c.container, loggerID)
-		if err != nil {
-			return util.NewCommandErrorWithNameWithError(commandName, err)
-		}
-		c.logger = logger
-	}
-
-	c.logger.Info("starting cp command",
-		infralogging.String("source", opts.Source),
-		infralogging.String("dest", opts.Dest),
-		infralogging.Bool("overwrite", opts.Overwrite),
+	c.Log.Info("starting cp command",
+		logger.String("src", opts.Source),
+		logger.String("dst", opts.Dest),
+		logger.Bool("overwrite", opts.Overwrite),
+		logger.String("ignoreFile", opts.IgnoreFile),
 	)
 
-	fsSvc := c.container.FS()
+	fsSvc := c.Container.FS()
 	if fsSvc == nil {
-		return util.NewCommandErrorWithNameWithMessage(commandName, "filesystem service not found")
+		return util.NewCommandErrorWithNameWithMessage(c.Name, "filesystem service is nil")
 	}
 
-	copyOpts := domainfs.CopyOptions{
-		Overwrite: opts.Overwrite,
+	matcher, err := c.loadIgnoreMatcher(ctx, opts.IgnoreFile)
+	if err != nil {
+		c.Log.Warn("failed to load ignore file", logger.String("path", opts.IgnoreFile), logger.Error(err))
 	}
 
-	if err := fsSvc.Copy(ctx, opts.Source, opts.Dest, copyOpts); err != nil {
-		c.logger.Error("failed to copy", infralogging.Error(err))
-		return util.NewCommandErrorWithNameWithError(commandName, err)
+	if matcher != nil {
+		err = c.copyRecursive(ctx, fsSvc, opts.Source, opts.Dest, opts.Overwrite, matcher)
+	} else {
+		err = fsSvc.Copy(ctx, opts.Source, opts.Dest, fs.CopyOptions{Overwrite: opts.Overwrite})
 	}
 
-	c.logger.Info("cp completed successfully",
-		infralogging.Duration("duration", time.Since(start)),
+	if err != nil {
+		c.RenderError(opts.Stderr, err)
+		return util.NewCommandError(c.Name, "failed to copy item", err)
+	}
+
+	c.Log.Info("cp completed successfully",
+		logger.Duration("duration", time.Since(start)),
 	)
+
+	fmt.Fprintf(opts.Stdout, "Successfully copied \"%s\" to \"%s\"\n", opts.Source, opts.Dest)
+
+	return nil
+}
+
+func (c *CpCmd) loadIgnoreMatcher(ctx context.Context, ignorePath string) (fs.IgnoreMatcher, error) {
+	if ignorePath == "" {
+		return nil, nil
+	}
+
+	f, err := os.Open(ignorePath)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+
+	factory := c.Container.IgnoreMatcherFactory()
+	if factory == nil {
+		return nil, nil
+	}
+
+	return factory.CreateMatcher(ctx, f)
+}
+
+func (c *CpCmd) copyRecursive(ctx context.Context, fsSvc fs.Service, src, dst string, overwrite bool, matcher fs.IgnoreMatcher) error {
+	item, err := fsSvc.Get(ctx, src)
+	if err != nil {
+		return err
+	}
+
+	if matcher != nil && matcher.ShouldIgnore(item.Path, item.Type == fs.ItemTypeFolder) {
+		c.Log.Debug("ignoring item", logger.String("path", item.Path))
+		return nil
+	}
+
+	if item.Type == fs.ItemTypeFile {
+		return fsSvc.Copy(ctx, src, dst, fs.CopyOptions{Overwrite: overwrite})
+	}
+
+	// It's a folder, ensure destination exists
+	if err := fsSvc.Mkdir(ctx, dst, fs.MKDirOptions{Parents: true}); err != nil {
+		// Ignore error if it already exists? FS implementation should handle it or we check here.
+		c.Log.Debug("mkdir destination", logger.String("path", dst), logger.Error(err))
+	}
+
+	children, err := fsSvc.List(ctx, src, fs.ListOptions{})
+	if err != nil {
+		return err
+	}
+
+	for _, child := range children {
+		// Better way: use item names
+		// childDst := path.Join(dst, child.Name)
+		// How to get provider-aware child path?
+		// For now, assume simple join if it's the same provider
+		
+		// If src is "local:./foo", and child.Name is "bar.txt"
+		// we want "local:./foo/bar.txt"
+		
+		provider, subPath := util.ParsePath(src)
+		newSrc := fmt.Sprintf("%s:%s", provider, path.Join(subPath, child.Name))
+		
+		dstProvider, dstSubPath := util.ParsePath(dst)
+		newDst := fmt.Sprintf("%s:%s", dstProvider, path.Join(dstSubPath, child.Name))
+
+		if err := c.copyRecursive(ctx, fsSvc, newSrc, newDst, overwrite, matcher); err != nil {
+			return err
+		}
+	}
 
 	return nil
 }

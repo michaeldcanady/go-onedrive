@@ -70,15 +70,18 @@ type Container struct {
 	fsOnce    sync.Once
 	fsService domainfs.Service
 
+	ignoreMatcherFactoryOnce    sync.Once
+	ignoreMatcherFactoryService domainfs.IgnoreMatcherFactory
+
 	editorOnce    sync.Once
 	editorService domaineditor.Service
 
 	// Repository Components
 	metadataOnce sync.Once
-	metadataRepo *infrafile.MetadataRepository
+	metadataRepo domainfile.MetadataRepository
 
 	contentsOnce sync.Once
-	contentsRepo *infrafile.ContentsRepository
+	contentsRepo domainfile.FileContentsRepository
 
 	// Caches
 	metadataCacheOnce  sync.Once
@@ -89,10 +92,6 @@ type Container struct {
 
 	contentsCacheOnce  sync.Once
 	contentsCacheCache infrafile.ContentsCache
-
-	// Legacy / Deprecated
-	fileOnce    sync.Once
-	fileService domainfile.FileService
 }
 
 // NewContainer creates a new instance of the dependency injection container.

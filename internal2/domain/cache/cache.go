@@ -1,13 +1,22 @@
 package cache
 
 import (
-	"context"
+	pkgcache "github.com/michaeldcanady/go-onedrive/pkg/cache"
 )
 
-// Cache is a generic interface for a key-value store.
-type Cache[T any] interface {
-	Get(ctx context.Context, key string) (T, error)
-	Set(ctx context.Context, key string, value T) error
-	Delete(ctx context.Context, key string) error
-	List(ctx context.Context, callback func(key string, value T) error) error
+// Alias types from pkg/cache to maintain domain layer abstraction.
+type (
+	Cache[T any]                  = pkgcache.Cache[T]
+	SerializerFunc                = pkgcache.SerializerFunc
+	DeserializerFunc              = pkgcache.DeserializerFunc
+	Serializer[T any]             = pkgcache.Serializer[T]
+	Deserializer[T any]           = pkgcache.Deserializer[T]
+	SerializerDeserializer[T any] = pkgcache.SerializerDeserializer[T]
+	KeyValueStore                 = pkgcache.KeyValueStore
+	Store                         = pkgcache.Store
+)
+
+// NewStore wraps the pkg/cache NewStore function.
+func NewStore(store KeyValueStore) *Store {
+	return pkgcache.NewStore(store)
 }

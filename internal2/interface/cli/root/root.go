@@ -4,19 +4,20 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/michaeldcanady/go-onedrive/internal2/domain/common/logger"
 	"github.com/michaeldcanady/go-onedrive/internal2/domain/di"
-	"github.com/michaeldcanady/go-onedrive/internal2/infra/common/logging"
 	authcmd "github.com/michaeldcanady/go-onedrive/internal2/interface/cli/auth"
 	catcmd "github.com/michaeldcanady/go-onedrive/internal2/interface/cli/cat"
+	"github.com/michaeldcanady/go-onedrive/internal2/interface/cli/cp"
+	"github.com/michaeldcanady/go-onedrive/internal2/interface/cli/download"
 	drivecmd "github.com/michaeldcanady/go-onedrive/internal2/interface/cli/drive"
 	"github.com/michaeldcanady/go-onedrive/internal2/interface/cli/edit"
 	lscmd "github.com/michaeldcanady/go-onedrive/internal2/interface/cli/ls"
 	"github.com/michaeldcanady/go-onedrive/internal2/interface/cli/middleware"
 	"github.com/michaeldcanady/go-onedrive/internal2/interface/cli/mkdir"
 	"github.com/michaeldcanady/go-onedrive/internal2/interface/cli/mv"
-	"github.com/michaeldcanady/go-onedrive/internal2/interface/cli/cp"
-	"github.com/michaeldcanady/go-onedrive/internal2/interface/cli/download"
 	profilecmd "github.com/michaeldcanady/go-onedrive/internal2/interface/cli/profile"
+	"github.com/michaeldcanady/go-onedrive/internal2/interface/cli/rm"
 	"github.com/michaeldcanady/go-onedrive/internal2/interface/cli/touch"
 	"github.com/michaeldcanady/go-onedrive/internal2/interface/cli/upload"
 	"github.com/spf13/cobra"
@@ -81,8 +82,8 @@ func CreateRootCmd(container di.Container) (*cobra.Command, error) {
 			}
 
 			container.Logger().SetAllLevel(level)
-			cliLogger.Info("updated all logger level", logging.String("level", level))
-			cliLogger.Info("updated config path", logging.String("path", config))
+			cliLogger.Info("updated all logger level", logger.String("level", level))
+			cliLogger.Info("updated config path", logger.String("path", config))
 
 			return nil
 		},
@@ -105,6 +106,7 @@ func CreateRootCmd(container di.Container) (*cobra.Command, error) {
 		touch.CreateCmd(container),
 		mv.CreateCmd(container),
 		cp.CreateCpCmd(container),
+		rm.CreateCmd(container),
 	)
 
 	middleware.ApplyMiddlewareRecursively(rootCmd, middleware.WithCorrelationID)

@@ -3,44 +3,42 @@ package di
 import (
 	"context"
 
-	"github.com/michaeldcanady/go-onedrive/internal2/infra/common/logging"
+	apponedrive "github.com/michaeldcanady/go-onedrive/internal2/app/fs/onedrive"
+	"github.com/michaeldcanady/go-onedrive/internal2/domain/drive"
+	"github.com/michaeldcanady/go-onedrive/internal2/domain/file"
+	infradrive "github.com/michaeldcanady/go-onedrive/internal2/infra/drive"
 	infrafile "github.com/michaeldcanady/go-onedrive/internal2/infra/file"
 )
 
-func (c *Container) metadata() *infrafile.MetadataRepository {
+func (c *Container) metadata() file.MetadataRepository {
 	c.metadataOnce.Do(func() {
 		c.metadataRepo = c.newMetadataRepository()
 	})
 	return c.metadataRepo
 }
 
-func (c *Container) newMetadataRepository() *infrafile.MetadataRepository {
-	loggerSvc := c.Logger()
-	logger, err := loggerSvc.CreateLogger("repository")
-	if err != nil {
-		logger = logging.NewNoopLogger()
-	}
+func (c *Container) newDriveRepository() drive.DriveGateway {
+	adapter, _ := c.clientProvider().RequestAdapter(context.Background())
+	gateway := infradrive.NewGraphDriveGateway(adapter, c.getLogger("drive_gateway"))
 
-	client, _ := c.clientProvider().Client(context.Background())
-
-	return infrafile.NewMetadataRepository(client.RequestAdapter, c.metadataCache(), c.metadataListingCache(), c.pathIDCache(), logger)
+	return gateway
 }
 
-func (c *Container) contents() *infrafile.ContentsRepository {
+func (c *Container) newMetadataRepository() file.MetadataRepository {
+	adapter, _ := c.clientProvider().RequestAdapter(context.Background())
+	gateway := infrafile.NewGraphMetadataGateway(adapter, c.getLogger("gateway"))
+	return apponedrive.NewCachedMetadataRepository(gateway, c.metadataCache(), c.metadataListingCache(), c.pathIDCache(), c.getLogger("repository"))
+}
+
+func (c *Container) contents() file.FileContentsRepository {
 	c.contentsOnce.Do(func() {
 		c.contentsRepo = c.newContentsRepository()
 	})
 	return c.contentsRepo
 }
 
-func (c *Container) newContentsRepository() *infrafile.ContentsRepository {
-	loggerSvc := c.Logger()
-	logger, err := loggerSvc.CreateLogger("repository")
-	if err != nil {
-		logger = logging.NewNoopLogger()
-	}
-
-	client, _ := c.clientProvider().Client(context.Background())
-
-	return infrafile.NewContentsRepository(client.RequestAdapter, c.contentsCache(), c.metadataCache(), c.pathIDCache(), logger)
+func (c *Container) newContentsRepository() file.FileContentsRepository {
+	adapter, _ := c.clientProvider().RequestAdapter(context.Background())
+	gateway := infrafile.NewGraphFileContentsGateway(adapter, c.getLogger("gateway"))
+	return apponedrive.NewCachedFileContentsRepository(gateway, c.contentsCache(), c.metadataCache(), c.pathIDCache(), c.getLogger("repository"))
 }
