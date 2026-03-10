@@ -6,40 +6,41 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/michaeldcanady/go-onedrive/internal2/domain/common/logger"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
 
-// Ensure ZapLogAdapter implements the Logger interface.
-var _ Logger = (*ZapLogAdapter)(nil)
+// Ensure ZapLogAdapter implements the logger.Logger interface.
+var _ logger.Logger = (*ZapLogAdapter)(nil)
 
 // ZapLogAdapter wraps a zap.Logger and exposes a dynamic log level.
 type ZapLogAdapter struct {
 	logger *zap.Logger
 	level  *zap.AtomicLevel
-	fields []Field
+	fields []logger.Field
 }
 
 // convertFieldsToZap converts a slice of custom Field types to zap.Fields.
-func convertFieldsToZap(fields ...Field) ([]zap.Field, error) {
+func convertFieldsToZap(fields ...logger.Field) ([]zap.Field, error) {
 	zapFields := make([]zap.Field, len(fields))
 	for index, field := range fields {
 		switch field.FieldType {
-		case FieldTypeString:
+		case logger.FieldTypeString:
 			zapFields[index] = zap.String(field.Key, field.Value.(string))
-		case FieldTypeInt:
+		case logger.FieldTypeInt:
 			zapFields[index] = zap.Int(field.Key, field.Value.(int))
-		case FieldTypeAny:
+		case logger.FieldTypeAny:
 			zapFields[index] = zap.Any(field.Key, field.Value)
-		case FieldTypeBool:
+		case logger.FieldTypeBool:
 			zapFields[index] = zap.Bool(field.Key, field.Value.(bool))
-		case FieldTypeDuration:
+		case logger.FieldTypeDuration:
 			zapFields[index] = zap.Duration(field.Key, field.Value.(time.Duration))
-		case FieldTypeStrings:
+		case logger.FieldTypeStrings:
 			zapFields[index] = zap.Strings(field.Key, field.Value.([]string))
-		case FieldTypeError:
+		case logger.FieldTypeError:
 			zapFields[index] = zap.Error(field.Value.(error))
-		case FieldTypeTime:
+		case logger.FieldTypeTime:
 			zapFields[index] = zap.Time(field.Key, field.Value.(time.Time))
 		default:
 			return nil, fmt.Errorf("unknown field type: %v", field.FieldType)
@@ -74,13 +75,13 @@ func NewZapLogger(cfg zap.Config) *ZapLogAdapter {
 	cfg.Level = atomicLevel
 
 	// Build the logger
-	logger, err := cfg.Build()
+	l, err := cfg.Build()
 	if err != nil {
 		panic(err) // or return error if you prefer
 	}
 
 	return &ZapLogAdapter{
-		logger: logger,
+		logger: l,
 		level:  &atomicLevel,
 	}
 }
@@ -88,9 +89,9 @@ func NewZapLogger(cfg zap.Config) *ZapLogAdapter {
 // NewZapLoggerAdapter wraps an existing zap.Logger.
 // Note: this logger will NOT have a dynamically adjustable level
 // unless you pass in a zap.Logger built with an AtomicLevel.
-func NewZapLoggerAdapter(logger *zap.Logger) *ZapLogAdapter {
+func NewZapLoggerAdapter(l *zap.Logger) *ZapLogAdapter {
 	return &ZapLogAdapter{
-		logger: logger,
+		logger: l,
 		// level is zero-value (info) and not adjustable unless you expose it
 	}
 }
@@ -115,27 +116,27 @@ func (z *ZapLogAdapter) Level() zapcore.Level {
 	return z.level.Level()
 }
 
-// Info logs a message at InfoLevel. The message includes any fields passed at the log site, as well as any fields accumulated on the logger.
-func (z *ZapLogAdapter) Debug(msg string, kv ...Field) {
+// Debug logs a message at DebugLevel.
+func (z *ZapLogAdapter) Debug(msg string, kv ...logger.Field) {
 	z.logger.Debug(msg, z.safeConvert(kv...)...)
 }
 
-// Error implements Logger.
-func (z *ZapLogAdapter) Error(msg string, kv ...Field) {
+// Error logs a message at ErrorLevel.
+func (z *ZapLogAdapter) Error(msg string, kv ...logger.Field) {
 	z.logger.Error(msg, z.safeConvert(kv...)...)
 }
 
-// Info logs a message at InfoLevel. The message includes any fields passed at the log site, as well as any fields accumulated on the logger.
-func (z *ZapLogAdapter) Info(msg string, kv ...Field) {
+// Info logs a message at InfoLevel.
+func (z *ZapLogAdapter) Info(msg string, kv ...logger.Field) {
 	z.logger.Info(msg, z.safeConvert(kv...)...)
 }
 
-// Warn logs a message at WarnLevel. The message includes any fields passed at the log site, as well as any fields accumulated on the logger.
-func (z *ZapLogAdapter) Warn(msg string, kv ...Field) {
+// Warn logs a message at WarnLevel.
+func (z *ZapLogAdapter) Warn(msg string, kv ...logger.Field) {
 	z.logger.Warn(msg, z.safeConvert(kv...)...)
 }
 
-func (z *ZapLogAdapter) safeConvert(kv ...Field) []zap.Field {
+func (z *ZapLogAdapter) safeConvert(kv ...logger.Field) []zap.Field {
 	if len(kv) == 0 {
 		return nil
 	}
@@ -149,29 +150,29 @@ func (z *ZapLogAdapter) safeConvert(kv ...Field) []zap.Field {
 	return fields
 }
 
-func (z *ZapLogAdapter) WithContext(ctx context.Context) Logger {
-	ctxFields := FromContextFields(ctx)
+func (z *ZapLogAdapter) WithContext(ctx context.Context) logger.Logger {
+	ctxFields := logger.FromContextFields(ctx)
 	if len(ctxFields) == 0 {
 		return z
 	}
 
 	// Convert map → []Field
-	newFields := make([]Field, 0, len(ctxFields))
+	newFields := make([]logger.Field, 0, len(ctxFields))
 	for k, v := range ctxFields {
-		newFields = append(newFields, Any(k, v))
+		newFields = append(newFields, logger.Any(k, v))
 	}
 
 	// Reuse the dedupe logic in With()
 	return z.With(newFields...)
 }
 
-func (z *ZapLogAdapter) With(fields ...Field) Logger {
+func (z *ZapLogAdapter) With(fields ...logger.Field) logger.Logger {
 	if len(fields) == 0 {
 		return z
 	}
 
 	// Deduplicate against existing fields
-	newFields := make([]Field, 0, len(fields))
+	newFields := make([]logger.Field, 0, len(fields))
 	existing := make(map[string]bool)
 
 	for _, f := range z.fields {

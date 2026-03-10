@@ -4,22 +4,22 @@ import (
 	"context"
 	"strings"
 
+	"github.com/michaeldcanady/go-onedrive/internal2/domain/common/logger"
 	domainconfig "github.com/michaeldcanady/go-onedrive/internal2/domain/config"
-	"github.com/michaeldcanady/go-onedrive/internal2/infra/common/logging"
 	"github.com/michaeldcanady/go-onedrive/internal2/interface/cli/util"
 )
 
 type ConfigService struct {
 	paths  map[string]string
 	loader domainconfig.Loader
-	logger logging.Logger
+	log    logger.Logger
 }
 
-func New2(loader domainconfig.Loader, logger logging.Logger) *ConfigService {
+func New2(loader domainconfig.Loader, log logger.Logger) *ConfigService {
 	return &ConfigService{
 		paths:  make(map[string]string),
 		loader: loader,
-		logger: logger,
+		log:    log,
 	}
 }
 
@@ -62,46 +62,46 @@ func (s *ConfigService) GetConfiguration(ctx context.Context, name string) (doma
 
 	correlationID := util.CorrelationIDFromContext(ctx)
 
-	logger := s.logger.WithContext(ctx).With(
-		logging.String("correlation_id", correlationID),
-		logging.String("config_name", name),
+	log := s.log.WithContext(ctx).With(
+		logger.String("correlation_id", correlationID),
+		logger.String("config_name", name),
 	)
 
-	logger.Info("starting configuration retrieval",
-		logging.String("event", eventConfigGetStart),
+	log.Info("starting configuration retrieval",
+		logger.String("event", eventConfigGetStart),
 	)
 
 	path, ok := s.paths[name]
 	if !ok {
-		logger.Error("configuration name not registered",
-			logging.String("event", eventConfigGetNotRegistered),
+		log.Error("configuration name not registered",
+			logger.String("event", eventConfigGetNotRegistered),
 		)
 		return domainconfig.Configuration{}, domainconfig.ErrNotRegistered
 	}
 
 	if strings.TrimSpace(path) == "" {
-		logger.Error("registered configuration path is empty",
-			logging.String("event", eventConfigGetPathMissing),
+		log.Error("registered configuration path is empty",
+			logger.String("event", eventConfigGetPathMissing),
 		)
 		return domainconfig.Configuration{}, domainconfig.ErrPathMissing
 	}
 
-	logger.Info("loading configuration from disk",
-		logging.String("event", eventConfigGetLoadStart),
-		logging.String("path", path),
+	log.Info("loading configuration from disk",
+		logger.String("event", eventConfigGetLoadStart),
+		logger.String("path", path),
 	)
 
 	loadedCfg, err := s.loader.Load(path)
 	if err != nil {
-		logger.Error("failed to load configuration from disk",
-			logging.String("event", eventConfigGetLoadFailure),
-			logging.Error(err),
+		log.Error("failed to load configuration from disk",
+			logger.String("event", eventConfigGetLoadFailure),
+			logger.Error(err),
 		)
 		return domainconfig.Configuration{}, err
 	}
 
-	logger.Info("configuration loaded successfully",
-		logging.String("event", eventConfigGetLoadSuccess),
+	log.Info("configuration loaded successfully",
+		logger.String("event", eventConfigGetLoadSuccess),
 	)
 
 	return loadedCfg, nil

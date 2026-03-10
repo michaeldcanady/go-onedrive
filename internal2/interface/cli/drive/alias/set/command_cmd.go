@@ -3,49 +3,47 @@ package set
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/michaeldcanady/go-onedrive/internal2/domain/di"
-	infralogging "github.com/michaeldcanady/go-onedrive/internal2/infra/common/logging"
+	logger "github.com/michaeldcanady/go-onedrive/internal2/domain/common/logger"
 	"github.com/michaeldcanady/go-onedrive/internal2/interface/cli/util"
 )
 
-type Command struct {
-	container di.Container
-	logger    infralogging.Logger
+type SetCmd struct {
+	util.BaseCommand
 }
 
-func NewCmd(container di.Container) *Command {
-	return &Command{
-		container: container,
+func NewSetCmd(container di.Container) *SetCmd {
+	return &SetCmd{
+		BaseCommand: util.NewBaseCommand(container, commandName),
 	}
 }
 
-func (c *Command) Run(ctx context.Context, opts Options) error {
-	if ctx == nil {
-		ctx = context.Background()
+func (c *SetCmd) Run(ctx context.Context, opts Options) error {
+	start := time.Now()
+
+	if err := c.Initialize(loggerID); err != nil {
+		return err
 	}
 
-	if c.logger == nil {
-		logger, err := util.EnsureLogger(c.container, loggerID)
-		if err != nil {
-			return util.NewCommandErrorWithNameWithError(commandName, err)
-		}
-		c.logger = logger
-	}
-
-	c.logger.Info("setting drive alias",
-		infralogging.String("alias", opts.Alias),
-		infralogging.String("drive_id", opts.DriveID),
+	c.Log.Info("setting drive alias",
+		logger.String("alias", opts.Alias),
+		logger.String("drive_id", opts.DriveID),
 	)
 
-	if err := c.container.State().SetDriveAlias(opts.Alias, opts.DriveID); err != nil {
-		c.logger.Error("failed to set drive alias",
-			infralogging.Error(err),
+	if err := c.Container.State().SetDriveAlias(opts.Alias, opts.DriveID); err != nil {
+		c.Log.Error("failed to set drive alias",
+			logger.Error(err),
 		)
-		return util.NewCommandError(commandName, "failed to set drive alias", err)
+		c.RenderError(opts.Stderr, err)
+		return util.NewCommandError(c.Name, "failed to set drive alias", err)
 	}
 
 	fmt.Fprintf(opts.Stdout, "Alias %q set to drive %q\n", opts.Alias, opts.DriveID)
 
+	c.Log.Info("drive alias set completed successfully",
+		logger.Duration("duration", time.Since(start)),
+	)
 	return nil
 }

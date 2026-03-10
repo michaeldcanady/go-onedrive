@@ -1,16 +1,37 @@
 package util
 
 import (
+	"bytes"
+	"io"
+
 	applogging "github.com/michaeldcanady/go-onedrive/internal2/app/common/logging"
 	"github.com/michaeldcanady/go-onedrive/internal2/domain/di"
-	infralogging "github.com/michaeldcanady/go-onedrive/internal2/infra/common/logging"
+	logger "github.com/michaeldcanady/go-onedrive/internal2/domain/common/logger"
 )
 
-// EnsureLogger retrieves or creates the CLI logger.
-func EnsureLogger(c di.Container, name string) (infralogging.Logger, error) {
-	logger, err := c.Logger().GetLogger(name)
+// EnsureLogger retrieves or creates the CLI log.
+func EnsureLogger(c di.Container, name string) (logger.Logger, error) {
+	log, err := c.Logger().GetLogger(name)
 	if err == applogging.ErrUnknownLogger {
 		return c.Logger().CreateLogger(name)
 	}
-	return logger, err
+	return log, err
+}
+
+// NewReader returns an io.Reader from a byte slice.
+func NewReader(b []byte) io.Reader {
+	return bytes.NewReader(b)
+}
+
+type nopWriteCloser struct {
+	io.Writer
+}
+
+func (n *nopWriteCloser) Close() error {
+	return nil
+}
+
+// NewNopWriteCloser returns a WriteCloser with a no-op Close method wrapping the provided Writer.
+func NewNopWriteCloser(w io.Writer) io.WriteCloser {
+	return &nopWriteCloser{w}
 }

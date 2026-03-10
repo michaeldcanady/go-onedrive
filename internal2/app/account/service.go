@@ -6,8 +6,8 @@ import (
 
 	"github.com/michaeldcanady/go-onedrive/internal2/domain/account"
 	"github.com/michaeldcanady/go-onedrive/internal2/domain/cache"
+	"github.com/michaeldcanady/go-onedrive/internal2/domain/common/logger"
 	"github.com/michaeldcanady/go-onedrive/internal2/infra/cache/bolt"
-	"github.com/michaeldcanady/go-onedrive/internal2/infra/common/logging"
 	"github.com/michaeldcanady/go-onedrive/internal2/interface/cli/util"
 )
 
@@ -17,40 +17,40 @@ const (
 
 type Service struct {
 	cache cache.Cache[account.Account]
-	log   logging.Logger
+	log   logger.Logger
 }
 
-func New(cache cache.Cache[account.Account], logger logging.Logger) *Service {
+func New(cache cache.Cache[account.Account], l logger.Logger) *Service {
 	return &Service{
 		cache: cache,
-		log:   logger,
+		log:   l,
 	}
 }
 
-func (s *Service) buildLogger(ctx context.Context) logging.Logger {
+func (s *Service) buildLogger(ctx context.Context) logger.Logger {
 	correlationID := util.CorrelationIDFromContext(ctx)
 
 	return s.log.WithContext(ctx).With(
-		logging.String("correlation_id", correlationID),
+		logger.String("correlation_id", correlationID),
 	)
 }
 
 func (s *Service) Get(ctx context.Context) (account.Account, error) {
-	logger := s.buildLogger(ctx)
+	log := s.buildLogger(ctx)
 
-	logger.Debug("retrieving account from cache")
+	log.Debug("retrieving account from cache")
 	acct, err := s.cache.Get(ctx, accountKey)
 	if err != nil {
 		if !errors.Is(err, bolt.ErrKeyNotFound) {
-			logger.Warn("failed to retrieve cached account",
-				logging.Error(err),
+			log.Warn("failed to retrieve cached account",
+				logger.Error(err),
 			)
 			return acct, err
 		}
-		logger.Info("no account cached")
+		log.Info("no account cached")
 	} else {
-		logger.Info("account retrieved",
-			logging.String("username", acct.Username),
+		log.Info("account retrieved",
+			logger.String("username", acct.Username),
 		)
 	}
 
@@ -58,36 +58,36 @@ func (s *Service) Get(ctx context.Context) (account.Account, error) {
 }
 
 func (s *Service) Put(ctx context.Context, acct account.Account) error {
-	logger := s.buildLogger(ctx)
+	log := s.buildLogger(ctx)
 
-	logger.Debug("caching account",
-		logging.String("username", acct.Username),
+	log.Debug("caching account",
+		logger.String("username", acct.Username),
 	)
 	if err := s.cache.Set(ctx, accountKey, acct); err != nil {
-		logger.Warn("failed to cache account",
-			logging.String("username", acct.Username),
-			logging.Error(err),
+		log.Warn("failed to cache account",
+			logger.String("username", acct.Username),
+			logger.Error(err),
 		)
 		return err
 	}
-	logger.Info("account cached",
-		logging.String("username", acct.Username),
+	log.Info("account cached",
+		logger.String("username", acct.Username),
 	)
 
 	return nil
 }
 
 func (s *Service) Delete(ctx context.Context) error {
-	logger := s.buildLogger(ctx)
+	log := s.buildLogger(ctx)
 
-	logger.Debug("deleting cached account")
+	log.Debug("deleting cached account")
 	if err := s.cache.Delete(ctx, accountKey); err != nil {
-		logger.Warn("failed to delete cached account",
-			logging.Error(err),
+		log.Warn("failed to delete cached account",
+			logger.Error(err),
 		)
 		return err
 	}
-	logger.Info("deleted cached account")
+	log.Info("deleted cached account")
 
 	return nil
 }

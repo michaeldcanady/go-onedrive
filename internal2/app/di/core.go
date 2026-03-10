@@ -7,17 +7,17 @@ import (
 	domainenv "github.com/michaeldcanady/go-onedrive/internal2/domain/common/environment"
 	domainlogger "github.com/michaeldcanady/go-onedrive/internal2/domain/common/logger"
 	domainconfig "github.com/michaeldcanady/go-onedrive/internal2/domain/config"
-	infralogging "github.com/michaeldcanady/go-onedrive/internal2/infra/common/logging"
 	infraconfig "github.com/michaeldcanady/go-onedrive/internal2/infra/config"
+	infralogging "github.com/michaeldcanady/go-onedrive/internal2/infra/common/logging"
 )
 
-func (c *Container) getLogger(name string) infralogging.Logger {
+func (c *Container) getLogger(name string) domainlogger.Logger {
 	loggerService := c.Logger()
-	logger, err := loggerService.CreateLogger(name)
+	log, err := loggerService.CreateLogger(name)
 	if err != nil {
 		return infralogging.NewNoopLogger()
 	}
-	return logger
+	return log
 }
 
 // EnvironmentService implements [di.Container].
@@ -45,22 +45,22 @@ func (c *Container) Logger() domainlogger.LoggerService {
 func (c *Container) newLoggerService() domainlogger.LoggerService {
 	level, _ := c.EnvironmentService().LogLevel()
 
-	opts := []domainlogger.Option{domainlogger.WithLogLevel(level), domainlogger.WithType(infralogging.TypeZap)}
+	opts := []domainlogger.Option{domainlogger.WithLogLevel(level), domainlogger.WithType(domainlogger.TypeZap)}
 
 	outputDest, _ := c.EnvironmentService().OutputDestination()
 	switch outputDest {
-	case infralogging.OutputDestinationFile:
+	case domainlogger.OutputDestinationFile:
 		logHome, _ := c.EnvironmentService().LogDir()
 		opts = append(opts, domainlogger.WithOutputDestinationFile(logHome))
-	case infralogging.OutputDestinationStandardOut:
+	case domainlogger.OutputDestinationStandardOut:
 		opts = append(opts, domainlogger.WithOutputDestinationStandardOut())
-	case infralogging.OutputDestinationStandardError:
+	case domainlogger.OutputDestinationStandardError:
 		opts = append(opts, domainlogger.WithOutputDestinationStandardError())
 	default:
 	}
 
 	svc, _ := applogging.NewLoggerService(opts...)
-	svc.RegisterProvider(infralogging.TypeZap, infralogging.NewZapLoggerProvider())
+	svc.RegisterProvider(domainlogger.TypeZap, infralogging.NewZapLoggerProvider())
 	return svc
 }
 

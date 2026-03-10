@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"github.com/michaeldcanady/go-onedrive/internal2/domain/di"
-	"github.com/michaeldcanady/go-onedrive/internal2/infra/common/logging"
+	"github.com/michaeldcanady/go-onedrive/internal2/domain/common/logger"
 	authcmd "github.com/michaeldcanady/go-onedrive/internal2/interface/cli/auth"
 	catcmd "github.com/michaeldcanady/go-onedrive/internal2/interface/cli/cat"
 	drivecmd "github.com/michaeldcanady/go-onedrive/internal2/interface/cli/drive"
@@ -81,8 +81,8 @@ func CreateRootCmd(container di.Container) (*cobra.Command, error) {
 			}
 
 			container.Logger().SetAllLevel(level)
-			cliLogger.Info("updated all logger level", logging.String("level", level))
-			cliLogger.Info("updated config path", logging.String("path", config))
+			cliLogger.Info("updated all logger level", logger.String("level", level))
+			cliLogger.Info("updated config path", logger.String("path", config))
 
 			return nil
 		},

@@ -7,17 +7,17 @@ import (
 
 	domaingraph "github.com/michaeldcanady/go-onedrive/internal2/domain/common/graph"
 	"github.com/michaeldcanady/go-onedrive/internal2/domain/drive"
-	"github.com/michaeldcanady/go-onedrive/internal2/infra/common/logging"
+	"github.com/michaeldcanady/go-onedrive/internal2/domain/common/logger"
 	"github.com/michaeldcanady/go-onedrive/internal2/interface/cli/util"
 )
 
 type driveService struct {
-	graph  domaingraph.ClientProvider
-	logger logging.Logger
+	graph domaingraph.ClientProvider
+	log   logger.Logger
 }
 
-func NewDriveService(graph domaingraph.ClientProvider, log logging.Logger) *driveService {
-	return &driveService{graph: graph, logger: log}
+func NewDriveService(graph domaingraph.ClientProvider, l logger.Logger) *driveService {
+	return &driveService{graph: graph, log: l}
 }
 
 const (
@@ -25,7 +25,7 @@ const (
 	eventDriveListSuccess = "drive.list.success"
 	eventDriveListFailure = "drive.list.failure"
 
-	eventDriveResolveStart    = "drive.resolve.start"
+	eventDriveResolveStart    = "drive.resolve.match"
 	eventDriveResolveMatch    = "drive.resolve.match"
 	eventDriveResolveNotFound = "drive.resolve.not_found"
 	eventDriveResolveFailure  = "drive.resolve.failure"
@@ -38,28 +38,28 @@ const (
 func (s *driveService) ListDrives(ctx context.Context) ([]*drive.Drive, error) {
 	correlationID := util.CorrelationIDFromContext(ctx)
 
-	logger := s.logger.WithContext(ctx).With(
-		logging.String("correlation_id", correlationID),
+	log := s.log.WithContext(ctx).With(
+		logger.String("correlation_id", correlationID),
 	)
 
-	logger.Info("listing drives",
-		logging.String("event", eventDriveListStart),
+	log.Info("listing drives",
+		logger.String("event", eventDriveListStart),
 	)
 
 	client, err := s.graph.Client(ctx)
 	if err != nil {
-		logger.Error("failed to create graph client",
-			logging.String("event", eventDriveListFailure),
-			logging.Error(err),
+		log.Error("failed to create graph client",
+			logger.String("event", eventDriveListFailure),
+			logger.Error(err),
 		)
 		return nil, err
 	}
 
 	resp, err := client.Me().Drives().Get(ctx, nil)
 	if err != nil {
-		logger.Error("failed to retrieve drives",
-			logging.String("event", eventDriveListFailure),
-			logging.Error(err),
+		log.Error("failed to retrieve drives",
+			logger.String("event", eventDriveListFailure),
+			logger.Error(err),
 		)
 		return nil, mapGraphError(err)
 	}
@@ -69,9 +69,9 @@ func (s *driveService) ListDrives(ctx context.Context) ([]*drive.Drive, error) {
 		out = append(out, toDomainDrive(d))
 	}
 
-	logger.Info("drive list retrieved successfully",
-		logging.String("event", eventDriveListSuccess),
-		logging.Int("count", len(out)),
+	log.Info("drive list retrieved successfully",
+		logger.String("event", eventDriveListSuccess),
+		logger.Int("count", len(out)),
 	)
 
 	return out, nil
@@ -80,37 +80,37 @@ func (s *driveService) ListDrives(ctx context.Context) ([]*drive.Drive, error) {
 func (s *driveService) ResolveDrive(ctx context.Context, driveRef string) (*drive.Drive, error) {
 	correlationID := util.CorrelationIDFromContext(ctx)
 
-	logger := s.logger.WithContext(ctx).With(
-		logging.String("correlation_id", correlationID),
-		logging.String("drive_ref", driveRef),
+	log := s.log.WithContext(ctx).With(
+		logger.String("correlation_id", correlationID),
+		logger.String("drive_ref", driveRef),
 	)
 
-	logger.Info("resolving drive reference",
-		logging.String("event", eventDriveResolveStart),
+	log.Info("resolving drive reference",
+		logger.String("event", eventDriveResolveStart),
 	)
 
 	drives, err := s.ListDrives(ctx)
 	if err != nil {
-		logger.Error("failed to list drives",
-			logging.String("event", eventDriveResolveFailure),
-			logging.Error(err),
+		log.Error("failed to list drives",
+			logger.String("event", eventDriveResolveFailure),
+			logger.Error(err),
 		)
 		return nil, err
 	}
 
 	for _, d := range drives {
 		if strings.EqualFold(d.ID, driveRef) || strings.EqualFold(d.Name, driveRef) {
-			logger.Info("drive reference resolved",
-				logging.String("event", eventDriveResolveMatch),
-				logging.String("drive_id", d.ID),
-				logging.String("drive_name", d.Name),
+			log.Info("drive reference resolved",
+				logger.String("event", eventDriveResolveMatch),
+				logger.String("drive_id", d.ID),
+				logger.String("drive_name", d.Name),
 			)
 			return d, nil
 		}
 	}
 
-	logger.Warn("drive reference not found",
-		logging.String("event", eventDriveResolveNotFound),
+	log.Warn("drive reference not found",
+		logger.String("event", eventDriveResolveNotFound),
 	)
 
 	return nil, errors.New("not found")
@@ -119,38 +119,38 @@ func (s *driveService) ResolveDrive(ctx context.Context, driveRef string) (*driv
 func (s *driveService) ResolvePersonalDrive(ctx context.Context) (*drive.Drive, error) {
 	correlationID := util.CorrelationIDFromContext(ctx)
 
-	logger := s.logger.WithContext(ctx).With(
-		logging.String("correlation_id", correlationID),
+	log := s.log.WithContext(ctx).With(
+		logger.String("correlation_id", correlationID),
 	)
 
-	logger.Info("resolving personal drive",
-		logging.String("event", eventDrivePersonalStart),
+	log.Info("resolving personal drive",
+		logger.String("event", eventDrivePersonalStart),
 	)
 
 	client, err := s.graph.Client(ctx)
 	if err != nil {
-		logger.Error("failed to create graph client",
-			logging.String("event", eventDrivePersonalFailure),
-			logging.Error(err),
+		log.Error("failed to create graph client",
+			logger.String("event", eventDrivePersonalFailure),
+			logger.Error(err),
 		)
 		return nil, err
 	}
 
 	resp, err := client.Me().Drive().Get(ctx, nil)
 	if err != nil {
-		logger.Error("failed to retrieve personal drive",
-			logging.String("event", eventDrivePersonalFailure),
-			logging.Error(err),
+		log.Error("failed to retrieve personal drive",
+			logger.String("event", eventDrivePersonalFailure),
+			logger.Error(err),
 		)
 		return nil, mapGraphError(err)
 	}
 
 	d := toDomainDrive(resp)
 
-	logger.Info("personal drive resolved successfully",
-		logging.String("event", eventDrivePersonalSuccess),
-		logging.String("drive_id", d.ID),
-		logging.String("drive_name", d.Name),
+	log.Info("personal drive resolved successfully",
+		logger.String("event", eventDrivePersonalSuccess),
+		logger.String("drive_id", d.ID),
+		logger.String("drive_name", d.Name),
 	)
 
 	return d, nil

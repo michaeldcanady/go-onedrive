@@ -5,8 +5,8 @@ import (
 	"errors"
 	"strings"
 
+	"github.com/michaeldcanady/go-onedrive/internal2/domain/common/logger"
 	domainprofile "github.com/michaeldcanady/go-onedrive/internal2/domain/profile"
-	"github.com/michaeldcanady/go-onedrive/internal2/infra/common/logging"
 	"github.com/michaeldcanady/go-onedrive/internal2/interface/cli/util"
 )
 
@@ -14,14 +14,14 @@ import (
 var _ domainprofile.ProfileService = (*ProfileService)(nil)
 
 type ProfileService struct {
-	logger logging.Logger
-	repo   domainprofile.Repository
+	log  logger.Logger
+	repo domainprofile.Repository
 }
 
-func New(logger logging.Logger, repo domainprofile.Repository) *ProfileService {
+func New(l logger.Logger, repo domainprofile.Repository) *ProfileService {
 	return &ProfileService{
-		logger: logger,
-		repo:   repo,
+		log:  l,
+		repo: repo,
 	}
 }
 
@@ -55,25 +55,25 @@ func (s *ProfileService) Create(ctx context.Context, name string) (domainprofile
 
 	correlationID := util.CorrelationIDFromContext(ctx)
 
-	logger := s.logger.WithContext(ctx).With(
-		logging.String("correlation_id", correlationID),
-		logging.String("profile_name", name),
-		logging.String("event", eventProfileCreateStart),
+	log := s.log.WithContext(ctx).With(
+		logger.String("correlation_id", correlationID),
+		logger.String("profile_name", name),
+		logger.String("event", eventProfileCreateStart),
 	)
 
-	logger.Info("creating profile")
+	log.Info("creating profile")
 
 	profile, err := s.repo.Create(name)
 	if err != nil {
-		logger.Error("failed to create profile",
-			logging.String("event", eventProfileCreateFailure),
-			logging.Error(err),
+		log.Error("failed to create profile",
+			logger.String("event", eventProfileCreateFailure),
+			logger.Error(err),
 		)
 		return domainprofile.Profile{}, err
 	}
 
-	logger.Info("profile created successfully",
-		logging.String("event", eventProfileCreateSuccess),
+	log.Info("profile created successfully",
+		logger.String("event", eventProfileCreateSuccess),
 	)
 
 	return profile, nil
@@ -91,24 +91,24 @@ func (s *ProfileService) Delete(ctx context.Context, name string) error {
 
 	correlationID := util.CorrelationIDFromContext(ctx)
 
-	logger := s.logger.WithContext(ctx).With(
-		logging.String("correlation_id", correlationID),
-		logging.String("profile_name", name),
-		logging.String("event", eventProfileDeleteStart),
+	log := s.log.WithContext(ctx).With(
+		logger.String("correlation_id", correlationID),
+		logger.String("profile_name", name),
+		logger.String("event", eventProfileDeleteStart),
 	)
 
-	logger.Info("deleting profile")
+	log.Info("deleting profile")
 
 	if err := s.repo.Delete(name); err != nil {
-		logger.Error("failed to delete profile",
-			logging.String("event", eventProfileDeleteFailure),
-			logging.Error(err),
+		log.Error("failed to delete profile",
+			logger.String("event", eventProfileDeleteFailure),
+			logger.Error(err),
 		)
 		return err
 	}
 
-	logger.Info("profile deleted successfully",
-		logging.String("event", eventProfileDeleteSuccess),
+	log.Info("profile deleted successfully",
+		logger.String("event", eventProfileDeleteSuccess),
 	)
 
 	return nil
@@ -126,26 +126,26 @@ func (s *ProfileService) Exists(ctx context.Context, name string) (bool, error) 
 
 	correlationID := util.CorrelationIDFromContext(ctx)
 
-	logger := s.logger.WithContext(ctx).With(
-		logging.String("correlation_id", correlationID),
-		logging.String("profile_name", name),
-		logging.String("event", eventProfileExistsStart),
+	log := s.log.WithContext(ctx).With(
+		logger.String("correlation_id", correlationID),
+		logger.String("profile_name", name),
+		logger.String("event", eventProfileExistsStart),
 	)
 
-	logger.Debug("checking if profile exists")
+	log.Debug("checking if profile exists")
 
 	exists, err := s.repo.Exists(name)
 	if err != nil {
-		logger.Error("failed to check profile existence",
-			logging.String("event", eventProfileExistsFailure),
-			logging.Error(err),
+		log.Error("failed to check profile existence",
+			logger.String("event", eventProfileExistsFailure),
+			logger.Error(err),
 		)
 		return false, err
 	}
 
-	logger.Debug("profile existence check complete",
-		logging.String("event", eventProfileExistsSuccess),
-		logging.Bool("exists", exists),
+	log.Debug("profile existence check complete",
+		logger.String("event", eventProfileExistsSuccess),
+		logger.Bool("exists", exists),
 	)
 
 	return exists, nil
@@ -158,25 +158,25 @@ func (s *ProfileService) Exists(ctx context.Context, name string) (bool, error) 
 func (s *ProfileService) List(ctx context.Context) ([]domainprofile.Profile, error) {
 	correlationID := util.CorrelationIDFromContext(ctx)
 
-	logger := s.logger.WithContext(ctx).With(
-		logging.String("correlation_id", correlationID),
-		logging.String("event", eventProfileListStart),
+	log := s.log.WithContext(ctx).With(
+		logger.String("correlation_id", correlationID),
+		logger.String("event", eventProfileListStart),
 	)
 
-	logger.Info("listing profiles")
+	log.Info("listing profiles")
 
 	list, err := s.repo.List()
 	if err != nil {
-		logger.Error("failed to list profiles",
-			logging.String("event", eventProfileListFailure),
-			logging.Error(err),
+		log.Error("failed to list profiles",
+			logger.String("event", eventProfileListFailure),
+			logger.Error(err),
 		)
 		return nil, err
 	}
 
-	logger.Info("profile list retrieved",
-		logging.String("event", eventProfileListSuccess),
-		logging.Int("count", len(list)),
+	log.Info("profile list retrieved",
+		logger.String("event", eventProfileListSuccess),
+		logger.Int("count", len(list)),
 	)
 
 	return list, nil
@@ -199,37 +199,37 @@ func (s *ProfileService) GetProfile(ctx context.Context, name string) (domainpro
 
 	correlationID := util.CorrelationIDFromContext(ctx)
 
-	logger := s.logger.WithContext(ctx).With(
-		logging.String("correlation_id", correlationID),
-		logging.String("profile_name", name),
+	log := s.log.WithContext(ctx).With(
+		logger.String("correlation_id", correlationID),
+		logger.String("profile_name", name),
 	)
 
 	name = strings.TrimSpace(name)
 	if name == "" {
-		logger.Error("profile name is empty",
-			logging.String("event", eventProfileGetFailure),
+		log.Error("profile name is empty",
+			logger.String("event", eventProfileGetFailure),
 		)
 		return profile, errors.New("profile name is empty")
 	}
 
-	logger.Info("retrieving profile")
+	log.Info("retrieving profile")
 
 	// Load from repository
 	profile, err := s.repo.Get(ctx, name)
 	if err != nil {
-		logger.Error("failed to load profile from repository",
-			logging.String("event", eventProfileGetFailure),
-			logging.Error(err),
+		log.Error("failed to load profile from repository",
+			logger.String("event", eventProfileGetFailure),
+			logger.Error(err),
 		)
 		return profile, err
 	}
 
-	logger.Info("profile loaded from repository",
-		logging.String("event", eventProfileGetRepoLoad),
+	log.Info("profile loaded from repository",
+		logger.String("event", eventProfileGetRepoLoad),
 	)
 
-	logger.Info("profile retrieval complete",
-		logging.String("event", eventProfileGetSuccess),
+	log.Info("profile retrieval complete",
+		logger.String("event", eventProfileGetSuccess),
 	)
 
 	return profile, nil

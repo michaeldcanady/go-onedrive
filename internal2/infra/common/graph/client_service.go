@@ -5,7 +5,7 @@ import (
 	"errors"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
-	"github.com/michaeldcanady/go-onedrive/internal2/infra/common/logging"
+	"github.com/michaeldcanady/go-onedrive/internal2/domain/common/logger"
 	abstractions "github.com/microsoft/kiota-abstractions-go"
 
 	msgraphsdkgo "github.com/microsoftgraph/msgraph-sdk-go"
@@ -20,24 +20,24 @@ const (
 type GraphClientService struct {
 	credentialService azcore.TokenCredential
 	client            *msgraphsdkgo.GraphServiceClient
-	logger            logging.Logger
+	log               logger.Logger
 }
 
-func New(credSvc azcore.TokenCredential, logger logging.Logger) *GraphClientService {
+func New(credSvc azcore.TokenCredential, l logger.Logger) *GraphClientService {
 	return &GraphClientService{
 		credentialService: credSvc,
-		logger:            logger,
+		log:               l,
 	}
 }
 
 func (s *GraphClientService) Client(ctx context.Context) (*msgraphsdkgo.GraphServiceClient, error) {
 	// Already initialized?
 	if s.client != nil {
-		s.logger.Debug("graph client already initialized")
+		s.log.Debug("graph client already initialized")
 		return s.client, nil
 	}
 
-	s.logger.Info("credential loaded successfully for graph client")
+	s.log.Info("credential loaded successfully for graph client")
 
 	client, err := msgraphsdkgo.NewGraphServiceClientWithCredentials(
 		s.credentialService,
@@ -48,14 +48,14 @@ func (s *GraphClientService) Client(ctx context.Context) (*msgraphsdkgo.GraphSer
 		},
 	)
 	if err != nil {
-		s.logger.Error("unable to initialize graph client", logging.Any("error", err))
+		s.log.Error("unable to initialize graph client", logger.Any("error", err))
 		return nil, errors.Join(errors.New("unable to initialize client"), err)
 	}
 
 	s.client = client
 
-	s.logger.Info("graph client initialized successfully")
-	s.logger.Debug("graph client instance", logging.Any("client", client))
+	s.log.Info("graph client initialized successfully")
+	s.log.Debug("graph client instance", logger.Any("client", client))
 
 	return client, nil
 }

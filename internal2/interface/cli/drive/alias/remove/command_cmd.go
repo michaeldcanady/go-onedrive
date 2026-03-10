@@ -3,48 +3,46 @@ package remove
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/michaeldcanady/go-onedrive/internal2/domain/di"
-	infralogging "github.com/michaeldcanady/go-onedrive/internal2/infra/common/logging"
+	logger "github.com/michaeldcanady/go-onedrive/internal2/domain/common/logger"
 	"github.com/michaeldcanady/go-onedrive/internal2/interface/cli/util"
 )
 
-type Command struct {
-	container di.Container
-	logger    infralogging.Logger
+type RemoveCmd struct {
+	util.BaseCommand
 }
 
-func NewCmd(container di.Container) *Command {
-	return &Command{
-		container: container,
+func NewRemoveCmd(container di.Container) *RemoveCmd {
+	return &RemoveCmd{
+		BaseCommand: util.NewBaseCommand(container, commandName),
 	}
 }
 
-func (c *Command) Run(ctx context.Context, opts Options) error {
-	if ctx == nil {
-		ctx = context.Background()
+func (c *RemoveCmd) Run(ctx context.Context, opts Options) error {
+	start := time.Now()
+
+	if err := c.Initialize(loggerID); err != nil {
+		return err
 	}
 
-	if c.logger == nil {
-		logger, err := util.EnsureLogger(c.container, loggerID)
-		if err != nil {
-			return util.NewCommandErrorWithNameWithError(commandName, err)
-		}
-		c.logger = logger
-	}
-
-	c.logger.Info("removing drive alias",
-		infralogging.String("alias", opts.Alias),
+	c.Log.Info("removing drive alias",
+		logger.String("alias", opts.Alias),
 	)
 
-	if err := c.container.State().RemoveDriveAlias(opts.Alias); err != nil {
-		c.logger.Error("failed to remove drive alias",
-			infralogging.Error(err),
+	if err := c.Container.State().RemoveDriveAlias(opts.Alias); err != nil {
+		c.Log.Error("failed to remove drive alias",
+			logger.Error(err),
 		)
-		return util.NewCommandError(commandName, "failed to remove drive alias", err)
+		c.RenderError(opts.Stderr, err)
+		return util.NewCommandError(c.Name, "failed to remove drive alias", err)
 	}
 
 	fmt.Fprintf(opts.Stdout, "Alias %q removed\n", opts.Alias)
 
+	c.Log.Info("drive alias remove completed successfully",
+		logger.Duration("duration", time.Since(start)),
+	)
 	return nil
 }

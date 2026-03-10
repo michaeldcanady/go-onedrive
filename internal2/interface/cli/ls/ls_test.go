@@ -16,7 +16,7 @@ import (
 	domainfs "github.com/michaeldcanady/go-onedrive/internal2/domain/fs"
 	domainprofile "github.com/michaeldcanady/go-onedrive/internal2/domain/profile"
 	"github.com/michaeldcanady/go-onedrive/internal2/domain/state"
-	"github.com/michaeldcanady/go-onedrive/internal2/infra/common/logging"
+	"github.com/michaeldcanady/go-onedrive/internal2/domain/common/logger"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -83,14 +83,14 @@ type MockLogProvider struct {
 	mock.Mock
 }
 
-func (m *MockLogProvider) CreateLogger(name string) (logging.Logger, error) {
+func (m *MockLogProvider) CreateLogger(name string) (logger.Logger, error) {
 	args := m.Called(name)
-	return args.Get(0).(logging.Logger), args.Error(1)
+	return args.Get(0).(logger.Logger), args.Error(1)
 }
 
-func (m *MockLogProvider) GetLogger(name string) (logging.Logger, error) {
+func (m *MockLogProvider) GetLogger(name string) (logger.Logger, error) {
 	args := m.Called(name)
-	return args.Get(0).(logging.Logger), args.Error(1)
+	return args.Get(0).(logger.Logger), args.Error(1)
 }
 
 func (m *MockLogProvider) SetAllLevel(level string) {
@@ -101,22 +101,22 @@ type MockLogger struct {
 	mock.Mock
 }
 
-func (m *MockLogger) Info(msg string, fields ...logging.Field)  { m.Called(msg, fields) }
-func (m *MockLogger) Error(msg string, fields ...logging.Field) { m.Called(msg, fields) }
-func (m *MockLogger) Debug(msg string, fields ...logging.Field) { m.Called(msg, fields) }
-func (m *MockLogger) Warn(msg string, fields ...logging.Field)  { m.Called(msg, fields) }
+func (m *MockLogger) Info(msg string, fields ...logger.Field)  { m.Called(msg, fields) }
+func (m *MockLogger) Error(msg string, fields ...logger.Field) { m.Called(msg, fields) }
+func (m *MockLogger) Debug(msg string, fields ...logger.Field) { m.Called(msg, fields) }
+func (m *MockLogger) Warn(msg string, fields ...logger.Field)  { m.Called(msg, fields) }
 func (m *MockLogger) SetLevel(level string)                     { m.Called(level) }
-func (m *MockLogger) With(fields ...logging.Field) logging.Logger {
+func (m *MockLogger) With(fields ...logger.Field) logger.Logger {
 	args := m.Called(fields)
 	if v := args.Get(0); v != nil {
-		return v.(logging.Logger)
+		return v.(logger.Logger)
 	}
 	return m
 }
-func (m *MockLogger) WithContext(ctx context.Context) logging.Logger {
+func (m *MockLogger) WithContext(ctx context.Context) logger.Logger {
 	args := m.Called(ctx)
 	if v := args.Get(0); v != nil {
-		return v.(logging.Logger)
+		return v.(logger.Logger)
 	}
 	return m
 }

@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/michaeldcanady/go-onedrive/internal2/domain/common/logger"
 	"go.uber.org/zap"
 )
 
@@ -14,7 +15,7 @@ func NewZapLoggerProvider() *ZapLoggerProvider {
 	return &ZapLoggerProvider{}
 }
 
-func (lP *ZapLoggerProvider) Logger(opts LoggerOptions) (Logger, error) {
+func (lP *ZapLoggerProvider) Logger(opts logger.LoggerOptions) (logger.Logger, error) {
 	cfg := zap.NewProductionConfig()
 
 	switch opts.Level {
@@ -30,19 +31,19 @@ func (lP *ZapLoggerProvider) Logger(opts LoggerOptions) (Logger, error) {
 		return nil, fmt.Errorf("unknown logging level: %v", opts.Level)
 	}
 
-	switch opts.outputDestination {
-	case OutputDestinationStandardOut:
+	switch opts.OutputDestination {
+	case logger.OutputDestinationStandardOut:
 		cfg.OutputPaths = []string{"stdout"}
-	case OutputDestinationStandardError:
+	case logger.OutputDestinationStandardError:
 		cfg.OutputPaths = []string{"stderr"}
-	case OutputDestinationFile:
-		logPath := opts.logPath
+	case logger.OutputDestinationFile:
+		logPath := opts.FilePath
 		if logPath == "" {
 			return nil, errors.New("log path must be specified for file output destination")
 		}
 		cfg.OutputPaths = []string{logPath}
 	default:
-		return nil, fmt.Errorf("unknown output destination: %v", opts.outputDestination)
+		return nil, fmt.Errorf("unknown output destination: %v", opts.OutputDestination)
 	}
 
 	return NewZapLogger(cfg), nil

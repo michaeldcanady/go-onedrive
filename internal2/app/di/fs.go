@@ -77,7 +77,7 @@ func (c *Container) Editor() domaineditor.Service {
 }
 
 func (c *Container) newEditorService() domaineditor.Service {
-	logger := c.getLogger("editor")
-	launcher := infraeditor.NewLauncher(c.EnvironmentService(), logger)
-	return appeditor.NewService(launcher, logger)
+	log := c.getLogger("editor")
+	launcher := infraeditor.NewLauncher(c.EnvironmentService(), log)
+	return appeditor.NewService(launcher, log)
 }

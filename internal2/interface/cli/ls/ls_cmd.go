@@ -6,7 +6,7 @@ import (
 
 	"github.com/michaeldcanady/go-onedrive/internal2/domain/di"
 	domainfs "github.com/michaeldcanady/go-onedrive/internal2/domain/fs"
-	infralogging "github.com/michaeldcanady/go-onedrive/internal2/infra/common/logging"
+	logger "github.com/michaeldcanady/go-onedrive/internal2/domain/common/logger"
 	"github.com/michaeldcanady/go-onedrive/internal2/interface/cli/util"
 	"github.com/michaeldcanady/go-onedrive/internal2/interface/filtering"
 	"github.com/michaeldcanady/go-onedrive/internal2/interface/formatting"
@@ -16,119 +16,85 @@ import (
 // LsCmd handles the core execution logic for the 'ls' command.
 // It coordinates fetching, filtering, sorting, and formatting OneDrive items.
 type LsCmd struct {
-	container di.Container
-	logger    infralogging.Logger
+	util.BaseCommand
 }
 
 // NewLsCmd creates a new LsCmd instance with the provided dependency container.
 func NewLsCmd(container di.Container) *LsCmd {
 	return &LsCmd{
-		container: container,
+		BaseCommand: util.NewBaseCommand(container, commandName),
 	}
-}
-
-// WithLogger allows injecting a logger into LsCmd.
-func (c *LsCmd) WithLogger(logger infralogging.Logger) *LsCmd {
-	c.logger = logger
-	return c
 }
 
 // Run executes the full lifecycle of the ls command.
-// 1. Ensures a logger is available.
-// 2. Fetches items from the filesystem service.
-// 3. Filters items based on user options.
-// 4. Sorts items (unless in tree format).
-// 5. Formats and writes the output to the command's stdout.
 func (c *LsCmd) Run(ctx context.Context, opts Options) error {
 	start := time.Now()
 
-	if ctx == nil {
-		ctx = context.Background()
+	if err := c.Initialize(loggerID); err != nil {
+		return err
 	}
 
-	if c.logger == nil {
-		logger, err := util.EnsureLogger(c.container, loggerID)
-		if err != nil {
-			return util.NewCommandErrorWithNameWithError(commandName, err)
-		}
-		c.logger = logger
-	}
-
-	c.logger.Info("starting ls command",
-		infralogging.String("format", opts.Format),
-		infralogging.Bool("includeAll", opts.IncludeAll),
-		infralogging.Bool("foldersOnly", opts.FoldersOnly),
-		infralogging.Bool("filesOnly", opts.FilesOnly),
-		infralogging.String("sortProperty", opts.SortProperty),
-		infralogging.String("sortDirection", opts.SortOrder.String()),
-		infralogging.Bool("recursive", opts.Recursive),
+	c.Log.Info("starting ls command",
+		logger.String("format", opts.Format),
+		logger.Bool("includeAll", opts.IncludeAll),
+		logger.Bool("foldersOnly", opts.FoldersOnly),
+		logger.Bool("filesOnly", opts.FilesOnly),
+		logger.String("sortProperty", opts.SortProperty),
+		logger.String("sortDirection", opts.SortOrder.String()),
+		logger.Bool("recursive", opts.Recursive),
 	)
 
-	c.logger.Debug("resolving filesystem service")
-	fsSvc := c.container.FS()
+	fsSvc := c.Container.FS()
 	if fsSvc == nil {
-		c.logger.Error("filesystem service is nil")
-		return util.NewCommandErrorWithNameWithMessage(commandName, "filesystem service is nil")
+		return util.NewCommandErrorWithNameWithMessage(c.Name, "filesystem service is nil")
 	}
 
-	c.logger.Debug("fetching items from OneDrive", 
-		infralogging.String("path", opts.Path),
-		infralogging.Bool("recursive", opts.Recursive))
 	items, err := c.fetchItems(ctx, fsSvc, opts.Path, opts.Recursive)
 	if err != nil {
-		c.logger.Error("failed to fetch items", 
-			infralogging.String("path", opts.Path),
-			infralogging.Error(err))
-		return util.NewCommandErrorWithNameWithError(commandName, err)
+		c.RenderError(opts.Stderr, err)
+		return util.NewCommandErrorWithNameWithError(c.Name, err)
 	}
 
 	items, err = c.filterItems(items, opts)
 	if err != nil {
-		return util.NewCommandError(commandName, "failed to filter items", err)
+		return util.NewCommandError(c.Name, "failed to filter items", err)
 	}
 
 	if opts.Format != "tree" {
 		items, err = c.sortItems(items, opts)
 		if err != nil {
-			return util.NewCommandError(commandName, "failed to sort items", err)
+			return util.NewCommandError(c.Name, "failed to sort items", err)
 		}
 	}
 
 	if err := c.formatOutput(items, opts); err != nil {
-		return util.NewCommandError(commandName, "failed to format items", err)
+		return util.NewCommandError(c.Name, "failed to format items", err)
 	}
 
-	c.logger.Info("ls command completed",
-		infralogging.Duration("duration", time.Since(start)),
-		infralogging.Int("finalItemCount", len(items)),
+	c.Log.Info("ls command completed",
+		logger.Duration("duration", time.Since(start)),
+		logger.Int("finalItemCount", len(items)),
 	)
 
 	return nil
 }
 
 // fetchItems retrieves items from the OneDrive filesystem service.
-// If the target path is a folder, it lists its children.
 func (c *LsCmd) fetchItems(ctx context.Context, fsSvc domainfs.Service, path string, recursive bool) ([]domainfs.Item, error) {
-	c.logger.Debug("path resolved", infralogging.String("path", path))
-
 	item, err := fsSvc.Get(ctx, path)
 	if err != nil {
-		c.logger.Error("failed to get item", infralogging.String("error", err.Error()))
 		return nil, err
 	}
 
 	items := []domainfs.Item{item}
 	if item.Type == domainfs.ItemTypeFolder {
-		c.logger.Debug("listing items from filesystem")
 		listOpts := domainfs.ListOptions{
 			Recursive: recursive,
 		}
 		items, err = fsSvc.List(ctx, path, listOpts)
 		if err != nil {
-			c.logger.Error("failed to list items", infralogging.String("error", err.Error()))
 			return nil, err
 		}
-		c.logger.Info("items retrieved", infralogging.Int("count", len(items)))
 	}
 	return items, nil
 }
@@ -149,13 +115,11 @@ func (c *LsCmd) filterItems(items []domainfs.Item, opts Options) ([]domainfs.Ite
 		filterOpts = append(filterOpts, filtering.WithItemType(domainfs.ItemTypeFolder))
 	}
 
-	c.logger.Debug("initializing filterer")
 	filterer, err := filtering.NewFilterFactory().Create(filterOpts...)
 	if err != nil {
 		return nil, err
 	}
 
-	c.logger.Debug("applying filters")
 	return filterer.Filter(items)
 }
 
@@ -168,24 +132,20 @@ func (c *LsCmd) sortItems(items []domainfs.Item, opts Options) ([]domainfs.Item,
 	}
 	sortOpts = append(sortOpts, sorting.WithDirection(opts.SortOrder))
 
-	c.logger.Debug("initializing sorter")
 	sorter, err := sorting.NewSorterFactory().Create(sortOpts...)
 	if err != nil {
 		return nil, err
 	}
 
-	c.logger.Debug("sorting items")
 	return sorter.Sort(items)
 }
 
 // formatOutput handles the final rendering of items to the user's terminal.
 func (c *LsCmd) formatOutput(items []domainfs.Item, opts Options) error {
-	c.logger.Debug("initializing formatter", infralogging.String("format", opts.Format))
 	formatter, err := formatting.NewFormatterFactory().Create(opts.Format)
 	if err != nil {
 		return err
 	}
 
-	c.logger.Debug("formatting output")
 	return formatter.Format(opts.Stdout, items)
 }
