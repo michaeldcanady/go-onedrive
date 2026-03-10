@@ -152,7 +152,7 @@ func (r *CachedMetadataRepository) ListByPath(ctx context.Context, driveID strin
 				log.Warn("failed to cache child metadata", logger.Error(err))
 			}
 		}
-		listing := &infrafile.Listing{
+		listing := &file.Listing{
 			ETag:     parent.ETag,
 			ChildIDs: childIDs,
 		}

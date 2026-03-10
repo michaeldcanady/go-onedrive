@@ -35,8 +35,6 @@ func NewCachedFileContentsRepository(
 }
 
 func (r *CachedFileContentsRepository) Download(ctx context.Context, driveID, path string, opts file.DownloadOptions) (io.ReadCloser, error) {
-	log := r.log.WithContext(ctx).With(logger.String("path", path))
-
 	var cachedData []byte
 	var etag string
 
@@ -79,8 +77,6 @@ func (r *CachedFileContentsRepository) Download(ctx context.Context, driveID, pa
 }
 
 func (r *CachedFileContentsRepository) Upload(ctx context.Context, driveID, path string, body io.Reader, opts file.UploadOptions) (*file.Metadata, error) {
-	log := r.log.WithContext(ctx).With(logger.String("path", path))
-
 	data, err := io.ReadAll(body)
 	if err != nil {
 		return nil, err

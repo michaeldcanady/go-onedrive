@@ -7,8 +7,8 @@ import (
 	domainenv "github.com/michaeldcanady/go-onedrive/internal2/domain/common/environment"
 	domainlogger "github.com/michaeldcanady/go-onedrive/internal2/domain/common/logger"
 	domainconfig "github.com/michaeldcanady/go-onedrive/internal2/domain/config"
-	infraconfig "github.com/michaeldcanady/go-onedrive/internal2/infra/config"
 	infralogging "github.com/michaeldcanady/go-onedrive/internal2/infra/common/logging"
+	infraconfig "github.com/michaeldcanady/go-onedrive/internal2/infra/config"
 )
 
 func (c *Container) getLogger(name string) domainlogger.Logger {

@@ -3,3 +3,5 @@ output/**
 profile.json
 config.yaml
 profile.cache
+*.skill
+hostbrowserpipe

@@ -21,10 +21,9 @@ func TestMetadataRepository_GetByPath(t *testing.T) {
 		t.Parallel()
 		mockAdapter := new(MockRequestAdapter)
 		mockMetadataCache := new(MockMetadataCache)
-		mockListingCache := new(MockListingCache)
 		mockPathIDCache := new(MockPathIDCache)
 
-		repo := NewMetadataRepository(mockAdapter, mockMetadataCache, mockListingCache, mockPathIDCache, NewMockLogger())
+		repo := NewGraphMetadataGateway(mockAdapter, NewMockLogger())
 
 		mockPathIDCache.On("Get", mock.Anything, path).Return("", false)
 
@@ -35,7 +34,7 @@ func TestMetadataRepository_GetByPath(t *testing.T) {
 		// Graph returns 304 (nil response)
 		mockAdapter.On("Send", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil, nil)
 
-		got, err := repo.GetByPath(context.Background(), driveID, path, file.MetadataGetOptions{})
+		got, err := repo.GetByPath(context.Background(), driveID, path, "")
 		assert.NoError(t, err)
 		assert.Equal(t, cached, got)
 	})
@@ -44,10 +43,9 @@ func TestMetadataRepository_GetByPath(t *testing.T) {
 		t.Parallel()
 		mockAdapter := new(MockRequestAdapter)
 		mockMetadataCache := new(MockMetadataCache)
-		mockListingCache := new(MockListingCache)
 		mockPathIDCache := new(MockPathIDCache)
 
-		repo := NewMetadataRepository(mockAdapter, mockMetadataCache, mockListingCache, mockPathIDCache, NewMockLogger())
+		repo := NewGraphMetadataGateway(mockAdapter, NewMockLogger())
 
 		mockPathIDCache.On("Get", mock.Anything, path).Return("", false)
 		mockPathIDCache.On("Put", mock.Anything, path, "id-1").Return(nil)
@@ -69,7 +67,7 @@ func TestMetadataRepository_GetByPath(t *testing.T) {
 		// Store in cache
 		mockMetadataCache.On("Put", mock.Anything, mock.Anything, mock.Anything).Return(nil)
 
-		got, err := repo.GetByPath(context.Background(), driveID, path, file.MetadataGetOptions{})
+		got, err := repo.GetByPath(context.Background(), driveID, path, "")
 		assert.NoError(t, err)
 		assert.NotNil(t, got)
 		assert.Equal(t, etag, got.ETag)
@@ -90,7 +88,7 @@ func TestMetadataRepository_ListByPath(t *testing.T) {
 		mockListingCache := new(MockListingCache)
 		mockPathIDCache := new(MockPathIDCache)
 
-		repo := NewMetadataRepository(mockAdapter, mockMetadataCache, mockListingCache, mockPathIDCache, NewMockLogger())
+		repo := NewGraphMetadataGateway(mockAdapter, NewMockLogger())
 
 		mockPathIDCache.On("Get", mock.Anything, path).Return("", false)
 
@@ -100,14 +98,14 @@ func TestMetadataRepository_ListByPath(t *testing.T) {
 		mockAdapter.On("Send", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil, nil)
 
 		// 2. Listing cache hit
-		listing := &Listing{ETag: etag, ChildIDs: []string{"id-child-1"}}
+		listing := &file.Listing{ETag: etag, ChildIDs: []string{"id-child-1"}}
 		mockListingCache.On("Get", mock.Anything, path).Return(listing, true)
 
 		// 3. Resolve child IDs
 		child := &file.Metadata{ID: "id-child-1", Name: "child.txt"}
 		mockMetadataCache.On("Get", mock.Anything, "id-child-1").Return(child, true)
 
-		got, err := repo.ListByPath(context.Background(), driveID, path, file.MetadataListOptions{})
+		got, err := repo.ListByPath(context.Background(), driveID, path, "")
 		assert.NoError(t, err)
 		assert.Len(t, got, 1)
 		assert.Equal(t, child, got[0])
@@ -120,7 +118,7 @@ func TestMetadataRepository_ListByPath(t *testing.T) {
 		mockListingCache := new(MockListingCache)
 		mockPathIDCache := new(MockPathIDCache)
 
-		repo := NewMetadataRepository(mockAdapter, mockMetadataCache, mockListingCache, mockPathIDCache, NewMockLogger())
+		repo := NewGraphMetadataGateway(mockAdapter, NewMockLogger())
 
 		mockPathIDCache.On("Get", mock.Anything, path).Return("", false)
 		mockPathIDCache.On("Put", mock.Anything, path, "id-folder").Return(nil)
@@ -156,7 +154,7 @@ func TestMetadataRepository_ListByPath(t *testing.T) {
 		mockMetadataCache.On("Put", mock.Anything, mock.Anything, mock.Anything).Return(nil)
 		mockListingCache.On("Put", mock.Anything, path, mock.Anything).Return(nil)
 
-		got, err := repo.ListByPath(context.Background(), driveID, path, file.MetadataListOptions{})
+		got, err := repo.ListByPath(context.Background(), driveID, path, "")
 		assert.NoError(t, err)
 		assert.Len(t, got, 1)
 		assert.Equal(t, cid, got[0].ID)

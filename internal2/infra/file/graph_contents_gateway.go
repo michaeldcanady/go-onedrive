@@ -2,7 +2,6 @@ package file
 
 import (
 	"context"
-	"io"
 
 	"github.com/michaeldcanady/go-onedrive/internal2/domain/file"
 )

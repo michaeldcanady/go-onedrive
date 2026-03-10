@@ -3,8 +3,8 @@ package file
 import (
 	"context"
 
-	"github.com/michaeldcanady/go-onedrive/internal2/domain/file"
 	"github.com/michaeldcanady/go-onedrive/internal2/domain/common/logger"
+	"github.com/michaeldcanady/go-onedrive/internal2/domain/file"
 	abstractions "github.com/microsoft/kiota-abstractions-go"
 	"github.com/microsoft/kiota-abstractions-go/serialization"
 	"github.com/microsoft/kiota-abstractions-go/store"
@@ -62,15 +62,15 @@ type MockListingCache struct {
 	mock.Mock
 }
 
-func (m *MockListingCache) Get(ctx context.Context, path string) (*Listing, bool) {
+func (m *MockListingCache) Get(ctx context.Context, path string) (*file.Listing, bool) {
 	args := m.Called(ctx, path)
 	if args.Get(0) == nil {
 		return nil, args.Bool(1)
 	}
-	return args.Get(0).(*Listing), args.Bool(1)
+	return args.Get(0).(*file.Listing), args.Bool(1)
 }
 
-func (m *MockListingCache) Put(ctx context.Context, path string, l *Listing) error {
+func (m *MockListingCache) Put(ctx context.Context, path string, l *file.Listing) error {
 	args := m.Called(ctx, path, l)
 	return args.Error(0)
 }
@@ -120,7 +120,7 @@ func NewMockLogger() *MockLogger {
 	m.On("WithContext", mock.Anything).Return(m).Maybe()
 	return m
 }
-func (m *MockLogger) SetLevel(level string)                     { m.Called(level) }
+func (m *MockLogger) SetLevel(level string) { m.Called(level) }
 func (m *MockLogger) With(fields ...logger.Field) logger.Logger {
 	args := m.Called(fields)
 	if args.Get(0) == nil {
