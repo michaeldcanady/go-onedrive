@@ -6,6 +6,7 @@ import (
 	"github.com/michaeldcanady/go-onedrive/internal2/domain/common/logger"
 	"github.com/michaeldcanady/go-onedrive/internal2/domain/file"
 	infrafile "github.com/michaeldcanady/go-onedrive/internal2/infra/file"
+	"github.com/michaeldcanady/go-onedrive/internal2/interface/cli/util"
 )
 
 // CachedMetadataRepository implements file.MetadataRepository with caching and path-to-ID resolution.
@@ -190,4 +191,28 @@ func (r *CachedMetadataRepository) UpdateByPath(ctx context.Context, driveID, pa
 	}
 
 	return metadata, nil
+}
+
+func (p *CachedMetadataRepository) buildLogger(ctx context.Context) logger.Logger {
+	correlationID := util.CorrelationIDFromContext(ctx)
+	return p.log.WithContext(ctx).With(
+		logger.String("correlation_id", correlationID),
+	)
+}
+
+func (r *CachedMetadataRepository) DeleteByPath(ctx context.Context, driveID, path string, opts file.MetadataDeleteOptions) error {
+	log := r.buildLogger(ctx).With(logger.String("path", path))
+
+	// TODO: add support for permanent deletion: https://learn.microsoft.com/en-us/graph/api/driveitem-permanentdelete?view=graph-rest-1.0
+	if err := r.gateway.DeleteByPath(ctx, driveID, path); err != nil {
+		return err
+	}
+
+	if id, ok := r.pathIDCache.Get(ctx, path); ok {
+		if err := r.metadataCache.Invalidate(ctx, id); err != nil {
+			log.Warn("failed to invalidate cache", logger.Error(err))
+		}
+	}
+
+	return nil
 }

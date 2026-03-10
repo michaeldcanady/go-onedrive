@@ -136,3 +136,14 @@ func (g *GraphMetadataGateway) UpdateByPath(ctx context.Context, driveID, path s
 
 	return mapItemToMetadata(item), nil
 }
+
+func (g *GraphMetadataGateway) DeleteByPath(ctx context.Context, driveID, path string) error {
+	uri := expandPathTemplate(rootURITemplate2, rootRelativeURITemplate2, driveID, path)
+	builder := drives.NewItemItemsDriveItemItemRequestBuilder(uri, g.client)
+
+	if err := mapGraphError2(builder.Delete(ctx, nil)); err != nil {
+		return err
+	}
+
+	return nil
+}
