@@ -27,7 +27,7 @@ func (c *Container) Drive() domaindrive.DriveService {
 }
 
 func (c *Container) newDriveService() domaindrive.DriveService {
-	return appdrive.NewDriveService(c.clientProvider(), c.getLogger("drive"))
+	return appdrive.NewDriveService(c.newDriveRepository(), c.getLogger("drive"))
 }
 
 func (c *Container) Cache() domaincache.Service2 {

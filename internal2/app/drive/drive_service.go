@@ -5,19 +5,18 @@ import (
 	"errors"
 	"strings"
 
-	domaingraph "github.com/michaeldcanady/go-onedrive/internal2/domain/common/graph"
 	"github.com/michaeldcanady/go-onedrive/internal2/domain/common/logger"
 	"github.com/michaeldcanady/go-onedrive/internal2/domain/drive"
 	"github.com/michaeldcanady/go-onedrive/internal2/interface/cli/util"
 )
 
 type driveService struct {
-	graph domaingraph.ClientProvider
-	log   logger.Logger
+	gateway drive.DriveGateway
+	log     logger.Logger
 }
 
-func NewDriveService(graph domaingraph.ClientProvider, l logger.Logger) *driveService {
-	return &driveService{graph: graph, log: l}
+func NewDriveService(gateway drive.DriveGateway, l logger.Logger) *driveService {
+	return &driveService{gateway: gateway, log: l}
 }
 
 const (
@@ -35,7 +34,6 @@ const (
 	eventDrivePersonalFailure = "drive.personal.failure"
 )
 
-// ListDrives lists available onedrive drives.
 func (s *driveService) ListDrives(ctx context.Context) ([]*drive.Drive, error) {
 	correlationID := util.CorrelationIDFromContext(ctx)
 
@@ -47,27 +45,13 @@ func (s *driveService) ListDrives(ctx context.Context) ([]*drive.Drive, error) {
 		logger.String("event", eventDriveListStart),
 	)
 
-	client, err := s.graph.Client(ctx)
-	if err != nil {
-		log.Error("failed to create graph client",
-			logger.String("event", eventDriveListFailure),
-			logger.Error(err),
-		)
-		return nil, err
-	}
-
-	resp, err := client.Me().Drives().Get(ctx, nil)
+	out, err := s.gateway.ListDrives(ctx)
 	if err != nil {
 		log.Error("failed to retrieve drives",
 			logger.String("event", eventDriveListFailure),
 			logger.Error(err),
 		)
 		return nil, mapGraphError(err)
-	}
-
-	out := make([]*drive.Drive, 0, len(resp.GetValue()))
-	for _, d := range resp.GetValue() {
-		out = append(out, toDomainDrive(d))
 	}
 
 	log.Info("drive list retrieved successfully",
@@ -78,7 +62,6 @@ func (s *driveService) ListDrives(ctx context.Context) ([]*drive.Drive, error) {
 	return out, nil
 }
 
-// ResolveDrive resolves drive from ref (id).
 func (s *driveService) ResolveDrive(ctx context.Context, driveRef string) (*drive.Drive, error) {
 	correlationID := util.CorrelationIDFromContext(ctx)
 
@@ -118,7 +101,6 @@ func (s *driveService) ResolveDrive(ctx context.Context, driveRef string) (*driv
 	return nil, errors.New("not found")
 }
 
-// ResolvePersonalDrive resolves logged in user
 func (s *driveService) ResolvePersonalDrive(ctx context.Context) (*drive.Drive, error) {
 	correlationID := util.CorrelationIDFromContext(ctx)
 
@@ -130,16 +112,7 @@ func (s *driveService) ResolvePersonalDrive(ctx context.Context) (*drive.Drive, 
 		logger.String("event", eventDrivePersonalStart),
 	)
 
-	client, err := s.graph.Client(ctx)
-	if err != nil {
-		log.Error("failed to create graph client",
-			logger.String("event", eventDrivePersonalFailure),
-			logger.Error(err),
-		)
-		return nil, err
-	}
-
-	resp, err := client.Me().Drive().Get(ctx, nil)
+	d, err := s.gateway.GetPersonalDrive(ctx)
 	if err != nil {
 		log.Error("failed to retrieve personal drive",
 			logger.String("event", eventDrivePersonalFailure),
@@ -147,8 +120,6 @@ func (s *driveService) ResolvePersonalDrive(ctx context.Context) (*drive.Drive, 
 		)
 		return nil, mapGraphError(err)
 	}
-
-	d := toDomainDrive(resp)
 
 	log.Info("personal drive resolved successfully",
 		logger.String("event", eventDrivePersonalSuccess),

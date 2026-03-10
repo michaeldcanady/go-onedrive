@@ -4,7 +4,9 @@ import (
 	"context"
 
 	apponedrive "github.com/michaeldcanady/go-onedrive/internal2/app/fs/onedrive"
+	"github.com/michaeldcanady/go-onedrive/internal2/domain/drive"
 	"github.com/michaeldcanady/go-onedrive/internal2/domain/file"
+	infradrive "github.com/michaeldcanady/go-onedrive/internal2/infra/drive"
 	infrafile "github.com/michaeldcanady/go-onedrive/internal2/infra/file"
 )
 
@@ -13,6 +15,13 @@ func (c *Container) metadata() file.MetadataRepository {
 		c.metadataRepo = c.newMetadataRepository()
 	})
 	return c.metadataRepo
+}
+
+func (c *Container) newDriveRepository() drive.DriveGateway {
+	adapter, _ := c.clientProvider().RequestAdapter(context.Background())
+	gateway := infradrive.NewGraphDriveGateway(adapter, c.getLogger("drive_gateway"))
+
+	return gateway
 }
 
 func (c *Container) newMetadataRepository() file.MetadataRepository {

@@ -6,7 +6,7 @@ import (
 	"errors"
 
 	domaincache "github.com/michaeldcanady/go-onedrive/internal2/domain/cache"
-	"github.com/michaeldcanady/go-onedrive/internal2/infra/cache/bolt"
+	"github.com/michaeldcanady/go-onedrive/pkg/cache"
 )
 
 var _ domaincache.Cache[any] = (*TypedCache[any])(nil)
@@ -33,7 +33,7 @@ func (c *TypedCache[T]) Get(ctx context.Context, key string) (T, error) {
 			return err
 		},
 	)
-	if errors.Is(err, bolt.ErrKeyNotFound) {
+	if errors.Is(err, cache.ErrKeyNotFound) {
 		return v, err
 	}
 	return v, err
