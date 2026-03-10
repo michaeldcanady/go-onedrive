@@ -203,8 +203,7 @@ func (p *CachedMetadataRepository) buildLogger(ctx context.Context) logger.Logge
 func (r *CachedMetadataRepository) DeleteByPath(ctx context.Context, driveID, path string, opts file.MetadataDeleteOptions) error {
 	log := r.buildLogger(ctx).With(logger.String("path", path))
 
-	// TODO: add support for permanent deletion: https://learn.microsoft.com/en-us/graph/api/driveitem-permanentdelete?view=graph-rest-1.0
-	if err := r.gateway.DeleteByPath(ctx, driveID, path); err != nil {
+	if err := r.gateway.DeleteByPath(ctx, driveID, path, opts); err != nil {
 		return err
 	}
 

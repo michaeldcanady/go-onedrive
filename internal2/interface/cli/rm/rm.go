@@ -17,9 +17,13 @@ func CreateCmd(c di.Container) *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:     fmt.Sprintf("%s [path]", commandName),
-		Short:   "Move or rename a file/directory in your OneDrive filesystem.",
-		Long:    "",
-		Example: "",
+		Short:   "Remove a file or directory from your OneDrive filesystem.",
+		Long:    "Remove a file or directory from your OneDrive filesystem. By default, items are moved to the recycle bin.",
+		Example: `  # Remove a file (moves to recycle bin)
+  odc rm /path/to/file.txt
+
+  # Permanently remove a file
+  odc rm --permanent /path/to/file.txt`,
 
 		Args: cobra.ExactArgs(1),
 
@@ -37,6 +41,8 @@ func CreateCmd(c di.Container) *cobra.Command {
 			return rmCmd.Run(cmd.Context(), opts)
 		},
 	}
+
+	cmd.Flags().BoolVar(&opts.Permanent, "permanent", false, "Permanently delete the item instead of moving it to the recycle bin")
 
 	return cmd
 }

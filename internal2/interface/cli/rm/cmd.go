@@ -38,7 +38,9 @@ func (c *Command) Run(ctx context.Context, opts Options) error {
 		return util.NewCommandErrorWithNameWithMessage(c.Name, "filesystem service is nil")
 	}
 
-	if err := fsSvc.Remove(ctx, opts.Path, fs.RemoveOptions{}); err != nil {
+	if err := fsSvc.Remove(ctx, opts.Path, fs.RemoveOptions{
+		Permanent: opts.Permanent,
+	}); err != nil {
 		c.RenderError(opts.Stderr, err)
 		return util.NewCommandError(c.Name, "failed to move item", err)
 	}
