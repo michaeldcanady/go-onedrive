@@ -71,6 +71,61 @@ func (m *mockProvider) Touch(ctx context.Context, path string, opts domainfs.Tou
 	return args.Get(0).(domainfs.Item), args.Error(1)
 }
 
+type mockReadCloser struct {
+	io.Reader
+}
+
+func (m *mockReadCloser) Close() error { return nil }
+
+func TestFileSystemManager_Copy_CrossProvider_Recursive(t *testing.T) {
+	reg := registry.NewRegistry()
+	mockOD := new(mockProvider)
+	mockLocal := new(mockProvider)
+
+	reg.Register("onedrive", mockOD)
+	reg.Register("local", mockLocal)
+
+	fsm := NewFileSystemManager(reg)
+	ctx := context.Background()
+
+	src := "onedrive:/folder"
+	dst := "local:/home/user/folder"
+
+	// Stat of source folder
+	mockOD.On("Stat", ctx, "/folder", mock.Anything).Return(domainfs.Item{
+		Name: "folder",
+		Path: "/folder",
+		Type: domainfs.ItemTypeFolder,
+	}, nil)
+
+	// Mkdir of destination folder
+	mockLocal.On("Mkdir", ctx, "/home/user/folder", domainfs.MKDirOptions{Parents: true}).Return(nil)
+
+	// List children of source folder
+	mockOD.On("List", ctx, "/folder", domainfs.ListOptions{Recursive: false}).Return([]domainfs.Item{
+		{Name: "file1.txt", Path: "/folder/file1.txt", Type: domainfs.ItemTypeFile},
+	}, nil)
+
+	// Stat of child file
+	mockOD.On("Stat", ctx, "/folder/file1.txt", mock.Anything).Return(domainfs.Item{
+		Name: "file1.txt",
+		Path: "/folder/file1.txt",
+		Type: domainfs.ItemTypeFile,
+	}, nil)
+
+	// Read file1.txt
+	mockOD.On("ReadFile", ctx, "/folder/file1.txt", mock.Anything).Return(&mockReadCloser{}, nil)
+
+	// Write file1.txt to local
+	mockLocal.On("WriteFile", ctx, "/home/user/folder/file1.txt", mock.Anything, domainfs.WriteOptions{Overwrite: true}).Return(domainfs.Item{}, nil)
+
+	err := fsm.Copy(ctx, src, dst, domainfs.CopyOptions{Recursive: true, Overwrite: true})
+	assert.NoError(t, err)
+
+	mockOD.AssertExpectations(t)
+	mockLocal.AssertExpectations(t)
+}
+
 func TestParsePath(t *testing.T) {
 	tests := []struct {
 		path         string

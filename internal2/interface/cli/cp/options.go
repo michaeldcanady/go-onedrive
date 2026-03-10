@@ -12,6 +12,7 @@ type Options struct {
 	Source     string
 	Dest       string
 	Overwrite  bool
+	Recursive  bool
 	IgnoreFile string
 
 	// Stdin is the input stream for the command.

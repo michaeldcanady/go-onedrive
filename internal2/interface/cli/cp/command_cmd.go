@@ -34,6 +34,7 @@ func (c *CpCmd) Run(ctx context.Context, opts Options) error {
 		logger.String("src", opts.Source),
 		logger.String("dst", opts.Dest),
 		logger.Bool("overwrite", opts.Overwrite),
+		logger.Bool("recursive", opts.Recursive),
 		logger.String("ignoreFile", opts.IgnoreFile),
 	)
 
@@ -50,7 +51,10 @@ func (c *CpCmd) Run(ctx context.Context, opts Options) error {
 	if matcher != nil {
 		err = c.copyRecursive(ctx, fsSvc, opts.Source, opts.Dest, opts.Overwrite, matcher)
 	} else {
-		err = fsSvc.Copy(ctx, opts.Source, opts.Dest, fs.CopyOptions{Overwrite: opts.Overwrite})
+		err = fsSvc.Copy(ctx, opts.Source, opts.Dest, fs.CopyOptions{
+			Overwrite: opts.Overwrite,
+			Recursive: opts.Recursive,
+		})
 	}
 
 	if err != nil {

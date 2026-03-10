@@ -44,12 +44,12 @@ This is an alias for 'cp onedrive:[src] local:[dst]'.
 
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			src := opts.Source
-			if !strings.HasPrefix(src, "onedrive:") {
+			if !strings.HasPrefix(src, "onedrive:") && !strings.HasPrefix(src, "local:") {
 				src = "onedrive:" + src
 			}
 
 			dst := opts.Destination
-			if !strings.HasPrefix(dst, "local:") {
+			if !strings.HasPrefix(dst, "onedrive:") && !strings.HasPrefix(dst, "local:") {
 				dst = "local:" + dst
 			}
 
@@ -57,6 +57,7 @@ This is an alias for 'cp onedrive:[src] local:[dst]'.
 				Source:    src,
 				Dest:      dst,
 				Overwrite: opts.Overwrite,
+				Recursive: opts.Recursive,
 				Stdin:     cmd.InOrStdin(),
 				Stdout:    cmd.OutOrStdout(),
 				Stderr:    cmd.ErrOrStderr(),
@@ -68,6 +69,7 @@ This is an alias for 'cp onedrive:[src] local:[dst]'.
 	}
 
 	cmd.Flags().BoolVarP(&opts.Overwrite, "force", "f", false, "Overwrite an existing local file")
+	cmd.Flags().BoolVarP(&opts.Recursive, "recursive", "r", false, "Download folders recursively")
 
 	return cmd
 }

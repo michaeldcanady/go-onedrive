@@ -18,6 +18,9 @@ type Options struct {
 	// Overwrite determines whether to replace an existing local file.
 	Overwrite bool
 
+	// Recursive indicates whether to download folders recursively.
+	Recursive bool
+
 	// Stdin is the input stream for the command.
 	Stdin io.Reader
 	// Stdout is the output stream for the command.

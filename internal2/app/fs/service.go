@@ -2,6 +2,7 @@ package fs
 
 import (
 	"context"
+	"errors"
 	"io"
 
 	"github.com/michaeldcanady/go-onedrive/internal2/app/fs/registry"
@@ -110,6 +111,38 @@ func (m *FileSystemManager) Copy(ctx context.Context, src, dst string, opts doma
 	}
 
 	// Cross-provider copy
+	srcItem, err := pSrc.Stat(ctx, srcSubPath, domainfs.StatOptions{})
+	if err != nil {
+		return err
+	}
+
+	if srcItem.Type == domainfs.ItemTypeFolder {
+		if !opts.Recursive {
+			return errors.New("source is a directory, use recursive flag")
+		}
+
+		// Ensure destination exists as directory
+		if err := pDst.Mkdir(ctx, dstSubPath, domainfs.MKDirOptions{Parents: true}); err != nil {
+			return err
+		}
+
+		// List children and copy each one
+		children, err := pSrc.List(ctx, srcSubPath, domainfs.ListOptions{Recursive: false})
+		if err != nil {
+			return err
+		}
+
+		for _, child := range children {
+			childSrc := src + "/" + child.Name
+			childDst := dst + "/" + child.Name
+			if err := m.Copy(ctx, childSrc, childDst, opts); err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+
+	// Single file cross-provider copy
 	r, err := pSrc.ReadFile(ctx, srcSubPath, domainfs.ReadOptions{})
 	if err != nil {
 		return err
