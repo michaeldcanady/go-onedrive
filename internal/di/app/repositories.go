@@ -7,7 +7,7 @@ import (
 	infradrive "github.com/michaeldcanady/go-onedrive/internal/drive/infra"
 	apponedrive "github.com/michaeldcanady/go-onedrive/internal/fs/app/onedrive"
 	domainfs "github.com/michaeldcanady/go-onedrive/internal/fs/domain"
-	infrafile "github.com/michaeldcanady/go-onedrive/internal/fs/infra"
+	infrafile "github.com/michaeldcanady/go-onedrive/internal/fs/app/onedrive/infra"
 )
 
 func (c *Container) metadata() domainfs.MetadataRepository {

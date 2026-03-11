@@ -18,7 +18,7 @@ import (
 	pkgcache "github.com/michaeldcanady/go-onedrive/pkg/cache"
 	infrabolt "github.com/michaeldcanady/go-onedrive/pkg/cache/bolt"
 
-	infrafile "github.com/michaeldcanady/go-onedrive/internal/fs/infra"
+	infrafile "github.com/michaeldcanady/go-onedrive/internal/fs/app/onedrive/infra"
 )
 
 var _ didomain.Container = (*Container)(nil)

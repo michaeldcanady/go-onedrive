@@ -6,7 +6,7 @@ import (
 	"github.com/michaeldcanady/go-onedrive/internal/interface/cli/util"
 	logger "github.com/michaeldcanady/go-onedrive/internal/core/logger/domain"
 	"github.com/michaeldcanady/go-onedrive/internal/fs/domain"
-	"github.com/michaeldcanady/go-onedrive/internal/fs/infra"
+	"github.com/michaeldcanady/go-onedrive/internal/fs/app/onedrive/infra"
 )
 
 // CachedMetadataRepository implements domain.MetadataRepository with caching and path-to-ID resolution.
