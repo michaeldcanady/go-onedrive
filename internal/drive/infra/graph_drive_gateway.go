@@ -25,7 +25,7 @@ func NewGraphDriveGateway(client abstractions.RequestAdapter, log domainlogger.L
 func (g *GraphDriveGateway) ListDrives(ctx context.Context) ([]*domaindrive.Drive, error) {
 	resp, err := users.NewItemDrivesRequestBuilderInternal(map[string]string{"user%2Did": "me-token-to-replace"}, g.client).Get(ctx, nil)
 	if err != nil {
-		return nil, graphinfra.MapGraphError(err)
+		return nil, graphinfra.MapGraphError(err, true)
 	}
 
 	// TODO: use page iterator, in case someone has pages of drives
@@ -40,7 +40,7 @@ func (g *GraphDriveGateway) ListDrives(ctx context.Context) ([]*domaindrive.Driv
 func (g *GraphDriveGateway) GetPersonalDrive(ctx context.Context) (*domaindrive.Drive, error) {
 	resp, err := users.NewItemDriveRequestBuilderInternal(map[string]string{"user%2Did": "me-token-to-replace"}, g.client).Get(ctx, nil)
 	if err != nil {
-		return nil, graphinfra.MapGraphError(err)
+		return nil, graphinfra.MapGraphError(err, true)
 	}
 
 	return toDomainDrive(resp), nil

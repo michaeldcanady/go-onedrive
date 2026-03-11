@@ -2,6 +2,7 @@ package infra
 
 import (
 	commonerrors "github.com/michaeldcanady/go-onedrive/internal/core/errors"
+	graphinfra "github.com/michaeldcanady/go-onedrive/internal/core/graph/infra"
 )
 
 var (
@@ -31,5 +32,5 @@ type DomainError = commonerrors.DomainError
 // mapGraphError2 is a lightweight variant of mapGraphError that returns only
 // domain error *kinds* rather than wrapping the original error.
 func mapGraphError2(err error) error {
-	return mapGraphError(err, false)
+	return graphinfra.MapGraphError(err, false)
 }

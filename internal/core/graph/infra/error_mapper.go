@@ -8,10 +8,15 @@ import (
 )
 
 // MapGraphError maps Microsoft Graph API errors to domain errors.
-func MapGraphError(err error) error {
+// If wrap is true, it always returns a DomainError that wraps the original error.
+// If wrap is false, it returns the domain error variable itself, unless the error
+// is an internal error, in which case it always returns a DomainError.
+func MapGraphError(err error, wrap bool) error {
 	if err == nil {
 		return nil
 	}
+
+	kind := commonerrors.ErrInternal
 
 	// Try to extract OData error
 	var odataErr odataerrors.ODataErrorable
@@ -21,44 +26,53 @@ func MapGraphError(err error) error {
 
 			switch code {
 			case "itemNotFound", "ErrorItemNotFound":
-				return &commonerrors.DomainError{Kind: commonerrors.ErrNotFound, Err: err}
+				kind = commonerrors.ErrNotFound
 
 			case "accessDenied":
-				return &commonerrors.DomainError{Kind: commonerrors.ErrForbidden, Err: err}
+				kind = commonerrors.ErrForbidden
 
 			case "unauthenticated":
-				return &commonerrors.DomainError{Kind: commonerrors.ErrUnauthorized, Err: err}
+				kind = commonerrors.ErrUnauthorized
 
 			case "conflict":
-				return &commonerrors.DomainError{Kind: commonerrors.ErrConflict, Err: err}
+				kind = commonerrors.ErrConflict
 
-			case "preconditionFailed":
-				return &commonerrors.DomainError{Kind: commonerrors.ErrPrecondition, Err: err}
+			case "preconditionFailed", "notAllowed":
+				kind = commonerrors.ErrPrecondition
+
+			case "invalidRequest":
+				kind = commonerrors.ErrInvalidRequest
+			}
+		}
+	} else {
+		// Try to extract HTTP status code (Kiota adapter)
+		var respErr interface{ StatusCode() int }
+		if errors.As(err, &respErr) {
+			switch respErr.StatusCode() {
+			case 401:
+				kind = commonerrors.ErrUnauthorized
+			case 403:
+				kind = commonerrors.ErrForbidden
+			case 404:
+				kind = commonerrors.ErrNotFound
+			case 409:
+				kind = commonerrors.ErrConflict
+			case 412:
+				kind = commonerrors.ErrPrecondition
+			case 429, 500, 502, 503, 504:
+				kind = commonerrors.ErrTransient
 			}
 		}
 	}
 
-	// Try to extract HTTP status code (Kiota adapter)
-	var respErr interface{ StatusCode() int }
-	if errors.As(err, &respErr) {
-		switch respErr.StatusCode() {
-		case 401:
-			return &commonerrors.DomainError{Kind: commonerrors.ErrUnauthorized, Err: err}
-		case 403:
-			return &commonerrors.DomainError{Kind: commonerrors.ErrForbidden, Err: err}
-		case 404:
-			return &commonerrors.DomainError{Kind: commonerrors.ErrNotFound, Err: err}
-		case 409:
-			return &commonerrors.DomainError{Kind: commonerrors.ErrConflict, Err: err}
-		case 412:
-			return &commonerrors.DomainError{Kind: commonerrors.ErrPrecondition, Err: err}
-		case 429, 500, 502, 503, 504:
-			return &commonerrors.DomainError{Kind: commonerrors.ErrTransient, Err: err}
+	if !wrap {
+		if kind == commonerrors.ErrInternal && err != nil {
+			return &commonerrors.DomainError{Kind: kind, Err: err}
 		}
+		return kind
 	}
 
-	// Fallback
-	return &commonerrors.DomainError{Kind: commonerrors.ErrInternal, Err: err}
+	return &commonerrors.DomainError{Kind: kind, Err: err}
 }
 
 func deref[T any](ptr *T) T {
