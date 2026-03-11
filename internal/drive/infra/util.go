@@ -18,7 +18,7 @@ func toDomainDrive(g models.Driveable) *domaindrive.Drive {
 	return &domaindrive.Drive{
 		ID:   deref(g.GetId()),
 		Name: deref(g.GetName()),
-		Type: domaindrive.DriveType(deref(g.GetDriveType())),
+		Type: domaindrive.NewDriveType(deref(g.GetDriveType())),
 	}
 }
 
