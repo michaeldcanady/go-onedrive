@@ -7,6 +7,8 @@ import (
 	domainlogger "github.com/michaeldcanady/go-onedrive/internal/core/logger/domain"
 	domaindrive "github.com/michaeldcanady/go-onedrive/internal/drive/domain"
 	abstractions "github.com/microsoft/kiota-abstractions-go"
+	msgraphsdkcore "github.com/microsoftgraph/msgraph-sdk-go-core"
+	"github.com/microsoftgraph/msgraph-sdk-go/models"
 	"github.com/microsoftgraph/msgraph-sdk-go/users"
 )
 
@@ -28,10 +30,20 @@ func (g *GraphDriveGateway) ListDrives(ctx context.Context) ([]*domaindrive.Driv
 		return nil, graphinfra.MapGraphError(err, true)
 	}
 
-	// TODO: use page iterator, in case someone has pages of drives
-	out := make([]*domaindrive.Drive, 0, len(resp.GetValue()))
-	for _, d := range resp.GetValue() {
+	var out []*domaindrive.Drive
+
+	pageIterator, err := msgraphsdkcore.NewPageIterator[models.Driveable](resp, g.client, models.CreateDriveCollectionResponseFromDiscriminatorValue)
+	if err != nil {
+		return nil, err
+	}
+
+	err = pageIterator.Iterate(ctx, func(d models.Driveable) bool {
 		out = append(out, toDomainDrive(d))
+		return true
+	})
+
+	if err != nil {
+		return nil, graphinfra.MapGraphError(err, true)
 	}
 
 	return out, nil
