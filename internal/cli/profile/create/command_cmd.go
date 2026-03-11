@@ -1,8 +1,8 @@
+// Package create provides the command-line interface for initializing new OneDrive profiles.
 package create
 
 import (
 	"context"
-	domainstate "github.com/michaeldcanady/go-onedrive/internal/state/domain"
 	"strings"
 	"time"
 
@@ -12,16 +12,22 @@ import (
 	domainstate "github.com/michaeldcanady/go-onedrive/internal/state/domain"
 )
 
+// CreateCmd handles the execution logic for the 'profile create' command.
 type CreateCmd struct {
 	util.BaseCommand
 }
 
+// NewCreateCmd creates a new CreateCmd instance with the provided dependency container.
 func NewCreateCmd(container didomain.Container) *CreateCmd {
 	return &CreateCmd{
 		BaseCommand: util.NewBaseCommand(container, commandName),
 	}
 }
 
+// Run executes the profile create command. It initializes a new profile with
+// the given name, optionally overwriting an existing one and setting it as
+// the active profile.
+// It uses specific domain services to decouple from the full container.
 func (c *CreateCmd) Run(ctx context.Context, opts Options) error {
 	start := time.Now()
 
@@ -35,11 +41,17 @@ func (c *CreateCmd) Run(ctx context.Context, opts Options) error {
 		return util.NewCommandErrorWithNameWithMessage(c.Name, "name is empty")
 	}
 
-	c.Log.Info("checking if profile exists", domainlogger.String("name", name))
+	c.Log.Info("starting profile creation", domainlogger.String("name", name))
 
-	exists, err := c.Container.Profile().Exists(ctx, name)
+	profileSvc := c.Container.Profile()
+	if profileSvc == nil {
+		return util.NewCommandErrorWithNameWithMessage(c.Name, "profile service is nil")
+	}
+
+	c.Log.Debug("checking if profile exists", domainlogger.String("name", name))
+	exists, err := profileSvc.Exists(ctx, name)
 	if err != nil {
-		c.Log.Error("failed to check profile existence", domainlogger.String("error", err.Error()))
+		c.Log.Error("failed to check profile existence", domainlogger.Error(err))
 		return util.NewCommandErrorWithNameWithError(c.Name, err)
 	}
 
@@ -54,25 +66,30 @@ func (c *CreateCmd) Run(ctx context.Context, opts Options) error {
 			domainlogger.String("name", name),
 		)
 
-		if err := c.Container.Profile().Delete(ctx, name); err != nil {
-			c.Log.Error("failed to delete existing profile", domainlogger.String("error", err.Error()))
+		if err := profileSvc.Delete(ctx, name); err != nil {
+			c.Log.Error("failed to delete existing profile", domainlogger.Error(err))
 			return util.NewCommandErrorWithNameWithError(c.Name, err)
 		}
 	}
 
 	c.Log.Info("creating profile", domainlogger.String("name", name))
 
-	p, err := c.Container.Profile().Create(ctx, name)
+	p, err := profileSvc.Create(ctx, name)
 	if err != nil {
-		c.Log.Error("failed to create profile", domainlogger.String("error", err.Error()))
+		c.Log.Error("failed to create profile", domainlogger.Error(err))
 		return util.NewCommandErrorWithNameWithError(c.Name, err)
 	}
 
 	if opts.SetCurrent {
 		c.Log.Info("setting new profile as current", domainlogger.String("name", name))
 
-		if err := c.Container.State().Set(domainstate.KeyProfile, p.Name, domainstate.ScopeGlobal); err != nil {
-			c.Log.Error("failed to set current profile", domainlogger.String("error", err.Error()))
+		stateSvc := c.Container.State()
+		if stateSvc == nil {
+			return util.NewCommandErrorWithNameWithMessage(c.Name, "state service is nil")
+		}
+
+		if err := stateSvc.Set(domainstate.KeyProfile, p.Name, domainstate.ScopeGlobal); err != nil {
+			c.Log.Error("failed to set current profile", domainlogger.Error(err))
 			return util.NewCommandErrorWithNameWithError(c.Name, err)
 		}
 	}

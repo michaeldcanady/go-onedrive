@@ -1,3 +1,4 @@
+// Package list provides the command-line interface for listing all OneDrive profiles.
 package list
 
 import (
@@ -9,16 +10,21 @@ import (
 	didomain "github.com/michaeldcanady/go-onedrive/internal/di/domain"
 )
 
+// ListCmd handles the execution logic for the 'profile list' command.
 type ListCmd struct {
 	util.BaseCommand
 }
 
+// NewListCmd creates a new ListCmd instance with the provided dependency container.
 func NewListCmd(container didomain.Container) *ListCmd {
 	return &ListCmd{
 		BaseCommand: util.NewBaseCommand(container, commandName),
 	}
 }
 
+// Run executes the profile list command. It retrieves all configured profiles
+// and displays their names to the user.
+// It uses the domainprofile.ProfileService interface to decouple from the full container.
 func (c *ListCmd) Run(ctx context.Context, opts Options) error {
 	start := time.Now()
 
@@ -28,9 +34,15 @@ func (c *ListCmd) Run(ctx context.Context, opts Options) error {
 
 	c.Log.Info("listing profiles")
 
-	profiles, err := c.Container.Profile().List(ctx)
+	profileSvc := c.Container.Profile()
+	if profileSvc == nil {
+		return util.NewCommandErrorWithNameWithMessage(c.Name, "profile service is nil")
+	}
+
+	profiles, err := profileSvc.List(ctx)
 	if err != nil {
-		return err
+		c.Log.Error("failed to list profiles", domainlogger.Error(err))
+		return util.NewCommandErrorWithNameWithError(c.Name, err)
 	}
 
 	for _, p := range profiles {

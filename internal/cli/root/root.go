@@ -2,8 +2,9 @@ package root
 
 import (
 	"fmt"
-	domainstate "github.com/michaeldcanady/go-onedrive/internal/state/domain"
 	"strings"
+
+	domainstate "github.com/michaeldcanady/go-onedrive/internal/state/domain"
 
 	authcmd "github.com/michaeldcanady/go-onedrive/internal/cli/auth"
 	catcmd "github.com/michaeldcanady/go-onedrive/internal/cli/cat"
@@ -21,7 +22,6 @@ import (
 	"github.com/michaeldcanady/go-onedrive/internal/cli/upload"
 	domainlogger "github.com/michaeldcanady/go-onedrive/internal/core/logger/domain"
 	didomain "github.com/michaeldcanady/go-onedrive/internal/di/domain"
-	domainstate "github.com/michaeldcanady/go-onedrive/internal/state/domain"
 	"github.com/spf13/cobra"
 )
 

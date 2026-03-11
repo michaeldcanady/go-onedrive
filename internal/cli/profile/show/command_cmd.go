@@ -1,3 +1,4 @@
+// Package show provides the command-line interface for displaying detailed information about a OneDrive profile.
 package show
 
 import (
@@ -9,16 +10,21 @@ import (
 	didomain "github.com/michaeldcanady/go-onedrive/internal/di/domain"
 )
 
+// ShowCmd handles the execution logic for the 'profile show' command.
 type ShowCmd struct {
 	util.BaseCommand
 }
 
+// NewShowCmd creates a new ShowCmd instance with the provided dependency container.
 func NewShowCmd(container didomain.Container) *ShowCmd {
 	return &ShowCmd{
 		BaseCommand: util.NewBaseCommand(container, commandName),
 	}
 }
 
+// Run executes the profile show command. It retrieves the metadata for the
+// specified profile and displays its name, filesystem path, and configuration path.
+// It uses the domainprofile.ProfileService interface to decouple from the full container.
 func (c *ShowCmd) Run(ctx context.Context, opts Options) error {
 	start := time.Now()
 
@@ -28,9 +34,18 @@ func (c *ShowCmd) Run(ctx context.Context, opts Options) error {
 
 	c.Log.Info("showing profile details", domainlogger.String("profile", opts.Name))
 
-	p, err := c.Container.Profile().Get(ctx, opts.Name)
+	profileSvc := c.Container.Profile()
+	if profileSvc == nil {
+		return util.NewCommandErrorWithNameWithMessage(c.Name, "profile service is nil")
+	}
+
+	p, err := profileSvc.Get(ctx, opts.Name)
 	if err != nil {
-		return err
+		c.Log.Error("failed to retrieve profile",
+			domainlogger.String("profile", opts.Name),
+			domainlogger.Error(err),
+		)
+		return util.NewCommandErrorWithNameWithError(c.Name, err)
 	}
 
 	c.RenderMessage(opts.Stdout, "Name: %s\n", p.Name)

@@ -1,26 +1,31 @@
+// Package use provides the command-line interface for selecting the active OneDrive drive.
 package use
 
 import (
 	"context"
 	"time"
 
-	domainstate "github.com/michaeldcanady/go-onedrive/internal/state/domain"
-
 	"github.com/michaeldcanady/go-onedrive/internal/cli/util"
 	domainlogger "github.com/michaeldcanady/go-onedrive/internal/core/logger/domain"
 	didomain "github.com/michaeldcanady/go-onedrive/internal/di/domain"
+	domainstate "github.com/michaeldcanady/go-onedrive/internal/state/domain"
 )
 
+// UseCmd handles the execution logic for the 'drive use' command.
 type UseCmd struct {
 	util.BaseCommand
 }
 
+// NewUseCmd creates a new UseCmd instance with the provided dependency container.
 func NewUseCmd(container didomain.Container) *UseCmd {
 	return &UseCmd{
 		BaseCommand: util.NewBaseCommand(container, commandName),
 	}
 }
 
+// Run executes the drive use command. It resolves the provided drive ID or alias
+// and updates the global state to make it the active drive for future operations.
+// It uses specific domain services to decouple from the full container.
 func (c *UseCmd) Run(ctx context.Context, opts Options) error {
 	start := time.Now()
 
@@ -30,17 +35,27 @@ func (c *UseCmd) Run(ctx context.Context, opts Options) error {
 
 	c.Log.Info("starting drive use command", domainlogger.String("target", opts.DriveIDOrAlias))
 
-	resolvedDrive, err := c.Container.Drive().ResolveDrive(ctx, opts.DriveIDOrAlias)
+	driveSvc := c.Container.Drive()
+	if driveSvc == nil {
+		return util.NewCommandErrorWithNameWithMessage(c.Name, "drive service is nil")
+	}
+
+	resolvedDrive, err := driveSvc.ResolveDrive(ctx, opts.DriveIDOrAlias)
 	if err != nil {
-		c.Log.Warn("failed to resolve drive",
+		c.Log.Error("failed to resolve drive",
 			domainlogger.Error(err),
 			domainlogger.String("target", opts.DriveIDOrAlias),
 		)
 		return util.NewCommandErrorWithNameWithError(c.Name, err)
 	}
 
-	if err := c.Container.State().Set(domainstate.KeyDrive, resolvedDrive.ID, domainstate.ScopeGlobal); err != nil {
-		c.Log.Warn("failed to update current drive state",
+	stateSvc := c.Container.State()
+	if stateSvc == nil {
+		return util.NewCommandErrorWithNameWithMessage(c.Name, "state service is nil")
+	}
+
+	if err := stateSvc.Set(domainstate.KeyDrive, resolvedDrive.ID, domainstate.ScopeGlobal); err != nil {
+		c.Log.Error("failed to update current drive state",
 			domainlogger.Error(err),
 			domainlogger.String("driveID", resolvedDrive.ID),
 		)

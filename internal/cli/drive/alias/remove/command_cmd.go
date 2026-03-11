@@ -1,3 +1,4 @@
+// Package remove provides the command-line interface for deleting OneDrive drive aliases.
 package remove
 
 import (
@@ -9,16 +10,21 @@ import (
 	didomain "github.com/michaeldcanady/go-onedrive/internal/di/domain"
 )
 
+// RemoveCmd handles the execution logic for the 'drive alias remove' command.
 type RemoveCmd struct {
 	util.BaseCommand
 }
 
+// NewRemoveCmd creates a new RemoveCmd instance with the provided dependency container.
 func NewRemoveCmd(container didomain.Container) *RemoveCmd {
 	return &RemoveCmd{
 		BaseCommand: util.NewBaseCommand(container, commandName),
 	}
 }
 
+// Run executes the drive alias remove command. It deletes a user-defined alias
+// from the global state. It uses the domainstate.Service interface to decouple
+// from the full container.
 func (c *RemoveCmd) Run(ctx context.Context, opts Options) error {
 	start := time.Now()
 
@@ -30,8 +36,14 @@ func (c *RemoveCmd) Run(ctx context.Context, opts Options) error {
 		domainlogger.String("alias", opts.Alias),
 	)
 
-	if err := c.Container.State().RemoveDriveAlias(opts.Alias); err != nil {
+	stateSvc := c.Container.State()
+	if stateSvc == nil {
+		return util.NewCommandErrorWithNameWithMessage(c.Name, "state service is nil")
+	}
+
+	if err := stateSvc.RemoveDriveAlias(opts.Alias); err != nil {
 		c.Log.Error("failed to remove drive alias",
+			domainlogger.String("alias", opts.Alias),
 			domainlogger.Error(err),
 		)
 		return util.NewCommandError(c.Name, "failed to remove drive alias", err)

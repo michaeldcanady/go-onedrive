@@ -1,32 +1,41 @@
+// Package login provides the command-line interface for authenticating with OneDrive.
 package login
 
 import (
 	"context"
-	domainstate "github.com/michaeldcanady/go-onedrive/internal/state/domain"
 	"time"
 
 	domainauth "github.com/michaeldcanady/go-onedrive/internal/auth/domain"
 	"github.com/michaeldcanady/go-onedrive/internal/cli/util"
 	domainlogger "github.com/michaeldcanady/go-onedrive/internal/core/logger/domain"
-	domaindi "github.com/michaeldcanady/go-onedrive/internal/di/domain"
+	didomain "github.com/michaeldcanady/go-onedrive/internal/di/domain"
+	domainstate "github.com/michaeldcanady/go-onedrive/internal/state/domain"
 )
 
 const (
+	// FilesReadWriteAllScope is the Microsoft Graph scope for reading and writing all files.
 	FilesReadWriteAllScope = "Files.ReadWrite.All"
-	UserReadScope          = "User.Read"
-	OfflineAccessScope     = "offline_access"
+	// UserReadScope is the Microsoft Graph scope for reading basic user profile information.
+	UserReadScope = "User.Read"
+	// OfflineAccessScope is the Microsoft Graph scope for requesting refresh tokens.
+	OfflineAccessScope = "offline_access"
 )
 
+// LoginCmd handles the execution logic for the 'auth login' command.
 type LoginCmd struct {
 	util.BaseCommand
 }
 
-func NewLoginCmd(container domaindi.Container) *LoginCmd {
+// NewLoginCmd creates a new LoginCmd instance with the provided dependency container.
+func NewLoginCmd(container didomain.Container) *LoginCmd {
 	return &LoginCmd{
 		BaseCommand: util.NewBaseCommand(container, commandName),
 	}
 }
 
+// Run executes the login flow. It retrieves the current profile, initiates
+// authentication via the auth service, and optionally displays the access token.
+// It uses specific domain services to decouple from the full container.
 func (c *LoginCmd) Run(ctx context.Context, opts Options) error {
 	start := time.Now()
 
@@ -36,8 +45,14 @@ func (c *LoginCmd) Run(ctx context.Context, opts Options) error {
 
 	c.Log.Info("starting login flow")
 
-	profileName, err := c.Container.State().Get(domainstate.KeyProfile)
+	stateSvc := c.Container.State()
+	if stateSvc == nil {
+		return util.NewCommandErrorWithNameWithMessage(c.Name, "state service is nil")
+	}
+
+	profileName, err := stateSvc.Get(domainstate.KeyProfile)
 	if err != nil {
+		c.Log.Error("failed to retrieve current profile", domainlogger.Error(err))
 		return util.NewCommandError(c.Name, "failed to retrieve current profile", err)
 	}
 
@@ -48,6 +63,9 @@ func (c *LoginCmd) Run(ctx context.Context, opts Options) error {
 	)
 
 	authService := c.Container.Auth()
+	if authService == nil {
+		return util.NewCommandErrorWithNameWithMessage(c.Name, "auth service is nil")
+	}
 
 	loginOpts := domainauth.LoginOptions{
 		Force: opts.Force,

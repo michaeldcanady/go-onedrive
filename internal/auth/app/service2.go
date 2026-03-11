@@ -68,7 +68,7 @@ func (s *Service2) resolveProfile(profileName string) (string, error) {
 	if profileName != "" {
 		return profileName, nil
 	}
-	return s.state.GetCurrentProfile()
+	return s.state.Get(domainstate.KeyProfile)
 }
 
 func (s *Service2) loadProfileConfig(

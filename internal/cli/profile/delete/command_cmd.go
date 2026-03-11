@@ -1,9 +1,9 @@
+// Package delete provides the command-line interface for removing OneDrive profiles.
 package delete
 
 import (
 	"context"
 	"fmt"
-	domainstate "github.com/michaeldcanady/go-onedrive/internal/state/domain"
 	"strings"
 	"time"
 
@@ -11,20 +11,26 @@ import (
 	"github.com/michaeldcanady/go-onedrive/internal/cli/util"
 	domainlogger "github.com/michaeldcanady/go-onedrive/internal/core/logger/domain"
 	didomain "github.com/michaeldcanady/go-onedrive/internal/di/domain"
-	"github.com/michaeldcanady/go-onedrive/internal/profile/infra"
+	infraprofile "github.com/michaeldcanady/go-onedrive/internal/profile/infra"
 	domainstate "github.com/michaeldcanady/go-onedrive/internal/state/domain"
 )
 
+// DeleteCmd handles the execution logic for the 'profile delete' command.
 type DeleteCmd struct {
 	util.BaseCommand
 }
 
+// NewDeleteCmd creates a new DeleteCmd instance with the provided dependency container.
 func NewDeleteCmd(container didomain.Container) *DeleteCmd {
 	return &DeleteCmd{
 		BaseCommand: util.NewBaseCommand(container, commandName),
 	}
 }
 
+// Run executes the profile delete command. It removes the specified profile's
+// configuration and data. If the profile being deleted is the active one,
+// it prompts for confirmation or switches to the default profile.
+// It uses specific domain services to decouple from the full container.
 func (c *DeleteCmd) Run(ctx context.Context, opts Options) error {
 	start := time.Now()
 
@@ -37,16 +43,22 @@ func (c *DeleteCmd) Run(ctx context.Context, opts Options) error {
 		return util.NewCommandErrorWithNameWithMessage(c.Name, "name is empty")
 	}
 
-	if name == infra.DefaultProfileName {
+	if name == infraprofile.DefaultProfileName {
 		return util.NewCommandErrorWithNameWithMessage(
 			c.Name,
 			"cannot delete the default profile",
 		)
 	}
 
-	current, err := c.Container.State().Get(domainstate.KeyProfile)
+	stateSvc := c.Container.State()
+	if stateSvc == nil {
+		return util.NewCommandErrorWithNameWithMessage(c.Name, "state service is nil")
+	}
+
+	current, err := stateSvc.Get(domainstate.KeyProfile)
 	if err != nil {
-		return util.NewCommandErrorWithNameWithError(c.Name, err)
+		c.Log.Warn("failed to retrieve current profile from state", domainlogger.Error(err))
+		// Continue anyway, we just might miss the confirmation logic
 	}
 
 	// If deleting the active profile, confirm unless forced
@@ -65,7 +77,7 @@ func (c *DeleteCmd) Run(ctx context.Context, opts Options) error {
 
 		c.Log.Info("deleting current profile; switching to default")
 
-		if err := c.Container.State().Set(domainstate.KeyProfile, infra.DefaultProfileName, domainstate.ScopeGlobal); err != nil {
+		if err := stateSvc.Set(domainstate.KeyProfile, infraprofile.DefaultProfileName, domainstate.ScopeGlobal); err != nil {
 			return util.NewCommandErrorWithNameWithError(
 				c.Name,
 				fmt.Errorf("failed to switch to default profile: %w", err),
@@ -73,8 +85,17 @@ func (c *DeleteCmd) Run(ctx context.Context, opts Options) error {
 		}
 	}
 
+	profileSvc := c.Container.Profile()
+	if profileSvc == nil {
+		return util.NewCommandErrorWithNameWithMessage(c.Name, "profile service is nil")
+	}
+
 	// Delete the profile directory
-	if err := c.Container.Profile().Delete(ctx, name); err != nil {
+	if err := profileSvc.Delete(ctx, name); err != nil {
+		c.Log.Error("failed to delete profile",
+			domainlogger.String("profile", name),
+			domainlogger.Error(err),
+		)
 		return util.NewCommandErrorWithNameWithError(c.Name, err)
 	}
 
