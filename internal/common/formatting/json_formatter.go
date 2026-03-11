@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"io"
 
-	domainfs "github.com/michaeldcanady/go-onedrive/internal/fs/domain"
+	domainfs "github.com/michaeldcanady/go-onedrive/internal/fs/shared/domain"
 )
 
 type JSONFormatter struct{}

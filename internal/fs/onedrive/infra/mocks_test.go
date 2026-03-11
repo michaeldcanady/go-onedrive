@@ -4,7 +4,7 @@ import (
 	"context"
 
 	logger "github.com/michaeldcanady/go-onedrive/internal/core/logger/domain"
-	"github.com/michaeldcanady/go-onedrive/internal/fs/domain"
+	"github.com/michaeldcanady/go-onedrive/internal/fs/shared/domain"
 	abstractions "github.com/microsoft/kiota-abstractions-go"
 	"github.com/microsoft/kiota-abstractions-go/serialization"
 	"github.com/microsoft/kiota-abstractions-go/store"

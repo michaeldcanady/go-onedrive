@@ -6,8 +6,8 @@ import (
 	"io"
 
 	logger "github.com/michaeldcanady/go-onedrive/internal/core/logger/domain"
-	"github.com/michaeldcanady/go-onedrive/internal/fs/domain"
 	"github.com/michaeldcanady/go-onedrive/internal/fs/onedrive/infra"
+	"github.com/michaeldcanady/go-onedrive/internal/fs/shared/domain"
 )
 
 type CachedFileContentsRepository struct {

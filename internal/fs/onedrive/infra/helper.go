@@ -4,7 +4,7 @@ import (
 	"path"
 	"strings"
 
-	"github.com/michaeldcanady/go-onedrive/internal/fs/domain"
+	"github.com/michaeldcanady/go-onedrive/internal/fs/shared/domain"
 	"github.com/microsoftgraph/msgraph-sdk-go/models"
 	stduritemplate "github.com/std-uritemplate/std-uritemplate/go/v2"
 )

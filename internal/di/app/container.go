@@ -12,7 +12,7 @@ import (
 	didomain "github.com/michaeldcanady/go-onedrive/internal/di/domain"
 	domaindrive "github.com/michaeldcanady/go-onedrive/internal/drive/domain"
 	domaineditor "github.com/michaeldcanady/go-onedrive/internal/editor/domain"
-	domainfs "github.com/michaeldcanady/go-onedrive/internal/fs/domain"
+	domainfs "github.com/michaeldcanady/go-onedrive/internal/fs/shared/domain"
 	domainprofile "github.com/michaeldcanady/go-onedrive/internal/profile/domain"
 	domainstate "github.com/michaeldcanady/go-onedrive/internal/state/domain"
 	pkgcache "github.com/michaeldcanady/go-onedrive/pkg/cache"

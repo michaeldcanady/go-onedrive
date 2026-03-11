@@ -1,8 +1,8 @@
 package app
 
 import (
-	"github.com/michaeldcanady/go-onedrive/internal/fs/domain"
 	"github.com/michaeldcanady/go-onedrive/internal/fs/onedrive/infra"
+	"github.com/michaeldcanady/go-onedrive/internal/fs/shared/domain"
 )
 
 func NewIgnoreMatcherFactory() domain.IgnoreMatcherFactory {

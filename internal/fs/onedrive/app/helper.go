@@ -3,23 +3,22 @@ package app
 import (
 	"time"
 
-	"github.com/michaeldcanady/go-onedrive/internal/fs/domain"
-	domainfs "github.com/michaeldcanady/go-onedrive/internal/fs/domain"
+	"github.com/michaeldcanady/go-onedrive/internal/fs/shared/domain"
 )
 
-func convertMetadataToFSType(ype domain.ItemType) domainfs.ItemType {
+func convertMetadataToFSType(ype domain.ItemType) domain.ItemType {
 	switch ype {
 	case domain.ItemTypeFile:
-		return domainfs.ItemTypeFile
+		return domain.ItemTypeFile
 	case domain.ItemTypeFolder:
-		return domainfs.ItemTypeFolder
+		return domain.ItemTypeFolder
 	}
-	return domainfs.ItemTypeUnknown
+	return domain.ItemTypeUnknown
 }
 
-func convertMetadataToItem(src *domain.Metadata) domainfs.Item {
+func convertMetadataToItem(src *domain.Metadata) domain.Item {
 	if src == nil {
-		return domainfs.Item{}
+		return domain.Item{}
 	}
 
 	var modified time.Time
@@ -27,7 +26,7 @@ func convertMetadataToItem(src *domain.Metadata) domainfs.Item {
 		modified = *src.ModifiedAt
 	}
 
-	return domainfs.Item{
+	return domain.Item{
 		ID:       src.ID,
 		Path:     src.Path,
 		Name:     src.Name,

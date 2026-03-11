@@ -13,7 +13,7 @@ import (
 	domainlogger "github.com/michaeldcanady/go-onedrive/internal/core/logger/domain"
 	domaindrive "github.com/michaeldcanady/go-onedrive/internal/drive/domain"
 	domaineditor "github.com/michaeldcanady/go-onedrive/internal/editor/domain"
-	domainfs "github.com/michaeldcanady/go-onedrive/internal/fs/domain"
+	domainfs "github.com/michaeldcanady/go-onedrive/internal/fs/shared/domain"
 	domainprofile "github.com/michaeldcanady/go-onedrive/internal/profile/domain"
 	infraprofile "github.com/michaeldcanady/go-onedrive/internal/profile/infra"
 	domainstate "github.com/michaeldcanady/go-onedrive/internal/state/domain"

@@ -3,7 +3,7 @@ package infra
 import (
 	"context"
 
-	"github.com/michaeldcanady/go-onedrive/internal/fs/domain"
+	"github.com/michaeldcanady/go-onedrive/internal/fs/shared/domain"
 )
 
 // ListingCache defines the interface for a cache that stores directory listings.

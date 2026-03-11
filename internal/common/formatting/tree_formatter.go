@@ -6,7 +6,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/michaeldcanady/go-onedrive/internal/fs/domain"
+	"github.com/michaeldcanady/go-onedrive/internal/fs/shared/domain"
 )
 
 type TreeFormatter struct{}

@@ -6,12 +6,12 @@ import (
 	"errors"
 	"time"
 
-	"github.com/michaeldcanady/go-onedrive/internal/interface/cli/util"
 	domainerrors "github.com/michaeldcanady/go-onedrive/internal/common/errors"
 	domainlogger "github.com/michaeldcanady/go-onedrive/internal/core/logger/domain"
 	didomain "github.com/michaeldcanady/go-onedrive/internal/di/domain"
 	domaineditor "github.com/michaeldcanady/go-onedrive/internal/editor/domain"
-	domainfs "github.com/michaeldcanady/go-onedrive/internal/fs/domain"
+	domainfs "github.com/michaeldcanady/go-onedrive/internal/fs/shared/domain"
+	"github.com/michaeldcanady/go-onedrive/internal/interface/cli/util"
 )
 
 // ConflictHandler defines an interface for resolving upload conflicts during editing.

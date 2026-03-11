@@ -3,7 +3,7 @@ package infra
 import (
 	"context"
 
-	"github.com/michaeldcanady/go-onedrive/internal/fs/domain"
+	"github.com/michaeldcanady/go-onedrive/internal/fs/shared/domain"
 )
 
 // GraphGateway defines the interface for interacting with the Microsoft Graph API for file metadata.

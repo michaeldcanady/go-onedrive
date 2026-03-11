@@ -5,13 +5,13 @@ import (
 	"os"
 	"time"
 
-	"github.com/michaeldcanady/go-onedrive/internal/interface/cli/util"
 	"github.com/michaeldcanady/go-onedrive/internal/common/filtering"
 	"github.com/michaeldcanady/go-onedrive/internal/common/formatting"
 	"github.com/michaeldcanady/go-onedrive/internal/common/sorting"
 	domainlogger "github.com/michaeldcanady/go-onedrive/internal/core/logger/domain"
 	didomain "github.com/michaeldcanady/go-onedrive/internal/di/domain"
-	domainfs "github.com/michaeldcanady/go-onedrive/internal/fs/domain"
+	domainfs "github.com/michaeldcanady/go-onedrive/internal/fs/shared/domain"
+	"github.com/michaeldcanady/go-onedrive/internal/interface/cli/util"
 )
 
 // LsCmd handles the core execution logic for the 'ls' command.

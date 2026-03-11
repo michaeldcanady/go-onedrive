@@ -4,7 +4,7 @@ import (
 	"context"
 
 	domainlogger "github.com/michaeldcanady/go-onedrive/internal/core/logger/domain"
-	domainfs "github.com/michaeldcanady/go-onedrive/internal/fs/domain"
+	domainfs "github.com/michaeldcanady/go-onedrive/internal/fs/shared/domain"
 	abstractions "github.com/microsoft/kiota-abstractions-go"
 	nethttplibrary "github.com/microsoft/kiota-http-go"
 	"github.com/microsoftgraph/msgraph-sdk-go/drives"

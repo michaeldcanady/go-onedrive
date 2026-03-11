@@ -4,15 +4,15 @@ import (
 	appcache "github.com/michaeldcanady/go-onedrive/internal/cache/app"
 	appdrive "github.com/michaeldcanady/go-onedrive/internal/drive/app"
 	appeditor "github.com/michaeldcanady/go-onedrive/internal/editor/app"
-	appfs "github.com/michaeldcanady/go-onedrive/internal/fs/app"
 	applocal "github.com/michaeldcanady/go-onedrive/internal/fs/local/app"
 	apponedrive "github.com/michaeldcanady/go-onedrive/internal/fs/onedrive/app"
 	appregistry "github.com/michaeldcanady/go-onedrive/internal/fs/registry"
+	appfs "github.com/michaeldcanady/go-onedrive/internal/fs/shared/app"
 	appstate "github.com/michaeldcanady/go-onedrive/internal/state/app"
 
 	domaindrive "github.com/michaeldcanady/go-onedrive/internal/drive/domain"
 	domaineditor "github.com/michaeldcanady/go-onedrive/internal/editor/domain"
-	domainfs "github.com/michaeldcanady/go-onedrive/internal/fs/domain"
+	domainfs "github.com/michaeldcanady/go-onedrive/internal/fs/shared/domain"
 	pkgcache "github.com/michaeldcanady/go-onedrive/pkg/cache"
 
 	infraeditor "github.com/michaeldcanady/go-onedrive/internal/editor/infra"

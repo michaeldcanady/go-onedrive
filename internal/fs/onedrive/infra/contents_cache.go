@@ -3,7 +3,7 @@ package infra
 import (
 	"context"
 
-	"github.com/michaeldcanady/go-onedrive/internal/fs/domain"
+	"github.com/michaeldcanady/go-onedrive/internal/fs/shared/domain"
 )
 
 // ContentsCache defines the interface for caching file contents. It allows

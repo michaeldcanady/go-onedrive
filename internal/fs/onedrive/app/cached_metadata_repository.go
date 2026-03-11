@@ -3,10 +3,10 @@ package app
 import (
 	"context"
 
-	"github.com/michaeldcanady/go-onedrive/internal/interface/cli/util"
 	logger "github.com/michaeldcanady/go-onedrive/internal/core/logger/domain"
-	"github.com/michaeldcanady/go-onedrive/internal/fs/domain"
 	"github.com/michaeldcanady/go-onedrive/internal/fs/onedrive/infra"
+	"github.com/michaeldcanady/go-onedrive/internal/fs/shared/domain"
+	"github.com/michaeldcanady/go-onedrive/internal/interface/cli/util"
 )
 
 // CachedMetadataRepository implements domain.MetadataRepository with caching and path-to-ID resolution.

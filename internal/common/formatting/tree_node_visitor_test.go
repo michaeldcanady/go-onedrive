@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	fs "github.com/michaeldcanady/go-onedrive/internal/fs/domain"
+	fs "github.com/michaeldcanady/go-onedrive/internal/fs/shared/domain"
 	"github.com/stretchr/testify/assert"
 )
 

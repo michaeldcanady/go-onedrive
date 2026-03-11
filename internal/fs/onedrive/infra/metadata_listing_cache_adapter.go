@@ -3,7 +3,7 @@ package infra
 import (
 	"context"
 
-	domainfs "github.com/michaeldcanady/go-onedrive/internal/fs/domain"
+	domainfs "github.com/michaeldcanady/go-onedrive/internal/fs/shared/domain"
 	pkgcache "github.com/michaeldcanady/go-onedrive/pkg/cache"
 )
 

@@ -3,7 +3,7 @@ package formatting
 import (
 	"testing"
 
-	domainfs "github.com/michaeldcanady/go-onedrive/internal/fs/domain"
+	domainfs "github.com/michaeldcanady/go-onedrive/internal/fs/shared/domain"
 	"github.com/stretchr/testify/assert"
 )
 
