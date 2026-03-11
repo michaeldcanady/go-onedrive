@@ -11,6 +11,7 @@ import (
 	domainlogger "github.com/michaeldcanady/go-onedrive/internal/core/logger/domain"
 	didomain "github.com/michaeldcanady/go-onedrive/internal/di/domain"
 	"github.com/michaeldcanady/go-onedrive/internal/profile/infra"
+	domainstate "github.com/michaeldcanady/go-onedrive/internal/state/domain"
 )
 
 type DeleteCmd struct {
@@ -27,7 +28,7 @@ func (c *DeleteCmd) Run(ctx context.Context, opts Options) error {
 	start := time.Now()
 
 	if err := c.Initialize(loggerID); err != nil {
-		return err
+		return util.NewCommandError(c.Name, "failed to initialize command", err)
 	}
 
 	name := strings.ToLower(strings.TrimSpace(opts.Name))
@@ -57,13 +58,13 @@ func (c *DeleteCmd) Run(ctx context.Context, opts Options) error {
 
 		_, err := prompt.Run()
 		if err != nil {
-			fmt.Fprintln(opts.Stdout, "Aborted.")
+			c.RenderInfo(opts.Stdout, "aborted")
 			return nil
 		}
 
 		c.Log.Info("deleting current profile; switching to default")
 
-		if err := c.Container.State().SetCurrentProfile(infra.DefaultProfileName); err != nil {
+		if err := c.Container.State().SetCurrentProfile(infra.DefaultProfileName, domainstate.ScopeGlobal); err != nil {
 			return util.NewCommandErrorWithNameWithError(
 				c.Name,
 				fmt.Errorf("failed to switch to default profile: %w", err),
@@ -73,11 +74,10 @@ func (c *DeleteCmd) Run(ctx context.Context, opts Options) error {
 
 	// Delete the profile directory
 	if err := c.Container.Profile().Delete(ctx, name); err != nil {
-		c.RenderError(opts.Stderr, err)
 		return util.NewCommandErrorWithNameWithError(c.Name, err)
 	}
 
-	fmt.Fprintf(opts.Stdout, "Deleted profile %q\n", name)
+	c.RenderSuccess(opts.Stdout, "deleted profile %q", name)
 
 	c.Log.Info("profile delete completed successfully",
 		domainlogger.Duration("duration", time.Since(start)),

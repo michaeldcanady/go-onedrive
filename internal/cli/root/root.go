@@ -20,6 +20,7 @@ import (
 	"github.com/michaeldcanady/go-onedrive/internal/cli/upload"
 	domainlogger "github.com/michaeldcanady/go-onedrive/internal/core/logger/domain"
 	didomain "github.com/michaeldcanady/go-onedrive/internal/di/domain"
+	domainstate "github.com/michaeldcanady/go-onedrive/internal/state/domain"
 	"github.com/spf13/cobra"
 )
 
@@ -69,7 +70,9 @@ func CreateRootCmd(container didomain.Container) (*cobra.Command, error) {
 			}
 
 			if strings.TrimSpace(profile) != "" {
-				container.State().SetSessionProfile(profile)
+				if err := container.State().SetCurrentProfile(profile, domainstate.ScopeSession); err != nil {
+					return fmt.Errorf("failed to set session profile: %w", err)
+				}
 			}
 
 			profileName, err := container.State().GetCurrentProfile()

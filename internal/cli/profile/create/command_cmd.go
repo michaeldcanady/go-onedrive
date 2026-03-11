@@ -2,13 +2,13 @@ package create
 
 import (
 	"context"
-	"fmt"
 	"strings"
 	"time"
 
 	"github.com/michaeldcanady/go-onedrive/internal/cli/util"
 	domainlogger "github.com/michaeldcanady/go-onedrive/internal/core/logger/domain"
 	didomain "github.com/michaeldcanady/go-onedrive/internal/di/domain"
+	domainstate "github.com/michaeldcanady/go-onedrive/internal/state/domain"
 )
 
 type CreateCmd struct {
@@ -25,7 +25,7 @@ func (c *CreateCmd) Run(ctx context.Context, opts Options) error {
 	start := time.Now()
 
 	if err := c.Initialize(loggerID); err != nil {
-		return err
+		return util.NewCommandError(c.Name, "failed to initialize command", err)
 	}
 
 	name := strings.ToLower(strings.TrimSpace(opts.Name))
@@ -70,7 +70,7 @@ func (c *CreateCmd) Run(ctx context.Context, opts Options) error {
 	if opts.SetCurrent {
 		c.Log.Info("setting new profile as current", domainlogger.String("name", name))
 
-		if err := c.Container.State().SetCurrentProfile(p.Name); err != nil {
+		if err := c.Container.State().SetCurrentProfile(p.Name, domainstate.ScopeGlobal); err != nil {
 			c.Log.Error("failed to set current profile", domainlogger.String("error", err.Error()))
 			return util.NewCommandErrorWithNameWithError(c.Name, err)
 		}
@@ -81,7 +81,7 @@ func (c *CreateCmd) Run(ctx context.Context, opts Options) error {
 		domainlogger.String("path", p.Path),
 	)
 
-	fmt.Fprintf(opts.Stdout, "Created profile %q at %s\n", p.Name, p.Path)
+	c.RenderSuccess(opts.Stdout, "created profile %q at %s", p.Name, p.Path)
 
 	c.Log.Info("profile create completed successfully",
 		domainlogger.Duration("duration", time.Since(start)),

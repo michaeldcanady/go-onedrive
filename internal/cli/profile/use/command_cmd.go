@@ -2,13 +2,13 @@ package use
 
 import (
 	"context"
-	"fmt"
 	"strings"
 	"time"
 
 	"github.com/michaeldcanady/go-onedrive/internal/cli/util"
 	domainlogger "github.com/michaeldcanady/go-onedrive/internal/core/logger/domain"
 	didomain "github.com/michaeldcanady/go-onedrive/internal/di/domain"
+	domainstate "github.com/michaeldcanady/go-onedrive/internal/state/domain"
 )
 
 type UseCmd struct {
@@ -25,7 +25,7 @@ func (c *UseCmd) Run(ctx context.Context, opts Options) error {
 	start := time.Now()
 
 	if err := c.Initialize(loggerID); err != nil {
-		return err
+		return util.NewCommandError(c.Name, "failed to initialize command", err)
 	}
 
 	name := strings.TrimSpace(opts.Name)
@@ -40,17 +40,15 @@ func (c *UseCmd) Run(ctx context.Context, opts Options) error {
 	// Validate profile exists
 	p, err := c.Container.Profile().Get(ctx, name)
 	if err != nil {
-		c.RenderError(opts.Stderr, err)
 		return util.NewCommandErrorWithNameWithError(c.Name, err)
 	}
 
 	// Persist as current profile
-	if err := c.Container.State().SetCurrentProfile(p.Name); err != nil {
-		c.RenderError(opts.Stderr, err)
+	if err := c.Container.State().SetCurrentProfile(p.Name, domainstate.ScopeGlobal); err != nil {
 		return util.NewCommandErrorWithNameWithError(c.Name, err)
 	}
 
-	fmt.Fprintf(opts.Stdout, "Active profile set to %q\n", p.Name)
+	c.RenderSuccess(opts.Stdout, "active profile set to %q", p.Name)
 
 	c.Log.Info("profile use completed successfully",
 		domainlogger.Duration("duration", time.Since(start)),

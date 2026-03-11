@@ -23,18 +23,11 @@ func (s *Service) getState() (domainstate.State, error) {
 	return s.repo.Load()
 }
 
-func (s *Service) SetSessionProfile(name string) {
-	s.sessionProfileOverride = name
-	s.hasProfileSession = true
-}
-
 func (s *Service) GetCurrentProfile() (string, error) {
-	// Session override takes precedence
 	if s.hasProfileSession {
 		return s.sessionProfileOverride, nil
 	}
 
-	// Otherwise use persistent state
 	st, err := s.getState()
 	if err != nil {
 		return "", err
@@ -43,7 +36,13 @@ func (s *Service) GetCurrentProfile() (string, error) {
 	return st.CurrentProfile, nil
 }
 
-func (s *Service) SetCurrentProfile(name string) error {
+func (s *Service) SetCurrentProfile(name string, scope domainstate.Scope) error {
+	if scope == domainstate.ScopeSession {
+		s.sessionProfileOverride = name
+		s.hasProfileSession = true
+		return nil
+	}
+
 	st, err := s.getState()
 	if err != nil {
 		return err
@@ -54,6 +53,8 @@ func (s *Service) SetCurrentProfile(name string) error {
 }
 
 func (s *Service) ClearCurrentProfile() error {
+	s.hasProfileSession = false
+	
 	st, err := s.getState()
 	if err != nil {
 		return err
@@ -63,13 +64,7 @@ func (s *Service) ClearCurrentProfile() error {
 	return s.repo.Save(st)
 }
 
-func (s *Service) SetSessionDrive(driveID string) {
-	s.sessionDriveOverride = driveID
-	s.hasDriveSession = true
-}
-
 func (s *Service) GetCurrentDrive() (string, error) {
-	// Session override takes precedence
 	if s.hasDriveSession {
 		return s.sessionDriveOverride, nil
 	}
@@ -82,17 +77,25 @@ func (s *Service) GetCurrentDrive() (string, error) {
 	return st.CurrentDrive, nil
 }
 
-func (s *Service) SetCurrentDrive(name string) error {
+func (s *Service) SetCurrentDrive(id string, scope domainstate.Scope) error {
+	if scope == domainstate.ScopeSession {
+		s.sessionDriveOverride = id
+		s.hasDriveSession = true
+		return nil
+	}
+
 	st, err := s.getState()
 	if err != nil {
 		return err
 	}
 
-	st.CurrentDrive = name
+	st.CurrentDrive = id
 	return s.repo.Save(st)
 }
 
 func (s *Service) ClearCurrentDrive() error {
+	s.hasDriveSession = false
+
 	st, err := s.getState()
 	if err != nil {
 		return err
