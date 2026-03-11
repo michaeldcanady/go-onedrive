@@ -2,7 +2,6 @@ package remove
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/michaeldcanady/go-onedrive/internal/cli/util"
@@ -24,7 +23,7 @@ func (c *RemoveCmd) Run(ctx context.Context, opts Options) error {
 	start := time.Now()
 
 	if err := c.Initialize(loggerID); err != nil {
-		return err
+		return util.NewCommandError(c.Name, "failed to initialize command", err)
 	}
 
 	c.Log.Info("removing drive alias",
@@ -35,11 +34,10 @@ func (c *RemoveCmd) Run(ctx context.Context, opts Options) error {
 		c.Log.Error("failed to remove drive alias",
 			domainlogger.Error(err),
 		)
-		c.RenderError(opts.Stderr, err)
 		return util.NewCommandError(c.Name, "failed to remove drive alias", err)
 	}
 
-	fmt.Fprintf(opts.Stdout, "Alias %q removed\n", opts.Alias)
+	c.RenderSuccess(opts.Stdout, "alias %q removed", opts.Alias)
 
 	c.Log.Info("drive alias remove completed successfully",
 		domainlogger.Duration("duration", time.Since(start)),

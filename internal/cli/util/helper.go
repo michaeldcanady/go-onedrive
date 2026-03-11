@@ -4,9 +4,9 @@ import (
 	"bytes"
 	"io"
 
+	applogging "github.com/michaeldcanady/go-onedrive/internal/core/logger/app"
 	domainlogger "github.com/michaeldcanady/go-onedrive/internal/core/logger/domain"
 	didomain "github.com/michaeldcanady/go-onedrive/internal/di/domain"
-	applogging "github.com/michaeldcanady/go-onedrive/internal/core/logger/app"
 )
 
 // EnsureLogger retrieves or creates the CLI log.

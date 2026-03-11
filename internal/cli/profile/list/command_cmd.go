@@ -2,7 +2,6 @@ package list
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/michaeldcanady/go-onedrive/internal/cli/util"
@@ -24,19 +23,18 @@ func (c *ListCmd) Run(ctx context.Context, opts Options) error {
 	start := time.Now()
 
 	if err := c.Initialize(loggerID); err != nil {
-		return err
+		return util.NewCommandError(c.Name, "failed to initialize command", err)
 	}
 
 	c.Log.Info("listing profiles")
 
 	profiles, err := c.Container.Profile().List(ctx)
 	if err != nil {
-		c.RenderError(opts.Stderr, err)
 		return err
 	}
 
 	for _, p := range profiles {
-		fmt.Fprintf(opts.Stdout, "%s\n", p.Name)
+		c.RenderMessage(opts.Stdout, "%s\n", p.Name)
 	}
 
 	c.Log.Info("profile list completed successfully",

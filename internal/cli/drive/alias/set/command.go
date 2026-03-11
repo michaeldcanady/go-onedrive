@@ -16,7 +16,15 @@ func CreateSetCmd(container didomain.Container) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "set <alias> <drive-id>",
 		Short: "Set a drive alias",
-		Args:  cobra.ExactArgs(2),
+		Long: `You can create a convenient alias for a long OneDrive drive ID. This makes it
+much easier to refer to your drives in other commands. If the alias already
+exists, it's updated to point to the new drive ID.`,
+		Example: `  # Set an alias for your personal drive
+  odc drive alias set personal b!1234567890abcdef
+
+  # Set an alias for a shared project drive
+  odc drive alias set project-x b!0987654321fedcba`,
+		Args: cobra.ExactArgs(2),
 		PreRunE: func(_ *cobra.Command, args []string) error {
 			opts.Alias = args[0]
 			opts.DriveID = args[1]

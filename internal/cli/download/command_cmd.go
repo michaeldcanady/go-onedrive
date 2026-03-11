@@ -2,7 +2,6 @@ package download
 
 import (
 	"context"
-	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -28,7 +27,7 @@ func (c *DownloadCmd) Run(ctx context.Context, opts Options) error {
 	start := time.Now()
 
 	if err := c.Initialize(loggerID); err != nil {
-		return err
+		return util.NewCommandError(c.Name, "failed to initialize command", err)
 	}
 
 	c.Log.Info("starting download command",
@@ -43,7 +42,6 @@ func (c *DownloadCmd) Run(ctx context.Context, opts Options) error {
 
 	reader, err := fsSvc.ReadFile(ctx, opts.Source, domainfs.ReadOptions{})
 	if err != nil {
-		c.RenderError(opts.Stderr, err)
 		return util.NewCommandError(c.Name, "failed to read source file", err)
 	}
 	defer reader.Close()
@@ -67,7 +65,7 @@ func (c *DownloadCmd) Run(ctx context.Context, opts Options) error {
 		domainlogger.Duration("duration", time.Since(start)),
 	)
 
-	fmt.Fprintf(opts.Stdout, "Successfully downloaded \"%s\" to \"%s\"\n", opts.Source, opts.Destination)
+	c.RenderSuccess(opts.Stdout, "downloaded \"%s\" to \"%s\"", opts.Source, opts.Destination)
 
 	return nil
 }

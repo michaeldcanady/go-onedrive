@@ -2,7 +2,6 @@ package logout
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/michaeldcanady/go-onedrive/internal/cli/util"
@@ -24,7 +23,7 @@ func (c *LogoutCmd) Run(ctx context.Context, opts Options) error {
 	start := time.Now()
 
 	if err := c.Initialize(loggerID); err != nil {
-		return err
+		return util.NewCommandError(c.Name, "failed to initialize command", err)
 	}
 
 	c.Log.Info("starting logout flow")
@@ -59,7 +58,7 @@ func (c *LogoutCmd) Run(ctx context.Context, opts Options) error {
 		domainlogger.String("profile", profileName),
 	)
 
-	fmt.Fprintf(opts.Stdout, "Logged out of profile %q\n", profileName)
+	c.RenderSuccess(opts.Stdout, "Logged out of profile %q\n", profileName)
 
 	c.Log.Info("logout flow completed successfully",
 		domainlogger.Duration("duration", time.Since(start)),

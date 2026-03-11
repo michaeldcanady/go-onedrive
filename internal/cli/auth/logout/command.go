@@ -21,6 +21,14 @@ func CreateLogoutCmd(container didomain.Container) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "logout",
 		Short: "Log out of the current OneDrive profile",
+		Long: `You can log out of your current OneDrive session. This command removes your
+stored authentication tokens from the active profile, ensuring that
+subsequent commands require you to log in again.`,
+		Example: `  # Log out of your current OneDrive account
+  odc auth logout
+
+  # Force logout even if no active session is detected
+  odc auth logout --force`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			opts.Stdout = cmd.OutOrStdout()
 			opts.Stderr = cmd.ErrOrStderr()

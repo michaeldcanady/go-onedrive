@@ -2,7 +2,6 @@ package rm
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/michaeldcanady/go-onedrive/internal/cli/util"
@@ -26,7 +25,7 @@ func (c *Command) Run(ctx context.Context, opts Options) error {
 	start := time.Now()
 
 	if err := c.Initialize(loggerID); err != nil {
-		return err
+		return util.NewCommandError(c.Name, "failed to initialize command", err)
 	}
 
 	c.Log.Info("starting rm command",
@@ -39,7 +38,6 @@ func (c *Command) Run(ctx context.Context, opts Options) error {
 	}
 
 	if err := fsSvc.Remove(ctx, opts.Path, domainfs.RemoveOptions{Recursive: opts.Recursive}); err != nil {
-		c.RenderError(opts.Stderr, err)
 		return util.NewCommandError(c.Name, "failed to remove item", err)
 	}
 
@@ -47,7 +45,7 @@ func (c *Command) Run(ctx context.Context, opts Options) error {
 		domainlogger.Duration("duration", time.Since(start)),
 	)
 
-	fmt.Fprintf(opts.Stdout, "Successfully removed \"%s\"\n", opts.Path)
+	c.RenderSuccess(opts.Stdout, "removed \"%s\"", opts.Path)
 
 	return nil
 }

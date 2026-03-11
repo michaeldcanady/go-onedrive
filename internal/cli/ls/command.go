@@ -63,7 +63,18 @@ func CreateLSCmd(c didomain.Container) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   fmt.Sprintf("%s [path]", commandName),
 		Short: "List items in a OneDrive path",
-		Args:  cobra.MaximumNArgs(1),
+		Long: `You can list the files and folders within a specific OneDrive path. This
+command provides various formatting options like long listing, tree view,
+and JSON output. You can also sort and filter the results.`,
+		Example: `  # List items in the root of your OneDrive
+  odc ls /
+
+  # List items in a specific folder using long format
+  odc ls /Documents -l
+
+  # Display a recursive tree view of a folder
+  odc ls /Projects --tree`,
+		Args: cobra.MaximumNArgs(1),
 
 		PreRunE: func(_ *cobra.Command, args []string) error {
 			if long {

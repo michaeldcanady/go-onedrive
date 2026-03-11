@@ -15,6 +15,10 @@ func CreateListCmd(container didomain.Container) *cobra.Command {
 	return &cobra.Command{
 		Use:   "list",
 		Short: "List available profiles",
+		Long: `You can list all the OneDrive profiles you've created. This helps you see
+which accounts and configurations are available to use.`,
+		Example: `  # Display a list of all available profiles
+  odc profile list`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			opts := Options{
 				Stdout: cmd.OutOrStdout(),

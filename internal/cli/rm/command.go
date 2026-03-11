@@ -18,34 +18,14 @@ func CreateCmd(c didomain.Container) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   fmt.Sprintf("%s [path]", commandName),
 		Short: "Remove a file or directory from your OneDrive filesystem.",
-		Long: `
-Remove a file or directory at the specified OneDrive path.
+		Long: `You can remove files or directories from your OneDrive. This command works
+similarly to the Unix 'rm' utility. You can use the recursive flag to delete
+entire directories and their contents.`,
+		Example: `  # Delete a single file from OneDrive
+  odc rm /Old/temp.txt
 
-This command behaves similarly to the Unix 'rm' utility, but operates
-against your OneDrive domainaccount.
-
-Key behaviors:
-
-  • Removes an item at the given OneDrive path.
-  • Fails if the path does not exist.
-  • Supports recursive removal of directories with the '--recursive' ('-r') flag.
-  • Requires authentication via 'odc auth login'.
-
-Path semantics:
-  • All paths refer to locations in your OneDrive filesystem.
-  • Absolute paths begin with '/' (recommended).
-  • Relative paths are resolved against your OneDrive root.
-
-Authentication:
-You must be logged in (via 'odc auth login') before using this command.
-`,
-		Example: `
-  # Remove a file in the root of OneDrive
-  odc rm /notes.txt
-
-  # Remove a directory recursively
-  odc rm -r /OldProject
-`,
+  # Delete a folder and everything inside it
+  odc rm -r /Backups/2023`,
 
 		Args: cobra.ExactArgs(1),
 

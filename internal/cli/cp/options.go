@@ -13,6 +13,7 @@ type Options struct {
 	Dest       string
 	Overwrite  bool
 	IgnoreFile string
+	Recursive  bool
 
 	// Stdin is the input stream for the command.
 	Stdin io.Reader

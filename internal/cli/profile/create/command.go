@@ -24,7 +24,15 @@ func CreateCreateCmd(container didomain.Container) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "create <name>",
 		Short: "Create a new profile",
-		Args:  cobra.ExactArgs(1),
+		Long: `You can create a new profile to store your OneDrive configuration and
+authentication details. This lets you switch between different accounts
+seamlessly.`,
+		Example: `  # Create a new profile named 'personal'
+  odc profile create personal
+
+  # Create a new profile and set it as the current active profile
+  odc profile create work --set-current`,
+		Args: cobra.ExactArgs(1),
 
 		RunE: func(cmd *cobra.Command, args []string) error {
 			opts.Name = args[0]

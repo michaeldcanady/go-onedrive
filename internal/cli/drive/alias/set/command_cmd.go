@@ -2,7 +2,6 @@ package set
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/michaeldcanady/go-onedrive/internal/cli/util"
@@ -24,7 +23,7 @@ func (c *SetCmd) Run(ctx context.Context, opts Options) error {
 	start := time.Now()
 
 	if err := c.Initialize(loggerID); err != nil {
-		return err
+		return util.NewCommandError(c.Name, "failed to initialize command", err)
 	}
 
 	c.Log.Info("setting drive alias",
@@ -36,11 +35,10 @@ func (c *SetCmd) Run(ctx context.Context, opts Options) error {
 		c.Log.Error("failed to set drive alias",
 			domainlogger.Error(err),
 		)
-		c.RenderError(opts.Stderr, err)
 		return util.NewCommandError(c.Name, "failed to set drive alias", err)
 	}
 
-	fmt.Fprintf(opts.Stdout, "Alias %q set to drive %q\n", opts.Alias, opts.DriveID)
+	c.RenderSuccess(opts.Stdout, "alias %q set to drive %q", opts.Alias, opts.DriveID)
 
 	c.Log.Info("drive alias set completed successfully",
 		domainlogger.Duration("duration", time.Since(start)),

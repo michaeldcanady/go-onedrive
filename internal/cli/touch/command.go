@@ -18,33 +18,14 @@ func CreateCmd(c didomain.Container) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   fmt.Sprintf("%s [path]", commandName),
 		Short: "Create an empty file in your OneDrive filesystem.",
-		Long: `
-Create a new empty file at the specified OneDrive path.
+		Long: `You can create a new empty file at the specified OneDrive path. This command
+works like the Unix 'touch' utility, but it operates on your OneDrive
+account. It's useful for initializing files or creating placeholders.`,
+		Example: `  # Create a new empty file in the OneDrive root
+  odc touch /new_project.txt
 
-This command behaves similarly to the Unix 'touch' utility (creation only),
-but operates against your OneDrive domainaccount.
-
-Key behaviors:
-
-  • Creates a single empty file at the given OneDrive path.
-  • Fails if the parent directory does not exist.
-  • Requires authentication via 'odc auth login'.
-
-Path semantics:
-  • All paths refer to locations in your OneDrive filesystem.
-  • Absolute paths begin with '/' (recommended).
-  • Relative paths are resolved against your OneDrive root.
-
-Authentication:
-You must be logged in (via 'odc auth login') before using this command.
-`,
-		Example: `
-  # Create a file in the root of OneDrive
-  odc touch /newfile.txt
-
-  # Create a file inside an existing directory
-  odc touch /Documents/notes.md
-`,
+  # Create a file inside a specific folder
+  odc touch /Documents/notes/meeting_notes.md`,
 
 		Args: cobra.ExactArgs(1),
 

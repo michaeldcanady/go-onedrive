@@ -25,7 +25,7 @@ func (c *CatCmd) Run(ctx context.Context, opts Options) error {
 	start := time.Now()
 
 	if err := c.Initialize(loggerID); err != nil {
-		return err
+		return util.NewCommandError(c.Name, "failed to initialize command", err)
 	}
 
 	c.Log.Info("starting cat command",
@@ -39,13 +39,11 @@ func (c *CatCmd) Run(ctx context.Context, opts Options) error {
 
 	reader, err := fsSvc.ReadFile(ctx, opts.Path, domainfs.ReadOptions{})
 	if err != nil {
-		c.RenderError(opts.Stderr, err)
 		return util.NewCommandError(c.Name, "failed to read file", err)
 	}
 	defer reader.Close()
 
 	if _, err := io.Copy(opts.Stdout, reader); err != nil {
-		c.RenderError(opts.Stderr, err)
 		return util.NewCommandError(c.Name, "failed to write output", err)
 	}
 

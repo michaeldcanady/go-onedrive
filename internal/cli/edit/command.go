@@ -20,23 +20,15 @@ func CreateEditCmd(c didomain.Container) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   fmt.Sprintf("%s [path]", commandName),
 		Short: "Edit a OneDrive file in your local editor",
-		Long: `
-Edit a OneDrive file in your local domaineditor.
+		Long: `You can edit a OneDrive file using your favorite local text editor. This
+command downloads the file to a temporary location, opens it in your editor,
+and automatically uploads the changes back to OneDrive when you save and
+close the file.`,
+		Example: `  # Edit a text file in your default editor
+  odc edit /Notes/ideas.txt
 
-This command downloads the specified file to a temporary local location,
-launches your default text editor, and waits for you to save and close it.
-If changes are detected (via SHA-256 hashing), the updated file is
-automatically uploaded back to OneDrive.
-
-Editor Detection Order:
-  1. VISUAL environment variable
-  2. EDITOR environment variable
-  3. OS Default (notepad on Windows, open -W -t on macOS, xdg-open on Linux)
-  4. Common fallbacks (vim, vi, nano)
-
-Authentication:
-You must be logged in (via 'onedrive auth login') before using this command.
-`,
+  # Force an upload even if the file has changed on OneDrive
+  odc edit /Projects/config.yaml --force`,
 		Args: cobra.ExactArgs(1),
 
 		RunE: func(cmd *cobra.Command, args []string) error {

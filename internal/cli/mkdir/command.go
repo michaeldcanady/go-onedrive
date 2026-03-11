@@ -21,39 +21,14 @@ func CreateCmd(c didomain.Container) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   fmt.Sprintf("%s [path]", commandName),
 		Short: "Create a directory in your OneDrive filesystem.",
-		Long: `
-Create a new directory at the specified OneDrive path.
+		Long: `You can create a new directory in your OneDrive. By default, the parent
+directory must already exist unless you use the 'parent' flag to create any
+missing folders in the path.`,
+		Example: `  # Create a new directory named 'Photos' in the root
+  odc mkdir /Photos
 
-This command behaves similarly to the Unix 'mkdir' utility, but operates
-against your OneDrive domainaccount. By default, the parent directory must already
-exist. Use '--parent' ('-p') to create any missing parent directories
-recursively.
-
-Key behaviors:
-
-  • Creates a single directory at the given OneDrive path.
-  • Fails if the parent directory does not exist, unless '--parent' is used.
-  • Succeeds without error if the directory already exists and '--parent' is set.
-  • Requires authentication via 'odc auth login'.
-
-Path semantics:
-  • All paths refer to locations in your OneDrive filesystem.
-  • Absolute paths begin with '/' (recommended).
-  • Relative paths are resolved against your OneDrive root.
-
-Authentication:
-You must be logged in (via 'odc auth login') before using this command.
-`,
-		Example: `
-  # Create a directory in the root of OneDrive
-  odc mkdir /Projects
-
-  # Create nested directories, creating parents as needed
-  odc mkdir -p /Projects/2025/Reports
-
-  # Create a folder inside an existing directory
-  odc mkdir /Documents/Invoices
-`,
+  # Create a nested directory path, including any missing parents
+  odc mkdir -p /Work/Projects/2024/Finances`,
 
 		Args: cobra.ExactArgs(1),
 

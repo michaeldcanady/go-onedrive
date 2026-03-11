@@ -2,7 +2,6 @@ package mkdir
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/michaeldcanady/go-onedrive/internal/cli/util"
@@ -26,7 +25,7 @@ func (c *Command) Run(ctx context.Context, opts Options) error {
 	start := time.Now()
 
 	if err := c.Initialize(loggerID); err != nil {
-		return err
+		return util.NewCommandError(c.Name, "failed to initialize command", err)
 	}
 
 	c.Log.Info("starting mkdir command",
@@ -43,7 +42,6 @@ func (c *Command) Run(ctx context.Context, opts Options) error {
 	)
 
 	if err := fsSvc.Mkdir(ctx, opts.Path, domainfs.MKDirOptions{Parents: opts.Parent}); err != nil {
-		c.RenderError(opts.Stderr, err)
 		return util.NewCommandError(c.Name, "failed to create directory", err)
 	}
 
@@ -51,7 +49,7 @@ func (c *Command) Run(ctx context.Context, opts Options) error {
 		domainlogger.Duration("duration", time.Since(start)),
 	)
 
-	fmt.Fprintf(opts.Stdout, "Successfully created \"%s\"\n", opts.Path)
+	c.RenderSuccess(opts.Stdout, "created \"%s\"", opts.Path)
 
 	return nil
 }

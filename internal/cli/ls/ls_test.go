@@ -3,7 +3,6 @@ package ls
 import (
 	"context"
 	"io"
-	"os"
 	"testing"
 
 	domainaccount "github.com/michaeldcanady/go-onedrive/internal/account/domain"

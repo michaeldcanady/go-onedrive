@@ -2,7 +2,6 @@ package upload
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/michaeldcanady/go-onedrive/internal/cli/util"
@@ -25,7 +24,7 @@ func (c *UploadCmd) Run(ctx context.Context, opts Options) error {
 	start := time.Now()
 
 	if err := c.Initialize(loggerID); err != nil {
-		return err
+		return util.NewCommandError(c.Name, "failed to initialize command", err)
 	}
 
 	c.Log.Info("starting upload command",
@@ -47,7 +46,7 @@ func (c *UploadCmd) Run(ctx context.Context, opts Options) error {
 		domainlogger.Duration("duration", time.Since(start)),
 	)
 
-	fmt.Fprintf(opts.Stdout, "Successfully uploaded \"%s\" to \"%s\"\n", opts.Source, opts.Destination)
+	c.RenderSuccess(opts.Stdout, "uploaded \"%s\" to \"%s\"", opts.Source, opts.Destination)
 
 	return nil
 }

@@ -2,7 +2,6 @@ package touch
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/michaeldcanady/go-onedrive/internal/cli/util"
@@ -26,7 +25,7 @@ func (c *Command) Run(ctx context.Context, opts Options) error {
 	start := time.Now()
 
 	if err := c.Initialize(loggerID); err != nil {
-		return err
+		return util.NewCommandError(c.Name, "failed to initialize command", err)
 	}
 
 	c.Log.Info("starting touch command",
@@ -39,7 +38,6 @@ func (c *Command) Run(ctx context.Context, opts Options) error {
 	}
 
 	if _, err := fsSvc.Touch(ctx, opts.Path, domainfs.TouchOptions{}); err != nil {
-		c.RenderError(opts.Stderr, err)
 		return util.NewCommandError(c.Name, "failed to touch file", err)
 	}
 
@@ -47,7 +45,7 @@ func (c *Command) Run(ctx context.Context, opts Options) error {
 		domainlogger.Duration("duration", time.Since(start)),
 	)
 
-	fmt.Fprintf(opts.Stdout, "Successfully touched \"%s\"\n", opts.Path)
+	c.RenderSuccess(opts.Stdout, "touched \"%s\"", opts.Path)
 
 	return nil
 }

@@ -2,13 +2,12 @@ package login
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	domainauth "github.com/michaeldcanady/go-onedrive/internal/auth/domain"
 	"github.com/michaeldcanady/go-onedrive/internal/cli/util"
 	domainlogger "github.com/michaeldcanady/go-onedrive/internal/core/logger/domain"
-	didomain "github.com/michaeldcanady/go-onedrive/internal/di/domain"
+	domaindi "github.com/michaeldcanady/go-onedrive/internal/di/domain"
 )
 
 const (
@@ -21,7 +20,7 @@ type LoginCmd struct {
 	util.BaseCommand
 }
 
-func NewLoginCmd(container didomain.Container) *LoginCmd {
+func NewLoginCmd(container domaindi.Container) *LoginCmd {
 	return &LoginCmd{
 		BaseCommand: util.NewBaseCommand(container, commandName),
 	}
@@ -31,15 +30,14 @@ func (c *LoginCmd) Run(ctx context.Context, opts Options) error {
 	start := time.Now()
 
 	if err := c.Initialize(loggerID); err != nil {
-		return err
+		return util.NewCommandError(c.Name, "failed to initialize command", err)
 	}
 
 	c.Log.Info("starting login flow")
 
 	profileName, err := c.Container.State().GetCurrentProfile()
 	if err != nil {
-		c.Log.Error("failed to get current profile", domainlogger.Error(err))
-		return util.NewCommandErrorWithNameWithError(c.Name, err)
+		return util.NewCommandError(c.Name, "failed to retrieve current profile", err)
 	}
 
 	c.Log.Info("resolved current profile",
@@ -72,7 +70,6 @@ func (c *LoginCmd) Run(ctx context.Context, opts Options) error {
 			domainlogger.String("profile", profileName),
 			domainlogger.Error(err),
 		)
-		fmt.Fprintf(opts.Stderr, "Login failed for profile %q: %v\n", profileName, err)
 		return util.NewCommandError(c.Name, "failed authentication", err)
 	}
 
@@ -81,10 +78,10 @@ func (c *LoginCmd) Run(ctx context.Context, opts Options) error {
 		domainlogger.Bool("tokenDisplayed", opts.ShowToken),
 	)
 
-	fmt.Fprintf(opts.Stdout, "Successfully logged into profile %q\n", profileName)
+	c.RenderSuccess(opts.Stdout, "Successfully logged into profile %q\n", profileName)
 
 	if opts.ShowToken {
-		fmt.Fprintf(opts.Stdout, "Access Token: %s\n", result.AccessToken)
+		c.RenderMessage(opts.Stdout, "Access Token: %s\n", result.AccessToken)
 	}
 
 	c.Log.Info("login flow completed successfully",

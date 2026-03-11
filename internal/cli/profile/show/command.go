@@ -15,7 +15,15 @@ func CreateShowCmd(container didomain.Container) *cobra.Command {
 	return &cobra.Command{
 		Use:   "show <name>",
 		Short: "Show details for a profile",
-		Args:  cobra.ExactArgs(1),
+		Long: `You can view the detailed configuration and authentication information for a
+specific profile. Profiles let you manage multiple OneDrive accounts or
+configurations easily.`,
+		Example: `  # Show details for the 'personal' profile
+  odc profile show personal
+
+  # Show details for the 'work' profile
+  odc profile show work`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			opts := Options{
 				Name:   args[0],

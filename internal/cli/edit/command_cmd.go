@@ -3,7 +3,6 @@ package edit
 import (
 	"context"
 	"errors"
-	"fmt"
 	"time"
 
 	"github.com/michaeldcanady/go-onedrive/internal/cli/util"
@@ -52,7 +51,7 @@ func (c *EditCmd) Run(ctx context.Context, opts Options) error {
 	start := time.Now()
 
 	if err := c.Initialize(loggerID); err != nil {
-		return err
+		return util.NewCommandError(c.Name, "failed to initialize command", err)
 	}
 
 	c.Log.Info("starting edit command",
@@ -75,14 +74,12 @@ func (c *EditCmd) Run(ctx context.Context, opts Options) error {
 	c.Log.Debug("fetching metadata", domainlogger.String("path", opts.Path))
 	item, err := fsSvc.Get(ctx, opts.Path)
 	if err != nil {
-		c.RenderError(opts.Stderr, err)
 		return util.NewCommandError(c.Name, "failed to get item metadata", err)
 	}
 
 	c.Log.Debug("reading file for editing", domainlogger.String("path", opts.Path))
 	reader, err := fsSvc.ReadFile(ctx, opts.Path, domainfs.ReadOptions{})
 	if err != nil {
-		c.RenderError(opts.Stderr, err)
 		return util.NewCommandError(c.Name, "failed to read file for editing", err)
 	}
 	defer reader.Close()
@@ -90,13 +87,12 @@ func (c *EditCmd) Run(ctx context.Context, opts Options) error {
 	c.Log.Debug("launching editor")
 	newData, tmpPath, err := editorSvc.LaunchTempFile("odc-edit", ".txt", reader)
 	if err != nil {
-		c.RenderError(opts.Stderr, err)
 		return util.NewCommandError(c.Name, "failed to edit file", err)
 	}
 
 	if newData == nil {
 		c.Log.Info("no changes detected, skipping upload")
-		fmt.Fprintln(opts.Stdout, "No changes detected.")
+		c.RenderInfo(opts.Stdout, "No changes detected.")
 		return nil
 	}
 
@@ -116,13 +112,12 @@ func (c *EditCmd) Run(ctx context.Context, opts Options) error {
 			if removeTemp {
 				// No-op for now as LaunchTempFile handles it via defer os.Remove
 			}
-			fmt.Fprintf(opts.Stdout, "File \"%s\" updated successfully.\n", finalPath)
+			c.RenderSuccess(opts.Stdout, "updated file \"%s\"", finalPath)
 			return nil
 		}
 	}
 
 	if err != nil {
-		c.RenderError(opts.Stderr, err)
 		return util.NewCommandError(c.Name, "failed to upload edited changes", err)
 	}
 
@@ -130,7 +125,7 @@ func (c *EditCmd) Run(ctx context.Context, opts Options) error {
 		domainlogger.Duration("duration", time.Since(start)),
 	)
 
-	fmt.Fprintf(opts.Stdout, "File \"%s\" updated successfully.\n", opts.Path)
+	c.RenderSuccess(opts.Stdout, "updated file \"%s\"", opts.Path)
 
 	return nil
 }

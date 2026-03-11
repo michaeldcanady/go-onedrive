@@ -22,17 +22,14 @@ func CreateDownloadCmd(c didomain.Container) *cobra.Command {
 		Use:        fmt.Sprintf("%s [src] [dst]", commandName),
 		Short:      "Download a OneDrive file to a local path.",
 		Deprecated: "use 'cp onedrive:[src] local:[dst]' instead",
-		Long: `
-Download a OneDrive file to a local path.
-This is an alias for 'cp onedrive:[src] local:[dst]'.
-`,
-		Example: `
-  # Download a file from OneDrive root
-  odc download /notes.txt ./notes.txt
+		Long: `You can download a file from OneDrive to your local machine. This command is
+a convenient alias for the 'cp' command using the 'onedrive:' prefix for the
+source and 'local:' for the destination.`,
+		Example: `  # Download a file from OneDrive to your current directory
+  odc download /Shared/report.pdf ./report.pdf
 
-  # Download and overwrite an existing local file
-  odc download --force /Documents/report.pdf ./report.pdf
-`,
+  # Download and overwrite a local file if it already exists
+  odc download --force /Photos/vacation.jpg ./vacation.jpg`,
 
 		Args: cobra.ExactArgs(2),
 

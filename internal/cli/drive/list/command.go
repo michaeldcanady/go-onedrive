@@ -15,7 +15,12 @@ func CreateListCmd(container didomain.Container) *cobra.Command {
 	return &cobra.Command{
 		Use:   "list",
 		Short: "Lists available drives",
-		Args:  cobra.ExactArgs(0),
+		Long: `You can list all the OneDrive drives that you have access to. The output
+includes the drive's name, its unique ID, and its type (e.g., personal or
+business).`,
+		Example: `  # List all available drives
+  odc drive list`,
+		Args: cobra.ExactArgs(0),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			opts := Options{
 				Stdout: cmd.OutOrStdout(),

@@ -19,7 +19,15 @@ func CreateCatCmd(c didomain.Container) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   fmt.Sprintf("%s [path]", commandName),
 		Short: "Display the contents of a OneDrive file",
-		Args:  cobra.ExactArgs(1),
+		Long: `You can display the contents of a file stored in OneDrive directly to your
+terminal. This command reads the file from the specified OneDrive path and
+outputs it to standard output.`,
+		Example: `  # Display the contents of a text file
+  odc cat /Notes/todo.txt
+
+  # Pipe the output of a file to another command
+  odc cat /Logs/app.log | grep "ERROR"`,
+		Args: cobra.ExactArgs(1),
 
 		PreRunE: func(_ *cobra.Command, args []string) error {
 			opts.Path = args[0]

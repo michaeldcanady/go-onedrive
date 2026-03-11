@@ -2,7 +2,6 @@ package mv
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/michaeldcanady/go-onedrive/internal/cli/util"
@@ -26,7 +25,7 @@ func (c *Command) Run(ctx context.Context, opts Options) error {
 	start := time.Now()
 
 	if err := c.Initialize(loggerID); err != nil {
-		return err
+		return util.NewCommandError(c.Name, "failed to initialize command", err)
 	}
 
 	c.Log.Info("starting mv command",
@@ -40,7 +39,6 @@ func (c *Command) Run(ctx context.Context, opts Options) error {
 	}
 
 	if err := fsSvc.Move(ctx, opts.Source, opts.Destination, domainfs.MoveOptions{}); err != nil {
-		c.RenderError(opts.Stderr, err)
 		return util.NewCommandError(c.Name, "failed to move item", err)
 	}
 
@@ -48,7 +46,7 @@ func (c *Command) Run(ctx context.Context, opts Options) error {
 		domainlogger.Duration("duration", time.Since(start)),
 	)
 
-	fmt.Fprintf(opts.Stdout, "Successfully moved \"%s\" to \"%s\"\n", opts.Source, opts.Destination)
+	c.RenderSuccess(opts.Stdout, "moved \"%s\" to \"%s\"", opts.Source, opts.Destination)
 
 	return nil
 }

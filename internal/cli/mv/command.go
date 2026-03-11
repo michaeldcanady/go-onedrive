@@ -18,39 +18,17 @@ func CreateCmd(c didomain.Container) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   fmt.Sprintf("%s [source] [destination]", commandName),
 		Short: "Move or rename a file/directory in your OneDrive filesystem.",
-		Long: `
-Move or rename an item at the specified OneDrive source path to the
-destination path.
+		Long: `You can move or rename files and directories within your OneDrive. This
+command works like the Unix 'mv' utility, allowing you to change an item's
+location, its name, or both at once.`,
+		Example: `  # Rename a file in the same directory
+  odc mv /old_report.docx /final_report.docx
 
-This command behaves similarly to the Unix 'mv' utility, but operates
-against your OneDrive domainaccount.
+  # Move a file to a different folder
+  odc mv /drafts/memo.txt /Archive/memo.txt
 
-Key behaviors:
-
-  • Moves an item from source to destination.
-  • Renames an item if the destination is in the same directory but has a different name.
-  • Fails if the source does not exist.
-  • Fails if the destination parent directory does not exist.
-  • Requires authentication via 'odc auth login'.
-
-Path semantics:
-  • All paths refer to locations in your OneDrive filesystem.
-  • Absolute paths begin with '/' (recommended).
-  • Relative paths are resolved against your OneDrive root.
-
-Authentication:
-You must be logged in (via 'odc auth login') before using this command.
-`,
-		Example: `
-  # Rename a file
-  odc mv /oldname.txt /newname.txt
-
-  # Move a file to a different directory
-  odc mv /file.txt /Documents/file.txt
-
-  # Move and rename a file
-  odc mv /file.txt /Documents/newfile.txt
-`,
+  # Move and rename a folder
+  odc mv /Projects/Current /Projects/Archived/ProjectAlpha`,
 
 		Args: cobra.ExactArgs(2),
 

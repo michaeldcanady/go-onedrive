@@ -284,7 +284,8 @@ func TestEditCmd_Run_WithChanges(t *testing.T) {
 	err := editCmd.Run(context.Background(), opts)
 
 	assert.NoError(t, err)
-	assert.Contains(t, buf.String(), "updated successfully")
+	assert.Contains(t, buf.String(), "Success:")
+	assert.Contains(t, buf.String(), "updated file")
 	mockFS.AssertExpectations(t)
 }
 
@@ -322,7 +323,7 @@ func TestEditCmd_Run_WithMockEditor(t *testing.T) {
 	err := editCmd.Run(context.Background(), opts)
 
 	assert.NoError(t, err)
-	assert.Contains(t, buf.String(), "updated successfully")
+	assert.Contains(t, buf.String(), "updated file")
 	mockEditor.AssertExpectations(t)
 	mockFS.AssertExpectations(t)
 }
@@ -369,7 +370,7 @@ func TestEditCmd_Run_ETagMismatch(t *testing.T) {
 	err := editCmd.Run(context.Background(), opts)
 
 	assert.NoError(t, err)
-	assert.Contains(t, buf.String(), "updated successfully")
+	assert.Contains(t, buf.String(), "updated file")
 	mockFS.AssertExpectations(t)
 	mockConflict.AssertExpectations(t)
 }
@@ -416,7 +417,7 @@ func TestEditCmd_Run_SaveAsCopy(t *testing.T) {
 	err := editCmd.Run(context.Background(), opts)
 
 	assert.NoError(t, err)
-	assert.Contains(t, buf.String(), "updated successfully")
+	assert.Contains(t, buf.String(), "updated file")
 	assert.Contains(t, buf.String(), "/file (copy).txt")
 	mockFS.AssertExpectations(t)
 	mockConflict.AssertExpectations(t)

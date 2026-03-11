@@ -16,7 +16,11 @@ func CreateListCmd(container didomain.Container) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "list",
 		Short: "List drive aliases",
-		Args:  cobra.ExactArgs(0),
+		Long: `You can list all the drive aliases you've configured. This helps you keep
+track of which short names point to which OneDrive drive IDs.`,
+		Example: `  # Display a list of all drive aliases
+  odc drive alias list`,
+		Args: cobra.ExactArgs(0),
 		PreRunE: func(_ *cobra.Command, args []string) error {
 			return opts.Validate()
 		},

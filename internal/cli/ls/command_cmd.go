@@ -32,7 +32,7 @@ func (c *LsCmd) Run(ctx context.Context, opts Options) error {
 	start := time.Now()
 
 	if err := c.Initialize(loggerID); err != nil {
-		return err
+		return util.NewCommandError(c.Name, "failed to initialize command", err)
 	}
 
 	c.Log.Info("starting ls command",
@@ -53,7 +53,6 @@ func (c *LsCmd) Run(ctx context.Context, opts Options) error {
 
 	items, err := c.fetchItems(ctx, fsSvc, opts.Path, opts.Recursive)
 	if err != nil {
-		c.RenderError(opts.Stderr, err)
 		return util.NewCommandErrorWithNameWithError(c.Name, err)
 	}
 

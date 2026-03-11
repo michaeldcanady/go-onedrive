@@ -25,20 +25,35 @@ func (c *ListCmd) Run(ctx context.Context, opts Options) error {
 	start := time.Now()
 
 	if err := c.Initialize(loggerID); err != nil {
-		return err
+		return util.NewCommandError(c.Name, "failed to initialize command", err)
 	}
 
 	c.Log.Info("starting drive list command")
 
 	drives, err := c.Container.Drive().ListDrives(ctx)
 	if err != nil {
-		c.Log.Warn("failed to retrieve drives", domainlogger.Error(err))
+		c.Log.Warn("failed to retrieve drives",
+			domainlogger.Error(err),
+		)
 		return util.NewCommandErrorWithNameWithError(c.Name, err)
 	}
 
 	stateSvc := c.Container.State()
-	activeDriveID, _ := stateSvc.GetCurrentDrive()
-	aliases, _ := stateSvc.ListDriveAliases()
+	activeDriveID, err := stateSvc.GetCurrentDrive()
+	if err != nil {
+		c.Log.Warn("failed to get current drive",
+			domainlogger.Error(err),
+		)
+		return util.NewCommandError(c.Name, "failed to get current drive", err)
+	}
+
+	aliases, err := stateSvc.ListDriveAliases()
+	if err != nil {
+		c.Log.Warn("failed to list drive aliases",
+			domainlogger.Error(err),
+		)
+		return util.NewCommandError(c.Name, "failed to list drive aliases", err)
+	}
 
 	// Prepare alias lookup
 	aliasMap := make(map[string]string)
@@ -58,14 +73,14 @@ func (c *ListCmd) Run(ctx context.Context, opts Options) error {
 		}),
 		formatting.NewColumn("ID", func(item *domaindrive.Drive) string { return item.ID }),
 		formatting.NewColumn("Name", func(item *domaindrive.Drive) string { return item.Name }),
-		formatting.NewColumn("Type", func(item *domaindrive.Drive) string { return string(item.Type) }),
+		formatting.NewColumn("Type", func(item *domaindrive.Drive) string { return item.Type.String() }),
 	}
 
 	formatter := formatting.NewTableFormatter(columns...).WithTruncate(true)
 
 	if err := formatter.Format(opts.Stdout, drives); err != nil {
 		c.Log.Warn("failed to format output", domainlogger.Error(err))
-		return util.NewCommandErrorWithNameWithError(c.Name, err)
+		return util.NewCommandError(c.Name, "failed to format output", err)
 	}
 
 	c.Log.Info("drive list completed successfully",

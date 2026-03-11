@@ -26,20 +26,14 @@ func CreateUploadCmd(c didomain.Container) *cobra.Command {
 		Use:        fmt.Sprintf("%s [src] [dst]", commandName),
 		Short:      "Upload a local file to a OneDrive path.",
 		Deprecated: "use 'cp local:[src] onedrive:[dst]' instead",
-		Long: `
-Upload a local file to a OneDrive path.
-This is an alias for 'cp local:[src] onedrive:[dst]'.
-`,
-		Example: `
-  # Upload a file to the root of OneDrive
-  odc upload ./notes.txt /notes.txt
+		Long: `You can upload a local file to a specified OneDrive path. This command is a
+convenient alias for the 'cp' command using the 'local:' prefix for the
+source and 'onedrive:' for the destination.`,
+		Example: `  # Upload a file to the OneDrive root
+  odc upload ./presentation.pptx /presentation.pptx
 
-  # Upload into a folder (basename is appended automatically)
-  odc upload ./photo.jpg /Pictures/
-
-  # Upload and overwrite an existing file
-  odc upload --force ./report.pdf /Documents/report.pdf
-`,
+  # Upload a file and overwrite any existing file with the same name
+  odc upload --force ./data.csv /ProjectX/data.csv`,
 
 		Args: cobra.ExactArgs(2),
 

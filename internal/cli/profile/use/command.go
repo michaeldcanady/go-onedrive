@@ -15,7 +15,12 @@ func CreateUseCmd(container didomain.Container) *cobra.Command {
 	return &cobra.Command{
 		Use:   "use <name>",
 		Short: "Set current profile",
-		Args:  cobra.ExactArgs(1),
+		Long: `You can set an existing profile as the current active profile for your
+session. All subsequent commands will use the configuration and
+authentication tokens associated with this profile.`,
+		Example: `  # Switch to the 'personal' profile
+  odc profile use personal`,
+		Args: cobra.ExactArgs(1),
 
 		RunE: func(cmd *cobra.Command, args []string) error {
 			opts := Options{

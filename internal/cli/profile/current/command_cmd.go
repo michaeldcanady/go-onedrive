@@ -2,7 +2,6 @@ package current
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/michaeldcanady/go-onedrive/internal/cli/util"
@@ -24,18 +23,17 @@ func (c *CurrentCmd) Run(ctx context.Context, opts Options) error {
 	start := time.Now()
 
 	if err := c.Initialize(loggerID); err != nil {
-		return err
+		return util.NewCommandError(c.Name, "failed to initialize command", err)
 	}
 
 	c.Log.Info("retrieving current profile")
 
 	name, err := c.Container.State().GetCurrentProfile()
 	if err != nil {
-		c.RenderError(opts.Stderr, err)
 		return util.NewCommandErrorWithNameWithError(c.Name, err)
 	}
 
-	fmt.Fprintf(opts.Stdout, "%s\n", name)
+	c.RenderMessage(opts.Stdout, "%s\n", name)
 
 	c.Log.Info("profile current completed successfully",
 		domainlogger.Duration("duration", time.Since(start)),
