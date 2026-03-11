@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"github.com/manifoldco/promptui"
-	"github.com/michaeldcanady/go-onedrive/internal2/domain/di"
 	logger "github.com/michaeldcanady/go-onedrive/internal2/domain/common/logger"
+	"github.com/michaeldcanady/go-onedrive/internal2/domain/di"
 	"github.com/michaeldcanady/go-onedrive/internal2/infra/profile"
 	"github.com/michaeldcanady/go-onedrive/internal2/interface/cli/util"
 	"github.com/spf13/cobra"

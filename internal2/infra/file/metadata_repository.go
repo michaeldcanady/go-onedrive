@@ -137,9 +137,13 @@ func (g *GraphMetadataGateway) UpdateByPath(ctx context.Context, driveID, path s
 	return mapItemToMetadata(item), nil
 }
 
-func (g *GraphMetadataGateway) DeleteByPath(ctx context.Context, driveID, path string) error {
+func (g *GraphMetadataGateway) DeleteByPath(ctx context.Context, driveID, path string, opts file.MetadataDeleteOptions) error {
 	uri := expandPathTemplate(rootURITemplate2, rootRelativeURITemplate2, driveID, path)
 	builder := drives.NewItemItemsDriveItemItemRequestBuilder(uri, g.client)
+
+	if opts.Permanent {
+		return mapGraphError2(builder.PermanentDelete().Post(ctx, nil))
+	}
 
 	if err := mapGraphError2(builder.Delete(ctx, nil)); err != nil {
 		return err

@@ -2,7 +2,6 @@ package upload
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/michaeldcanady/go-onedrive/internal2/domain/di"
@@ -47,7 +46,8 @@ func (c *UploadCmd) Run(ctx context.Context, opts Options) error {
 		logger.Duration("duration", time.Since(start)),
 	)
 
-	fmt.Fprintf(opts.Stdout, "Successfully uploaded \"%s\" to \"%s\"\n", opts.Source, opts.Destination)
+	c.RenderSuccess(opts.Stdout, "Successfully uploaded \"%s\" to \"%s\"\n", opts.Source, opts.Destination)
 
 	return nil
 }
+

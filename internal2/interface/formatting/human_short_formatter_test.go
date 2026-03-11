@@ -24,21 +24,21 @@ func TestHumanShortFormatter_Format(t *testing.T) {
 		expected []string // substrings that should be present
 	}{
 		{
-			name:  "Single item",
-			width: 80,
-			items: []fs.Item{{Name: "file1"}},
+			name:     "Single item",
+			width:    80,
+			items:    []fs.Item{{Name: "file1"}},
 			expected: []string{"file1"},
 		},
 		{
-			name:  "Multiple items, narrow terminal",
-			width: 10,
-			items: []fs.Item{{Name: "file1"}, {Name: "file2"}},
+			name:     "Multiple items, narrow terminal",
+			width:    10,
+			items:    []fs.Item{{Name: "file1"}, {Name: "file2"}},
 			expected: []string{"file1", "file2"},
 		},
 		{
-			name:  "Multiple items, wide terminal",
-			width: 80,
-			items: []fs.Item{{Name: "a"}, {Name: "b"}, {Name: "c"}},
+			name:     "Multiple items, wide terminal",
+			width:    80,
+			items:    []fs.Item{{Name: "a"}, {Name: "b"}, {Name: "c"}},
 			expected: []string{"a", "b", "c"},
 		},
 	}
@@ -49,7 +49,7 @@ func TestHumanShortFormatter_Format(t *testing.T) {
 			buf := new(bytes.Buffer)
 			err := f.Format(buf, tt.items)
 			assert.NoError(t, err)
-			
+
 			output := buf.String()
 			for _, exp := range tt.expected {
 				assert.Contains(t, output, exp)

@@ -33,13 +33,35 @@ func (c *Command) Run(ctx context.Context, opts Options) error {
 		logger.String("path", opts.Path),
 	)
 
+	// TODO: need to open bug with MS Graph SDk https://github.com/microsoftgraph/msgraph-sdk-go/issues/980
+	if opts.Permanent {
+		if !opts.Quiet {
+			c.RenderWarning(opts.Stdout, "This action will permanently delete \"%s\" and cannot be undone.", opts.Path)
+		}
+		if !opts.Force {
+			if opts.Quiet {
+				// TODO: add appropriate error message
+				return util.NewCommandErrorWithNameWithMessage(c.Name, "")
+			}
+			confirmed, err := c.PromptConfirm(opts.Stdout, "Are you sure you want to proceed")
+			if err != nil {
+				return util.NewCommandError(c.Name, "failed to get confirmation", err)
+			}
+			if !confirmed {
+				fmt.Fprintln(opts.Stdout, "Aborted.")
+				return nil
+			}
+		}
+	}
+
 	fsSvc := c.Container.FS()
 	if fsSvc == nil {
 		return util.NewCommandErrorWithNameWithMessage(c.Name, "filesystem service is nil")
 	}
 
-	if err := fsSvc.Remove(ctx, opts.Path, fs.RemoveOptions{}); err != nil {
-		c.RenderError(opts.Stderr, err)
+	if err := fsSvc.Remove(ctx, opts.Path, fs.RemoveOptions{
+		Permanent: opts.Permanent,
+	}); err != nil {
 		return util.NewCommandError(c.Name, "failed to move item", err)
 	}
 
@@ -47,7 +69,8 @@ func (c *Command) Run(ctx context.Context, opts Options) error {
 		logger.Duration("duration", time.Since(start)),
 	)
 
-	fmt.Fprintf(opts.Stdout, "Successfully removed \"%s\"\n", opts.Path)
-
+	if !opts.Quiet {
+		c.RenderSuccess(opts.Stdout, "Successfully removed \"%s\"\n", opts.Path)
+	}
 	return nil
 }

@@ -2,12 +2,11 @@ package touch
 
 import (
 	"context"
-	"fmt"
 	"time"
 
+	logger "github.com/michaeldcanady/go-onedrive/internal2/domain/common/logger"
 	"github.com/michaeldcanady/go-onedrive/internal2/domain/di"
 	"github.com/michaeldcanady/go-onedrive/internal2/domain/fs"
-	logger "github.com/michaeldcanady/go-onedrive/internal2/domain/common/logger"
 	"github.com/michaeldcanady/go-onedrive/internal2/interface/cli/util"
 )
 
@@ -47,7 +46,7 @@ func (c *Command) Run(ctx context.Context, opts Options) error {
 		logger.Duration("duration", time.Since(start)),
 	)
 
-	fmt.Fprintf(opts.Stdout, "Successfully touched \"%s\"\n", opts.Path)
+	c.RenderSuccess(opts.Stdout, "Successfully touched \"%s\"\n", opts.Path)
 
 	return nil
 }

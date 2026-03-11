@@ -258,7 +258,9 @@ func (s *Provider) Remove(ctx context.Context, path string, opts domainfs.Remove
 		return err
 	}
 
-	return s.metadataRepo.DeleteByPath(ctx, driveID, cleanPath, file.MetadataDeleteOptions{})
+	return s.metadataRepo.DeleteByPath(ctx, driveID, cleanPath, file.MetadataDeleteOptions{
+		Permanent: opts.Permanent,
+	})
 }
 
 // Stat implements [fs.Service].

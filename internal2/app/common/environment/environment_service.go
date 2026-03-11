@@ -7,9 +7,9 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/michaeldcanady/go-onedrive/internal2/domain/common/logger"
 	"github.com/michaeldcanady/go-onedrive/internal2/infra/common/environment"
 	infracommon "github.com/michaeldcanady/go-onedrive/internal2/infra/common/environment"
-	"github.com/michaeldcanady/go-onedrive/internal2/domain/common/logger"
 )
 
 type EnvironmentService struct {
