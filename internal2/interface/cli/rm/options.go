@@ -2,16 +2,16 @@ package rm
 
 import (
 	"errors"
-	"io"
+
+	"github.com/michaeldcanady/go-onedrive/internal2/interface/cli/util"
 )
 
 type Options struct {
+	util.BaseOptions
+
 	Path      string
 	Permanent bool
 	Force     bool
-	Stdin     io.Reader
-	Stdout    io.Writer
-	Stderr    io.Writer
 }
 
 func (o Options) Validate() error {
