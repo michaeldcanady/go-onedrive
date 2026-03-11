@@ -11,7 +11,7 @@ const (
 	loggerID    = "cli"
 	commandName = "mkdir"
 
-	parentCommandFlagLong  = "parent"
+	parentCommandFlagLong  = "parents"
 	ParentCommandFlagShort = "p"
 )
 
@@ -19,10 +19,10 @@ func CreateCmd(c didomain.Container) *cobra.Command {
 	var opts Options
 
 	cmd := &cobra.Command{
-		Use:   fmt.Sprintf("%s [path]", commandName),
+		Use:   fmt.Sprintf("%s <PATH>", commandName),
 		Short: "Create a directory in your OneDrive filesystem.",
 		Long: `You can create a new directory in your OneDrive. By default, the parent
-directory must already exist unless you use the 'parent' flag to create any
+directory must already exist unless you use the 'parents' flag to create any
 missing folders in the path.`,
 		Example: `  # Create a new directory named 'Photos' in the root
   odc mkdir /Photos

@@ -16,7 +16,7 @@ func CreateCmd(c didomain.Container) *cobra.Command {
 	var opts Options
 
 	cmd := &cobra.Command{
-		Use:   fmt.Sprintf("%s [path]", commandName),
+		Use:   fmt.Sprintf("%s <PATH>", commandName),
 		Short: "Create an empty file in your OneDrive filesystem.",
 		Long: `You can create a new empty file at the specified OneDrive path. This command
 works like the Unix 'touch' utility, but it operates on your OneDrive

@@ -16,7 +16,7 @@ func CreateCmd(c didomain.Container) *cobra.Command {
 	var opts Options
 
 	cmd := &cobra.Command{
-		Use:   fmt.Sprintf("%s [path]", commandName),
+		Use:   fmt.Sprintf("%s <PATH>", commandName),
 		Short: "Remove a file or directory from your OneDrive filesystem.",
 		Long: `You can remove files or directories from your OneDrive. This command works
 similarly to the Unix 'rm' utility. You can use the recursive flag to delete

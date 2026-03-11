@@ -158,7 +158,7 @@ func TestCreateLSCmd_Flags(t *testing.T) {
 	mockContainer := new(MockContainer)
 	cmd := CreateLSCmd(mockContainer)
 
-	assert.Equal(t, "ls [path]", cmd.Use)
+	assert.Equal(t, "ls [PATH]", cmd.Use)
 
 	// Check flags
 	f := cmd.Flags()

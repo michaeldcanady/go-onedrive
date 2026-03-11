@@ -19,9 +19,9 @@ func CreateDownloadCmd(c didomain.Container) *cobra.Command {
 	var opts Options
 
 	cmd := &cobra.Command{
-		Use:        fmt.Sprintf("%s [src] [dst]", commandName),
+		Use:        fmt.Sprintf("%s <SOURCE> <DESTINATION>", commandName),
 		Short:      "Download a OneDrive file to a local path.",
-		Deprecated: "use 'cp onedrive:[src] local:[dst]' instead",
+		Deprecated: "use 'cp onedrive:<SOURCE> local:<DESTINATION>' instead",
 		Long: `You can download a file from OneDrive to your local machine. This command is
 a convenient alias for the 'cp' command using the 'onedrive:' prefix for the
 source and 'local:' for the destination.`,

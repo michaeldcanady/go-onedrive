@@ -23,9 +23,9 @@ func CreateUploadCmd(c didomain.Container) *cobra.Command {
 	var opts Options
 
 	cmd := &cobra.Command{
-		Use:        fmt.Sprintf("%s [src] [dst]", commandName),
+		Use:        fmt.Sprintf("%s <SOURCE> <DESTINATION>", commandName),
 		Short:      "Upload a local file to a OneDrive path.",
-		Deprecated: "use 'cp local:[src] onedrive:[dst]' instead",
+		Deprecated: "use 'cp local:<SOURCE> onedrive:<DESTINATION>' instead",
 		Long: `You can upload a local file to a specified OneDrive path. This command is a
 convenient alias for the 'cp' command using the 'local:' prefix for the
 source and 'onedrive:' for the destination.`,

@@ -17,7 +17,7 @@ func CreateCatCmd(c didomain.Container) *cobra.Command {
 	var opts Options
 
 	cmd := &cobra.Command{
-		Use:   fmt.Sprintf("%s [path]", commandName),
+		Use:   fmt.Sprintf("%s <PATH>", commandName),
 		Short: "Display the contents of a OneDrive file",
 		Long: `You can display the contents of a file stored in OneDrive directly to your
 terminal. This command reads the file from the specified OneDrive path and

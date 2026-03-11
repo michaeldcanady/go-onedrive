@@ -16,7 +16,7 @@ func CreateCmd(c didomain.Container) *cobra.Command {
 	var opts Options
 
 	cmd := &cobra.Command{
-		Use:   fmt.Sprintf("%s [source] [destination]", commandName),
+		Use:   fmt.Sprintf("%s <SOURCE> <DESTINATION>", commandName),
 		Short: "Move or rename a file/directory in your OneDrive filesystem.",
 		Long: `You can move or rename files and directories within your OneDrive. This
 command works like the Unix 'mv' utility, allowing you to change an item's

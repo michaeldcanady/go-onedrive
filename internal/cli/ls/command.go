@@ -39,7 +39,7 @@ const (
 	sortFlagDefault = "name"
 
 	recursiveFlagLong  = "recursive"
-	recursiveFlagShort = "R"
+	recursiveFlagShort = "r"
 	recursiveFlagUsage = "list subdirectories recursively"
 )
 
@@ -61,7 +61,7 @@ func CreateLSCmd(c didomain.Container) *cobra.Command {
 	)
 
 	cmd := &cobra.Command{
-		Use:   fmt.Sprintf("%s [path]", commandName),
+		Use:   fmt.Sprintf("%s [PATH]", commandName),
 		Short: "List items in a OneDrive path",
 		Long: `You can list the files and folders within a specific OneDrive path. This
 command provides various formatting options like long listing, tree view,

@@ -18,7 +18,7 @@ func CreateCpCmd(c didomain.Container) *cobra.Command {
 	var opts Options
 
 	cmd := &cobra.Command{
-		Use:   fmt.Sprintf("%s <source> <dest>", commandName),
+		Use:   fmt.Sprintf("%s <SOURCE> <DESTINATION>", commandName),
 		Short: "Copy items from source to destination",
 		Long: `You can copy items from a source path to a destination path using this command.
 It supports local-to-remote, remote-to-local, and remote-to-remote copying.
@@ -50,7 +50,7 @@ You can prefix paths with 'local:' or 'onedrive:' (the default).`,
 		},
 	}
 
-	cmd.Flags().BoolVarP(&opts.Overwrite, "overwrite", "f", false, "Overwrite destination if it exists")
+	cmd.Flags().BoolVarP(&opts.Overwrite, "force", "f", false, "Overwrite destination if it exists")
 	cmd.Flags().BoolVarP(&opts.Recursive, "recursive", "r", false, "Recursively copy all files within a directory")
 
 	return cmd
