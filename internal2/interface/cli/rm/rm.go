@@ -42,7 +42,7 @@ func CreateCmd(c di.Container) *cobra.Command {
 		},
 	}
 
-	// TODO: need to open bug with MS Graph SDk
+	// TODO: need to open bug with MS Graph SDk https://github.com/microsoftgraph/msgraph-sdk-go/issues/980
 	//cmd.Flags().BoolVar(&opts.Permanent, "permanent", false, "Permanently delete the item instead of moving it to the recycle bin")
 	cmd.Flags().BoolVarP(&opts.Force, "force", "f", false, "Force permanent deletion without confirmation prompt")
 

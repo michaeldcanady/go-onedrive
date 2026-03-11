@@ -33,7 +33,7 @@ func (c *Command) Run(ctx context.Context, opts Options) error {
 		logger.String("path", opts.Path),
 	)
 
-	// TODO: need to open bug with MS Graph SDk
+	// TODO: need to open bug with MS Graph SDk https://github.com/microsoftgraph/msgraph-sdk-go/issues/980
 	if opts.Permanent {
 		if !opts.Quiet {
 			c.RenderWarning(opts.Stdout, "This action will permanently delete \"%s\" and cannot be undone.", opts.Path)
