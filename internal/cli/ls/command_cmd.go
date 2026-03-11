@@ -46,7 +46,7 @@ func (c *LsCmd) Run(ctx context.Context, opts Options) error {
 		domainlogger.String("ignoreFile", opts.IgnoreFile),
 	)
 
-	fsSvc := c.Container.FS()
+	var fsSvc domainfs.Reader = c.Container.FS()
 	if fsSvc == nil {
 		return util.NewCommandErrorWithNameWithMessage(c.Name, "filesystem service is nil")
 	}
@@ -86,7 +86,7 @@ func (c *LsCmd) Run(ctx context.Context, opts Options) error {
 }
 
 // fetchItems retrieves items from the OneDrive filesystem service.
-func (c *LsCmd) fetchItems(ctx context.Context, fsSvc domainfs.Service, path string, recursive bool) ([]domainfs.Item, error) {
+func (c *LsCmd) fetchItems(ctx context.Context, fsSvc domainfs.Reader, path string, recursive bool) ([]domainfs.Item, error) {
 	item, err := fsSvc.Get(ctx, path)
 	if err != nil {
 		return nil, err

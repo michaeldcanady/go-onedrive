@@ -1,3 +1,4 @@
+// Package mv provides the command-line interface for moving or renaming items in OneDrive.
 package mv
 
 import (
@@ -10,6 +11,7 @@ import (
 	domainfs "github.com/michaeldcanady/go-onedrive/internal/fs/domain"
 )
 
+// Command handles the execution logic for the 'mv' command.
 type Command struct {
 	util.BaseCommand
 }
@@ -21,6 +23,8 @@ func NewCmd(container didomain.Container) *Command {
 	}
 }
 
+// Run executes the mv command, moving or renaming an item from a source path to a destination path.
+// It uses the domainfs.Manager interface to decouple from the full filesystem service.
 func (c *Command) Run(ctx context.Context, opts Options) error {
 	start := time.Now()
 
@@ -33,12 +37,18 @@ func (c *Command) Run(ctx context.Context, opts Options) error {
 		domainlogger.String("dst", opts.Destination),
 	)
 
-	fsSvc := c.Container.FS()
+	// Decouple by using the Manager interface instead of the full Service.
+	var fsSvc domainfs.Manager = c.Container.FS()
 	if fsSvc == nil {
 		return util.NewCommandErrorWithNameWithMessage(c.Name, "filesystem service is nil")
 	}
 
 	if err := fsSvc.Move(ctx, opts.Source, opts.Destination, domainfs.MoveOptions{}); err != nil {
+		c.Log.Error("failed to move item",
+			domainlogger.String("src", opts.Source),
+			domainlogger.String("dst", opts.Destination),
+			domainlogger.Error(err),
+		)
 		return util.NewCommandError(c.Name, "failed to move item", err)
 	}
 

@@ -1,3 +1,4 @@
+// Package cp provides the command-line interface for copying items in OneDrive.
 package cp
 
 import (
@@ -11,16 +12,20 @@ import (
 	domainfs "github.com/michaeldcanady/go-onedrive/internal/fs/domain"
 )
 
+// CpCmd handles the execution logic for the 'cp' command.
 type CpCmd struct {
 	util.BaseCommand
 }
 
+// NewCpCmd creates a new CpCmd instance with the provided dependency container.
 func NewCpCmd(container didomain.Container) *CpCmd {
 	return &CpCmd{
 		BaseCommand: util.NewBaseCommand(container, commandName),
 	}
 }
 
+// Run executes the cp command, copying an item from a source path to a destination path.
+// It uses the domainfs.Reader and domainfs.Manager interfaces to decouple from the full filesystem service.
 func (c *CpCmd) Run(ctx context.Context, opts Options) error {
 	start := time.Now()
 
@@ -35,8 +40,10 @@ func (c *CpCmd) Run(ctx context.Context, opts Options) error {
 		domainlogger.String("ignoreFile", opts.IgnoreFile),
 	)
 
-	fsSvc := c.Container.FS()
-	if fsSvc == nil {
+	// Decouple by using specific interfaces.
+	var reader domainfs.Reader = c.Container.FS()
+	var manager domainfs.Manager = c.Container.FS()
+	if reader == nil || manager == nil {
 		return util.NewCommandErrorWithNameWithMessage(c.Name, "filesystem service is nil")
 	}
 
@@ -46,8 +53,12 @@ func (c *CpCmd) Run(ctx context.Context, opts Options) error {
 		matcher = nil
 	}
 
-	item, err := fsSvc.Get(ctx, opts.Source)
+	item, err := reader.Get(ctx, opts.Source)
 	if err != nil {
+		c.Log.Error("failed to get source item",
+			domainlogger.String("path", opts.Source),
+			domainlogger.Error(err),
+		)
 		return err
 	}
 
@@ -64,7 +75,12 @@ func (c *CpCmd) Run(ctx context.Context, opts Options) error {
 		Matcher:   matcher,
 	}
 
-	if err := fsSvc.Copy(ctx, opts.Source, opts.Dest, copyOpts); err != nil {
+	if err := manager.Copy(ctx, opts.Source, opts.Dest, copyOpts); err != nil {
+		c.Log.Error("failed to copy item",
+			domainlogger.String("src", opts.Source),
+			domainlogger.String("dst", opts.Dest),
+			domainlogger.Error(err),
+		)
 		return util.NewCommandError(c.Name, "failed to copy item", err)
 	}
 
@@ -77,6 +93,7 @@ func (c *CpCmd) Run(ctx context.Context, opts Options) error {
 	return nil
 }
 
+// loadIgnoreMatcher attempts to create an ignore matcher from the provided file path.
 func (c *CpCmd) loadIgnoreMatcher(ctx context.Context, ignorePath string) (domainfs.IgnoreMatcher, error) {
 	if ignorePath == "" {
 		return nil, nil

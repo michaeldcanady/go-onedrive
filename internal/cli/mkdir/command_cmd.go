@@ -1,3 +1,4 @@
+// Package mkdir provides the command-line interface for creating directories in OneDrive.
 package mkdir
 
 import (
@@ -10,6 +11,7 @@ import (
 	domainfs "github.com/michaeldcanady/go-onedrive/internal/fs/domain"
 )
 
+// Command handles the execution logic for the 'mkdir' command.
 type Command struct {
 	util.BaseCommand
 }
@@ -21,6 +23,8 @@ func NewCmd(container didomain.Container) *Command {
 	}
 }
 
+// Run executes the mkdir command, creating a new directory at the specified path.
+// It uses the domainfs.Writer interface to decouple from the full filesystem service.
 func (c *Command) Run(ctx context.Context, opts Options) error {
 	start := time.Now()
 
@@ -32,7 +36,8 @@ func (c *Command) Run(ctx context.Context, opts Options) error {
 		domainlogger.Bool("parent", opts.Parent),
 	)
 
-	fsSvc := c.Container.FS()
+	// Decouple by using the Writer interface instead of the full Service.
+	var fsSvc domainfs.Writer = c.Container.FS()
 	if fsSvc == nil {
 		return util.NewCommandErrorWithNameWithMessage(c.Name, "filesystem service is nil")
 	}
@@ -42,6 +47,10 @@ func (c *Command) Run(ctx context.Context, opts Options) error {
 	)
 
 	if err := fsSvc.Mkdir(ctx, opts.Path, domainfs.MKDirOptions{Parents: opts.Parent}); err != nil {
+		c.Log.Error("failed to create directory",
+			domainlogger.String("path", opts.Path),
+			domainlogger.Error(err),
+		)
 		return util.NewCommandError(c.Name, "failed to create directory", err)
 	}
 

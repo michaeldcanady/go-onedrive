@@ -1,3 +1,4 @@
+// Package rm provides the command-line interface for removing items in OneDrive.
 package rm
 
 import (
@@ -10,6 +11,7 @@ import (
 	domainfs "github.com/michaeldcanady/go-onedrive/internal/fs/domain"
 )
 
+// Command handles the execution logic for the 'rm' command.
 type Command struct {
 	util.BaseCommand
 }
@@ -21,6 +23,8 @@ func NewCmd(container didomain.Container) *Command {
 	}
 }
 
+// Run executes the rm command, removing an item at the specified path.
+// It uses the domainfs.Manager interface to decouple from the full filesystem service.
 func (c *Command) Run(ctx context.Context, opts Options) error {
 	start := time.Now()
 
@@ -30,14 +34,20 @@ func (c *Command) Run(ctx context.Context, opts Options) error {
 
 	c.Log.Info("starting rm command",
 		domainlogger.String("path", opts.Path),
+		domainlogger.Bool("recursive", opts.Recursive),
 	)
 
-	fsSvc := c.Container.FS()
+	// Decouple by using the Manager interface instead of the full Service.
+	var fsSvc domainfs.Manager = c.Container.FS()
 	if fsSvc == nil {
 		return util.NewCommandErrorWithNameWithMessage(c.Name, "filesystem service is nil")
 	}
 
 	if err := fsSvc.Remove(ctx, opts.Path, domainfs.RemoveOptions{Recursive: opts.Recursive}); err != nil {
+		c.Log.Error("failed to remove item",
+			domainlogger.String("path", opts.Path),
+			domainlogger.Error(err),
+		)
 		return util.NewCommandError(c.Name, "failed to remove item", err)
 	}
 
