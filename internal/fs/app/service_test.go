@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/michaeldcanady/go-onedrive/internal/interface/cli/util"
-	"github.com/michaeldcanady/go-onedrive/internal/fs/app/registry"
+	"github.com/michaeldcanady/go-onedrive/internal/fs/registry"
 	domainfs "github.com/michaeldcanady/go-onedrive/internal/fs/domain"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"

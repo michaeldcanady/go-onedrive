@@ -5,9 +5,9 @@ import (
 	appdrive "github.com/michaeldcanady/go-onedrive/internal/drive/app"
 	appeditor "github.com/michaeldcanady/go-onedrive/internal/editor/app"
 	appfs "github.com/michaeldcanady/go-onedrive/internal/fs/app"
-	applocal "github.com/michaeldcanady/go-onedrive/internal/fs/app/local"
-	apponedrive "github.com/michaeldcanady/go-onedrive/internal/fs/app/onedrive"
-	appregistry "github.com/michaeldcanady/go-onedrive/internal/fs/app/registry"
+	applocal "github.com/michaeldcanady/go-onedrive/internal/fs/local/app"
+	apponedrive "github.com/michaeldcanady/go-onedrive/internal/fs/onedrive/app"
+	appregistry "github.com/michaeldcanady/go-onedrive/internal/fs/registry"
 	appstate "github.com/michaeldcanady/go-onedrive/internal/state/app"
 
 	domaindrive "github.com/michaeldcanady/go-onedrive/internal/drive/domain"

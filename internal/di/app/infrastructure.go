@@ -10,7 +10,7 @@ import (
 	domaingraph "github.com/michaeldcanady/go-onedrive/internal/core/graph/domain"
 	graphinfra "github.com/michaeldcanady/go-onedrive/internal/core/graph/infra"
 	domainfs "github.com/michaeldcanady/go-onedrive/internal/fs/domain"
-	infrafile "github.com/michaeldcanady/go-onedrive/internal/fs/app/onedrive/infra"
+	infrafile "github.com/michaeldcanady/go-onedrive/internal/fs/onedrive/infra"
 	pkgcache "github.com/michaeldcanady/go-onedrive/pkg/cache"
 	infrabolt "github.com/michaeldcanady/go-onedrive/pkg/cache/bolt"
 )
