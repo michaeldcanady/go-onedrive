@@ -2,9 +2,7 @@ package cp
 
 import (
 	"context"
-	"fmt"
 	"os"
-	"path"
 	"time"
 
 	"github.com/michaeldcanady/go-onedrive/internal/cli/util"
@@ -27,7 +25,7 @@ func (c *CpCmd) Run(ctx context.Context, opts Options) error {
 	start := time.Now()
 
 	if err := c.Initialize(loggerID); err != nil {
-		return err
+		return util.NewCommandError(c.Name, "failed to initialize command", err)
 	}
 
 	c.Log.Info("starting cp command",
@@ -45,16 +43,28 @@ func (c *CpCmd) Run(ctx context.Context, opts Options) error {
 	matcher, err := c.loadIgnoreMatcher(ctx, opts.IgnoreFile)
 	if err != nil {
 		c.Log.Warn("failed to load ignore file", domainlogger.String("path", opts.IgnoreFile), domainlogger.Error(err))
+		matcher = nil
 	}
 
-	if matcher != nil {
-		err = c.copyRecursive(ctx, fsSvc, opts.Source, opts.Dest, opts.Overwrite, matcher)
-	} else {
-		err = fsSvc.Copy(ctx, opts.Source, opts.Dest, domainfs.CopyOptions{Overwrite: opts.Overwrite})
-	}
-
+	item, err := fsSvc.Get(ctx, opts.Source)
 	if err != nil {
-		c.RenderError(opts.Stderr, err)
+		return err
+	}
+
+	if item.Type == domainfs.ItemTypeFolder && !opts.Recursive {
+		return util.NewCommandErrorWithNameWithMessage(c.Name, "recursive is required for folders")
+	} else if item.Type == domainfs.ItemTypeFile && opts.Recursive {
+		c.RenderWarning(opts.Stdout, "disabling recursive since path is a file")
+		opts.Recursive = false
+	}
+
+	copyOpts := domainfs.CopyOptions{
+		Overwrite: opts.Overwrite,
+		Recursive: opts.Recursive,
+		Matcher:   matcher,
+	}
+
+	if err := fsSvc.Copy(ctx, opts.Source, opts.Dest, copyOpts); err != nil {
 		return util.NewCommandError(c.Name, "failed to copy item", err)
 	}
 
@@ -62,7 +72,7 @@ func (c *CpCmd) Run(ctx context.Context, opts Options) error {
 		domainlogger.Duration("duration", time.Since(start)),
 	)
 
-	fmt.Fprintf(opts.Stdout, "Successfully copied \"%s\" to \"%s\"\n", opts.Source, opts.Dest)
+	c.RenderSuccess(opts.Stdout, "copied \"%s\" to \"%s\"", opts.Source, opts.Dest)
 
 	return nil
 }
@@ -84,53 +94,4 @@ func (c *CpCmd) loadIgnoreMatcher(ctx context.Context, ignorePath string) (domai
 	}
 
 	return factory.CreateMatcher(ctx, f)
-}
-
-func (c *CpCmd) copyRecursive(ctx context.Context, fsSvc domainfs.Service, src, dst string, overwrite bool, matcher domainfs.IgnoreMatcher) error {
-	item, err := fsSvc.Get(ctx, src)
-	if err != nil {
-		return err
-	}
-
-	if matcher != nil && matcher.ShouldIgnore(item.Path, item.Type == domainfs.ItemTypeFolder) {
-		c.Log.Debug("ignoring item", domainlogger.String("path", item.Path))
-		return nil
-	}
-
-	if item.Type == domainfs.ItemTypeFile {
-		return fsSvc.Copy(ctx, src, dst, domainfs.CopyOptions{Overwrite: overwrite})
-	}
-
-	// It's a folder, ensure destination exists
-	if err := fsSvc.Mkdir(ctx, dst, domainfs.MKDirOptions{Parents: true}); err != nil {
-		// Ignore error if it already exists? FS implementation should handle it or we check here.
-		c.Log.Debug("mkdir destination", domainlogger.String("path", dst), domainlogger.Error(err))
-	}
-
-	children, err := fsSvc.List(ctx, src, domainfs.ListOptions{})
-	if err != nil {
-		return err
-	}
-
-	for _, child := range children {
-		// Better way: use item names
-		// childDst := path.Join(dst, child.Name)
-		// How to get provider-aware child path?
-		// For now, assume simple join if it's the same provider
-
-		// If src is "local:./foo", and child.Name is "bar.txt"
-		// we want "local:./foo/bar.txt"
-
-		provider, subPath := util.ParsePath(src)
-		newSrc := fmt.Sprintf("%s:%s", provider, path.Join(subPath, child.Name))
-
-		dstProvider, dstSubPath := util.ParsePath(dst)
-		newDst := fmt.Sprintf("%s:%s", dstProvider, path.Join(dstSubPath, child.Name))
-
-		if err := c.copyRecursive(ctx, fsSvc, newSrc, newDst, overwrite, matcher); err != nil {
-			return err
-		}
-	}
-
-	return nil
 }
