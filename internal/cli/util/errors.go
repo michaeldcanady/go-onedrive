@@ -1,8 +1,12 @@
 package util
 
 import (
+	"errors"
 	"strings"
 )
+
+// ErrUserAbort is returned when a user aborts a prompt.
+var ErrUserAbort = errors.New("user aborted")
 
 type errorUnwrapper interface {
 	Unwrap() error

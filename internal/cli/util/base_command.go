@@ -4,22 +4,25 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"strconv"
 
 	"github.com/fatih/color"
+	"github.com/manifoldco/promptui"
 	domainerrors "github.com/michaeldcanady/go-onedrive/internal/common/errors"
-	domainlogger "github.com/michaeldcanady/go-onedrive/internal/core/logger/domain"
-	didomain "github.com/michaeldcanady/go-onedrive/internal/di/domain"
+	logger "github.com/michaeldcanady/go-onedrive/internal/core/logger/domain"
+	di "github.com/michaeldcanady/go-onedrive/internal/di/domain"
 )
 
 // BaseCommand provides common functionality for all CLI commands.
 type BaseCommand struct {
-	Container didomain.Container
-	Log       domainlogger.Logger
+	Container di.Container
+	Log       logger.Logger
 	Name      string
+	Quiet     bool
 }
 
 // NewBaseCommand creates a new BaseCommand.
-func NewBaseCommand(container didomain.Container, name string) BaseCommand {
+func NewBaseCommand(container di.Container, name string) BaseCommand {
 	return BaseCommand{
 		Container: container,
 		Name:      name,
@@ -27,8 +30,14 @@ func NewBaseCommand(container didomain.Container, name string) BaseCommand {
 }
 
 // WithLogger allows injecting a logger into BaseCommand.
-func (c *BaseCommand) WithLogger(log domainlogger.Logger) *BaseCommand {
+func (c *BaseCommand) WithLogger(log logger.Logger) *BaseCommand {
 	c.Log = log
+	return c
+}
+
+// WithQuiet allows setting the quiet flag.
+func (c *BaseCommand) WithQuiet(quiet bool) *BaseCommand {
+	c.Quiet = quiet
 	return c
 }
 
@@ -57,13 +66,81 @@ func (c *BaseCommand) RenderError(w io.Writer, err error) {
 
 	var domainErr *domainerrors.DomainError
 	if errors.As(err, &domainErr) {
-		fmt.Fprintf(w, "%s %s\n", red("Error:"), domainErr.Error())
+		c.RenderMessage(w, "%s %s\n", red("Error:"), domainErr.Error())
 		if domainErr.Err != nil {
-			fmt.Fprintf(w, "  %s %v\n", yellow("Details:"), domainErr.Err)
+			c.RenderMessage(w, "  %s %v\n", yellow("Details:"), domainErr.Err)
 		}
 		return
 	}
 
 	// Fallback for regular errors
-	fmt.Fprintf(w, "%s %v\n", red("Error:"), err)
+	c.RenderMessage(w, "%s %v\n", red("Error:"), err)
+}
+
+// RenderWarning renders a warning message in a user-friendly way.
+func (c *BaseCommand) RenderWarning(w io.Writer, format string, a ...any) {
+	if c.Quiet {
+		return
+	}
+	yellow := color.New(color.FgYellow, color.Bold).SprintFunc()
+	msg := fmt.Sprintf(format, a...)
+	c.RenderMessage(w, "%s %s\n", yellow("Warning:"), msg)
+}
+
+func (c *BaseCommand) RenderMessage(w io.Writer, format string, a ...any) {
+	fmt.Fprintf(w, format, a...)
+}
+
+// RenderInfo renders an informational message in a user-friendly way.
+func (c *BaseCommand) RenderInfo(w io.Writer, format string, a ...any) {
+	if c.Quiet {
+		return
+	}
+	blue := color.New(color.FgBlue, color.Bold).SprintFunc()
+	msg := fmt.Sprintf(format, a...)
+	c.RenderMessage(w, "%s %s\n", blue("Info:"), msg)
+}
+
+// RenderSuccess renders a success message in a user-friendly way.
+func (c *BaseCommand) RenderSuccess(w io.Writer, format string, a ...any) {
+	if c.Quiet {
+		return
+	}
+	green := color.New(color.FgGreen, color.Bold).SprintFunc()
+	msg := fmt.Sprintf(format, a...)
+	c.RenderMessage(w, "%s %s\n", green("Success:"), msg)
+}
+
+func (c *BaseCommand) Prompt(prompt promptui.Prompt) (string, error) {
+	result, err := prompt.Run()
+	if err != nil {
+		if errors.Is(err, promptui.ErrAbort) {
+			return "", ErrUserAbort
+		}
+	}
+	return result, err
+}
+
+// PromptConfirm asks the user for confirmation.
+func (c *BaseCommand) PromptConfirm(w io.Writer, label string) (bool, error) {
+	result, err := c.Prompt(promptui.Prompt{
+		Label:     label,
+		IsConfirm: true,
+		Stdout:    NewNopWriteCloser(w),
+	})
+	if err != nil {
+		return false, err
+	}
+	return parseBool(result)
+}
+
+func parseBool(str string) (bool, error) {
+	switch str {
+	case "yes", "y":
+		return true, nil
+	case "no", "n":
+		return false, nil
+	default:
+		return strconv.ParseBool(str)
+	}
 }
