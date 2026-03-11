@@ -2,6 +2,7 @@ package logout
 
 import (
 	"context"
+	domainstate "github.com/michaeldcanady/go-onedrive/internal/state/domain"
 	"time"
 
 	"github.com/michaeldcanady/go-onedrive/internal/cli/util"
@@ -28,7 +29,7 @@ func (c *LogoutCmd) Run(ctx context.Context, opts Options) error {
 
 	c.Log.Info("starting logout flow")
 
-	profileName, err := c.Container.State().GetCurrentProfile()
+	profileName, err := c.Container.State().Get(domainstate.KeyProfile)
 	if err != nil {
 		c.Log.Error("failed to get current profile", domainlogger.Error(err))
 		return util.NewCommandErrorWithNameWithError(c.Name, err)

@@ -4,20 +4,20 @@ import (
 	"context"
 	"sync"
 
-	domaincache "github.com/michaeldcanady/go-onedrive/internal/cache/domain"
 	"github.com/michaeldcanady/go-onedrive/internal/cli/util"
 	logger "github.com/michaeldcanady/go-onedrive/internal/core/logger/domain"
+	pkgcache "github.com/michaeldcanady/go-onedrive/pkg/cache"
 )
 
 type Service2 struct {
 	mu       sync.RWMutex
 	log      logger.Logger
-	registry map[string]*domaincache.Store
+	registry map[string]*pkgcache.Store
 }
 
 func NewService2(log logger.Logger) *Service2 {
 	return &Service2{
-		registry: make(map[string]*domaincache.Store),
+		registry: make(map[string]*pkgcache.Store),
 		log:      log,
 	}
 }
@@ -37,7 +37,7 @@ const (
 )
 
 // CreateCache instantiates a new cache store and adds it to the registry.
-func (s *Service2) CreateCache(ctx context.Context, name string, storeFactory func() domaincache.KeyValueStore) *domaincache.Store {
+func (s *Service2) CreateCache(ctx context.Context, name string, storeFactory func() pkgcache.KeyValueStore) *pkgcache.Store {
 	correlationID := util.CorrelationIDFromContext(ctx)
 
 	log := s.log.WithContext(ctx).With(
@@ -60,7 +60,7 @@ func (s *Service2) CreateCache(ctx context.Context, name string, storeFactory fu
 		return s.registry[name]
 	}
 
-	cache := domaincache.NewStore(storeFactory())
+	cache := pkgcache.NewStore(storeFactory())
 	s.registry[name] = cache
 
 	log.Info("cache created successfully",
@@ -71,7 +71,7 @@ func (s *Service2) CreateCache(ctx context.Context, name string, storeFactory fu
 }
 
 // GetCache returns the cache with the provided name.
-func (s *Service2) GetCache(ctx context.Context, name string) (*domaincache.Store, bool) {
+func (s *Service2) GetCache(ctx context.Context, name string) (*pkgcache.Store, bool) {
 	correlationID := util.CorrelationIDFromContext(ctx)
 
 	log := s.log.WithContext(ctx).With(

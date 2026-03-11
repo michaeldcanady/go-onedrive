@@ -4,19 +4,19 @@ import (
 	"os"
 	"path/filepath"
 
-	domaincache "github.com/michaeldcanady/go-onedrive/internal/cache/domain"
-	domainstate "github.com/michaeldcanady/go-onedrive/internal/state/domain"
 	infraprofile "github.com/michaeldcanady/go-onedrive/internal/profile/infra"
+	domainstate "github.com/michaeldcanady/go-onedrive/internal/state/domain"
+	pkgcache "github.com/michaeldcanady/go-onedrive/pkg/cache"
 )
 
 type Repository struct {
 	path       string
-	serializer domaincache.SerializerDeserializer[domainstate.State]
+	serializer pkgcache.SerializerDeserializer[domainstate.State]
 }
 
 func NewRepository(
 	path string,
-	serializer domaincache.SerializerDeserializer[domainstate.State],
+	serializer pkgcache.SerializerDeserializer[domainstate.State],
 ) *Repository {
 	return &Repository{
 		path:       path,

@@ -10,10 +10,10 @@ import (
 	appregistry "github.com/michaeldcanady/go-onedrive/internal/fs/app/registry"
 	appstate "github.com/michaeldcanady/go-onedrive/internal/state/app"
 
-	domaincache "github.com/michaeldcanady/go-onedrive/internal/cache/domain"
 	domaindrive "github.com/michaeldcanady/go-onedrive/internal/drive/domain"
 	domaineditor "github.com/michaeldcanady/go-onedrive/internal/editor/domain"
 	domainfs "github.com/michaeldcanady/go-onedrive/internal/fs/domain"
+	pkgcache "github.com/michaeldcanady/go-onedrive/pkg/cache"
 
 	infraeditor "github.com/michaeldcanady/go-onedrive/internal/editor/infra"
 )
@@ -30,7 +30,7 @@ func (c *Container) newDriveService() domaindrive.DriveService {
 	return appdrive.NewDriveService(c.newDriveRepository(), c.getLogger("drive"))
 }
 
-func (c *Container) Cache() domaincache.Service2 {
+func (c *Container) Cache() pkgcache.Service {
 	c.cacheOnce2.Do(func() {
 		c.cacheService2 = c.newCacheService()
 	})
@@ -38,7 +38,7 @@ func (c *Container) Cache() domaincache.Service2 {
 	return c.cacheService2
 }
 
-func (c *Container) newCacheService() domaincache.Service2 {
+func (c *Container) newCacheService() pkgcache.Service {
 	return appcache.NewService2(c.getLogger("cache"))
 }
 

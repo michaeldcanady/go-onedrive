@@ -2,6 +2,7 @@ package create
 
 import (
 	"context"
+	domainstate "github.com/michaeldcanady/go-onedrive/internal/state/domain"
 	"strings"
 	"time"
 
@@ -70,7 +71,7 @@ func (c *CreateCmd) Run(ctx context.Context, opts Options) error {
 	if opts.SetCurrent {
 		c.Log.Info("setting new profile as current", domainlogger.String("name", name))
 
-		if err := c.Container.State().SetCurrentProfile(p.Name, domainstate.ScopeGlobal); err != nil {
+		if err := c.Container.State().Set(domainstate.KeyProfile, p.Name, domainstate.ScopeGlobal); err != nil {
 			c.Log.Error("failed to set current profile", domainlogger.String("error", err.Error()))
 			return util.NewCommandErrorWithNameWithError(c.Name, err)
 		}

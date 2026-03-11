@@ -2,6 +2,7 @@ package list
 
 import (
 	"context"
+	domainstate "github.com/michaeldcanady/go-onedrive/internal/state/domain"
 	"time"
 
 	"github.com/michaeldcanady/go-onedrive/internal/cli/util"
@@ -39,7 +40,7 @@ func (c *ListCmd) Run(ctx context.Context, opts Options) error {
 	}
 
 	stateSvc := c.Container.State()
-	activeDriveID, err := stateSvc.GetCurrentDrive()
+	activeDriveID, err := stateSvc.Get(domainstate.KeyDrive)
 	if err != nil {
 		c.Log.Warn("failed to get current drive",
 			domainlogger.Error(err),

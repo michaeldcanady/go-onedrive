@@ -3,7 +3,7 @@ package infra
 import (
 	"context"
 
-	domaincache "github.com/michaeldcanady/go-onedrive/internal/cache/domain"
+	pkgcache "github.com/michaeldcanady/go-onedrive/pkg/cache"
 )
 
 type PathIDCache interface {
@@ -13,10 +13,10 @@ type PathIDCache interface {
 }
 
 type PathIDCacheAdapter struct {
-	cache domaincache.Cache[string]
+	cache pkgcache.Cache[string]
 }
 
-func NewPathIDCacheAdapter(cache domaincache.Cache[string]) *PathIDCacheAdapter {
+func NewPathIDCacheAdapter(cache pkgcache.Cache[string]) *PathIDCacheAdapter {
 	return &PathIDCacheAdapter{
 		cache: cache,
 	}

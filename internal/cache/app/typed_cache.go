@@ -4,18 +4,18 @@ import (
 	"context"
 	"encoding/json"
 
-	domaincache "github.com/michaeldcanady/go-onedrive/internal/cache/domain"
+	pkgcache "github.com/michaeldcanady/go-onedrive/pkg/cache"
 )
 
-var _ domaincache.Cache[any] = (*TypedCache[any])(nil)
+var _ pkgcache.Cache[any] = (*TypedCache[any])(nil)
 
 type TypedCache[T any] struct {
-	cache           *domaincache.Store
-	keySerializer   domaincache.SerializerDeserializer[string]
-	valueSerializer domaincache.SerializerDeserializer[T]
+	cache           *pkgcache.Store
+	keySerializer   pkgcache.SerializerDeserializer[string]
+	valueSerializer pkgcache.SerializerDeserializer[T]
 }
 
-func NewTypedCache[T any](cache *domaincache.Store, valueSerializer domaincache.SerializerDeserializer[T]) *TypedCache[T] {
+func NewTypedCache[T any](cache *pkgcache.Store, valueSerializer pkgcache.SerializerDeserializer[T]) *TypedCache[T] {
 	return &TypedCache[T]{
 		cache:           cache,
 		keySerializer:   &JSONSerializerDeserializer[string]{},

@@ -36,7 +36,7 @@ func TestTableFormatter_fitToTerminal(t *testing.T) {
 	)
 
 	widths := []int{50, 50} // Natural widths
-	
+
 	// Case 1: Fits fine
 	newWidths := tf.fitToTerminal(widths, 120)
 	assert.Equal(t, widths, newWidths)
@@ -55,7 +55,7 @@ func TestTableFormatter_fitToTerminal(t *testing.T) {
 func TestTableFormatter_Format(t *testing.T) {
 	tf := NewTableFormatter(
 		NewColumn("ID", func(it testItem) string { return it.Name }),
-		NewRenderColumn("Value", 
+		NewRenderColumn("Value",
 			func(it testItem) string { return it.Value },
 			func(w io.Writer, it testItem) string { return "[" + it.Value + "]" },
 		),

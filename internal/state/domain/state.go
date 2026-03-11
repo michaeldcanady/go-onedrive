@@ -5,3 +5,10 @@ type State struct {
 	CurrentDrive   string            `yaml:"currentDrive" json:"current_drive"`
 	DriveAliases   map[string]string `yaml:"driveAliases" json:"drive_aliases"`
 }
+
+type Key int
+
+const (
+	KeyProfile Key = iota
+	KeyDrive
+)

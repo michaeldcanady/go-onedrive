@@ -5,7 +5,6 @@ import (
 
 	domainaccount "github.com/michaeldcanady/go-onedrive/internal/account/domain"
 	domainauth "github.com/michaeldcanady/go-onedrive/internal/auth/domain"
-	domaincache "github.com/michaeldcanady/go-onedrive/internal/cache/domain"
 	domainconfig "github.com/michaeldcanady/go-onedrive/internal/config/domain"
 	domainenv "github.com/michaeldcanady/go-onedrive/internal/core/env/domain"
 	domaingraph "github.com/michaeldcanady/go-onedrive/internal/core/graph/domain"
@@ -16,7 +15,8 @@ import (
 	domainfs "github.com/michaeldcanady/go-onedrive/internal/fs/domain"
 	domainprofile "github.com/michaeldcanady/go-onedrive/internal/profile/domain"
 	domainstate "github.com/michaeldcanady/go-onedrive/internal/state/domain"
-	infrabolt "github.com/michaeldcanady/go-onedrive/internal/cache/infra/bolt"
+	pkgcache "github.com/michaeldcanady/go-onedrive/pkg/cache"
+	infrabolt "github.com/michaeldcanady/go-onedrive/pkg/cache/bolt"
 
 	infrafile "github.com/michaeldcanady/go-onedrive/internal/fs/infra"
 )
@@ -51,7 +51,7 @@ type Container struct {
 	sharedStore    *infrabolt.Store
 
 	cacheOnce2    sync.Once
-	cacheService2 domaincache.Service2
+	cacheService2 pkgcache.Service
 
 	// Domain Services
 	authOnce    sync.Once

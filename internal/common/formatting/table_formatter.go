@@ -173,7 +173,6 @@ func (tf *TableFormatter[T]) fitToTerminal(widths []int, termWidth int) []int {
 	return newWidths
 }
 
-
 func (tf *TableFormatter[T]) writeRow(w io.Writer, widths []int, get func(i int) (string, int)) {
 	for i := range widths {
 		text, visibleLen := get(i)
@@ -188,7 +187,7 @@ func (tf *TableFormatter[T]) writeRow(w io.Writer, widths []int, get func(i int)
 		if padding < 0 {
 			padding = 0
 		}
-		
+
 		fmt.Fprint(w, text)
 		fmt.Fprint(w, strings.Repeat(" ", padding))
 

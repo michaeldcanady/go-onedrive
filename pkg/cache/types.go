@@ -72,3 +72,9 @@ type KeyValueStore interface {
 	Delete(context.Context, []byte) error
 	List(context.Context) ([][]byte, [][]byte, error)
 }
+
+// Service is a registry for cache stores.
+type Service interface {
+	CreateCache(ctx context.Context, name string, storeFactory func() KeyValueStore) *Store
+	GetCache(ctx context.Context, name string) (*Store, bool)
+}

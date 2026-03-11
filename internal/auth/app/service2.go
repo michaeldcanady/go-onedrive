@@ -10,12 +10,12 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
 	domainaccount "github.com/michaeldcanady/go-onedrive/internal/account/domain"
 	domainauth "github.com/michaeldcanady/go-onedrive/internal/auth/domain"
-	domaincache "github.com/michaeldcanady/go-onedrive/internal/cache/domain"
 	"github.com/michaeldcanady/go-onedrive/internal/cli/util"
 	domainconfig "github.com/michaeldcanady/go-onedrive/internal/config/domain"
 	logger "github.com/michaeldcanady/go-onedrive/internal/core/logger/domain"
 	domainstate "github.com/michaeldcanady/go-onedrive/internal/state/domain"
 	"github.com/michaeldcanady/go-onedrive/pkg/cache"
+	pkgcache "github.com/michaeldcanady/go-onedrive/pkg/cache"
 )
 
 var (
@@ -31,7 +31,7 @@ const (
 )
 
 type Service2 struct {
-	cache   domaincache.Cache[domainauth.AccessToken]
+	cache   pkgcache.Cache[domainauth.AccessToken]
 	config  domainconfig.ConfigService
 	state   domainstate.Service
 	log     logger.Logger
@@ -40,7 +40,7 @@ type Service2 struct {
 }
 
 func NewService(
-	cache domaincache.Cache[domainauth.AccessToken],
+	cache pkgcache.Cache[domainauth.AccessToken],
 	config domainconfig.ConfigService,
 	state domainstate.Service,
 	l logger.Logger,

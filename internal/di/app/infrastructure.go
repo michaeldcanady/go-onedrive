@@ -7,12 +7,12 @@ import (
 	domainaccount "github.com/michaeldcanady/go-onedrive/internal/account/domain"
 	domainauth "github.com/michaeldcanady/go-onedrive/internal/auth/domain"
 	appcache "github.com/michaeldcanady/go-onedrive/internal/cache/app"
-	domaincache "github.com/michaeldcanady/go-onedrive/internal/cache/domain"
 	domaingraph "github.com/michaeldcanady/go-onedrive/internal/core/graph/domain"
 	graphinfra "github.com/michaeldcanady/go-onedrive/internal/core/graph/infra"
 	domainfs "github.com/michaeldcanady/go-onedrive/internal/fs/domain"
 	infrafile "github.com/michaeldcanady/go-onedrive/internal/fs/infra"
-	infrabolt "github.com/michaeldcanady/go-onedrive/internal/cache/infra/bolt"
+	pkgcache "github.com/michaeldcanady/go-onedrive/pkg/cache"
+	infrabolt "github.com/michaeldcanady/go-onedrive/pkg/cache/bolt"
 )
 
 func (c *Container) cacheStore() *infrabolt.Store {
@@ -100,14 +100,14 @@ func (c *Container) pathIDCache() infrafile.PathIDCache {
 	return infrafile.NewPathIDCacheAdapter(typedCache)
 }
 
-func (c *Container) authCache() domaincache.Cache[domainauth.AccessToken] {
+func (c *Container) authCache() pkgcache.Cache[domainauth.AccessToken] {
 	cacheSvc := c.Cache()
 	rawCache := cacheSvc.CreateCache(context.Background(), "auth_tokens", appcache.SiblingBoltFactory(c.cacheStore(), "auth_tokens"))
 
 	return appcache.NewTypedCache(rawCache, &appcache.JSONSerializerDeserializer[domainauth.AccessToken]{})
 }
 
-func (c *Container) accountCache() domaincache.Cache[domainaccount.Account] {
+func (c *Container) accountCache() pkgcache.Cache[domainaccount.Account] {
 	cacheSvc := c.Cache()
 	rawCache := cacheSvc.CreateCache(context.Background(), "account", appcache.SiblingBoltFactory(c.cacheStore(), "account"))
 

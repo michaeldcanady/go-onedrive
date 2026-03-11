@@ -1,6 +1,10 @@
 package domain
 
-import "strings"
+import (
+	"encoding/json"
+	"fmt"
+	"strings"
+)
 
 type ItemType int
 
@@ -34,4 +38,20 @@ func (iT ItemType) String() string {
 		return ItemTypeUnknown.String()
 	}
 	return str
+}
+
+// MarshalJSON marshals the ItemType to a JSON string.
+func (iT ItemType) MarshalJSON() ([]byte, error) {
+	return json.Marshal(iT.String())
+}
+
+// UnmarshalJSON unmarshals an ItemType from a JSON string.
+func (iT *ItemType) UnmarshalJSON(b []byte) error {
+	var s string
+	if err := json.Unmarshal(b, &s); err != nil {
+		return fmt.Errorf("ItemType should be a string, got %s", string(b))
+	}
+
+	*iT = ParseItemType(s)
+	return nil
 }

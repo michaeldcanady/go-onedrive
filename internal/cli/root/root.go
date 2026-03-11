@@ -2,6 +2,7 @@ package root
 
 import (
 	"fmt"
+	domainstate "github.com/michaeldcanady/go-onedrive/internal/state/domain"
 	"strings"
 
 	authcmd "github.com/michaeldcanady/go-onedrive/internal/cli/auth"
@@ -70,12 +71,12 @@ func CreateRootCmd(container didomain.Container) (*cobra.Command, error) {
 			}
 
 			if strings.TrimSpace(profile) != "" {
-				if err := container.State().SetCurrentProfile(profile, domainstate.ScopeSession); err != nil {
+				if err := container.State().Set(domainstate.KeyProfile, profile, domainstate.ScopeSession); err != nil {
 					return fmt.Errorf("failed to set session profile: %w", err)
 				}
 			}
 
-			profileName, err := container.State().GetCurrentProfile()
+			profileName, err := container.State().Get(domainstate.KeyProfile)
 			if err != nil {
 				return fmt.Errorf("failed to get current profile: %w", err)
 			}

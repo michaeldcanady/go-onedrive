@@ -3,10 +3,10 @@ package app
 import (
 	"encoding/json"
 
-	domaincache "github.com/michaeldcanady/go-onedrive/internal/cache/domain"
+	pkgcache "github.com/michaeldcanady/go-onedrive/pkg/cache"
 )
 
-var _ domaincache.SerializerDeserializer[any] = (*JSONSerializerDeserializer[any])(nil)
+var _ pkgcache.SerializerDeserializer[any] = (*JSONSerializerDeserializer[any])(nil)
 
 type JSONSerializerDeserializer[T any] struct{}
 

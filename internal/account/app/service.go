@@ -5,10 +5,10 @@ import (
 	"errors"
 
 	domainaccount "github.com/michaeldcanady/go-onedrive/internal/account/domain"
-	domaincache "github.com/michaeldcanady/go-onedrive/internal/cache/domain"
 	"github.com/michaeldcanady/go-onedrive/internal/cli/util"
 	logger "github.com/michaeldcanady/go-onedrive/internal/core/logger/domain"
 	"github.com/michaeldcanady/go-onedrive/pkg/cache"
+	pkgcache "github.com/michaeldcanady/go-onedrive/pkg/cache"
 )
 
 const (
@@ -16,11 +16,11 @@ const (
 )
 
 type Service struct {
-	cache domaincache.Cache[domainaccount.Account]
+	cache pkgcache.Cache[domainaccount.Account]
 	log   logger.Logger
 }
 
-func New(cache domaincache.Cache[domainaccount.Account], l logger.Logger) *Service {
+func New(cache pkgcache.Cache[domainaccount.Account], l logger.Logger) *Service {
 	return &Service{
 		cache: cache,
 		log:   l,

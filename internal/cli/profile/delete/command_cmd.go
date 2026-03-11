@@ -3,6 +3,7 @@ package delete
 import (
 	"context"
 	"fmt"
+	domainstate "github.com/michaeldcanady/go-onedrive/internal/state/domain"
 	"strings"
 	"time"
 
@@ -43,7 +44,7 @@ func (c *DeleteCmd) Run(ctx context.Context, opts Options) error {
 		)
 	}
 
-	current, err := c.Container.State().GetCurrentProfile()
+	current, err := c.Container.State().Get(domainstate.KeyProfile)
 	if err != nil {
 		return util.NewCommandErrorWithNameWithError(c.Name, err)
 	}
@@ -64,7 +65,7 @@ func (c *DeleteCmd) Run(ctx context.Context, opts Options) error {
 
 		c.Log.Info("deleting current profile; switching to default")
 
-		if err := c.Container.State().SetCurrentProfile(infra.DefaultProfileName, domainstate.ScopeGlobal); err != nil {
+		if err := c.Container.State().Set(domainstate.KeyProfile, infra.DefaultProfileName, domainstate.ScopeGlobal); err != nil {
 			return util.NewCommandErrorWithNameWithError(
 				c.Name,
 				fmt.Errorf("failed to switch to default profile: %w", err),

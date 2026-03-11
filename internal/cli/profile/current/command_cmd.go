@@ -2,11 +2,13 @@ package current
 
 import (
 	"context"
+	domainstate "github.com/michaeldcanady/go-onedrive/internal/state/domain"
 	"time"
 
 	"github.com/michaeldcanady/go-onedrive/internal/cli/util"
 	domainlogger "github.com/michaeldcanady/go-onedrive/internal/core/logger/domain"
 	didomain "github.com/michaeldcanady/go-onedrive/internal/di/domain"
+	domainstate "github.com/michaeldcanady/go-onedrive/internal/state/domain"
 )
 
 type CurrentCmd struct {
@@ -28,7 +30,7 @@ func (c *CurrentCmd) Run(ctx context.Context, opts Options) error {
 
 	c.Log.Info("retrieving current profile")
 
-	name, err := c.Container.State().GetCurrentProfile()
+	name, err := c.Container.State().Get(domainstate.KeyProfile)
 	if err != nil {
 		return util.NewCommandErrorWithNameWithError(c.Name, err)
 	}

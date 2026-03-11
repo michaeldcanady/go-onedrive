@@ -2,6 +2,7 @@ package use
 
 import (
 	"context"
+	domainstate "github.com/michaeldcanady/go-onedrive/internal/state/domain"
 	"strings"
 	"time"
 
@@ -44,7 +45,7 @@ func (c *UseCmd) Run(ctx context.Context, opts Options) error {
 	}
 
 	// Persist as current profile
-	if err := c.Container.State().SetCurrentProfile(p.Name, domainstate.ScopeGlobal); err != nil {
+	if err := c.Container.State().Set(domainstate.KeyProfile, p.Name, domainstate.ScopeGlobal); err != nil {
 		return util.NewCommandErrorWithNameWithError(c.Name, err)
 	}
 

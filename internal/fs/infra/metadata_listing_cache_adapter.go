@@ -3,17 +3,17 @@ package infra
 import (
 	"context"
 
-	domaincache "github.com/michaeldcanady/go-onedrive/internal/cache/domain"
 	domainfs "github.com/michaeldcanady/go-onedrive/internal/fs/domain"
+	pkgcache "github.com/michaeldcanady/go-onedrive/pkg/cache"
 )
 
 var _ ListingCache = (*MetadataListingCacheAdapter)(nil)
 
 type MetadataListingCacheAdapter struct {
-	cache domaincache.Cache[domainfs.Listing]
+	cache pkgcache.Cache[domainfs.Listing]
 }
 
-func NewMetadataListingCacheAdapter(cache domaincache.Cache[domainfs.Listing]) *MetadataListingCacheAdapter {
+func NewMetadataListingCacheAdapter(cache pkgcache.Cache[domainfs.Listing]) *MetadataListingCacheAdapter {
 	return &MetadataListingCacheAdapter{cache: cache}
 }
 

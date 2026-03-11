@@ -3,20 +3,20 @@ package infra
 import (
 	"context"
 
-	domaincache "github.com/michaeldcanady/go-onedrive/internal/cache/domain"
 	"github.com/michaeldcanady/go-onedrive/internal/fs/domain"
+	pkgcache "github.com/michaeldcanady/go-onedrive/pkg/cache"
 )
 
 // MetadataCacheAdapter implements the MetadataCache interface using a generic
 // cache implementation. It handles the serialization and deserialization of
 // drive item metadata using JSON.
 type MetadataCacheAdapter struct {
-	cache domaincache.Cache[domain.Metadata]
+	cache pkgcache.Cache[domain.Metadata]
 }
 
 // NewMetadataCacheAdapter constructs a new [MetadataCacheAdapter] using the
 // provided cache implementation.
-func NewMetadataCacheAdapter(cache domaincache.Cache[domain.Metadata]) *MetadataCacheAdapter {
+func NewMetadataCacheAdapter(cache pkgcache.Cache[domain.Metadata]) *MetadataCacheAdapter {
 	return &MetadataCacheAdapter{
 		cache: cache,
 	}

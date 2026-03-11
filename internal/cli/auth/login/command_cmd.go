@@ -2,6 +2,7 @@ package login
 
 import (
 	"context"
+	domainstate "github.com/michaeldcanady/go-onedrive/internal/state/domain"
 	"time"
 
 	domainauth "github.com/michaeldcanady/go-onedrive/internal/auth/domain"
@@ -35,7 +36,7 @@ func (c *LoginCmd) Run(ctx context.Context, opts Options) error {
 
 	c.Log.Info("starting login flow")
 
-	profileName, err := c.Container.State().GetCurrentProfile()
+	profileName, err := c.Container.State().Get(domainstate.KeyProfile)
 	if err != nil {
 		return util.NewCommandError(c.Name, "failed to retrieve current profile", err)
 	}

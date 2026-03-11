@@ -16,7 +16,7 @@ type DriverResolverAdapter struct {
 
 // CurrentDriveID implements [domaindrive.DriveResolver].
 func (d *DriverResolverAdapter) CurrentDriveID(ctx context.Context) (string, error) {
-	id, err := d.stateSvc.GetCurrentDrive()
+	id, err := d.stateSvc.Get(domainstate.KeyDrive)
 	if err != nil {
 		return "", err
 	}

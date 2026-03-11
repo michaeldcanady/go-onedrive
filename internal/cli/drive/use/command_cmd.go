@@ -4,10 +4,11 @@ import (
 	"context"
 	"time"
 
+	domainstate "github.com/michaeldcanady/go-onedrive/internal/state/domain"
+
 	"github.com/michaeldcanady/go-onedrive/internal/cli/util"
 	domainlogger "github.com/michaeldcanady/go-onedrive/internal/core/logger/domain"
 	didomain "github.com/michaeldcanady/go-onedrive/internal/di/domain"
-	domainstate "github.com/michaeldcanady/go-onedrive/internal/state/domain"
 )
 
 type UseCmd struct {
@@ -38,7 +39,7 @@ func (c *UseCmd) Run(ctx context.Context, opts Options) error {
 		return util.NewCommandErrorWithNameWithError(c.Name, err)
 	}
 
-	if err := c.Container.State().SetCurrentDrive(resolvedDrive.ID, domainstate.ScopeGlobal); err != nil {
+	if err := c.Container.State().Set(domainstate.KeyDrive, resolvedDrive.ID, domainstate.ScopeGlobal); err != nil {
 		c.Log.Warn("failed to update current drive state",
 			domainlogger.Error(err),
 			domainlogger.String("driveID", resolvedDrive.ID),

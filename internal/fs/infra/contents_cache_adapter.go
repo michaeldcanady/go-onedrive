@@ -3,8 +3,8 @@ package infra
 import (
 	"context"
 
-	domaincache "github.com/michaeldcanady/go-onedrive/internal/cache/domain"
 	"github.com/michaeldcanady/go-onedrive/internal/fs/domain"
+	pkgcache "github.com/michaeldcanady/go-onedrive/pkg/cache"
 )
 
 var _ ContentsCache = (*ContentsCacheAdapter)(nil)
@@ -13,12 +13,12 @@ var _ ContentsCache = (*ContentsCacheAdapter)(nil)
 // cache implementation. It handles the serialization and deserialization of
 // file contents using JSON.
 type ContentsCacheAdapter struct {
-	cache domaincache.Cache[domain.Contents]
+	cache pkgcache.Cache[domain.Contents]
 }
 
 // NewContentsCacheAdapter constructs a new [ContentsCacheAdapter] using the
 // provided cache implementation.
-func NewContentsCacheAdapter(cache domaincache.Cache[domain.Contents]) *ContentsCacheAdapter {
+func NewContentsCacheAdapter(cache pkgcache.Cache[domain.Contents]) *ContentsCacheAdapter {
 	return &ContentsCacheAdapter{
 		cache: cache,
 	}

@@ -1,14 +1,15 @@
 package app
 
 import (
-	domainstate "github.com/michaeldcanady/go-onedrive/internal/state/domain"
+	"fmt"
 	infraprofile "github.com/michaeldcanady/go-onedrive/internal/profile/infra"
+	domainstate "github.com/michaeldcanady/go-onedrive/internal/state/domain"
 )
 
 var _ domainstate.Service = (*Service)(nil)
 
 type Service struct {
-	repo                 domainstate.Repository
+	repo                   domainstate.Repository
 	sessionProfileOverride string
 	hasProfileSession      bool
 	sessionDriveOverride   string
@@ -23,86 +24,95 @@ func (s *Service) getState() (domainstate.State, error) {
 	return s.repo.Load()
 }
 
-func (s *Service) GetCurrentProfile() (string, error) {
-	if s.hasProfileSession {
-		return s.sessionProfileOverride, nil
-	}
+func (s *Service) Get(key domainstate.Key) (string, error) {
+	switch key {
+	case domainstate.KeyProfile:
+		if s.hasProfileSession {
+			return s.sessionProfileOverride, nil
+		}
 
-	st, err := s.getState()
-	if err != nil {
-		return "", err
-	}
+		st, err := s.getState()
+		if err != nil {
+			return "", err
+		}
 
-	return st.CurrentProfile, nil
+		return st.CurrentProfile, nil
+	case domainstate.KeyDrive:
+		if s.hasDriveSession {
+			return s.sessionDriveOverride, nil
+		}
+
+		st, err := s.getState()
+		if err != nil {
+			return "", err
+		}
+
+		return st.CurrentDrive, nil
+	default:
+		return "", fmt.Errorf("unsupported state key: %v", key)
+	}
 }
 
-func (s *Service) SetCurrentProfile(name string, scope domainstate.Scope) error {
-	if scope == domainstate.ScopeSession {
-		s.sessionProfileOverride = name
-		s.hasProfileSession = true
-		return nil
-	}
+func (s *Service) Set(key domainstate.Key, value string, scope domainstate.Scope) error {
+	switch key {
+	case domainstate.KeyProfile:
+		if scope == domainstate.ScopeSession {
+			s.sessionProfileOverride = value
+			s.hasProfileSession = true
+			return nil
+		}
 
-	st, err := s.getState()
-	if err != nil {
-		return err
-	}
+		st, err := s.getState()
+		if err != nil {
+			return err
+		}
 
-	st.CurrentProfile = name
-	return s.repo.Save(st)
+		st.CurrentProfile = value
+		return s.repo.Save(st)
+	case domainstate.KeyDrive:
+		if scope == domainstate.ScopeSession {
+			s.sessionDriveOverride = value
+			s.hasDriveSession = true
+			return nil
+		}
+
+		st, err := s.getState()
+		if err != nil {
+			return err
+		}
+
+		st.CurrentDrive = value
+		return s.repo.Save(st)
+	default:
+		return fmt.Errorf("unsupported state key: %v", key)
+	}
 }
 
-func (s *Service) ClearCurrentProfile() error {
-	s.hasProfileSession = false
-	
-	st, err := s.getState()
-	if err != nil {
-		return err
+func (s *Service) Clear(key domainstate.Key) error {
+	switch key {
+	case domainstate.KeyProfile:
+		s.hasProfileSession = false
+
+		st, err := s.getState()
+		if err != nil {
+			return err
+		}
+
+		st.CurrentProfile = infraprofile.DefaultProfileName
+		return s.repo.Save(st)
+	case domainstate.KeyDrive:
+		s.hasDriveSession = false
+
+		st, err := s.getState()
+		if err != nil {
+			return err
+		}
+
+		st.CurrentDrive = ""
+		return s.repo.Save(st)
+	default:
+		return fmt.Errorf("unsupported state key: %v", key)
 	}
-
-	st.CurrentProfile = infraprofile.DefaultProfileName
-	return s.repo.Save(st)
-}
-
-func (s *Service) GetCurrentDrive() (string, error) {
-	if s.hasDriveSession {
-		return s.sessionDriveOverride, nil
-	}
-
-	st, err := s.getState()
-	if err != nil {
-		return "", err
-	}
-
-	return st.CurrentDrive, nil
-}
-
-func (s *Service) SetCurrentDrive(id string, scope domainstate.Scope) error {
-	if scope == domainstate.ScopeSession {
-		s.sessionDriveOverride = id
-		s.hasDriveSession = true
-		return nil
-	}
-
-	st, err := s.getState()
-	if err != nil {
-		return err
-	}
-
-	st.CurrentDrive = id
-	return s.repo.Save(st)
-}
-
-func (s *Service) ClearCurrentDrive() error {
-	s.hasDriveSession = false
-
-	st, err := s.getState()
-	if err != nil {
-		return err
-	}
-
-	st.CurrentDrive = ""
-	return s.repo.Save(st)
 }
 
 func (s *Service) GetDriveAlias(alias string) (string, error) {

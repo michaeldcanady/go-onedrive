@@ -9,7 +9,6 @@ import (
 
 	domainaccount "github.com/michaeldcanady/go-onedrive/internal/account/domain"
 	domainauth "github.com/michaeldcanady/go-onedrive/internal/auth/domain"
-	domaincache "github.com/michaeldcanady/go-onedrive/internal/cache/domain"
 	domainerrors "github.com/michaeldcanady/go-onedrive/internal/common/errors"
 	domainconfig "github.com/michaeldcanady/go-onedrive/internal/config/domain"
 	domainenv "github.com/michaeldcanady/go-onedrive/internal/core/env/domain"
@@ -19,6 +18,7 @@ import (
 	domainfs "github.com/michaeldcanady/go-onedrive/internal/fs/domain"
 	domainprofile "github.com/michaeldcanady/go-onedrive/internal/profile/domain"
 	domainstate "github.com/michaeldcanady/go-onedrive/internal/state/domain"
+	pkgcache "github.com/michaeldcanady/go-onedrive/pkg/cache"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -29,8 +29,8 @@ type MockContainer struct {
 	mock.Mock
 }
 
-func (m *MockContainer) Cache() domaincache.Service2 { return nil }
-func (m *MockContainer) FS() domainfs.Service        { return m.Called().Get(0).(domainfs.Service) }
+func (m *MockContainer) Cache() pkgcache.Service { return nil }
+func (m *MockContainer) FS() domainfs.Service    { return m.Called().Get(0).(domainfs.Service) }
 func (m *MockContainer) EnvironmentService() domainenv.EnvironmentService {
 	return m.Called().Get(0).(domainenv.EnvironmentService)
 }
