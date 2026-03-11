@@ -5,7 +5,7 @@ import (
 	"errors"
 
 	domainaccount "github.com/michaeldcanady/go-onedrive/internal/account/domain"
-	"github.com/michaeldcanady/go-onedrive/internal/cli/util"
+	"github.com/michaeldcanady/go-onedrive/internal/interface/cli/util"
 	logger "github.com/michaeldcanady/go-onedrive/internal/core/logger/domain"
 	"github.com/michaeldcanady/go-onedrive/pkg/cache"
 	pkgcache "github.com/michaeldcanady/go-onedrive/pkg/cache"

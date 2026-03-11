@@ -3,7 +3,7 @@ package app
 import (
 	"context"
 
-	"github.com/michaeldcanady/go-onedrive/internal/cli/util"
+	"github.com/michaeldcanady/go-onedrive/internal/interface/cli/util"
 	logger "github.com/michaeldcanady/go-onedrive/internal/core/logger/domain"
 	"github.com/michaeldcanady/go-onedrive/internal/fs/domain"
 	"github.com/michaeldcanady/go-onedrive/internal/fs/infra"

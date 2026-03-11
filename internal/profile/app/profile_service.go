@@ -5,7 +5,7 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/michaeldcanady/go-onedrive/internal/cli/util"
+	"github.com/michaeldcanady/go-onedrive/internal/interface/cli/util"
 	logger "github.com/michaeldcanady/go-onedrive/internal/core/logger/domain"
 	domainprofile "github.com/michaeldcanady/go-onedrive/internal/profile/domain"
 )

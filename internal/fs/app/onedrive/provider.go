@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/michaeldcanady/go-onedrive/internal/cli/util"
+	"github.com/michaeldcanady/go-onedrive/internal/interface/cli/util"
 	logger "github.com/michaeldcanady/go-onedrive/internal/core/logger/domain"
 	domainDrive "github.com/michaeldcanady/go-onedrive/internal/drive/domain"
 	"github.com/michaeldcanady/go-onedrive/internal/fs/domain"

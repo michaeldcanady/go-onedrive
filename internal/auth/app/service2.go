@@ -10,7 +10,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
 	domainaccount "github.com/michaeldcanady/go-onedrive/internal/account/domain"
 	domainauth "github.com/michaeldcanady/go-onedrive/internal/auth/domain"
-	"github.com/michaeldcanady/go-onedrive/internal/cli/util"
+	"github.com/michaeldcanady/go-onedrive/internal/interface/cli/util"
 	domainconfig "github.com/michaeldcanady/go-onedrive/internal/config/domain"
 	logger "github.com/michaeldcanady/go-onedrive/internal/core/logger/domain"
 	domainstate "github.com/michaeldcanady/go-onedrive/internal/state/domain"
