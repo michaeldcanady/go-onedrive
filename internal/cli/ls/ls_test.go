@@ -2,6 +2,7 @@ package ls
 
 import (
 	"context"
+	"errors"
 	"io"
 	"testing"
 
@@ -35,7 +36,11 @@ func (m *MockContainer) Logger() domainlogger.LoggerService {
 	return m.Called().Get(0).(domainlogger.LoggerService)
 }
 func (m *MockContainer) IgnoreMatcherFactory() domainfs.IgnoreMatcherFactory {
-	return nil
+	args := m.Called()
+	if args.Get(0) == nil {
+		return nil
+	}
+	return args.Get(0).(domainfs.IgnoreMatcherFactory)
 }
 func (m *MockContainer) Auth() domainauth.AuthService          { return nil }
 func (m *MockContainer) Profile() domainprofile.ProfileService { return nil }
@@ -101,8 +106,22 @@ func (m *MockLogProvider) GetLogger(name string) (domainlogger.Logger, error) {
 	return args.Get(0).(domainlogger.Logger), args.Error(1)
 }
 
+func (m *MockLogProvider) GetContextLogger(ctx context.Context, name string) (domainlogger.Logger, error) {
+	args := m.Called(ctx, name)
+	return args.Get(0).(domainlogger.Logger), args.Error(1)
+}
+
 func (m *MockLogProvider) SetAllLevel(level string) {
 	m.Called(level)
+}
+
+func (m *MockLogProvider) SetLevel(id string, level string) error {
+	args := m.Called(id, level)
+	return args.Error(0)
+}
+
+func (m *MockLogProvider) RegisterProvider(t domainlogger.Type, factory domainlogger.LoggerProvider) {
+	m.Called(t, factory)
 }
 
 type MockLogger struct {
@@ -128,6 +147,10 @@ func (m *MockLogger) WithContext(ctx context.Context) domainlogger.Logger {
 	}
 	return m
 }
+func (m *MockLogger) GetContextLogger(ctx context.Context, name string) (domainlogger.Logger, error) {
+	args := m.Called(ctx, name)
+	return args.Get(0).(domainlogger.Logger), args.Error(1)
+}
 
 // --- Tests ---
 
@@ -147,4 +170,81 @@ func TestCreateLSCmd_Flags(t *testing.T) {
 	assert.NotNil(t, f.Lookup("recursive"))
 	assert.NotNil(t, f.Lookup("long"))
 	assert.NotNil(t, f.Lookup("tree"))
+}
+
+func TestLsCmd_Run(t *testing.T) {
+	tests := []struct {
+		name          string
+		path          string
+		mockItem      domainfs.Item
+		mockList      []domainfs.Item
+		getError      error
+		listError     error
+		expectedError bool
+	}{
+		{
+			name: "success file",
+			path: "file.txt",
+			mockItem: domainfs.Item{
+				Path: "file.txt",
+				Type: domainfs.ItemTypeFile,
+			},
+			expectedError: false,
+		},
+		{
+			name: "success folder",
+			path: "folder",
+			mockItem: domainfs.Item{
+				Path: "folder",
+				Type: domainfs.ItemTypeFolder,
+			},
+			mockList: []domainfs.Item{
+				{Path: "folder/a.txt", Type: domainfs.ItemTypeFile},
+			},
+			expectedError: false,
+		},
+		{
+			name:          "get error",
+			path:          "bad",
+			getError:      errors.New("fail"),
+			expectedError: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockFS := new(MockFSService)
+			mockLog := new(MockLogger)
+			mockLogProvider := new(MockLogProvider)
+			mockContainer := new(MockContainer)
+
+			mockContainer.On("FS").Return(mockFS)
+			mockContainer.On("Logger").Return(mockLogProvider)
+			mockLogProvider.On("GetLogger", mock.Anything).Return(mockLog, nil)
+			mockLogProvider.On("CreateLogger", mock.Anything).Return(mockLog, nil)
+			mockLog.On("WithContext", mock.Anything).Return(mockLog)
+			mockLog.On("With", mock.Anything).Return(mockLog)
+			mockLog.On("Info", mock.Anything, mock.Anything).Return()
+
+			mockFS.On("Get", mock.Anything, tt.path).Return(tt.mockItem, tt.getError)
+			if tt.mockItem.Type == domainfs.ItemTypeFolder && tt.getError == nil {
+				mockFS.On("List", mock.Anything, tt.path, mock.Anything).Return(tt.mockList, tt.listError)
+			}
+
+			cmd := NewLsCmd(mockContainer)
+			opts := Options{
+				Path:   tt.path,
+				Format: "short",
+				Stdout: io.Discard,
+			}
+
+			err := cmd.Run(context.Background(), opts)
+
+			if tt.expectedError {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
 }

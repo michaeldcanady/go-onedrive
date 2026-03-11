@@ -10,7 +10,6 @@ import (
 
 	domainaccount "github.com/michaeldcanady/go-onedrive/internal/account/domain"
 	domainauth "github.com/michaeldcanady/go-onedrive/internal/auth/domain"
-	pkgcache "github.com/michaeldcanady/go-onedrive/pkg/cache"
 	domainconfig "github.com/michaeldcanady/go-onedrive/internal/config/domain"
 	domainenv "github.com/michaeldcanady/go-onedrive/internal/core/env/domain"
 	domainlogger "github.com/michaeldcanady/go-onedrive/internal/core/logger/domain"
@@ -19,6 +18,7 @@ import (
 	domainfs "github.com/michaeldcanady/go-onedrive/internal/fs/domain"
 	domainprofile "github.com/michaeldcanady/go-onedrive/internal/profile/domain"
 	domainstate "github.com/michaeldcanady/go-onedrive/internal/state/domain"
+	pkgcache "github.com/michaeldcanady/go-onedrive/pkg/cache"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -30,7 +30,7 @@ type MockContainer struct {
 }
 
 func (m *MockContainer) Cache() pkgcache.Service { return nil }
-func (m *MockContainer) FS() domainfs.Service        { return m.Called().Get(0).(domainfs.Service) }
+func (m *MockContainer) FS() domainfs.Service    { return m.Called().Get(0).(domainfs.Service) }
 func (m *MockContainer) EnvironmentService() domainenv.EnvironmentService {
 	return m.Called().Get(0).(domainenv.EnvironmentService)
 }
@@ -38,13 +38,13 @@ func (m *MockContainer) Logger() domainlogger.LoggerService {
 	return m.Called().Get(0).(domainlogger.LoggerService)
 }
 func (m *MockContainer) IgnoreMatcherFactory() domainfs.IgnoreMatcherFactory { return nil }
-func (m *MockContainer) Auth() domainauth.AuthService                       { return nil }
-func (m *MockContainer) Profile() domainprofile.ProfileService              { return nil }
-func (m *MockContainer) Config() domainconfig.ConfigService                 { return nil }
-func (m *MockContainer) State() domainstate.Service                         { return nil }
-func (m *MockContainer) Drive() domaindrive.DriveService                    { return nil }
-func (m *MockContainer) Account() domainaccount.Service                     { return nil }
-func (m *MockContainer) Editor() domaineditor.Service                       { return nil }
+func (m *MockContainer) Auth() domainauth.AuthService                        { return nil }
+func (m *MockContainer) Profile() domainprofile.ProfileService               { return nil }
+func (m *MockContainer) Config() domainconfig.ConfigService                  { return nil }
+func (m *MockContainer) State() domainstate.Service                          { return nil }
+func (m *MockContainer) Drive() domaindrive.DriveService                     { return nil }
+func (m *MockContainer) Account() domainaccount.Service                      { return nil }
+func (m *MockContainer) Editor() domaineditor.Service                        { return nil }
 
 type MockFSService struct {
 	mock.Mock
@@ -157,10 +157,10 @@ func (m *MockLogger) GetContextLogger(ctx context.Context, name string) (domainl
 
 func TestCatCmd_Run(t *testing.T) {
 	tests := []struct {
-		name          string
-		path          string
-		mockContent   string
-		mockError     error
+		name           string
+		path           string
+		mockContent    string
+		mockError      error
 		expectedOutput string
 		expectedError  bool
 	}{
