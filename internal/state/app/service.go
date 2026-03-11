@@ -8,9 +8,11 @@ import (
 var _ domainstate.Service = (*Service)(nil)
 
 type Service struct {
-	repo            domainstate.Repository
-	sessionOverride string
-	hasSession      bool
+	repo                 domainstate.Repository
+	sessionProfileOverride string
+	hasProfileSession      bool
+	sessionDriveOverride   string
+	hasDriveSession        bool
 }
 
 func NewService(repo domainstate.Repository) *Service {
@@ -22,14 +24,14 @@ func (s *Service) getState() (domainstate.State, error) {
 }
 
 func (s *Service) SetSessionProfile(name string) {
-	s.sessionOverride = name
-	s.hasSession = true
+	s.sessionProfileOverride = name
+	s.hasProfileSession = true
 }
 
 func (s *Service) GetCurrentProfile() (string, error) {
 	// Session override takes precedence
-	if s.hasSession {
-		return s.sessionOverride, nil
+	if s.hasProfileSession {
+		return s.sessionProfileOverride, nil
 	}
 
 	// Otherwise use persistent state
@@ -61,8 +63,16 @@ func (s *Service) ClearCurrentProfile() error {
 	return s.repo.Save(st)
 }
 
+func (s *Service) SetSessionDrive(driveID string) {
+	s.sessionDriveOverride = driveID
+	s.hasDriveSession = true
+}
+
 func (s *Service) GetCurrentDrive() (string, error) {
-	// TODO: Add support for session state
+	// Session override takes precedence
+	if s.hasDriveSession {
+		return s.sessionDriveOverride, nil
+	}
 
 	st, err := s.getState()
 	if err != nil {
@@ -88,7 +98,6 @@ func (s *Service) ClearCurrentDrive() error {
 		return err
 	}
 
-	// TODO: Figure out how to default to current user's personal drive.
 	st.CurrentDrive = ""
 	return s.repo.Save(st)
 }
