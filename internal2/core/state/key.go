@@ -8,6 +8,8 @@ const (
 	KeyProfile Key = iota
 	// KeyDrive represents the currently active drive.
 	KeyDrive
+	// KeyAccessToken represents the cached authentication token.
+	KeyAccessToken
 )
 
 // String returns the string representation of the Key.
@@ -17,6 +19,8 @@ func (k Key) String() string {
 		return "profile"
 	case KeyDrive:
 		return "drive"
+	case KeyAccessToken:
+		return "access_token"
 	default:
 		return "unknown"
 	}

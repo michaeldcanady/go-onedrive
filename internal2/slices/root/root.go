@@ -13,6 +13,7 @@ import (
 	"github.com/michaeldcanady/go-onedrive/internal2/slices/drive/cat"
 	"github.com/michaeldcanady/go-onedrive/internal2/slices/drive/cp"
 	"github.com/michaeldcanady/go-onedrive/internal2/slices/drive/download"
+	"github.com/michaeldcanady/go-onedrive/internal2/slices/drive/edit"
 	"github.com/michaeldcanady/go-onedrive/internal2/slices/drive/ls"
 	"github.com/michaeldcanady/go-onedrive/internal2/slices/drive/mkdir"
 	"github.com/michaeldcanady/go-onedrive/internal2/slices/drive/mv"
@@ -97,6 +98,7 @@ func CreateRootCmd(container di.Container) (*cobra.Command, error) {
 		mv.CreateMvCmd(container),
 		upload.CreateUploadCmd(container),
 		download.CreateDownloadCmd(container),
+		edit.CreateEditCmd(container),
 	)
 
 	return rootCmd, nil

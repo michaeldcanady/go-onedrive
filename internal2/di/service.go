@@ -1,6 +1,9 @@
 package di
 
 import (
+	"encoding/json"
+
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/michaeldcanady/go-onedrive/internal2/core/config"
 	"github.com/michaeldcanady/go-onedrive/internal2/core/drive"
 	"github.com/michaeldcanady/go-onedrive/internal2/core/editor"
@@ -12,6 +15,7 @@ import (
 	"github.com/michaeldcanady/go-onedrive/internal2/core/fs/shared"
 	"github.com/michaeldcanady/go-onedrive/internal2/core/identity/providers/microsoft"
 	idregistry "github.com/michaeldcanady/go-onedrive/internal2/core/identity/registry"
+	idshared "github.com/michaeldcanady/go-onedrive/internal2/core/identity/shared"
 	"github.com/michaeldcanady/go-onedrive/internal2/core/logger"
 	"github.com/michaeldcanady/go-onedrive/internal2/core/profile"
 	corems "github.com/michaeldcanady/go-onedrive/internal2/core/providers/microsoft"
@@ -58,9 +62,19 @@ func NewDefaultContainer() (*DefaultContainer, error) {
 		return nil, err
 	}
 
-	// For identity, we need to decide how to load existing credentials.
-	// For now, initializing with nil and allowing login to populate it.
-	msAuth := microsoft.NewAuthenticator(nil, cliLog)
+	// Try to load cached token
+	var cachedCred azcore.TokenCredential
+	tokenData, err := stateSvc.Get(state.KeyAccessToken)
+	if err == nil && tokenData != "" {
+		var token idshared.AccessToken
+		if err := json.Unmarshal([]byte(tokenData), &token); err == nil {
+			cachedCred = microsoft.NewStaticTokenCredential(token)
+		} else {
+			cliLog.Warn("failed to unmarshal cached token", logger.Error(err))
+		}
+	}
+
+	msAuth := microsoft.NewAuthenticator(cachedCred, cliLog)
 	idReg := idregistry.NewRegistry()
 	idReg.Register("microsoft", msAuth)
 

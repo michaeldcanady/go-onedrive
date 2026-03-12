@@ -2,6 +2,7 @@ package login
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 
 	"github.com/michaeldcanady/go-onedrive/internal2/core/config"
@@ -65,8 +66,6 @@ func (h *Handler) Handle(ctx context.Context, opts Options) error {
 	if opts.Method != "" {
 		method = shared.ParseAuthMethod(opts.Method)
 	} else if cfg.Auth.Method != "" {
-		// We might need to update the core/config to support Method field if it's not there yet.
-		// For now assume it's a string in the config.
 		method = shared.ParseAuthMethod(cfg.Auth.Method)
 	}
 
@@ -97,7 +96,16 @@ func (h *Handler) Handle(ctx context.Context, opts Options) error {
 		return fmt.Errorf("authentication failed: %w", err)
 	}
 
-	h.log.Info("authentication successful", logger.String("profile", profile))
+	// Cache the token
+	tokenData, err := json.Marshal(token)
+	if err != nil {
+		return fmt.Errorf("failed to serialize token for caching: %w", err)
+	}
+	if err := h.state.Set(state.KeyAccessToken, string(tokenData), state.ScopeGlobal); err != nil {
+		return fmt.Errorf("failed to cache access token: %w", err)
+	}
+
+	h.log.Info("authentication successful and token cached", logger.String("profile", profile))
 
 	if opts.ShowToken {
 		fmt.Fprintf(opts.Stdout, "Access Token: %s\n", token.Token)
