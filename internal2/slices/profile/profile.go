@@ -3,8 +3,11 @@ package profile
 
 import (
 	"github.com/michaeldcanady/go-onedrive/internal2/di"
+	"github.com/michaeldcanady/go-onedrive/internal2/slices/profile/create"
 	"github.com/michaeldcanady/go-onedrive/internal2/slices/profile/current"
+	"github.com/michaeldcanady/go-onedrive/internal2/slices/profile/delete"
 	"github.com/michaeldcanady/go-onedrive/internal2/slices/profile/list"
+	"github.com/michaeldcanady/go-onedrive/internal2/slices/profile/use"
 	"github.com/spf13/cobra"
 )
 
@@ -18,6 +21,9 @@ func CreateProfileCmd(container di.Container) *cobra.Command {
 	cmd.AddCommand(
 		list.CreateListCmd(container),
 		current.CreateCurrentCmd(container),
+		create.CreateCreateCmd(container),
+		delete.CreateDeleteCmd(container),
+		use.CreateUseCmd(container),
 	)
 
 	return cmd

@@ -15,6 +15,7 @@
         "cliprofileservicego",
         "commonerrors",
         "configurationservice",
+        "coreerrors",
         "coreutils",
         "credentialservice",
         "derr",

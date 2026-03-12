@@ -4,8 +4,10 @@ package shared
 type ItemType int
 
 const (
+	// TypeUnknown represents an unclassified filesystem item.
+	TypeUnknown ItemType = iota
 	// TypeFile identifies the item as a regular file.
-	TypeFile ItemType = iota
+	TypeFile
 	// TypeFolder identifies the item as a directory or folder.
 	TypeFolder
 )

@@ -12,10 +12,8 @@ func CreateLoginCmd(container di.Container) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "login",
 		Short: "Authenticate with OneDrive",
-		Long: `You can authenticate with OneDrive to allow this application to access your
-files. This command opens a browser window for you to log in to your
-Microsoft account. Once authenticated, your access token is stored securely
-in your active profile.`,
+		Long: `Authenticate with OneDrive using various methods (Interactive, Device Code, Service Principal).
+You can specify the method via flags or in your profile configuration.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			opts.Stdout = cmd.OutOrStdout()
 			opts.Stderr = cmd.ErrOrStderr()
@@ -34,6 +32,10 @@ in your active profile.`,
 
 	cmd.Flags().BoolVar(&opts.ShowToken, "show-token", false, "Display the access token after login")
 	cmd.Flags().BoolVarP(&opts.Force, "force", "f", false, "Force re-authentication even if a valid profile exists")
+	cmd.Flags().StringVar(&opts.Method, "method", "", "Authentication method (interactive, device-code, client-secret, environment)")
+	cmd.Flags().StringVar(&opts.TenantID, "tenant-id", "", "Azure AD tenant ID")
+	cmd.Flags().StringVar(&opts.ClientID, "client-id", "", "Azure AD client ID")
+	cmd.Flags().StringVar(&opts.ClientSecret, "client-secret", "", "Azure AD client secret (for client-secret method)")
 
 	return cmd
 }

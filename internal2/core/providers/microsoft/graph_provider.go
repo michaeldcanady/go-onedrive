@@ -6,6 +6,7 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/michaeldcanady/go-onedrive/internal2/core/logger"
+	abstractions "github.com/microsoft/kiota-abstractions-go"
 	msgraphsdkgo "github.com/microsoftgraph/msgraph-sdk-go"
 )
 
@@ -27,10 +28,23 @@ func NewGraphProvider(cred azcore.TokenCredential, log logger.Logger) *GraphProv
 	}
 }
 
+// Adapter returns the Kiota request adapter for the Graph client.
+func (p *GraphProvider) Adapter(ctx context.Context) (abstractions.RequestAdapter, error) {
+	client, err := p.Client(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return client.GetAdapter(), nil
+}
+
 // Client returns an authenticated Graph client, initializing it if necessary.
 func (p *GraphProvider) Client(ctx context.Context) (*msgraphsdkgo.GraphServiceClient, error) {
 	if p.client != nil {
 		return p.client, nil
+	}
+
+	if p.cred == nil {
+		return nil, fmt.Errorf("no authentication credential provided; please run 'login' first")
 	}
 
 	client, err := msgraphsdkgo.NewGraphServiceClientWithCredentials(

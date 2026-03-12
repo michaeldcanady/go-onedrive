@@ -26,7 +26,11 @@ func main() {
 	}()
 
 	// Initialize dependency injection container
-	container := di.NewDefaultContainer()
+	container, err := di.NewDefaultContainer()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "failed to initialize services: %v\n", err)
+		os.Exit(1)
+	}
 
 	// Create and execute the root command
 	cmd, err := root.CreateRootCmd(container)

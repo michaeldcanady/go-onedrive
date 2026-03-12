@@ -60,9 +60,36 @@ func (h *Handler) Handle(ctx context.Context, opts Options) error {
 
 	h.log.Info("authenticating with provider", logger.String("provider", provider))
 
+	// Determine method: CLI flag takes precedence, then config
+	method := shared.AuthMethodUnknown
+	if opts.Method != "" {
+		method = shared.ParseAuthMethod(opts.Method)
+	} else if cfg.Auth.Method != "" {
+		// We might need to update the core/config to support Method field if it's not there yet.
+		// For now assume it's a string in the config.
+		method = shared.ParseAuthMethod(cfg.Auth.Method)
+	}
+
 	loginOpts := shared.LoginOptions{
 		Force:       opts.Force,
 		Interactive: true,
+		Method:      method,
+		ProviderSpecific: map[string]string{
+			"tenant_id":     opts.TenantID,
+			"client_id":     opts.ClientID,
+			"client_secret": opts.ClientSecret,
+		},
+	}
+
+	// Merge from config if not provided in CLI
+	if loginOpts.ProviderSpecific["tenant_id"] == "" {
+		loginOpts.ProviderSpecific["tenant_id"] = cfg.Auth.TenantID
+	}
+	if loginOpts.ProviderSpecific["client_id"] == "" {
+		loginOpts.ProviderSpecific["client_id"] = cfg.Auth.ClientID
+	}
+	if loginOpts.ProviderSpecific["client_secret"] == "" {
+		loginOpts.ProviderSpecific["client_secret"] = cfg.Auth.ClientSecret
 	}
 
 	token, err := auth.Authenticate(ctx, loginOpts)

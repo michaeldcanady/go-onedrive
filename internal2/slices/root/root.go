@@ -9,6 +9,16 @@ import (
 	"github.com/michaeldcanady/go-onedrive/internal2/core/state"
 	"github.com/michaeldcanady/go-onedrive/internal2/di"
 	"github.com/michaeldcanady/go-onedrive/internal2/slices/auth"
+	"github.com/michaeldcanady/go-onedrive/internal2/slices/drive"
+	"github.com/michaeldcanady/go-onedrive/internal2/slices/drive/cat"
+	"github.com/michaeldcanady/go-onedrive/internal2/slices/drive/cp"
+	"github.com/michaeldcanady/go-onedrive/internal2/slices/drive/download"
+	"github.com/michaeldcanady/go-onedrive/internal2/slices/drive/ls"
+	"github.com/michaeldcanady/go-onedrive/internal2/slices/drive/mkdir"
+	"github.com/michaeldcanady/go-onedrive/internal2/slices/drive/mv"
+	"github.com/michaeldcanady/go-onedrive/internal2/slices/drive/rm"
+	"github.com/michaeldcanady/go-onedrive/internal2/slices/drive/touch"
+	"github.com/michaeldcanady/go-onedrive/internal2/slices/drive/upload"
 	"github.com/michaeldcanady/go-onedrive/internal2/slices/profile"
 	"github.com/spf13/cobra"
 )
@@ -21,8 +31,8 @@ const (
 // CreateRootCmd constructs and returns the cobra.Command for the root application.
 func CreateRootCmd(container di.Container) (*cobra.Command, error) {
 	var (
-		level   string
-		config  string
+		level       string
+		config      string
 		profileFlag string
 	)
 
@@ -77,6 +87,16 @@ func CreateRootCmd(container di.Container) (*cobra.Command, error) {
 	rootCmd.AddCommand(
 		auth.CreateAuthCmd(container),
 		profile.CreateProfileCmd(container),
+		drive.CreateDriveCmd(container),
+		ls.CreateLsCmd(container),
+		cat.CreateCatCmd(container),
+		mkdir.CreateMkdirCmd(container),
+		rm.CreateRmCmd(container),
+		touch.CreateTouchCmd(container),
+		cp.CreateCpCmd(container),
+		mv.CreateMvCmd(container),
+		upload.CreateUploadCmd(container),
+		download.CreateDownloadCmd(container),
 	)
 
 	return rootCmd, nil
