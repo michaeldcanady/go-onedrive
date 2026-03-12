@@ -28,6 +28,7 @@ var (
 	ErrInvalidRequest = errors.New("invalid request")
 )
 
+// DomainError represents a domain-level error with additional context.
 type DomainError struct {
 	Kind    error
 	Err     error
@@ -35,6 +36,7 @@ type DomainError struct {
 	Path    string
 }
 
+// Error returns the error message string.
 func (e *DomainError) Error() string {
 	msg := e.Kind.Error()
 	if e.Err != nil {
@@ -46,10 +48,12 @@ func (e *DomainError) Error() string {
 	return msg
 }
 
+// Unwrap returns the underlying error.
 func (e *DomainError) Unwrap() error {
 	return e.Err
 }
 
+// Is reports whether the error matches the target.
 func (e *DomainError) Is(target error) bool {
 	return e.Kind == target || errors.Is(e.Err, target)
 }
