@@ -2,6 +2,8 @@ package ls
 
 import (
 	"io"
+
+	"github.com/michaeldcanady/go-onedrive/internal/core/fs/formatting"
 )
 
 // Options provides the user-facing settings for the drive ls command.
@@ -11,7 +13,7 @@ type Options struct {
 	// Recursive determines whether to list subdirectories.
 	Recursive bool
 	// Format is the output format (e.g., "short", "long", "json", "tree").
-	Format string
+	Format formatting.Format
 	// SortField is the field to sort by (e.g., "Name", "Size", "ModifiedAt").
 	SortField string
 	// SortDescending determines whether to sort in descending order.

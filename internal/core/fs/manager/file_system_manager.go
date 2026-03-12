@@ -11,6 +11,10 @@ import (
 	"github.com/michaeldcanady/go-onedrive/internal/core/fs/shared"
 )
 
+const (
+	providerName = "fs_manager"
+)
+
 // FileSystemManager orchestrates operations across multiple filesystem providers.
 // It handles path resolution and provides high-level logic for cross-provider and recursive operations.
 type FileSystemManager struct {
@@ -23,6 +27,10 @@ func NewFileSystemManager(registry registry.Service) *FileSystemManager {
 	return &FileSystemManager{
 		registry: registry,
 	}
+}
+
+func (_ *FileSystemManager) Name() string {
+	return providerName
 }
 
 // Get retrieves metadata for an item by its path, resolving the appropriate provider.

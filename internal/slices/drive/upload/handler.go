@@ -25,15 +25,17 @@ func NewHandler(m shared.Service, l logger.Logger) *Handler {
 
 // Handle uploads an item from the local filesystem to the remote destination.
 func (h *Handler) Handle(ctx context.Context, opts Options) error {
-	h.log.Info("uploading item",
+	log := h.log.WithContext(ctx).With(
 		logger.String("source", opts.Source),
 		logger.String("destination", opts.Destination),
-		logger.Bool("recursive", opts.Recursive),
 	)
+
+	log.Info("starting upload")
 
 	// Ensure source has local: prefix if no prefix is present.
 	source := opts.Source
 	if !strings.Contains(source, ":") {
+		log.Debug("adding local prefix to source")
 		source = "local:" + source
 	}
 
@@ -42,10 +44,13 @@ func (h *Handler) Handle(ctx context.Context, opts Options) error {
 		Overwrite: true,
 	}
 
+	log.Debug("delegating to filesystem manager for copy")
 	if err := h.manager.Copy(ctx, source, opts.Destination, cpOpts); err != nil {
+		log.Error("upload failed", logger.Error(err))
 		return fmt.Errorf("failed to upload %s to %s: %w", opts.Source, opts.Destination, err)
 	}
 
+	log.Info("upload completed successfully")
 	fmt.Fprintf(opts.Stdout, "Uploaded %s to %s\n", opts.Source, opts.Destination)
 	return nil
 }

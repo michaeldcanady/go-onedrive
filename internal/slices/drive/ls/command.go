@@ -1,6 +1,7 @@
 package ls
 
 import (
+	"github.com/michaeldcanady/go-onedrive/internal/core/fs/formatting"
 	"github.com/michaeldcanady/go-onedrive/internal/di"
 	"github.com/spf13/cobra"
 )
@@ -8,6 +9,7 @@ import (
 // CreateLsCmd constructs and returns the cobra.Command for the ls operation.
 func CreateLsCmd(container di.Container) *cobra.Command {
 	var opts Options
+	var format string
 
 	cmd := &cobra.Command{
 		Use:   "ls [path]",
@@ -27,13 +29,16 @@ func CreateLsCmd(container di.Container) *cobra.Command {
 				opts.Path = args[0]
 			}
 
+			opts.Stdout = cmd.OutOrStdout()
+			opts.Format = formatting.NewFormat(format)
+
 			l, _ := container.Logger().CreateLogger("ls")
 			handler := NewHandler(container.FS(), l)
 			return handler.Handle(cmd.Context(), opts)
 		},
 	}
 
-	cmd.Flags().StringVarP(&opts.Format, "format", "o", "short", "Output format (short, long, json, yaml, tree)")
+	cmd.Flags().StringVarP(&format, "format", "o", "short", "Output format (short, long, json, yaml, tree)")
 	cmd.Flags().BoolVarP(&opts.Recursive, "recursive", "r", false, "List items recursively")
 	cmd.Flags().BoolVarP(&opts.All, "all", "a", false, "Show hidden items")
 	cmd.Flags().StringVar(&opts.SortField, "sort", "name", "Sort items by field (name, size, modified)")

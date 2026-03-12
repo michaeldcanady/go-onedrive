@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/michaeldcanady/go-onedrive/internal/core/shared"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
@@ -54,8 +55,15 @@ func (z *ZapLogger) With(fields ...Field) Logger {
 
 // WithContext returns a logger that is contextualized for the given context.
 func (z *ZapLogger) WithContext(ctx context.Context) Logger {
-	// In a real implementation, this could extract request IDs or traces.
-	return z
+	cid := shared.CorrelationIDFromContext(ctx)
+	if cid == "" {
+		return z
+	}
+
+	return &ZapLogger{
+		logger: z.logger.With(zap.String("correlation_id", cid)),
+		level:  z.level,
+	}
 }
 
 // toZapFields transforms internal Field types into Zap-compatible fields.

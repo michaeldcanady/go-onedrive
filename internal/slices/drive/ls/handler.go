@@ -28,21 +28,30 @@ func NewHandler(fs registry.Service, l logger.Logger) *Handler {
 
 // Handle retrieves, filters, sorts, and displays the contents of a directory.
 func (h *Handler) Handle(ctx context.Context, opts Options) error {
-	h.log.Info("listing directory", logger.String("path", opts.Path))
+	log := h.log.WithContext(ctx).With(logger.String("path", opts.Path))
 
-	provider, path, err := h.fs.Resolve(ctx, opts.Path)
+	log.Info("listing directory")
+
+	log.Debug("resolving path provider")
+	provider, subPath, err := h.fs.Resolve(ctx, opts.Path)
 	if err != nil {
+		log.Error("failed to resolve path", logger.Error(err))
 		return fmt.Errorf("failed to resolve path %s: %w", opts.Path, err)
 	}
+	log.Debug("resolved path provider", logger.String("provider", provider.Name()), logger.String("sub_path", subPath))
 
-	items, err := provider.List(ctx, path, shared.ListOptions{
+	log.Debug("fetching items from provider")
+	items, err := provider.List(ctx, subPath, shared.ListOptions{
 		Recursive: opts.Recursive,
 	})
 	if err != nil {
-		return fmt.Errorf("failed to list items at %s: %w", path, err)
+		log.Error("failed to list items", logger.Error(err))
+		return fmt.Errorf("failed to list items at %s: %w", opts.Path, err)
 	}
+	log.Info("retrieved items from provider", logger.Int("count", len(items)))
 
 	// 1. Filtering
+	log.Debug("preparing filter")
 	filterFactory := filtering.NewFilterFactory()
 	filterOpts := []filtering.FilterOption{}
 	if opts.All {
@@ -52,12 +61,17 @@ func (h *Handler) Handle(ctx context.Context, opts Options) error {
 	if err != nil {
 		return fmt.Errorf("failed to create filterer: %w", err)
 	}
+
+	log.Debug("filtering items")
 	items, err = filterer.Filter(items)
 	if err != nil {
+		log.Error("failed to filter items", logger.Error(err))
 		return fmt.Errorf("failed to filter items: %w", err)
 	}
+	log.Debug("items filtered", logger.Int("count", len(items)))
 
 	// 2. Sorting
+	log.Debug("preparing sorter")
 	sortFactory := sorting.NewSorterFactory()
 	sortOpts := []sorting.SortingOption{}
 	if opts.SortField != "" {
@@ -70,10 +84,14 @@ func (h *Handler) Handle(ctx context.Context, opts Options) error {
 	if err != nil {
 		return fmt.Errorf("failed to create sorter: %w", err)
 	}
+
+	log.Debug("sorting items")
 	items, err = sorter.Sort(items)
 	if err != nil {
+		log.Error("failed to sort items", logger.Error(err))
 		return fmt.Errorf("failed to sort items: %w", err)
 	}
+	log.Debug("items sorted")
 
 	// Convert items to []any for formatter
 	anyItems := make([]any, len(items))
@@ -82,6 +100,7 @@ func (h *Handler) Handle(ctx context.Context, opts Options) error {
 	}
 
 	// 3. Formatting
+	log.Debug("formatting output", logger.String("format", opts.Format.String()))
 	formatterFactory := formatting.NewFormatterFactory()
 	formatter, err := formatterFactory.Create(opts.Format)
 	if err != nil {

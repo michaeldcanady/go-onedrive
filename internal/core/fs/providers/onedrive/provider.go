@@ -27,6 +27,7 @@ const (
 	rootChildrenURITemplate         = "{+baseurl}/drives/{drive_id}/root/children"
 	rootRelativeChildrenURITemplate = "{+baseurl}/drives/{drive_id}/root:{path}:/children"
 	rootRelativeContentURITemplate  = "{+baseurl}/drives/{drive_id}/root:{path}:/content"
+	providerName                    = "onedrive"
 )
 
 // Provider implements the filesystem Service interface for Microsoft OneDrive.
@@ -45,6 +46,10 @@ func NewProvider(graph *microsoft.GraphProvider, state state.Service, driveSvc d
 		driveSvc: driveSvc,
 		log:      log,
 	}
+}
+
+func (_ *Provider) Name() string {
+	return providerName
 }
 
 func (p *Provider) resolveDrive(ctx context.Context, itemPath string) (string, string, error) {
@@ -93,46 +98,72 @@ func (p *Provider) normalizePath(pth string) string {
 
 // Get retrieves metadata for a single item by its OneDrive path.
 func (p *Provider) Get(ctx context.Context, itemPath string) (shared.Item, error) {
-	p.log.Debug("onedrive.Get", logger.String("path", itemPath))
+	log := p.log.WithContext(ctx).With(
+		logger.String("provider", providerName),
+		logger.String("path", itemPath),
+	)
 
+	log.Debug("resolving drive id and path")
 	driveID, cleanPath, err := p.resolveDrive(ctx, itemPath)
 	if err != nil {
+		log.Warn("failed to resolve drive id and/or path", logger.Error(err))
 		return shared.Item{}, err
 	}
+	log.Debug("resolved drive id and path", logger.String("drive_id", driveID), logger.String("clean_path", cleanPath))
 
 	uri := p.expandURI(rootURITemplate, rootRelativeURITemplate, driveID, cleanPath)
+	log.Debug("expanded uri", logger.String("uri", uri))
+
+	log.Debug("retrieving adapter")
 	adapter, err := p.graph.Adapter(ctx)
 	if err != nil {
+		log.Warn("failed to retrieve adapter", logger.Error(err))
 		return shared.Item{}, err
 	}
+
 	builder := drives.NewItemRootRequestBuilder(uri, adapter)
 
+	log.Debug("sending get item metadata request")
 	it, err := builder.Get(ctx, nil)
 	if err != nil {
+		log.Error("failed to get item metadata", logger.Error(err))
 		return shared.Item{}, fmt.Errorf("failed to get item metadata: %w", err)
 	}
 
+	log.Info("retrieved item metadata", logger.String("item_id", *it.GetId()))
 	return p.mapItemToSharedItem(it, itemPath), nil
 }
 
 // List enumerates the contents of a directory in OneDrive.
 func (p *Provider) List(ctx context.Context, itemPath string, opts shared.ListOptions) ([]shared.Item, error) {
-	p.log.Debug("onedrive.List", logger.String("path", itemPath))
+	log := p.log.WithContext(ctx).With(
+		logger.String("provider", providerName),
+		logger.String("path", itemPath),
+		logger.Bool("recursive", opts.Recursive),
+	)
 
+	log.Debug("resolving drive id and path")
 	driveID, cleanPath, err := p.resolveDrive(ctx, itemPath)
 	if err != nil {
+		log.Warn("failed to resolve drive id and/or path", logger.Error(err))
 		return nil, err
 	}
+	log.Debug("resolved drive id and path", logger.String("drive_id", driveID))
 
 	uri := p.expandURI(rootChildrenURITemplate, rootRelativeChildrenURITemplate, driveID, cleanPath)
+	log.Debug("expanded uri", logger.String("uri", uri))
+
 	adapter, err := p.graph.Adapter(ctx)
 	if err != nil {
+		log.Warn("failed to retrieve adapter", logger.Error(err))
 		return nil, err
 	}
 	builder := drives.NewItemItemsRequestBuilder(uri, adapter)
 
+	log.Debug("sending list children request")
 	resp, err := builder.Get(ctx, nil)
 	if err != nil {
+		log.Error("failed to list children", logger.Error(err))
 		return nil, fmt.Errorf("failed to list children: %w", err)
 	}
 
@@ -149,38 +180,47 @@ func (p *Provider) List(ctx context.Context, itemPath string, opts shared.ListOp
 		}
 	}
 
+	log.Info("listed items", logger.Int("count", len(items)))
 	return items, nil
 }
 
 // ReadFile opens a read stream for a file's content in OneDrive.
 func (p *Provider) ReadFile(ctx context.Context, itemPath string, opts shared.ReadOptions) (io.ReadCloser, error) {
-	p.log.Debug("onedrive.ReadFile", logger.String("path", itemPath))
+	log := p.log.WithContext(ctx).With(
+		logger.String("provider", providerName),
+		logger.String("path", itemPath),
+	)
 
+	log.Debug("resolving drive id and path")
 	driveID, cleanPath, err := p.resolveDrive(ctx, itemPath)
 	if err != nil {
+		log.Warn("failed to resolve drive id and/or path", logger.Error(err))
 		return nil, err
 	}
+	log.Debug("resolved drive id and path", logger.String("drive_id", driveID))
 
-	// For content, we use a slightly different template
-	uri := p.expandURI("", rootRelativeContentURITemplate, driveID, cleanPath)
-	// If path is empty (root), rootRelativeContentURITemplate won't work well,
-	// but usually we don't cat the root.
 	if cleanPath == "" || cleanPath == "/" {
 		return nil, fmt.Errorf("cannot read content of root directory")
 	}
 
+	uri := p.expandURI("", rootRelativeContentURITemplate, driveID, cleanPath)
+	log.Debug("expanded uri", logger.String("uri", uri))
+
 	adapter, err := p.graph.Adapter(ctx)
 	if err != nil {
+		log.Warn("failed to retrieve adapter", logger.Error(err))
 		return nil, err
 	}
-	// NewItemRootContentRequestBuilder works for expanded URIs
 	builder := drives.NewItemRootContentRequestBuilder(uri, adapter)
 
+	log.Debug("sending download content request")
 	content, err := builder.Get(ctx, nil)
 	if err != nil {
+		log.Error("failed to download content", logger.Error(err))
 		return nil, fmt.Errorf("failed to download content: %w", err)
 	}
 
+	log.Info("downloaded content", logger.Int("size", len(content)))
 	return io.NopCloser(strings.NewReader(string(content))), nil
 }
 
@@ -191,25 +231,35 @@ func (p *Provider) Stat(ctx context.Context, itemPath string) (shared.Item, erro
 
 // WriteFile creates or updates a file in OneDrive with the content from the reader.
 func (p *Provider) WriteFile(ctx context.Context, itemPath string, r io.Reader, opts shared.WriteOptions) (shared.Item, error) {
-	p.log.Debug("onedrive.WriteFile", logger.String("path", itemPath))
+	log := p.log.WithContext(ctx).With(
+		logger.String("provider", providerName),
+		logger.String("path", itemPath),
+	)
 
+	log.Debug("resolving drive id and path")
 	driveID, cleanPath, err := p.resolveDrive(ctx, itemPath)
 	if err != nil {
+		log.Warn("failed to resolve drive id and/or path", logger.Error(err))
 		return shared.Item{}, err
 	}
+	log.Debug("resolved drive id and path", logger.String("drive_id", driveID))
 
 	if cleanPath == "" || cleanPath == "/" {
 		return shared.Item{}, fmt.Errorf("cannot write to root directory")
 	}
 
+	log.Debug("reading input stream")
 	data, err := io.ReadAll(r)
 	if err != nil {
 		return shared.Item{}, err
 	}
 
 	uri := p.expandURI("", rootRelativeContentURITemplate, driveID, cleanPath)
+	log.Debug("expanded uri", logger.String("uri", uri))
+
 	adapter, err := p.graph.Adapter(ctx)
 	if err != nil {
+		log.Warn("failed to retrieve adapter", logger.Error(err))
 		return shared.Item{}, err
 	}
 
@@ -221,22 +271,31 @@ func (p *Provider) WriteFile(ctx context.Context, itemPath string, r io.Reader, 
 	}
 
 	builder := drives.NewItemRootContentRequestBuilder(uri, adapter)
+	log.Debug("sending upload content request")
 	it, err := builder.Put(ctx, data, config)
 	if err != nil {
+		log.Error("failed to upload content", logger.Error(err))
 		return shared.Item{}, fmt.Errorf("failed to upload content: %w", err)
 	}
 
+	log.Info("uploaded content", logger.Int("size", *it.GetSize()))
 	return p.mapItemToSharedItem(it, itemPath), nil
 }
 
 // Mkdir creates a new folder in OneDrive at the given path.
 func (p *Provider) Mkdir(ctx context.Context, itemPath string) error {
-	p.log.Debug("onedrive.Mkdir", logger.String("path", itemPath))
+	log := p.log.WithContext(ctx).With(
+		logger.String("provider", providerName),
+		logger.String("path", itemPath),
+	)
 
+	log.Debug("resolving drive id and path")
 	driveID, cleanPath, err := p.resolveDrive(ctx, itemPath)
 	if err != nil {
+		log.Warn("failed to resolve drive id and/or path", logger.Error(err))
 		return err
 	}
+	log.Debug("resolved drive id and path", logger.String("drive_id", driveID))
 
 	parentPath := path.Dir(cleanPath)
 	if parentPath == "." || parentPath == "/" {
@@ -249,41 +308,59 @@ func (p *Provider) Mkdir(ctx context.Context, itemPath string) error {
 	requestBody.SetFolder(models.NewFolder())
 
 	uri := p.expandURI(rootChildrenURITemplate, rootRelativeChildrenURITemplate, driveID, parentPath)
+	log.Debug("expanded uri", logger.String("uri", uri))
+
 	adapter, err := p.graph.Adapter(ctx)
 	if err != nil {
+		log.Warn("failed to retrieve adapter", logger.Error(err))
 		return err
 	}
 	builder := drives.NewItemItemsRequestBuilder(uri, adapter)
 
+	log.Debug("sending create directory request")
 	_, err = builder.Post(ctx, requestBody, nil)
 	if err != nil {
+		log.Error("failed to create directory", logger.Error(err))
 		return fmt.Errorf("failed to create directory: %w", err)
 	}
 
+	log.Info("created directory")
 	return nil
 }
 
 // Remove deletes an item from OneDrive.
 func (p *Provider) Remove(ctx context.Context, itemPath string) error {
-	p.log.Debug("onedrive.Remove", logger.String("path", itemPath))
+	log := p.log.WithContext(ctx).With(
+		logger.String("provider", providerName),
+		logger.String("path", itemPath),
+	)
 
+	log.Debug("resolving drive id and path")
 	driveID, cleanPath, err := p.resolveDrive(ctx, itemPath)
 	if err != nil {
+		log.Warn("failed to resolve drive id and/or path", logger.Error(err))
 		return err
 	}
+	log.Debug("resolved drive id and path", logger.String("drive_id", driveID))
 
 	uri := p.expandURI(rootURITemplate, rootRelativeURITemplate, driveID, cleanPath)
+	log.Debug("expanded uri", logger.String("uri", uri))
+
 	adapter, err := p.graph.Adapter(ctx)
 	if err != nil {
+		log.Warn("failed to retrieve adapter", logger.Error(err))
 		return err
 	}
 	builder := drives.NewItemItemsDriveItemItemRequestBuilder(uri, adapter)
 
+	log.Debug("sending delete request")
 	err = builder.Delete(ctx, nil)
 	if err != nil {
+		log.Error("failed to delete item", logger.Error(err))
 		return fmt.Errorf("failed to delete item: %w", err)
 	}
 
+	log.Info("deleted item")
 	return nil
 }
 
@@ -294,8 +371,13 @@ func (p *Provider) Copy(ctx context.Context, src, dst string, opts shared.CopyOp
 
 // Move relocates or renames a file or folder within OneDrive.
 func (p *Provider) Move(ctx context.Context, src, dst string) error {
-	p.log.Debug("onedrive.Move", logger.String("src", src), logger.String("dst", dst))
+	log := p.log.WithContext(ctx).With(
+		logger.String("provider", providerName),
+		logger.String("src", src),
+		logger.String("dst", dst),
+	)
 
+	log.Debug("resolving source and destination drives")
 	srcDriveID, cleanSrc, err := p.resolveDrive(ctx, src)
 	if err != nil {
 		return err
@@ -309,6 +391,7 @@ func (p *Provider) Move(ctx context.Context, src, dst string) error {
 	if srcDriveID != dstDriveID {
 		return fmt.Errorf("cross-drive move not supported via internal Move - use manager")
 	}
+	log.Debug("resolved drive id", logger.String("drive_id", srcDriveID))
 
 	newName := path.Base(cleanDst)
 	parentPath := path.Dir(cleanDst)
@@ -316,7 +399,7 @@ func (p *Provider) Move(ctx context.Context, src, dst string) error {
 		parentPath = ""
 	}
 
-	// Need parent ID for move
+	log.Debug("retrieving parent metadata for move")
 	parent, err := p.Get(ctx, parentPath)
 	if err != nil {
 		return fmt.Errorf("failed to get destination parent metadata: %w", err)
@@ -330,29 +413,41 @@ func (p *Provider) Move(ctx context.Context, src, dst string) error {
 	requestBody.SetParentReference(ref)
 
 	uri := p.expandURI(rootURITemplate, rootRelativeURITemplate, srcDriveID, cleanSrc)
+	log.Debug("expanded uri", logger.String("uri", uri))
+
 	adapter, err := p.graph.Adapter(ctx)
 	if err != nil {
+		log.Warn("failed to retrieve adapter", logger.Error(err))
 		return err
 	}
 	builder := drives.NewItemItemsDriveItemItemRequestBuilder(uri, adapter)
 
+	log.Debug("sending move (patch) request")
 	_, err = builder.Patch(ctx, requestBody, nil)
 	if err != nil {
+		log.Error("failed to move item", logger.Error(err))
 		return fmt.Errorf("failed to patch item for move: %w", err)
 	}
 
+	log.Info("moved item")
 	return nil
 }
 
 // Touch updates the timestamp of an existing file or creates an empty one.
 func (p *Provider) Touch(ctx context.Context, itemPath string) (shared.Item, error) {
-	p.log.Debug("onedrive.Touch", logger.String("path", itemPath))
+	log := p.log.WithContext(ctx).With(
+		logger.String("provider", providerName),
+		logger.String("path", itemPath),
+	)
 
+	log.Debug("touching item")
 	item, err := p.Get(ctx, itemPath)
 	if err == nil {
+		log.Info("item exists, touch completed (metadata refreshed)")
 		return item, nil
 	}
 
+	log.Info("item does not exist, creating empty file")
 	return p.WriteFile(ctx, itemPath, strings.NewReader(""), shared.WriteOptions{})
 }
 

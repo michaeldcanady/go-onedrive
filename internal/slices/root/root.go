@@ -1,4 +1,4 @@
-// Package root provides the entry point for the odc2 command-line interface.
+// Package root provides the entry point for the odc application.
 package root
 
 import (
@@ -10,6 +10,7 @@ import (
 	"github.com/michaeldcanady/go-onedrive/internal/core/shared"
 	"github.com/michaeldcanady/go-onedrive/internal/core/state"
 	"github.com/michaeldcanady/go-onedrive/internal/di"
+	"github.com/michaeldcanady/go-onedrive/internal/middleware"
 	"github.com/michaeldcanady/go-onedrive/internal/slices/auth"
 	"github.com/michaeldcanady/go-onedrive/internal/slices/drive"
 	"github.com/michaeldcanady/go-onedrive/internal/slices/drive/cat"
@@ -27,7 +28,7 @@ import (
 )
 
 const (
-	rootShortDescription = "A OneDrive CLI client (v2)"
+	rootShortDescription = "A OneDrive CLI client"
 	rootLongDescription  = `A command-line interface for interacting with Microsoft OneDrive, implemented with Vertical Slice Architecture.`
 )
 
@@ -40,7 +41,7 @@ func CreateRootCmd(container di.Container) (*cobra.Command, error) {
 	)
 
 	rootCmd := &cobra.Command{
-		Use:           "odc2",
+		Use:           "odc",
 		Short:         rootShortDescription,
 		Long:          rootLongDescription,
 		SilenceUsage:  true,
@@ -65,11 +66,23 @@ func CreateRootCmd(container di.Container) (*cobra.Command, error) {
 
 			profileName, err := container.State().Get(state.KeyProfile)
 			if err != nil {
-				return fmt.Errorf("failed to get current profile: %w", err)
+				return fmt.Errorf("failed to get current profile name: %w", err)
 			}
 
-			if err := container.Config().AddPath(profileName, config); err != nil {
-				return fmt.Errorf("failed to load config file %s: %w", config, err)
+			// Original config resolution logic preserved:
+			// If config flag is empty, try to get it from the profile.
+			if strings.TrimSpace(config) == "" {
+				p, err := container.Profile().Get(cmd.Context(), profileName)
+				if err != nil {
+					return fmt.Errorf("failed to get current profile metadata: %w", err)
+				}
+				config = p.ConfigPath
+			}
+
+			if strings.TrimSpace(config) != "" {
+				if err := container.Config().AddPath(profileName, config); err != nil {
+					return fmt.Errorf("failed to load config file %s: %w", config, err)
+				}
 			}
 
 			container.Logger().SetAllLevel(level)
@@ -80,7 +93,7 @@ func CreateRootCmd(container di.Container) (*cobra.Command, error) {
 		},
 	}
 
-	rootCmd.PersistentFlags().StringVar(&config, "config", "./config.yaml", "path to config file")
+	rootCmd.PersistentFlags().StringVar(&config, "config", "", "path to config file")
 	rootCmd.PersistentFlags().StringVar(&level, "level", "info", "set the logging level (e.g., debug, info, warn, error)")
 	rootCmd.PersistentFlags().StringVar(&profileFlag, "profile", "", "name of profile")
 
@@ -90,13 +103,13 @@ func CreateRootCmd(container di.Container) (*cobra.Command, error) {
 		Long: `To load completions:
 
 Bash:
-  $ source <(odc2 completion bash)
+  $ source <(odc completion bash)
 
   # To load completions for each session, execute once:
   # Linux:
-  $ odc2 completion bash > /etc/bash_completion.d/odc2
+  $ odc completion bash > /etc/bash_completion.d/odc
   # macOS:
-  $ odc2 completion bash > /usr/local/etc/bash_completion.d/odc2
+  $ odc completion bash > /usr/local/etc/bash_completion.d/odc
 
 Zsh:
   # If shell completion is not already enabled in your environment,
@@ -104,13 +117,13 @@ Zsh:
   $ echo "autoload -U compinit; compinit" >> ~/.zshrc
 
   # To load completions for each session, execute once:
-  $ odc2 completion zsh > "${fpath[1]}/_odc2"
+  $ odc completion zsh > "${fpath[1]}/_odc"
 
   # You will need to start a new shell for this setup to take effect.
 `,
 		DisableFlagsInUseLine: true,
 		ValidArgs:             []string{"bash", "zsh", "fish", "powershell"},
-		Args:                  cobra.ExactValidArgs(1),
+		Args:                  cobra.MatchAll(cobra.ExactArgs(1), cobra.OnlyValidArgs),
 		Run: func(cmd *cobra.Command, args []string) {
 			switch args[0] {
 			case "bash":
@@ -141,6 +154,8 @@ Zsh:
 		edit.CreateEditCmd(container),
 		completionCmd,
 	)
+
+	middleware.ApplyMiddlewareRecursively(rootCmd, middleware.WithCorrelationID)
 
 	return rootCmd, nil
 }

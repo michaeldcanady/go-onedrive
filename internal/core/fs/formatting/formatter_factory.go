@@ -14,21 +14,21 @@ func NewFormatterFactory() *FormatterFactory {
 
 // Create returns an OutputFormatter corresponding to the requested format name (e.g., "json", "tree", "long").
 // If no format is specified, it defaults to "short".
-func (f *FormatterFactory) Create(format string) (OutputFormatter, error) {
-	if format == "" {
-		format = "short"
+func (f *FormatterFactory) Create(format Format) (OutputFormatter, error) {
+	if format == FormatUnknown {
+		format = FormatShort
 	}
 
 	switch format {
-	case "short":
+	case FormatShort:
 		return NewHumanShortFormatter(Terminal{}), nil
-	case "long":
+	case FormatLong:
 		return NewHumanLongFormatter(), nil
-	case "json":
+	case FormatJSON:
 		return NewJSONFormatter(), nil
-	case "yaml", "yml":
+	case FormatYAML:
 		return NewYAMLFormatter(), nil
-	case "tree":
+	case FormatTree:
 		return NewTreeFormatter(), nil
 	default:
 		return nil, fmt.Errorf("unsupported output format: %s", format)

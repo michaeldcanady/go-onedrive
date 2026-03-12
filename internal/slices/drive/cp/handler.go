@@ -24,21 +24,26 @@ func NewHandler(m shared.Service, l logger.Logger) *Handler {
 
 // Handle copies an item from the source to the destination.
 func (h *Handler) Handle(ctx context.Context, opts Options) error {
-	h.log.Info("copying item",
+	log := h.log.WithContext(ctx).With(
 		logger.String("source", opts.Source),
 		logger.String("destination", opts.Destination),
 		logger.Bool("recursive", opts.Recursive),
 	)
+
+	log.Info("starting copy operation")
 
 	cpOpts := shared.CopyOptions{
 		Recursive: opts.Recursive,
 		Overwrite: true, // Default to overwrite for now, can be a flag later.
 	}
 
+	log.Debug("delegating to filesystem manager for copy")
 	if err := h.manager.Copy(ctx, opts.Source, opts.Destination, cpOpts); err != nil {
+		log.Error("copy failed", logger.Error(err))
 		return fmt.Errorf("failed to copy %s to %s: %w", opts.Source, opts.Destination, err)
 	}
 
+	log.Info("copy completed successfully")
 	fmt.Fprintf(opts.Stdout, "Copied %s to %s\n", opts.Source, opts.Destination)
 	return nil
 }

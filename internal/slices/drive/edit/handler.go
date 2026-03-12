@@ -31,39 +31,47 @@ func NewHandler(fs registry.Service, editor editor.Service, l logger.Logger) *Ha
 
 // Handle retrieves a file, opens it in an editor, and uploads changes.
 func (h *Handler) Handle(ctx context.Context, opts Options) error {
-	h.log.Info("editing file", logger.String("path", opts.Path))
+	log := h.log.WithContext(ctx).With(logger.String("path", opts.Path))
 
-	provider, path, err := h.fs.Resolve(ctx, opts.Path)
+	log.Info("editing file")
+
+	log.Debug("resolving path provider")
+	provider, subPath, err := h.fs.Resolve(ctx, opts.Path)
 	if err != nil {
+		log.Error("failed to resolve path", logger.Error(err))
 		return fmt.Errorf("failed to resolve path %s: %w", opts.Path, err)
 	}
+	log.Debug("resolved path provider", logger.String("provider", provider.Name()))
 
-	h.log.Debug("fetching metadata", logger.String("path", path))
-	item, err := provider.Get(ctx, path)
+	log.Debug("fetching metadata")
+	item, err := provider.Get(ctx, subPath)
 	if err != nil {
-		return fmt.Errorf("failed to get item metadata at %s: %w", path, err)
+		log.Error("failed to get metadata", logger.Error(err))
+		return fmt.Errorf("failed to get item metadata at %s: %w", subPath, err)
 	}
 
-	h.log.Debug("reading file for editing", logger.String("path", path))
-	r, err := provider.ReadFile(ctx, path, shared.ReadOptions{})
+	log.Debug("reading file for editing")
+	r, err := provider.ReadFile(ctx, subPath, shared.ReadOptions{})
 	if err != nil {
-		return fmt.Errorf("failed to read file at %s: %w", path, err)
+		log.Error("failed to read file", logger.Error(err))
+		return fmt.Errorf("failed to read file at %s: %w", subPath, err)
 	}
 	defer r.Close()
 
-	h.log.Debug("launching editor")
+	log.Debug("launching external editor")
 	newData, _, err := h.editor.LaunchTempFile("odc-edit", ".txt", r)
 	if err != nil {
-		return fmt.Errorf("failed to edit file at %s: %w", path, err)
+		log.Error("editor launch failed", logger.Error(err))
+		return fmt.Errorf("failed to edit file at %s: %w", subPath, err)
 	}
 
 	if newData == nil {
-		h.log.Info("no changes detected, skipping upload")
+		log.Info("no changes detected, skipping upload")
 		_, _ = fmt.Fprintln(opts.Stdout, "No changes detected.")
 		return nil
 	}
 
-	h.log.Info("uploading changes", logger.String("path", path))
+	log.Info("uploading changes", logger.Int("size", len(newData)))
 	writeOpts := shared.WriteOptions{
 		Overwrite: opts.Force,
 	}
@@ -72,14 +80,17 @@ func (h *Handler) Handle(ctx context.Context, opts Options) error {
 		writeOpts.IfMatch = item.ETag
 	}
 
-	_, err = provider.WriteFile(ctx, path, bytes.NewReader(newData), writeOpts)
+	_, err = provider.WriteFile(ctx, subPath, bytes.NewReader(newData), writeOpts)
 	if err != nil {
 		if errors.Is(err, coreerrors.ErrPrecondition) {
+			log.Warn("conflict detected, upload aborted")
 			return fmt.Errorf("conflict detected during upload: %w. Use --force to overwrite", err)
 		}
-		return fmt.Errorf("failed to upload edited changes to %s: %w", path, err)
+		log.Error("failed to upload changes", logger.Error(err))
+		return fmt.Errorf("failed to upload edited changes to %s: %w", subPath, err)
 	}
 
+	log.Info("edit completed successfully")
 	_, _ = fmt.Fprintf(opts.Stdout, "successfully updated file \"%s\"\n", opts.Path)
 	return nil
 }

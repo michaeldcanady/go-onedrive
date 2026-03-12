@@ -37,40 +37,50 @@ func NewHandler(
 
 // Handle executes the login operation based on the current profile and provided options.
 func (h *Handler) Handle(ctx context.Context, opts Options) error {
-	h.log.Info("starting login flow")
+	log := h.log.WithContext(ctx)
 
+	log.Info("starting login flow")
+
+	log.Debug("retrieving active profile")
 	profile, err := h.state.Get(state.KeyProfile)
 	if err != nil {
+		log.Error("failed to get current profile", logger.Error(err))
 		return fmt.Errorf("failed to get current profile: %w", err)
 	}
+	log.Debug("active profile retrieved", logger.String("profile", profile))
 
+	log.Debug("loading profile configuration")
 	cfg, err := h.config.GetConfig(ctx, profile)
 	if err != nil {
+		log.Error("failed to load configuration", logger.Error(err))
 		return fmt.Errorf("failed to load configuration for profile %s: %w", profile, err)
 	}
 
 	provider := cfg.Auth.Provider
 	if provider == "" {
-		provider = "microsoft" // Default fallback
+		log.Debug("no provider specified, defaulting to microsoft")
+		provider = "microsoft"
 	}
 
+	log.Debug("retrieving authenticator for provider", logger.String("provider", provider))
 	auth, err := h.identity.Get(provider)
 	if err != nil {
+		log.Error("unsupported provider", logger.String("provider", provider), logger.Error(err))
 		return fmt.Errorf("provider %s not supported: %w", provider, err)
 	}
-
-	h.log.Info("authenticating with provider", logger.String("provider", provider))
 
 	// Determine method: CLI flag takes precedence, then config
 	method := shared.AuthMethodUnknown
 	if opts.Method != "" {
 		method = shared.ParseAuthMethod(opts.Method)
+		log.Debug("auth method set via CLI flag", logger.String("method", method.String()))
 	} else if cfg.Auth.Method != "" {
 		method = shared.ParseAuthMethod(cfg.Auth.Method)
+		log.Debug("auth method set via configuration", logger.String("method", method.String()))
 	}
 
 	loginOpts := shared.LoginOptions{
-		Force:       opts.Force,
+		Force:       true, // Login command always forces a fresh flow
 		Interactive: true,
 		Method:      method,
 		ProviderSpecific: map[string]string{
@@ -91,21 +101,25 @@ func (h *Handler) Handle(ctx context.Context, opts Options) error {
 		loginOpts.ProviderSpecific["client_secret"] = cfg.Auth.ClientSecret
 	}
 
+	log.Info("authenticating", logger.String("provider", provider), logger.String("method", method.String()))
 	token, err := auth.Authenticate(ctx, loginOpts)
 	if err != nil {
+		log.Error("authentication failed", logger.Error(err))
 		return fmt.Errorf("authentication failed: %w", err)
 	}
 
-	// Cache the token
+	log.Debug("caching access token")
 	tokenData, err := json.Marshal(token)
 	if err != nil {
+		log.Error("failed to serialize token", logger.Error(err))
 		return fmt.Errorf("failed to serialize token for caching: %w", err)
 	}
 	if err := h.state.Set(state.KeyAccessToken, string(tokenData), state.ScopeGlobal); err != nil {
+		log.Error("failed to cache token", logger.Error(err))
 		return fmt.Errorf("failed to cache access token: %w", err)
 	}
 
-	h.log.Info("authentication successful and token cached", logger.String("profile", profile))
+	log.Info("authentication successful and token cached")
 
 	if opts.ShowToken {
 		fmt.Fprintf(opts.Stdout, "Access Token: %s\n", token.Token)

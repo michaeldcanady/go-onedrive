@@ -25,15 +25,17 @@ func NewHandler(m shared.Service, l logger.Logger) *Handler {
 
 // Handle downloads an item from the remote filesystem to the local destination.
 func (h *Handler) Handle(ctx context.Context, opts Options) error {
-	h.log.Info("downloading item",
+	log := h.log.WithContext(ctx).With(
 		logger.String("source", opts.Source),
 		logger.String("destination", opts.Destination),
-		logger.Bool("recursive", opts.Recursive),
 	)
+
+	log.Info("starting download")
 
 	// Ensure destination has local: prefix if no prefix is present.
 	destination := opts.Destination
 	if !strings.Contains(destination, ":") {
+		log.Debug("adding local prefix to destination")
 		destination = "local:" + destination
 	}
 
@@ -42,10 +44,13 @@ func (h *Handler) Handle(ctx context.Context, opts Options) error {
 		Overwrite: true,
 	}
 
+	log.Debug("delegating to filesystem manager for copy")
 	if err := h.manager.Copy(ctx, opts.Source, destination, cpOpts); err != nil {
+		log.Error("download failed", logger.Error(err))
 		return fmt.Errorf("failed to download %s to %s: %w", opts.Source, destination, err)
 	}
 
+	log.Info("download completed successfully")
 	fmt.Fprintf(opts.Stdout, "Downloaded %s to %s\n", opts.Source, opts.Destination)
 	return nil
 }

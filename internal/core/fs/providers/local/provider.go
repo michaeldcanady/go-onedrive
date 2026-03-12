@@ -11,6 +11,10 @@ import (
 	"github.com/michaeldcanady/go-onedrive/internal/core/logger"
 )
 
+const (
+	providerName = "local"
+)
+
 // Provider implements the filesystem Service interface for the local filesystem.
 type Provider struct {
 	// log is the logger instance used for recording provider events.
@@ -22,6 +26,10 @@ func NewProvider(log logger.Logger) *Provider {
 	return &Provider{
 		log: log,
 	}
+}
+
+func (_ *Provider) Name() string {
+	return providerName
 }
 
 // Get retrieves metadata for a single item by its local path.
