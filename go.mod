@@ -14,7 +14,7 @@ require (
 	go.etcd.io/bbolt v1.4.3
 	go.uber.org/zap v1.27.1
 	go.yaml.in/yaml/v3 v3.0.4
-	golang.org/x/term v0.40.0
+	golang.org/x/term v0.41.0
 	gopkg.in/yaml.v3 v3.0.1
 )
 
