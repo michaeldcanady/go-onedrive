@@ -178,7 +178,9 @@ func (m *FileSystemManager) copyRecursive(ctx context.Context, src, dst string, 
 	}
 
 	// It's a folder, ensure destination exists.
-	_ = m.Mkdir(ctx, dst)
+	if err := m.Mkdir(ctx, dst); err != nil { // Ensure Mkdir errors are handled
+		return err
+	}
 
 	children, err := m.List(ctx, src, shared.ListOptions{
 		Recursive: opts.Recursive,
@@ -187,25 +189,24 @@ func (m *FileSystemManager) copyRecursive(ctx context.Context, src, dst string, 
 		return err
 	}
 
-	var wg sync.WaitGroup
-	errs := make(chan error, len(children))
+	// Use a worker pool for concurrent recursive calls
+	pool := NewWorkerPool(defaultConcurrency) // Assuming NewWorkerPool is defined or will be defined
+	results := make(chan error, len(children))
 
 	for _, child := range children {
-		wg.Add(1)
-		go func(c shared.Item) {
-			defer wg.Done()
-			childSrc := m.Join(src, c.Name)
-			childDst := m.Join(dst, c.Name)
+		pool.Submit(func() {
+			childSrc := m.Join(src, child.Name)
+			childDst := m.Join(dst, child.Name)
 			if err := m.copyRecursive(ctx, childSrc, childDst, opts, sem); err != nil {
-				errs <- err
+				results <- err
 			}
-		}(child)
+		})
 	}
 
-	wg.Wait()
-	close(errs)
+	pool.Wait()
+	close(results)
 
-	for err := range errs {
+	for err := range results {
 		if err != nil {
 			return err
 		}
