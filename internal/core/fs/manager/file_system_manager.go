@@ -6,6 +6,7 @@ import (
 	"io"
 	"path"
 	"strings"
+	"sync"
 
 	"github.com/michaeldcanady/go-onedrive/internal/core/fs/registry"
 	"github.com/michaeldcanady/go-onedrive/internal/core/fs/shared"
@@ -13,6 +14,8 @@ import (
 
 const (
 	providerName = "fs_manager"
+	// defaultConcurrency sets the maximum number of simultaneous file operations during recursive actions.
+	defaultConcurrency = 5
 )
 
 // FileSystemManager orchestrates operations across multiple filesystem providers.
@@ -29,7 +32,7 @@ func NewFileSystemManager(registry registry.Service) *FileSystemManager {
 	}
 }
 
-func (_ *FileSystemManager) Name() string {
+func (m *FileSystemManager) Name() string {
 	return providerName
 }
 
@@ -117,9 +120,14 @@ func (m *FileSystemManager) Copy(ctx context.Context, src, dst string, opts shar
 	}
 
 	if opts.Recursive {
-		return m.copyRecursive(ctx, src, dst, opts)
+		sem := make(chan struct{}, defaultConcurrency)
+		return m.copyRecursive(ctx, src, dst, opts, sem)
 	}
 
+	return m.copySingle(ctx, src, dst, opts)
+}
+
+func (m *FileSystemManager) copySingle(ctx context.Context, src, dst string, opts shared.CopyOptions) error {
 	pSrc, srcSubPath, err := m.registry.Resolve(ctx, src)
 	if err != nil {
 		return err
@@ -149,34 +157,49 @@ func (m *FileSystemManager) Copy(ctx context.Context, src, dst string, opts shar
 	return nil
 }
 
-func (m *FileSystemManager) copyRecursive(ctx context.Context, src, dst string, opts shared.CopyOptions) error {
+func (m *FileSystemManager) copyRecursive(ctx context.Context, src, dst string, opts shared.CopyOptions, sem chan struct{}) error {
 	item, err := m.Stat(ctx, src)
 	if err != nil {
 		return err
 	}
 
 	if item.Type == shared.TypeFile {
-		// Individual file copy should not be recursive.
+		sem <- struct{}{}
+		defer func() { <-sem }()
+
 		fileOpts := opts
 		fileOpts.Recursive = false
-		return m.Copy(ctx, src, dst, fileOpts)
+		return m.copySingle(ctx, src, dst, fileOpts)
 	}
 
 	// It's a folder, ensure destination exists.
-	if err := m.Mkdir(ctx, dst); err != nil {
-		// Ignore error if it already exists.
-	}
+	_ = m.Mkdir(ctx, dst)
 
 	children, err := m.List(ctx, src, shared.ListOptions{})
 	if err != nil {
 		return err
 	}
 
-	for _, child := range children {
-		childSrc := m.Join(src, child.Name)
-		childDst := m.Join(dst, child.Name)
+	var wg sync.WaitGroup
+	errs := make(chan error, len(children))
 
-		if err := m.copyRecursive(ctx, childSrc, childDst, opts); err != nil {
+	for _, child := range children {
+		wg.Add(1)
+		go func(c shared.Item) {
+			defer wg.Done()
+			childSrc := m.Join(src, c.Name)
+			childDst := m.Join(dst, c.Name)
+			if err := m.copyRecursive(ctx, childSrc, childDst, opts, sem); err != nil {
+				errs <- err
+			}
+		}(child)
+	}
+
+	wg.Wait()
+	close(errs)
+
+	for err := range errs {
+		if err != nil {
 			return err
 		}
 	}

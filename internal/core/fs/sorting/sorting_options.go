@@ -12,11 +12,16 @@ type SortingOptions struct {
 	Field string
 }
 
+const (
+	defaultSortByField   = "Name"
+	defaultSortDirection = DirectionAscending
+)
+
 // NewSortingOptions initializes a new instance of SortingOptions with default settings.
 func NewSortingOptions() *SortingOptions {
 	return &SortingOptions{
-		Direction: DirectionAscending,
-		Field:     "Name",
+		Direction: defaultSortDirection,
+		Field:     defaultSortByField,
 	}
 }
 

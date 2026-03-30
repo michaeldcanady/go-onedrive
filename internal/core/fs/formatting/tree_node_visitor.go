@@ -12,9 +12,9 @@ type TreeStyle struct {
 	// LastConnector is the prefix for the final child node in a group.
 	LastConnector string
 	// VerticalBar is the symbol for a continuing branch line.
-	VerticalBar   string
+	VerticalBar string
 	// Indent is the spacing used for nested levels.
-	Indent        string
+	Indent string
 }
 
 // DefaultTreeStyle provides a standard set of Unicode characters for tree rendering.
@@ -30,7 +30,7 @@ type TreeNodeVisitor struct {
 	// writer is the destination for the rendered output.
 	writer io.Writer
 	// style defines the visual symbols used for connectors.
-	style  TreeStyle
+	style TreeStyle
 }
 
 // NewTreeNodeVisitor initializes a new visitor with the default styling.

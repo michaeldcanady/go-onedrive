@@ -83,17 +83,16 @@ func matchPattern(pattern, path string) bool {
 	}
 
 	// 3. Simple wildcard matching via filepath.Match
-	match, _ := filepathMatch(pattern, path)
-	return match
+	return filepathMatch(pattern, path)
 }
 
 // filepathMatch is a placeholder or wrapper for actual matching logic.
-func filepathMatch(pattern, path string) (bool, error) {
+func filepathMatch(pattern, path string) bool {
 	parts := strings.Split(path, string(charSlash))
 	for _, part := range parts {
 		if ok, _ := filepath.Match(pattern, part); ok {
-			return true, nil
+			return true
 		}
 	}
-	return false, nil
+	return false
 }

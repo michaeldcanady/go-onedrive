@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"sync"
 
+	"github.com/michaeldcanady/go-onedrive/internal/core/environment"
 	"github.com/michaeldcanady/go-onedrive/internal/core/shared"
 )
 
@@ -19,13 +20,13 @@ type FileService struct {
 }
 
 // NewFileService initializes a new instance of the FileService.
-func NewFileService(filePath string) (*FileService, error) {
+func NewFileService(env environment.Service, filePath string) (*FileService, error) {
 	if filePath == "" {
-		configDir, err := os.UserConfigDir()
+		stateDir, err := env.StateDir()
 		if err != nil {
-			return nil, fmt.Errorf("failed to get user config directory: %w", err)
+			return nil, fmt.Errorf("failed to get state directory: %w", err)
 		}
-		filePath = filepath.Join(configDir, "odc", "state.json")
+		filePath = filepath.Join(stateDir, "state.json")
 	}
 
 	if err := os.MkdirAll(filepath.Dir(filePath), 0755); err != nil {
@@ -165,7 +166,7 @@ func (s *FileService) save() error {
 		return fmt.Errorf("failed to marshal state: %w", err)
 	}
 
-	if err := os.WriteFile(s.filePath, data, 0644); err != nil {
+	if err := os.WriteFile(s.filePath, data, 0600); err != nil {
 		return fmt.Errorf("failed to write state file: %w", err)
 	}
 

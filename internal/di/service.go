@@ -52,12 +52,14 @@ func NewDefaultContainer() (*DefaultContainer, error) {
 	logSvc := logger.NewZapService()
 	cliLog, _ := logSvc.CreateLogger("cli")
 
-	stateSvc, err := state.NewFileService("")
+	envSvc := environment.NewDefaultService("odc")
+
+	stateSvc, err := state.NewFileService(envSvc, "")
 	if err != nil {
 		return nil, err
 	}
 
-	profileSvc, err := profile.NewFileService("")
+	profileSvc, err := profile.NewFileService(envSvc, "")
 	if err != nil {
 		return nil, err
 	}
@@ -87,7 +89,6 @@ func NewDefaultContainer() (*DefaultContainer, error) {
 	fsReg.Register("local", local.NewProvider(cliLog))
 	fsReg.Register("onedrive", onedrive.NewProvider(graphProvider, stateSvc, driveSvc, cliLog))
 
-	envSvc := environment.NewDefaultService("odc")
 	editorSvc := editor.NewDefaultService(envSvc, cliLog)
 
 	return &DefaultContainer{

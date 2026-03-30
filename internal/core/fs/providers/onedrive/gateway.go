@@ -5,7 +5,7 @@ import (
 
 	"github.com/michaeldcanady/go-onedrive/internal/core/drive"
 	"github.com/michaeldcanady/go-onedrive/internal/core/logger"
-	"github.com/michaeldcanady/go-onedrive/internal/core/providers/microsoft"
+	platform "github.com/michaeldcanady/go-onedrive/internal/core/providers/shared"
 	msgraphsdkcore "github.com/microsoftgraph/msgraph-sdk-go-core"
 	"github.com/microsoftgraph/msgraph-sdk-go/models"
 	"github.com/microsoftgraph/msgraph-sdk-go/users"
@@ -13,21 +13,21 @@ import (
 
 // GraphDriveGateway implements the drive.Gateway interface using Microsoft Graph.
 type GraphDriveGateway struct {
-	graph *microsoft.GraphProvider
-	log   logger.Logger
+	platform platform.PlatformProvider
+	log      logger.Logger
 }
 
 // NewGraphDriveGateway initializes a new instance of the GraphDriveGateway.
-func NewGraphDriveGateway(graph *microsoft.GraphProvider, log logger.Logger) *GraphDriveGateway {
+func NewGraphDriveGateway(p platform.PlatformProvider, log logger.Logger) *GraphDriveGateway {
 	return &GraphDriveGateway{
-		graph: graph,
-		log:   log,
+		platform: p,
+		log:      log,
 	}
 }
 
 // ListDrives retrieves all OneDrive drives for the authenticated user.
 func (g *GraphDriveGateway) ListDrives(ctx context.Context) ([]drive.Drive, error) {
-	adapter, err := g.graph.Adapter(ctx)
+	adapter, err := g.platform.Adapter(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -58,7 +58,7 @@ func (g *GraphDriveGateway) ListDrives(ctx context.Context) ([]drive.Drive, erro
 
 // GetPersonalDrive retrieves the user's default personal drive.
 func (g *GraphDriveGateway) GetPersonalDrive(ctx context.Context) (drive.Drive, error) {
-	adapter, err := g.graph.Adapter(ctx)
+	adapter, err := g.platform.Adapter(ctx)
 	if err != nil {
 		return drive.Drive{}, err
 	}

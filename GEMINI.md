@@ -1,100 +1,56 @@
-# go-onedrive Project Context
+# go-onedrive (odc) Project Context
 
-go-onedrive (odc) is a CLI tool for interacting with OneDrive items as a unix‑style file system.
+`go-onedrive` (cli name: `odc`) is a CLI tool designed to interact with OneDrive as a Unix-style file system, providing a terminal-native way to manage files (ls, cp, mv, rm, etc.).
 
 ## Project Overview
 
-- **Purpose:** Provide users with a terminal‑native way to browse, read, edit, and manipulate OneDrive items as if they were part of a local filesystem.
+- **Purpose:** Provide a robust, coreutils-like experience for managing OneDrive files.
 - **Main Technologies:**
-  - **Runtime:** Go (>= 1.25.0)
-  - **Testing:** `go test`
-  - **Linting/Formatting:** `go vet`, `golangci-lint`, `gofmt`
-- **Architecture:** Monorepo structure with clear layering:
-  - `internal2/interface/cli`: User‑facing terminal UI, input parsing, and display rendering.
-  - `pkg/odc`: Entrypoint for the odc CLI.
-  - `internal2/app`: Application layer containing orchestrating services.
-  - `internal2/domain`: Domain data types, value objects, and interfaces.
-  - `internal2/infra`: Infrastructure for interacting with Microsoft Graph, caching, HTTP, identity, and persistence.
+    - **Runtime:** Go (>= 1.25.3)
+    - **CLI Framework:** [Cobra](https://github.com/spf13/cobra)
+    - **API Client:** [Microsoft Graph SDK for Go](https://github.com/microsoftgraph/msgraph-sdk-go)
+    - **Serialization:** [Kiota](https://github.com/microsoft/kiota-abstractions-go)
+    - **Logging:** [Zap](https://github.com/uber-go/zap)
+    - **Caching:** [bbolt](https://github.com/etcd-io/bbolt)
+- **Architecture:** The project follows a modular design centered around dependency injection (`internal/di`) and slice-based command organization.
+    - **`cmd/odc/`:** Entry point for the application.
+    - **`internal/core/`:** Contains core domain services (auth, drive, fs, logger, profile, state).
+        - **`fs/`:** Provides a filesystem abstraction for both local and OneDrive providers.
+    - **`internal/slices/`:** Contains the CLI command implementations (auth, drive, profile, root).
+    - **`pkg/`:** General-purpose utilities (cache, ignore patterns).
+    - **`internal/di/`:** Dependency Injection container management.
+    - **`internal/middleware/`:** Custom Graph API middleware (correlation IDs, logging).
 
 ## Building and Running
 
-- **Install Dependencies:**  
-  `go get`
-- **Build CLI:**  
-  `just build`
+- **Install Dependencies:** `go get ./...`
+- **Build CLI:** `just build` (outputs `odc` binary in root)
+- **Run CLI:** `just run [args]`
+- **Documentation:** `just serve-docs` (previews documentation locally via MkDocs)
+- **Clean:** `just clean`
 
 ## Testing and Quality
 
-- **Run all unit tests:**  
-  `go test ./...`
+- **Unit Tests:** `go test ./...`
+- **Linting:** `golangci-lint run`
+- **Formatting:** `go fmt ./...`
+- **Conventions:**
+    - Prefer table-driven tests for complex logic.
+    - Mock external dependencies (Graph API, identity providers) using `stretchr/testify`.
+    - Use structured logging via the `internal/core/logger` abstraction.
 
-- **Static analysis:**  
-  `go vet ./...`  
-  `golangci-lint run`
+## Specialized Skills
+
+The project uses several specialized Gemini skills located in `.gemini/skills/`:
+
+- **`code-writer`:** Use for any Go source code changes. Follows specific templates for CLI commands and enforces strict engineering standards (errors, naming, DI).
+- **`docs-writer`:** Use for all documentation changes (MkDocs in `docs/` and `.md` files). Enforces tone, formatting (80-char wrap), and structure (BLUF).
+- **`principal-software-engineer`:** Use for major architectural decisions, system-wide refactors, or complex debugging.
+- **`product-manager`:** Use for defining vision, strategy, and roadmaps.
 
 ## Development Conventions
 
-- **Contributions:** Follow the process in `CONTRIBUTING.md`.  
-  Requires signing the Google CLA.
-- **Commit Messages:** Follow the
-  [Conventional Commits](https://www.conventionalcommits.org/) standard.
-- **Coding Style:**  
-  - Go code must follow idiomatic Go patterns and odc’s established layering rules.
-- **Imports:**  
-  - Group imports (stdlib → external → internal).  
-  - Avoid unused imports; keep import blocks clean and consistent.
-
-## Testing Conventions
-
-- **Go tests:**  
-  - Prefer table‑driven tests.  
-  - Use mocks for Graph API, caching, and identity providers.  
-  - Tests must be deterministic and must not hit the real network.  
-  - Use realistic OneDrive metadata and content fixtures.
-
----
-
-# **Skill Usage in This Project**
-
-The odc project uses two specialized skills to ensure consistent, high‑quality contributions: **`docs-writer`** and **`code-writer`**.
-
-These skills must be invoked based on the type of work being performed.
-
-## When to use the `docs-writer` skill
-
-Use the `docs-writer` skill **whenever the task involves documentation**, including:
-
-- Writing new documentation in the `docs/` directory.
-- Editing or reviewing existing `.md` files anywhere in the repo.
-- Updating docs to reflect changes in code behavior.
-- Improving clarity, structure, or consistency of documentation.
-- Suggesting documentation updates when code changes make existing docs incomplete.
-
-If the task touches **any documentation**, the `docs-writer` skill is required.
-
-## When to use the `code-writer` skill
-
-Use the `code-writer` skill **whenever the task involves Go code or runtime behavior**, including:
-
-- Writing new Go files in `cmd/`, `pkg/odc`, or `internal2/`.
-- Editing or refactoring existing Go code.
-- Implementing new services, domain types, or infra adapters.
-- Updating CLI commands or wiring in `interface/cli`.
-- Modifying configuration files that affect runtime behavior (`.json`, `.yaml`, etc.).
-- Writing or updating Go tests.
-- Performing architectural changes across domain/app/infra layers.
-
-If the task modifies **any Go code or runtime‑affecting configuration**, the `code-writer` skill is required.
-
-## When both skills may be needed
-
-Some tasks require **both** skills, such as:
-
-- Adding a new CLI command (code) and documenting it (docs).
-- Changing behavior in `internal2/app` and updating user‑facing docs.
-- Introducing a new feature that requires both implementation and documentation.
-
-In these cases, the assistant should:
-
-1. Use the **`code-writer`** skill for all code changes.  
-2. Use the **`docs-writer`** skill for all documentation changes.
+- **CLI Commands:** All new commands must follow the template pattern in the `code-writer` skill (separating command factory, logic, and options).
+- **Architecture:** Maintain clear boundaries between domain services (`core`) and CLI orchestration (`slices`).
+- **Errors:** Return errors as the last return value and wrap them using `%w`.
+- **Documentation:** Every heading in `.md` files should be followed by an introductory paragraph. Sentence case is used for all headings.

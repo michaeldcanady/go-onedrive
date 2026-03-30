@@ -31,6 +31,11 @@ func NewGraphProvider(cred azcore.TokenCredential, log logger.Logger) *GraphProv
 	}
 }
 
+// Name returns the platform identifier "microsoft".
+func (p *GraphProvider) Name() string {
+	return "microsoft"
+}
+
 // Adapter returns the Kiota request adapter for the Graph client.
 func (p *GraphProvider) Adapter(ctx context.Context) (abstractions.RequestAdapter, error) {
 	client, err := p.Client(ctx)

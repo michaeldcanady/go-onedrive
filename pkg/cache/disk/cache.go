@@ -53,7 +53,7 @@ func (c *Cache[K, V]) Get(ctx context.Context, key string) (V, error) {
 	if err := c.lock.RLock(); err != nil {
 		return zero, err
 	}
-	defer c.lock.Unlock()
+	defer func() { _ = c.lock.Unlock() }()
 
 	c.mu.RLock()
 	defer c.mu.RUnlock()
@@ -84,7 +84,7 @@ func (c *Cache[K, V]) Set(ctx context.Context, key string, value V) error {
 	if err := c.lock.Lock(); err != nil {
 		return err
 	}
-	defer c.lock.Unlock()
+	defer func() { _ = c.lock.Unlock() }()
 
 	k, err := c.keySerializer.Deserialize([]byte(key))
 	if err != nil {
@@ -175,7 +175,7 @@ func (c *Cache[K, V]) Clear(ctx context.Context) error {
 	if err := c.lock.Lock(); err != nil {
 		return err
 	}
-	defer c.lock.Unlock()
+	defer func() { _ = c.lock.Unlock() }()
 
 	if err := os.Remove(c.path); err != nil && !errors.Is(err, os.ErrNotExist) {
 		return err

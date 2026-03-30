@@ -10,6 +10,10 @@ import (
 	"github.com/michaeldcanady/go-onedrive/internal/core/state"
 )
 
+const (
+	defaultProviderPrefix = "onedrive"
+)
+
 // Service manages a collection of filesystem providers, resolving them by name.
 type Service interface {
 	// Register associates a name with a filesystem provider.
@@ -63,11 +67,11 @@ func (r *Registry) Resolve(ctx context.Context, path string) (shared.Service, st
 		if err == nil && driveID != "" {
 			// If we have an active drive, we need to decide if we should use it.
 			// For now, if no prefix, we assume it's relative to the active drive in OneDrive.
-			p, err := r.Get("onedrive")
+			p, err := r.Get(defaultProviderPrefix)
 			return p, path, err
 		}
 
-		p, err := r.Get("onedrive")
+		p, err := r.Get(defaultProviderPrefix)
 		return p, path, err
 	}
 
@@ -79,7 +83,7 @@ func (r *Registry) Resolve(ctx context.Context, path string) (shared.Service, st
 
 	// Check if prefix is an alias
 	if _, err := r.state.GetDriveAlias(prefix); err == nil {
-		p, err := r.Get("onedrive")
+		p, err := r.Get(defaultProviderPrefix)
 		if err != nil {
 			return nil, "", err
 		}

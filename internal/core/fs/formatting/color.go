@@ -5,7 +5,6 @@ import (
 	"io"
 
 	"github.com/michaeldcanady/go-onedrive/internal/core/fs/shared"
-	"golang.org/x/term"
 )
 
 const (
@@ -31,17 +30,9 @@ const (
 	Bold = "\033[1m"
 )
 
-// IsTerminal determines if the provided writer is connected to an interactive terminal session.
-func IsTerminal(w any) bool {
-	if f, ok := w.(interface{ Fd() uintptr }); ok {
-		return term.IsTerminal(int(f.Fd()))
-	}
-	return false
-}
-
 // Colorize wraps the given text with ANSI color codes if the writer supports terminal output.
 func Colorize(w io.Writer, color string, text string) string {
-	if !IsTerminal(w) {
+	if !NewTerminal().IsTerminal(w) {
 		return text
 	}
 	return fmt.Sprintf("%s%s%s", color, text, Reset)

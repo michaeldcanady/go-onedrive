@@ -28,7 +28,7 @@ func NewProvider(log logger.Logger) *Provider {
 	}
 }
 
-func (_ *Provider) Name() string {
+func (p *Provider) Name() string {
 	return providerName
 }
 

@@ -3,10 +3,7 @@ package formatting
 import (
 	"fmt"
 	"io"
-	"os"
 	"strings"
-
-	"golang.org/x/term"
 )
 
 // Column defines the presentation and data extraction logic for a single table field.
@@ -42,11 +39,16 @@ type TableFormatter struct {
 	Columns []Column
 	// Truncate determines whether long values should be shortened to fit the terminal width.
 	Truncate bool
+	// terminal provides terminal-related information and detection.
+	terminal TerminalInfo
 }
 
 // NewTableFormatter initializes a new TableFormatter with the specified columns.
 func NewTableFormatter(cols ...Column) *TableFormatter {
-	return &TableFormatter{Columns: cols}
+	return &TableFormatter{
+		Columns:  cols,
+		terminal: NewTerminal(),
+	}
 }
 
 // WithTruncate configures the formatter to shorten overflowing column values.
@@ -61,10 +63,7 @@ func (tf *TableFormatter) Format(w io.Writer, items []any) error {
 		return fmt.Errorf("no columns defined for table formatter")
 	}
 
-	termWidth := tf.detectTerminalWidth(w)
-	if termWidth <= 0 {
-		termWidth = 120
-	}
+	termWidth := tf.terminal.Width(w)
 
 	widths := tf.computeColumnWidths(items)
 	widths = tf.fitToTerminal(widths, termWidth)
@@ -94,18 +93,6 @@ func (tf *TableFormatter) Format(w io.Writer, items []any) error {
 	}
 
 	return nil
-}
-
-func (tf *TableFormatter) detectTerminalWidth(w io.Writer) int {
-	if IsTerminal(w) {
-		if f, ok := w.(*os.File); ok {
-			width, _, err := term.GetSize(int(f.Fd()))
-			if err == nil {
-				return width
-			}
-		}
-	}
-	return -1
 }
 
 func (tf *TableFormatter) computeColumnWidths(items []any) []int {

@@ -10,14 +10,12 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/michaeldcanady/go-onedrive/internal/core/identity/shared"
 	"github.com/michaeldcanady/go-onedrive/internal/core/logger"
-	"github.com/michaeldcanady/go-onedrive/pkg/cache"
 )
 
 // Authenticator implements the identity.shared.Authenticator interface for Microsoft.
 type Authenticator struct {
-	cred  azcore.TokenCredential
-	cache cache.Cache[shared.AccessToken]
-	log   logger.Logger
+	cred azcore.TokenCredential
+	log  logger.Logger
 }
 
 // NewAuthenticator initializes a new Microsoft authenticator.

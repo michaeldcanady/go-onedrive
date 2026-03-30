@@ -22,7 +22,7 @@ func NewHumanShortFormatter(term TerminalInfo) *HumanShortFormatter {
 func (f *HumanShortFormatter) Format(w io.Writer, items []any) error {
 	var width = 30
 	if f.term != nil {
-		width = f.term.Width()
+		width = f.term.Width(w)
 	}
 	colWidth := 0
 

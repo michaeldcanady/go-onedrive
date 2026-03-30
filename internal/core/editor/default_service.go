@@ -109,10 +109,7 @@ func (s *DefaultService) LaunchTempFile(prefix, suffix string, r io.Reader) ([]b
 }
 
 func (s *DefaultService) buildCmd(path string) ([]string, error) {
-	shell, err := s.getShell()
-	if err != nil {
-		return nil, err
-	}
+	shell := s.getShell()
 
 	editorCmd, err := s.getEditor()
 	if err != nil {
@@ -165,9 +162,9 @@ func (s *DefaultService) getEditor() (string, error) {
 	return "", fmt.Errorf("could not detect a suitable editor")
 }
 
-func (s *DefaultService) getShell() ([]string, error) {
+func (s *DefaultService) getShell() []string {
 	if s.envSvc.IsWindows() {
-		return []string{defaultWindowsShell, "/C"}, nil
+		return []string{defaultWindowsShell, "/C"}
 	}
 
 	shell, err := s.envSvc.Shell()
@@ -175,5 +172,5 @@ func (s *DefaultService) getShell() ([]string, error) {
 		shell = defaultUnixShell
 	}
 
-	return []string{shell, "-c"}, nil
+	return []string{shell, "-c"}
 }

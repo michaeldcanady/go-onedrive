@@ -11,7 +11,7 @@ import (
 	"github.com/michaeldcanady/go-onedrive/internal/core/drive"
 	"github.com/michaeldcanady/go-onedrive/internal/core/fs/shared"
 	"github.com/michaeldcanady/go-onedrive/internal/core/logger"
-	"github.com/michaeldcanady/go-onedrive/internal/core/providers/microsoft"
+	platform "github.com/michaeldcanady/go-onedrive/internal/core/providers/shared"
 	"github.com/michaeldcanady/go-onedrive/internal/core/state"
 	abstractions "github.com/microsoft/kiota-abstractions-go"
 	"github.com/microsoftgraph/msgraph-sdk-go/drives"
@@ -32,33 +32,33 @@ const (
 
 // Provider implements the filesystem Service interface for Microsoft OneDrive.
 type Provider struct {
-	graph    *microsoft.GraphProvider
+	platform platform.PlatformProvider
 	state    state.Service
 	driveSvc drive.Service
 	log      logger.Logger
 }
 
 // NewProvider creates a new instance of the OneDrive filesystem provider.
-func NewProvider(graph *microsoft.GraphProvider, state state.Service, driveSvc drive.Service, log logger.Logger) *Provider {
+func NewProvider(p platform.PlatformProvider, state state.Service, driveSvc drive.Service, log logger.Logger) *Provider {
 	return &Provider{
-		graph:    graph,
+		platform: p,
 		state:    state,
 		driveSvc: driveSvc,
 		log:      log,
 	}
 }
 
-func (_ *Provider) Name() string {
+func (p *Provider) Name() string {
 	return providerName
 }
 
-func (p *Provider) resolveDrive(ctx context.Context, itemPath string) (string, string, error) {
+func (p *Provider) resolveDrive(itemPath string) (string, string) {
 	// If path is "alias:path"
 	if !strings.HasPrefix(itemPath, "/") && strings.Contains(itemPath, ":") {
 		alias, cleanPath, _ := strings.Cut(itemPath, ":")
 		driveID, err := p.state.GetDriveAlias(alias)
 		if err == nil {
-			return driveID, cleanPath, nil
+			return driveID, cleanPath
 		}
 	}
 
@@ -66,10 +66,10 @@ func (p *Provider) resolveDrive(ctx context.Context, itemPath string) (string, s
 	driveID, err := p.state.Get(state.KeyDrive)
 	if err != nil || driveID == "" {
 		// Fallback to primary drive
-		return "me", itemPath, nil
+		return "me", itemPath
 	}
 
-	return driveID, itemPath, nil
+	return driveID, itemPath
 }
 
 func (p *Provider) expandURI(rootTemplate, relativeTemplate, driveID, itemPath string) string {
@@ -104,18 +104,14 @@ func (p *Provider) Get(ctx context.Context, itemPath string) (shared.Item, error
 	)
 
 	log.Debug("resolving drive id and path")
-	driveID, cleanPath, err := p.resolveDrive(ctx, itemPath)
-	if err != nil {
-		log.Warn("failed to resolve drive id and/or path", logger.Error(err))
-		return shared.Item{}, err
-	}
+	driveID, cleanPath := p.resolveDrive(itemPath)
 	log.Debug("resolved drive id and path", logger.String("drive_id", driveID), logger.String("clean_path", cleanPath))
 
 	uri := p.expandURI(rootURITemplate, rootRelativeURITemplate, driveID, cleanPath)
 	log.Debug("expanded uri", logger.String("uri", uri))
 
 	log.Debug("retrieving adapter")
-	adapter, err := p.graph.Adapter(ctx)
+	adapter, err := p.platform.Adapter(ctx)
 	if err != nil {
 		log.Warn("failed to retrieve adapter", logger.Error(err))
 		return shared.Item{}, err
@@ -143,17 +139,13 @@ func (p *Provider) List(ctx context.Context, itemPath string, opts shared.ListOp
 	)
 
 	log.Debug("resolving drive id and path")
-	driveID, cleanPath, err := p.resolveDrive(ctx, itemPath)
-	if err != nil {
-		log.Warn("failed to resolve drive id and/or path", logger.Error(err))
-		return nil, err
-	}
+	driveID, cleanPath := p.resolveDrive(itemPath)
 	log.Debug("resolved drive id and path", logger.String("drive_id", driveID))
 
 	uri := p.expandURI(rootChildrenURITemplate, rootRelativeChildrenURITemplate, driveID, cleanPath)
 	log.Debug("expanded uri", logger.String("uri", uri))
 
-	adapter, err := p.graph.Adapter(ctx)
+	adapter, err := p.platform.Adapter(ctx)
 	if err != nil {
 		log.Warn("failed to retrieve adapter", logger.Error(err))
 		return nil, err
@@ -192,11 +184,7 @@ func (p *Provider) ReadFile(ctx context.Context, itemPath string, opts shared.Re
 	)
 
 	log.Debug("resolving drive id and path")
-	driveID, cleanPath, err := p.resolveDrive(ctx, itemPath)
-	if err != nil {
-		log.Warn("failed to resolve drive id and/or path", logger.Error(err))
-		return nil, err
-	}
+	driveID, cleanPath := p.resolveDrive(itemPath)
 	log.Debug("resolved drive id and path", logger.String("drive_id", driveID))
 
 	if cleanPath == "" || cleanPath == "/" {
@@ -206,7 +194,7 @@ func (p *Provider) ReadFile(ctx context.Context, itemPath string, opts shared.Re
 	uri := p.expandURI("", rootRelativeContentURITemplate, driveID, cleanPath)
 	log.Debug("expanded uri", logger.String("uri", uri))
 
-	adapter, err := p.graph.Adapter(ctx)
+	adapter, err := p.platform.Adapter(ctx)
 	if err != nil {
 		log.Warn("failed to retrieve adapter", logger.Error(err))
 		return nil, err
@@ -237,11 +225,7 @@ func (p *Provider) WriteFile(ctx context.Context, itemPath string, r io.Reader, 
 	)
 
 	log.Debug("resolving drive id and path")
-	driveID, cleanPath, err := p.resolveDrive(ctx, itemPath)
-	if err != nil {
-		log.Warn("failed to resolve drive id and/or path", logger.Error(err))
-		return shared.Item{}, err
-	}
+	driveID, cleanPath := p.resolveDrive(itemPath)
 	log.Debug("resolved drive id and path", logger.String("drive_id", driveID))
 
 	if cleanPath == "" || cleanPath == "/" {
@@ -257,7 +241,7 @@ func (p *Provider) WriteFile(ctx context.Context, itemPath string, r io.Reader, 
 	uri := p.expandURI("", rootRelativeContentURITemplate, driveID, cleanPath)
 	log.Debug("expanded uri", logger.String("uri", uri))
 
-	adapter, err := p.graph.Adapter(ctx)
+	adapter, err := p.platform.Adapter(ctx)
 	if err != nil {
 		log.Warn("failed to retrieve adapter", logger.Error(err))
 		return shared.Item{}, err
@@ -290,11 +274,7 @@ func (p *Provider) Mkdir(ctx context.Context, itemPath string) error {
 	)
 
 	log.Debug("resolving drive id and path")
-	driveID, cleanPath, err := p.resolveDrive(ctx, itemPath)
-	if err != nil {
-		log.Warn("failed to resolve drive id and/or path", logger.Error(err))
-		return err
-	}
+	driveID, cleanPath := p.resolveDrive(itemPath)
 	log.Debug("resolved drive id and path", logger.String("drive_id", driveID))
 
 	parentPath := path.Dir(cleanPath)
@@ -310,7 +290,7 @@ func (p *Provider) Mkdir(ctx context.Context, itemPath string) error {
 	uri := p.expandURI(rootChildrenURITemplate, rootRelativeChildrenURITemplate, driveID, parentPath)
 	log.Debug("expanded uri", logger.String("uri", uri))
 
-	adapter, err := p.graph.Adapter(ctx)
+	adapter, err := p.platform.Adapter(ctx)
 	if err != nil {
 		log.Warn("failed to retrieve adapter", logger.Error(err))
 		return err
@@ -336,17 +316,13 @@ func (p *Provider) Remove(ctx context.Context, itemPath string) error {
 	)
 
 	log.Debug("resolving drive id and path")
-	driveID, cleanPath, err := p.resolveDrive(ctx, itemPath)
-	if err != nil {
-		log.Warn("failed to resolve drive id and/or path", logger.Error(err))
-		return err
-	}
+	driveID, cleanPath := p.resolveDrive(itemPath)
 	log.Debug("resolved drive id and path", logger.String("drive_id", driveID))
 
 	uri := p.expandURI(rootURITemplate, rootRelativeURITemplate, driveID, cleanPath)
 	log.Debug("expanded uri", logger.String("uri", uri))
 
-	adapter, err := p.graph.Adapter(ctx)
+	adapter, err := p.platform.Adapter(ctx)
 	if err != nil {
 		log.Warn("failed to retrieve adapter", logger.Error(err))
 		return err
@@ -378,15 +354,9 @@ func (p *Provider) Move(ctx context.Context, src, dst string) error {
 	)
 
 	log.Debug("resolving source and destination drives")
-	srcDriveID, cleanSrc, err := p.resolveDrive(ctx, src)
-	if err != nil {
-		return err
-	}
+	srcDriveID, cleanSrc := p.resolveDrive(src)
 
-	dstDriveID, cleanDst, err := p.resolveDrive(ctx, dst)
-	if err != nil {
-		return err
-	}
+	dstDriveID, cleanDst := p.resolveDrive(dst)
 
 	if srcDriveID != dstDriveID {
 		return fmt.Errorf("cross-drive move not supported via internal Move - use manager")
@@ -415,7 +385,7 @@ func (p *Provider) Move(ctx context.Context, src, dst string) error {
 	uri := p.expandURI(rootURITemplate, rootRelativeURITemplate, srcDriveID, cleanSrc)
 	log.Debug("expanded uri", logger.String("uri", uri))
 
-	adapter, err := p.graph.Adapter(ctx)
+	adapter, err := p.platform.Adapter(ctx)
 	if err != nil {
 		log.Warn("failed to retrieve adapter", logger.Error(err))
 		return err
