@@ -124,10 +124,10 @@ func (m *FileSystemManager) Copy(ctx context.Context, src, dst string, opts shar
 		return m.copyRecursive(ctx, src, dst, opts, sem)
 	}
 
-	return m.copySingle(ctx, src, dst, opts)
+	return m.copySingle(ctx, srcItem, src, dst, opts)
 }
 
-func (m *FileSystemManager) copySingle(ctx context.Context, src, dst string, opts shared.CopyOptions) error {
+func (m *FileSystemManager) copySingle(ctx context.Context, srcItem shared.Item, src, dst string, opts shared.CopyOptions) error {
 	pSrc, srcSubPath, err := m.registry.Resolve(ctx, src)
 	if err != nil {
 		return err
@@ -150,7 +150,12 @@ func (m *FileSystemManager) copySingle(ctx context.Context, src, dst string, opt
 	}
 	defer r.Close()
 
-	if _, err := pDst.WriteFile(ctx, dstSubPath, r, shared.WriteOptions{Overwrite: opts.Overwrite}); err != nil {
+	writeOpts := shared.WriteOptions{
+		Overwrite: opts.Overwrite,
+		Size:      srcItem.Size, // Pass source item size to WriteOptions
+	}
+
+	if _, err := pDst.WriteFile(ctx, dstSubPath, r, writeOpts); err != nil {
 		return fmt.Errorf("failed to write destination for cross-provider copy: %w", err)
 	}
 
@@ -169,13 +174,15 @@ func (m *FileSystemManager) copyRecursive(ctx context.Context, src, dst string, 
 
 		fileOpts := opts
 		fileOpts.Recursive = false
-		return m.copySingle(ctx, src, dst, fileOpts)
+		return m.copySingle(ctx, item, src, dst, fileOpts)
 	}
 
 	// It's a folder, ensure destination exists.
 	_ = m.Mkdir(ctx, dst)
 
-	children, err := m.List(ctx, src, shared.ListOptions{})
+	children, err := m.List(ctx, src, shared.ListOptions{
+		Recursive: opts.Recursive,
+	})
 	if err != nil {
 		return err
 	}

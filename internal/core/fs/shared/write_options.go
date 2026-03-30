@@ -6,4 +6,6 @@ type WriteOptions struct {
 	Overwrite bool
 	// IfMatch is the ETag of the item that should be overwritten.
 	IfMatch string
+	// Size is the total number of bytes to be written (required for resumable uploads).
+	Size int64
 }

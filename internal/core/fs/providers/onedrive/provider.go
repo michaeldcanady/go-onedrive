@@ -19,6 +19,7 @@ import (
 	"github.com/microsoftgraph/msgraph-sdk-go/drives"
 	"github.com/microsoftgraph/msgraph-sdk-go/models"
 	stduritemplate "github.com/std-uritemplate/std-uritemplate/go/v2"
+	"net/http"
 )
 
 const (
@@ -29,7 +30,12 @@ const (
 	rootChildrenURITemplate         = "{+baseurl}/drives/{drive_id}/root/children"
 	rootRelativeChildrenURITemplate = "{+baseurl}/drives/{drive_id}/root:{path}:/children"
 	rootRelativeContentURITemplate  = "{+baseurl}/drives/{drive_id}/root:{path}:/content"
+	rootRelativeCreateSessionURITemplate = "{+baseurl}/drives/{drive_id}/root:{path}:/createUploadSession"
 	providerName                    = "onedrive"
+	// uploadThreshold is the file size at which we switch to resumable uploads (4MB).
+	uploadThreshold = 4 * 1024 * 1024
+	// uploadChunkSize is the size of each chunk in a resumable upload (must be multiple of 320 KiB).
+	uploadChunkSize = 320 * 1024 * 10 // 3.2 MiB
 )
 
 // Provider implements the filesystem Service interface for Microsoft OneDrive.
@@ -265,10 +271,20 @@ func (p *Provider) WriteFile(ctx context.Context, itemPath string, r io.Reader, 
 		return shared.Item{}, &coreerrors.DomainError{Kind: coreerrors.ErrInvalidRequest, Path: itemPath}
 	}
 
+	// Use resumable upload for large files
+	if opts.Size > uploadThreshold {
+		return p.writeLargeFile(ctx, driveID, cleanPath, itemPath, r, opts)
+	}
+
 	log.Debug("reading input stream")
 	data, err := io.ReadAll(r)
 	if err != nil {
 		return shared.Item{}, p.mapError(err, itemPath)
+	}
+
+	// If it turns out the data is larger than threshold after reading, use large file upload
+	if int64(len(data)) > uploadThreshold {
+		return p.writeLargeFile(ctx, driveID, cleanPath, itemPath, io.MultiReader(strings.NewReader(string(data)), r), opts)
 	}
 
 	uri := p.expandURI("", rootRelativeContentURITemplate, driveID, cleanPath)
@@ -297,6 +313,88 @@ func (p *Provider) WriteFile(ctx context.Context, itemPath string, r io.Reader, 
 
 	log.Info("uploaded content", logger.Int("size", *it.GetSize()))
 	return p.mapItemToSharedItem(it, itemPath), nil
+}
+
+func (p *Provider) writeLargeFile(ctx context.Context, driveID, cleanPath, itemPath string, r io.Reader, opts shared.WriteOptions) (shared.Item, error) {
+	log := p.log.WithContext(ctx).With(
+		logger.String("method", "writeLargeFile"),
+		logger.String("path", itemPath),
+	)
+
+	uri := p.expandURI("", rootRelativeCreateSessionURITemplate, driveID, cleanPath)
+	adapter, err := p.platform.Adapter(ctx)
+	if err != nil {
+		return shared.Item{}, p.mapError(err, itemPath)
+	}
+
+	// 1. Create Upload Session
+	sessionReq := drives.NewItemItemsItemCreateUploadSessionPostRequestBody()
+	itemProps := models.NewDriveItemUploadableProperties()
+	name := path.Base(cleanPath)
+	itemProps.SetName(&name)
+	sessionReq.SetItem(itemProps)
+
+	builder := drives.NewItemItemsItemCreateUploadSessionRequestBuilder(uri, adapter)
+	session, err := builder.Post(ctx, sessionReq, nil)
+	if err != nil {
+		return shared.Item{}, p.mapError(err, itemPath)
+	}
+
+	uploadURL := *session.GetUploadUrl()
+	log.Debug("created upload session", logger.String("url", uploadURL))
+
+	// 2. Upload Chunks
+	totalSize := opts.Size
+	var uploaded int64
+
+	buffer := make([]byte, uploadChunkSize)
+	for {
+		n, err := r.Read(buffer)
+		if n > 0 {
+			chunk := buffer[:n]
+			req, err := http.NewRequestWithContext(ctx, "PUT", uploadURL, strings.NewReader(string(chunk)))
+			if err != nil {
+				return shared.Item{}, p.mapError(err, itemPath)
+			}
+
+			contentRange := fmt.Sprintf("bytes %d-%d/", uploaded, uploaded+int64(n)-1)
+			if totalSize > 0 {
+				contentRange += fmt.Sprintf("%d", totalSize)
+			} else {
+				contentRange += "*"
+			}
+			req.Header.Set("Content-Range", contentRange)
+			req.Header.Set("Content-Length", fmt.Sprintf("%d", n))
+
+			resp, err := http.DefaultClient.Do(req)
+			if err != nil {
+				return shared.Item{}, p.mapError(err, itemPath)
+			}
+			defer resp.Body.Close()
+
+			if resp.StatusCode >= 400 {
+				return shared.Item{}, p.mapError(fmt.Errorf("chunk upload failed with status %d", resp.StatusCode), itemPath)
+			}
+
+			uploaded += int64(n)
+
+			if resp.StatusCode == 201 || resp.StatusCode == 200 {
+				// Final chunk uploaded, response contains the DriveItem (potentially)
+				// For simplicity, we Stat the item to get the final metadata.
+				return p.Get(ctx, itemPath)
+			}
+		}
+
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return shared.Item{}, p.mapError(err, itemPath)
+		}
+	}
+
+	// If we got here, we might have finished without a 200/201 (e.g. totalSize was unknown)
+	return p.Get(ctx, itemPath)
 }
 
 // Mkdir creates a new folder in OneDrive at the given path.
