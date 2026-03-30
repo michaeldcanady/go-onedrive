@@ -2,6 +2,7 @@ package di
 
 import (
 	"encoding/json"
+	"fmt"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/michaeldcanady/go-onedrive/internal/core/config"
@@ -54,15 +55,17 @@ func NewDefaultContainer() (*DefaultContainer, error) {
 
 	envSvc := environment.NewDefaultService("odc")
 
-	stateSvc, err := state.NewFileService(envSvc, "")
+	stateSvc, err := state.NewBoltService(envSvc)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to initialize state service: %w", err)
 	}
+	c.state = stateSvc
 
-	profileSvc, err := profile.NewFileService(envSvc, "")
+	profileSvc, err := profile.NewBoltService(envSvc) // Use BoltService for profiles
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to initialize profile service: %w", err)
 	}
+	c.profile = profileSvc
 
 	// Try to load cached token
 	var cachedCred azcore.TokenCredential
