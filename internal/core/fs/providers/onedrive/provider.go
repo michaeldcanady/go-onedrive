@@ -2,6 +2,7 @@ package onedrive
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"path"
@@ -9,6 +10,7 @@ import (
 	"time"
 
 	"github.com/michaeldcanady/go-onedrive/internal/core/drive"
+	coreerrors "github.com/michaeldcanady/go-onedrive/internal/core/errors"
 	"github.com/michaeldcanady/go-onedrive/internal/core/fs/shared"
 	"github.com/michaeldcanady/go-onedrive/internal/core/logger"
 	platform "github.com/michaeldcanady/go-onedrive/internal/core/providers/shared"
@@ -50,6 +52,37 @@ func NewProvider(p platform.PlatformProvider, state state.Service, driveSvc driv
 
 func (p *Provider) Name() string {
 	return providerName
+}
+
+func (p *Provider) mapError(err error, path string) error {
+	if err == nil {
+		return nil
+	}
+
+	kind := coreerrors.ErrInternal
+	var apiErr *abstractions.ApiError
+	if errors.As(err, &apiErr) {
+		switch apiErr.ResponseStatusCode {
+		case 401:
+			kind = coreerrors.ErrUnauthorized
+		case 403:
+			kind = coreerrors.ErrForbidden
+		case 404:
+			kind = coreerrors.ErrNotFound
+		case 409:
+			kind = coreerrors.ErrConflict
+		case 412:
+			kind = coreerrors.ErrPrecondition
+		case 429, 503, 504:
+			kind = coreerrors.ErrTransient
+		}
+	}
+
+	return &coreerrors.DomainError{
+		Kind: kind,
+		Err:  err,
+		Path: path,
+	}
 }
 
 func (p *Provider) resolveDrive(itemPath string) (string, string) {
@@ -114,7 +147,7 @@ func (p *Provider) Get(ctx context.Context, itemPath string) (shared.Item, error
 	adapter, err := p.platform.Adapter(ctx)
 	if err != nil {
 		log.Warn("failed to retrieve adapter", logger.Error(err))
-		return shared.Item{}, err
+		return shared.Item{}, p.mapError(err, itemPath)
 	}
 
 	builder := drives.NewItemRootRequestBuilder(uri, adapter)
@@ -123,7 +156,7 @@ func (p *Provider) Get(ctx context.Context, itemPath string) (shared.Item, error
 	it, err := builder.Get(ctx, nil)
 	if err != nil {
 		log.Error("failed to get item metadata", logger.Error(err))
-		return shared.Item{}, fmt.Errorf("failed to get item metadata: %w", err)
+		return shared.Item{}, p.mapError(err, itemPath)
 	}
 
 	log.Info("retrieved item metadata", logger.String("item_id", *it.GetId()))
@@ -148,7 +181,7 @@ func (p *Provider) List(ctx context.Context, itemPath string, opts shared.ListOp
 	adapter, err := p.platform.Adapter(ctx)
 	if err != nil {
 		log.Warn("failed to retrieve adapter", logger.Error(err))
-		return nil, err
+		return nil, p.mapError(err, itemPath)
 	}
 	builder := drives.NewItemItemsRequestBuilder(uri, adapter)
 
@@ -156,7 +189,7 @@ func (p *Provider) List(ctx context.Context, itemPath string, opts shared.ListOp
 	resp, err := builder.Get(ctx, nil)
 	if err != nil {
 		log.Error("failed to list children", logger.Error(err))
-		return nil, fmt.Errorf("failed to list children: %w", err)
+		return nil, p.mapError(err, itemPath)
 	}
 
 	var items []shared.Item
@@ -188,7 +221,7 @@ func (p *Provider) ReadFile(ctx context.Context, itemPath string, opts shared.Re
 	log.Debug("resolved drive id and path", logger.String("drive_id", driveID))
 
 	if cleanPath == "" || cleanPath == "/" {
-		return nil, fmt.Errorf("cannot read content of root directory")
+		return nil, &coreerrors.DomainError{Kind: coreerrors.ErrInvalidRequest, Path: itemPath}
 	}
 
 	uri := p.expandURI("", rootRelativeContentURITemplate, driveID, cleanPath)
@@ -197,7 +230,7 @@ func (p *Provider) ReadFile(ctx context.Context, itemPath string, opts shared.Re
 	adapter, err := p.platform.Adapter(ctx)
 	if err != nil {
 		log.Warn("failed to retrieve adapter", logger.Error(err))
-		return nil, err
+		return nil, p.mapError(err, itemPath)
 	}
 	builder := drives.NewItemRootContentRequestBuilder(uri, adapter)
 
@@ -205,7 +238,7 @@ func (p *Provider) ReadFile(ctx context.Context, itemPath string, opts shared.Re
 	content, err := builder.Get(ctx, nil)
 	if err != nil {
 		log.Error("failed to download content", logger.Error(err))
-		return nil, fmt.Errorf("failed to download content: %w", err)
+		return nil, p.mapError(err, itemPath)
 	}
 
 	log.Info("downloaded content", logger.Int("size", len(content)))
@@ -229,13 +262,13 @@ func (p *Provider) WriteFile(ctx context.Context, itemPath string, r io.Reader, 
 	log.Debug("resolved drive id and path", logger.String("drive_id", driveID))
 
 	if cleanPath == "" || cleanPath == "/" {
-		return shared.Item{}, fmt.Errorf("cannot write to root directory")
+		return shared.Item{}, &coreerrors.DomainError{Kind: coreerrors.ErrInvalidRequest, Path: itemPath}
 	}
 
 	log.Debug("reading input stream")
 	data, err := io.ReadAll(r)
 	if err != nil {
-		return shared.Item{}, err
+		return shared.Item{}, p.mapError(err, itemPath)
 	}
 
 	uri := p.expandURI("", rootRelativeContentURITemplate, driveID, cleanPath)
@@ -244,7 +277,7 @@ func (p *Provider) WriteFile(ctx context.Context, itemPath string, r io.Reader, 
 	adapter, err := p.platform.Adapter(ctx)
 	if err != nil {
 		log.Warn("failed to retrieve adapter", logger.Error(err))
-		return shared.Item{}, err
+		return shared.Item{}, p.mapError(err, itemPath)
 	}
 
 	config := &drives.ItemRootContentRequestBuilderPutRequestConfiguration{
@@ -259,7 +292,7 @@ func (p *Provider) WriteFile(ctx context.Context, itemPath string, r io.Reader, 
 	it, err := builder.Put(ctx, data, config)
 	if err != nil {
 		log.Error("failed to upload content", logger.Error(err))
-		return shared.Item{}, fmt.Errorf("failed to upload content: %w", err)
+		return shared.Item{}, p.mapError(err, itemPath)
 	}
 
 	log.Info("uploaded content", logger.Int("size", *it.GetSize()))
@@ -293,7 +326,7 @@ func (p *Provider) Mkdir(ctx context.Context, itemPath string) error {
 	adapter, err := p.platform.Adapter(ctx)
 	if err != nil {
 		log.Warn("failed to retrieve adapter", logger.Error(err))
-		return err
+		return p.mapError(err, itemPath)
 	}
 	builder := drives.NewItemItemsRequestBuilder(uri, adapter)
 
@@ -301,7 +334,7 @@ func (p *Provider) Mkdir(ctx context.Context, itemPath string) error {
 	_, err = builder.Post(ctx, requestBody, nil)
 	if err != nil {
 		log.Error("failed to create directory", logger.Error(err))
-		return fmt.Errorf("failed to create directory: %w", err)
+		return p.mapError(err, itemPath)
 	}
 
 	log.Info("created directory")
@@ -325,7 +358,7 @@ func (p *Provider) Remove(ctx context.Context, itemPath string) error {
 	adapter, err := p.platform.Adapter(ctx)
 	if err != nil {
 		log.Warn("failed to retrieve adapter", logger.Error(err))
-		return err
+		return p.mapError(err, itemPath)
 	}
 	builder := drives.NewItemItemsDriveItemItemRequestBuilder(uri, adapter)
 
@@ -333,7 +366,7 @@ func (p *Provider) Remove(ctx context.Context, itemPath string) error {
 	err = builder.Delete(ctx, nil)
 	if err != nil {
 		log.Error("failed to delete item", logger.Error(err))
-		return fmt.Errorf("failed to delete item: %w", err)
+		return p.mapError(err, itemPath)
 	}
 
 	log.Info("deleted item")
@@ -342,7 +375,7 @@ func (p *Provider) Remove(ctx context.Context, itemPath string) error {
 
 // Copy duplicates a file or folder within OneDrive.
 func (p *Provider) Copy(ctx context.Context, src, dst string, opts shared.CopyOptions) error {
-	return fmt.Errorf("onedrive internal copy not implemented - use manager for cross-provider/fallback copy")
+	return &coreerrors.DomainError{Kind: coreerrors.ErrInternal, Err: fmt.Errorf("onedrive internal copy not implemented - use manager for cross-provider/fallback copy"), Path: src}
 }
 
 // Move relocates or renames a file or folder within OneDrive.
@@ -359,7 +392,7 @@ func (p *Provider) Move(ctx context.Context, src, dst string) error {
 	dstDriveID, cleanDst := p.resolveDrive(dst)
 
 	if srcDriveID != dstDriveID {
-		return fmt.Errorf("cross-drive move not supported via internal Move - use manager")
+		return &coreerrors.DomainError{Kind: coreerrors.ErrInvalidRequest, Err: fmt.Errorf("cross-drive move not supported via internal Move - use manager"), Path: src}
 	}
 	log.Debug("resolved drive id", logger.String("drive_id", srcDriveID))
 
@@ -388,7 +421,7 @@ func (p *Provider) Move(ctx context.Context, src, dst string) error {
 	adapter, err := p.platform.Adapter(ctx)
 	if err != nil {
 		log.Warn("failed to retrieve adapter", logger.Error(err))
-		return err
+		return p.mapError(err, src)
 	}
 	builder := drives.NewItemItemsDriveItemItemRequestBuilder(uri, adapter)
 
@@ -396,7 +429,7 @@ func (p *Provider) Move(ctx context.Context, src, dst string) error {
 	_, err = builder.Patch(ctx, requestBody, nil)
 	if err != nil {
 		log.Error("failed to move item", logger.Error(err))
-		return fmt.Errorf("failed to patch item for move: %w", err)
+		return p.mapError(err, src)
 	}
 
 	log.Info("moved item")

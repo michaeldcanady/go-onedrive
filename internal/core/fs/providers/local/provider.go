@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"time"
 
+	coreerrors "github.com/michaeldcanady/go-onedrive/internal/core/errors"
 	"github.com/michaeldcanady/go-onedrive/internal/core/fs/shared"
 	"github.com/michaeldcanady/go-onedrive/internal/core/logger"
 )
@@ -32,13 +33,34 @@ func (p *Provider) Name() string {
 	return providerName
 }
 
+func (p *Provider) mapError(err error, path string) error {
+	if err == nil {
+		return nil
+	}
+
+	kind := coreerrors.ErrInternal
+	if os.IsNotExist(err) {
+		kind = coreerrors.ErrNotFound
+	} else if os.IsPermission(err) {
+		kind = coreerrors.ErrForbidden
+	} else if os.IsExist(err) {
+		kind = coreerrors.ErrConflict
+	}
+
+	return &coreerrors.DomainError{
+		Kind: kind,
+		Err:  err,
+		Path: path,
+	}
+}
+
 // Get retrieves metadata for a single item by its local path.
 func (p *Provider) Get(ctx context.Context, path string) (shared.Item, error) {
 	p.log.Debug("local.Get", logger.String("path", path))
 
 	info, err := os.Stat(path)
 	if err != nil {
-		return shared.Item{}, err
+		return shared.Item{}, p.mapError(err, path)
 	}
 	return p.mapInfoToItem(path, info), nil
 }
@@ -49,7 +71,7 @@ func (p *Provider) List(ctx context.Context, path string, opts shared.ListOption
 
 	entries, err := os.ReadDir(path)
 	if err != nil {
-		return nil, err
+		return nil, p.mapError(err, path)
 	}
 
 	var items []shared.Item
@@ -75,7 +97,11 @@ func (p *Provider) List(ctx context.Context, path string, opts shared.ListOption
 func (p *Provider) ReadFile(ctx context.Context, path string, opts shared.ReadOptions) (io.ReadCloser, error) {
 	p.log.Debug("local.ReadFile", logger.String("path", path))
 
-	return os.Open(path)
+	f, err := os.Open(path)
+	if err != nil {
+		return nil, p.mapError(err, path)
+	}
+	return f, nil
 }
 
 // Stat returns metadata for a local file or directory.
@@ -96,13 +122,13 @@ func (p *Provider) WriteFile(ctx context.Context, path string, r io.Reader, opts
 
 	f, err := os.OpenFile(path, flags, 0644)
 	if err != nil {
-		return shared.Item{}, err
+		return shared.Item{}, p.mapError(err, path)
 	}
 	defer f.Close()
 
 	_, err = io.Copy(f, r)
 	if err != nil {
-		return shared.Item{}, err
+		return shared.Item{}, p.mapError(err, path)
 	}
 
 	return p.Get(ctx, path)
@@ -112,14 +138,16 @@ func (p *Provider) WriteFile(ctx context.Context, path string, r io.Reader, opts
 func (p *Provider) Mkdir(ctx context.Context, path string) error {
 	p.log.Debug("local.Mkdir", logger.String("path", path))
 
-	return os.MkdirAll(path, 0755)
+	err := os.MkdirAll(path, 0755)
+	return p.mapError(err, path)
 }
 
 // Remove deletes an item from the local filesystem.
 func (p *Provider) Remove(ctx context.Context, path string) error {
 	p.log.Debug("local.Remove", logger.String("path", path))
 
-	return os.RemoveAll(path)
+	err := os.RemoveAll(path)
+	return p.mapError(err, path)
 }
 
 // Copy duplicates a file or folder on the local filesystem.
@@ -140,7 +168,8 @@ func (p *Provider) Copy(ctx context.Context, src, dst string, opts shared.CopyOp
 func (p *Provider) Move(ctx context.Context, src, dst string) error {
 	p.log.Debug("local.Move", logger.String("src", src), logger.String("dst", dst))
 
-	return os.Rename(src, dst)
+	err := os.Rename(src, dst)
+	return p.mapError(err, src)
 }
 
 // Touch creates an empty file or updates the timestamp of an existing one.
@@ -149,13 +178,13 @@ func (p *Provider) Touch(ctx context.Context, path string) (shared.Item, error) 
 
 	f, err := os.OpenFile(path, os.O_RDONLY|os.O_CREATE, 0644)
 	if err != nil {
-		return shared.Item{}, err
+		return shared.Item{}, p.mapError(err, path)
 	}
 	f.Close()
 
 	now := time.Now()
 	if err := os.Chtimes(path, now, now); err != nil {
-		return shared.Item{}, err
+		return shared.Item{}, p.mapError(err, path)
 	}
 
 	return p.Get(ctx, path)
