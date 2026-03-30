@@ -1,47 +1,9 @@
 package remove
 
 import (
-	"context"
-	"fmt"
-	"io"
-
-	"github.com/michaeldcanady/go-onedrive/internal/core/logger"
-	"github.com/michaeldcanady/go-onedrive/internal/core/state"
 	"github.com/michaeldcanady/go-onedrive/internal/di"
 	"github.com/spf13/cobra"
 )
-
-// Options defines the configuration for the drive alias remove operation.
-type Options struct {
-	Alias  string
-	Stdout io.Writer
-}
-
-// Handler executes the drive alias remove operation.
-type Handler struct {
-	state state.Service
-	log   logger.Logger
-}
-
-// NewHandler initializes a new instance of the drive alias remove Handler.
-func NewHandler(state state.Service, l logger.Logger) *Handler {
-	return &Handler{
-		state: state,
-		log:   l,
-	}
-}
-
-// Handle deletes a drive alias.
-func (h *Handler) Handle(ctx context.Context, opts Options) error {
-	h.log.Info("removing drive alias", logger.String("alias", opts.Alias))
-
-	if err := h.state.RemoveDriveAlias(opts.Alias); err != nil {
-		return fmt.Errorf("failed to remove drive alias: %w", err)
-	}
-
-	fmt.Fprintf(opts.Stdout, "alias '%s' removed\n", opts.Alias)
-	return nil
-}
 
 // CreateRemoveCmd constructs and returns the cobra.Command for the 'drive alias remove' operation.
 func CreateRemoveCmd(container di.Container) *cobra.Command {

@@ -21,7 +21,7 @@ func (f *FormatterFactory) Create(format Format) (OutputFormatter, error) {
 
 	switch format {
 	case FormatShort:
-		return NewHumanShortFormatter(Terminal{}), nil
+		return NewHumanShortFormatter(nil), nil
 	case FormatLong:
 		return NewHumanLongFormatter(), nil
 	case FormatJSON:

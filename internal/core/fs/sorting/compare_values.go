@@ -31,10 +31,10 @@ func compareValues(vi, vj reflect.Value) (bool, error) {
 
 	case reflect.Struct:
 		// Special case: time.Time
-		if vi.Type().String() == "time.Time" && vj.Type().String() == "time.Time" {
-			ti := vi.Interface().(time.Time)
-			tj := vj.Interface().(time.Time)
-			return ti.Before(tj), nil
+		if ti, ok := vi.Interface().(time.Time); ok {
+			if tj, ok := vj.Interface().(time.Time); ok {
+				return ti.Before(tj), nil
+			}
 		}
 	}
 

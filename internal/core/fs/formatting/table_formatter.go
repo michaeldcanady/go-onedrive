@@ -51,6 +51,14 @@ func NewTableFormatter(cols ...Column) *TableFormatter {
 	}
 }
 
+// WithTerminal configures the formatter to use the provided terminal information.
+func (tf *TableFormatter) WithTerminal(term TerminalInfo) *TableFormatter {
+	if term != nil {
+		tf.terminal = term
+	}
+	return tf
+}
+
 // WithTruncate configures the formatter to shorten overflowing column values.
 func (tf *TableFormatter) WithTruncate(truncate bool) *TableFormatter {
 	tf.Truncate = truncate

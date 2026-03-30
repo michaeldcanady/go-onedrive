@@ -58,19 +58,11 @@ func (r *Registry) Get(name string) (shared.Service, error) {
 }
 
 // Resolve identifies the provider for a path based on its prefix (e.g., "onedrive:path").
-// If no prefix is present, it defaults to the active drive if set, otherwise "onedrive".
+// If no prefix is present, it defaults to "onedrive".
 func (r *Registry) Resolve(ctx context.Context, path string) (shared.Service, string, error) {
 	prefix, rest, found := strings.Cut(path, ":")
 	if !found {
-		// No prefix, use active drive or default to onedrive
-		driveID, err := r.state.Get(state.KeyDrive)
-		if err == nil && driveID != "" {
-			// If we have an active drive, we need to decide if we should use it.
-			// For now, if no prefix, we assume it's relative to the active drive in OneDrive.
-			p, err := r.Get(defaultProviderPrefix)
-			return p, path, err
-		}
-
+		// No prefix, default to onedrive
 		p, err := r.Get(defaultProviderPrefix)
 		return p, path, err
 	}

@@ -1,7 +1,6 @@
 package ignore
 
 import (
-	"bufio"
 	"io"
 	"path/filepath"
 	"strings"
@@ -19,17 +18,12 @@ func NewMatcher(patterns []Pattern) *Matcher {
 
 // ParseReader reads from an io.Reader and returns a Matcher.
 func ParseReader(r io.Reader) (*Matcher, error) {
-	var sb strings.Builder
-	scanner := bufio.NewScanner(r)
-	for scanner.Scan() {
-		sb.WriteString(scanner.Text())
-		sb.WriteByte('\n')
-	}
-	if err := scanner.Err(); err != nil {
+	data, err := io.ReadAll(r)
+	if err != nil {
 		return nil, err
 	}
 
-	l := NewLexer(sb.String())
+	l := NewLexer(string(data))
 	p := NewParser(l)
 	return NewMatcher(p.Parse()), nil
 }

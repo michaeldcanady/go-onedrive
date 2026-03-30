@@ -18,8 +18,8 @@ clean: clean-docs
     rm -f {{BINARY_NAME}}
 
 # Build the docs container image
-build-docs:
-    {{CONTAINER_TOOL}} build -f doc.dockerfile -t {{DOC_IMAGE}}
+build-docs +BUILD_ARGS:
+    {{CONTAINER_TOOL}} build -f doc.dockerfile -t {{DOC_IMAGE}} {{BUILD_ARGS}}
 
 # Serve docs locally with live reload
 serve-docs: build-docs

@@ -23,6 +23,11 @@
             ]
         },
         {
+            "label": "Serve Docs",
+            "type": "shell",
+            "command": "just serve-docs",
+        },
+        {
             "label": "Test All",
             "type": "shell",
             "command": "go test ./...",

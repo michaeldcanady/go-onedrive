@@ -15,6 +15,9 @@ type HumanShortFormatter struct {
 
 // NewHumanShortFormatter initializes a new HumanShortFormatter instance.
 func NewHumanShortFormatter(term TerminalInfo) *HumanShortFormatter {
+	if term == nil {
+		term = NewTerminal()
+	}
 	return &HumanShortFormatter{term: term}
 }
 
