@@ -1,7 +1,7 @@
 package middleware
 
 import (
-	"github.com/michaeldcanady/go-onedrive/internal/feature/shared"
+	"github.com/michaeldcanady/go-onedrive/internal/shared"
 	"github.com/spf13/cobra"
 )
 
