@@ -129,11 +129,6 @@ func (vd *ValidationDecorator) validatePath(p string, operation string) error {
 		}
 	}
 
-	// Ensure root path is handled correctly
-	if p == "" {
-		return fmt.Errorf("path cannot be empty for operation '%s'", operation)
-	}
-
 	vd.logger.Debug("path validation successful", logger.String("path", p), logger.String("operation", operation))
 	return nil
 }
