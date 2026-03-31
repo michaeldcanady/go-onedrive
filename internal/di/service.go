@@ -59,13 +59,11 @@ func NewDefaultContainer() (*DefaultContainer, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize state service: %w", err)
 	}
-	c.state = stateSvc
 
-	profileSvc, err := profile.NewBoltService(envSvc) // Use BoltService for profiles
+	profileSvc, err := profile.NewFileService(envSvc, "")
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize profile service: %w", err)
 	}
-	c.profile = profileSvc
 
 	// Try to load cached token
 	var cachedCred azcore.TokenCredential
@@ -88,7 +86,7 @@ func NewDefaultContainer() (*DefaultContainer, error) {
 	driveGateway := onedrive.NewGraphDriveGateway(graphProvider, cliLog)
 	driveSvc := drive.NewDefaultService(driveGateway, cliLog)
 
-	fsReg := registry.NewRegistry(stateSvc)
+	fsReg := registry.NewRegistry(stateSvc, cliLog)
 	fsReg.Register("local", local.NewProvider(cliLog))
 	fsReg.Register("onedrive", onedrive.NewProvider(graphProvider, stateSvc, driveSvc, cliLog))
 

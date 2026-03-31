@@ -23,7 +23,7 @@ func NewHumanShortFormatter(term TerminalInfo) *HumanShortFormatter {
 
 // Format writes the items to the output stream, automatically arranging them into columns based on terminal width.
 func (f *HumanShortFormatter) Format(w io.Writer, items []any) error {
-	var width = 30
+	var width = 80
 	if f.term != nil {
 		width = f.term.Width(w)
 	}
@@ -35,7 +35,7 @@ func (f *HumanShortFormatter) Format(w io.Writer, items []any) error {
 			colWidth = len(item.Name)
 		}
 	}
-	colWidth += 2
+	colWidth += 2 // Add spacing between columns
 
 	cols := width / colWidth
 	if cols < 1 {
@@ -44,9 +44,17 @@ func (f *HumanShortFormatter) Format(w io.Writer, items []any) error {
 
 	for i, it := range items {
 		item := it.(shared.Item)
-		name := item.Name
-		padding := colWidth - len(name)
-		fmt.Fprintf(w, "%s%*s", ColorizeItem(w, item), padding, "")
+		coloredName := ColorizeItem(w, item)
+		
+		// Note: padding calculation here is slightly complex because coloredName contains ANSI codes
+		// but we should pad based on the original name length.
+		padding := colWidth - len(item.Name)
+		if padding < 0 {
+			padding = 0
+		}
+		
+		fmt.Fprintf(w, "%s%*s", coloredName, padding, "")
+		
 		if (i+1)%cols == 0 {
 			fmt.Fprintln(w)
 		}

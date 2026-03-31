@@ -47,7 +47,7 @@ type TableFormatter struct {
 func NewTableFormatter(cols ...Column) *TableFormatter {
 	return &TableFormatter{
 		Columns:  cols,
-		terminal: NewTerminal(),
+		terminal: NewTerminal(), // Default to NewTerminal()
 	}
 }
 
