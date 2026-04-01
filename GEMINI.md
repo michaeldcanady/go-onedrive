@@ -7,50 +7,45 @@
 - **Purpose:** Provide a robust, coreutils-like experience for managing OneDrive files.
 - **Main Technologies:**
     - **Runtime:** Go (>= 1.25.3)
-    - **CLI Framework:** [Cobra](https://github.com/spf13/cobra)
-    - **API Client:** [Microsoft Graph SDK for Go](https://github.com/microsoftgraph/msgraph-sdk-go)
-    - **Serialization:** [Kiota](https://github.com/microsoft/kiota-abstractions-go)
-    - **Logging:** [Zap](https://github.com/uber-go/zap)
-    - **Caching:** [bbolt](https://github.com/etcd-io/bbolt)
-- **Architecture:** The project follows a modular design centered around dependency injection (`internal/di`) and slice-based command organization.
-    - **`cmd/odc/`:** Entry point for the application.
-    - **`internal/core/`:** Contains core domain services (auth, drive, fs, logger, profile, state).
-        - **`fs/`:** Provides a filesystem abstraction for both local and OneDrive providers.
-    - **`internal/slices/`:** Contains the CLI command implementations (auth, drive, profile, root).
-    - **`pkg/`:** General-purpose utilities (cache, ignore patterns).
-    - **`internal/di/`:** Dependency Injection container management.
-    - **`internal/middleware/`:** Custom Graph API middleware (correlation IDs, logging).
+    - **CLI Framework:** Cobra (inferred from `cmd/odc/main.go` and `spf13/cobra` dependency)
+    - **API Client:** Microsoft Graph SDK for Go (`msgraph-sdk-go`)
+    - **Serialization:** Kiota (`microsoft/kiota-*` dependencies)
+    - **Logging:** Zap (`go.uber.org/zap`)
+    - **State/Profile Persistence:** bbolt (`go.etcd.io/bbolt`)
+    - **Task Automation:** Just (`justfile`)
+    - **Documentation:** MkDocs (`mkdocs.yaml`)
+    - **Cloud Auth:** Azure SDK (`azcore`, `azidentity`)
+
+## Architecture
+
+The project follows a modular design, with core functionalities organized within the `internal/feature/` directory. Key architectural components include:
+- **`cmd/odc/`:** The entry point for the CLI application.
+- **`internal/feature/`:** Contains core domain services and feature-specific logic (e.g., `fs`, `state`, `profile`, `drive`, `identity`).
+- **`internal/di/`:** Manages the Dependency Injection container for wiring services.
+- **`pkg/`:** Houses general-purpose utilities and shared components.
+- **`docs/`:** Contains project documentation managed by MkDocs.
 
 ## Building and Running
 
-- **Install Dependencies:** `go get ./...`
-- **Build CLI:** `just build` (outputs `odc` binary in root)
+- **Install Dependencies:** `go get ./...` (dependencies are listed in `go.mod`)
+- **Build CLI:** `just build` (outputs `odc` binary in the root directory)
 - **Run CLI:** `just run [args]`
-- **Documentation:** `just serve-docs` (previews documentation locally via MkDocs)
-- **Clean:** `just clean`
-
-## Testing and Quality
-
-- **Unit Tests:** `go test ./...`
-- **Linting:** `golangci-lint run`
-- **Formatting:** `go fmt ./...`
-- **Conventions:**
-    - Prefer table-driven tests for complex logic.
-    - Mock external dependencies (Graph API, identity providers) using `stretchr/testify`.
-    - Use structured logging via the `internal/core/logger` abstraction.
-
-## Specialized Skills
-
-The project uses several specialized Gemini skills located in `.gemini/skills/`:
-
-- **`code-writer`:** Use for any Go source code changes. Follows specific templates for CLI commands and enforces strict engineering standards (errors, naming, DI).
-- **`docs-writer`:** Use for all documentation changes (MkDocs in `docs/` and `.md` files). Enforces tone, formatting (80-char wrap), and structure (BLUF).
-- **`principal-software-engineer`:** Use for major architectural decisions, system-wide refactors, or complex debugging.
-- **`product-manager`:** Use for defining vision, strategy, and roadmaps.
+- **Serve Documentation:** `just serve-docs` (previews documentation locally via MkDocs)
+- **Build Static Docs:** `just generate-docs`
+- **Clean:** `just clean` (removes build artifacts and docs)
 
 ## Development Conventions
 
-- **CLI Commands:** All new commands must follow the template pattern in the `code-writer` skill (separating command factory, logic, and options).
-- **Architecture:** Maintain clear boundaries between domain services (`core`) and CLI orchestration (`slices`).
-- **Errors:** Return errors as the last return value and wrap them using `%w`.
-- **Documentation:** Every heading in `.md` files should be followed by an introductory paragraph. Sentence case is used for all headings.
+- **Go Version:** Go 1.25+ (as specified in `go.mod`).
+- **Error Handling:** Prefer wrapping errors with `%w` and using package-level error variables.
+- **Logging:** Utilize the structured logging abstraction provided by `internal/logger`.
+- **Formatting:** Adhere to Go standards; run `go fmt ./...` before committing.
+- **Linting:** Run `golangci-lint run` to ensure code quality.
+- **Testing:** Unit tests are mandatory for new features and bug fixes. Leverage `stretchr/testify` for assertions and mocking, and use `t.Parallel()` where applicable.
+- **Pull Request Process:** Follow the guidelines in `CONTRIBUTING.md`, including forking, branching, building, testing, linting, documentation updates, and submitting PRs.
+
+## Logging Configuration
+
+- **Default Output:** Logs are directed to a file (`./logs/app.log`) by default.
+- **Directory:** The `./logs` directory must exist for logging to function correctly. Ensure it is created before running the application.
+
