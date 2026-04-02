@@ -36,23 +36,6 @@ archives:
       - goos: windows
         format: zip
 
-nfpms:
-  - id: odc-linux
-    package_name: odc
-    file_name_template: "{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}"
-    vendor: michaeldcanady
-    homepage: https://github.com/michaeldcanady/go-onedrive
-    maintainer: michaeldcanady <michaeldcanady@gmail.com>
-    description: "odc is a CLI tool designed to interact with OneDrive as a Unix-style file system."
-    license: MIT
-    formats:
-      - deb
-      #- rpm
-      - apk
-    contents:
-      - src: odc
-        dst: /usr/bin/odc
-
 homebrew_casks:
   -
     # Name of the cask
