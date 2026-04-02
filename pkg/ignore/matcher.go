@@ -1,7 +1,6 @@
 package ignore
 
 import (
-	"bufio"
 	"io"
 	"path/filepath"
 	"strings"
@@ -19,17 +18,12 @@ func NewMatcher(patterns []Pattern) *Matcher {
 
 // ParseReader reads from an io.Reader and returns a Matcher.
 func ParseReader(r io.Reader) (*Matcher, error) {
-	var sb strings.Builder
-	scanner := bufio.NewScanner(r)
-	for scanner.Scan() {
-		sb.WriteString(scanner.Text())
-		sb.WriteByte('\n')
-	}
-	if err := scanner.Err(); err != nil {
+	data, err := io.ReadAll(r)
+	if err != nil {
 		return nil, err
 	}
 
-	l := NewLexer(sb.String())
+	l := NewLexer(string(data))
 	p := NewParser(l)
 	return NewMatcher(p.Parse()), nil
 }
@@ -41,7 +35,7 @@ func (m *Matcher) ShouldIgnore(path string, isDir bool) bool {
 
 	// Split path into segments to check each parent
 	segments := strings.Split(path, string(charSlash))
-	
+
 	ignored := false
 	currentPath := ""
 
@@ -83,17 +77,16 @@ func matchPattern(pattern, path string) bool {
 	}
 
 	// 3. Simple wildcard matching via filepath.Match
-	match, _ := filepathMatch(pattern, path)
-	return match
+	return filepathMatch(pattern, path)
 }
 
 // filepathMatch is a placeholder or wrapper for actual matching logic.
-func filepathMatch(pattern, path string) (bool, error) {
+func filepathMatch(pattern, path string) bool {
 	parts := strings.Split(path, string(charSlash))
 	for _, part := range parts {
 		if ok, _ := filepath.Match(pattern, part); ok {
-			return true, nil
+			return true
 		}
 	}
-	return false, nil
+	return false
 }

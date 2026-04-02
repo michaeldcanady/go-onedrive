@@ -8,25 +8,21 @@ require (
 	github.com/fatih/color v1.19.0
 	github.com/gofrs/flock v0.13.0
 	github.com/google/uuid v1.6.0
-	github.com/manifoldco/promptui v0.9.0
 	github.com/microsoftgraph/msgraph-sdk-go v1.96.0
+	github.com/microsoftgraph/msgraph-sdk-go-core v1.4.0
 	github.com/spf13/cobra v1.10.2
 	go.etcd.io/bbolt v1.4.3
 	go.uber.org/zap v1.27.1
-	go.yaml.in/yaml/v3 v3.0.4
-	golang.org/x/term v0.41.0
+	golang.org/x/term v0.40.0
 	gopkg.in/yaml.v3 v3.0.1
 )
 
 require (
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity/cache v0.4.0 // indirect
-	github.com/chzyer/readline v0.0.0-20180603132655-2972be24d48e // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/mattn/go-colorable v0.1.14 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
-	github.com/microsoftgraph/msgraph-sdk-go-core v1.4.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	github.com/stretchr/objx v0.5.2 // indirect
 )
 
 require (
@@ -38,10 +34,10 @@ require (
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/kylelemons/godebug v1.1.0 // indirect
 	github.com/microsoft/kiota-abstractions-go v1.9.4
-	github.com/microsoft/kiota-authentication-azure-go v1.3.1 // indirect
+	github.com/microsoft/kiota-authentication-azure-go v1.3.1
 	github.com/microsoft/kiota-http-go v1.5.5
 	github.com/microsoft/kiota-serialization-form-go v1.1.2 // indirect
-	github.com/microsoft/kiota-serialization-json-go v1.1.2
+	github.com/microsoft/kiota-serialization-json-go v1.1.2 // indirect
 	github.com/microsoft/kiota-serialization-multipart-go v1.1.2 // indirect
 	github.com/microsoft/kiota-serialization-text-go v1.1.3 // indirect
 	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c // indirect

@@ -10,11 +10,11 @@ If you prefer a manual setup, please refer to the [Developer Setup Guide](docs/d
 
 ## Project Structure
 
-We follow a three-layer architectural pattern in the `internal2` directory:
-- **Domain (`internal2/domain`):** Core logic and interfaces. No external dependencies.
-- **Application (`internal2/app`):** Orchestration and service implementations.
-- **Infrastructure (`internal2/infra`):** Concrete implementations for APIs (Microsoft Graph), Databases (BoltDB), and Caching.
-- **Interface (`internal2/interface`):** CLI command definitions (Cobra).
+We follow a modular architectural pattern in the `internal` directory:
+- **Core (`internal/core`):** Core domain services, filesystem abstractions, and identity management.
+- **Slices (`internal/slices`):** CLI command definitions (Cobra) organized by functionality.
+- **Dependency Injection (`internal/di`):** Service container and dependency resolution.
+- **Middleware (`internal/middleware`):** API communication and logging middleware.
 
 ## Coding Standards
 

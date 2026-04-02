@@ -1,100 +1,54 @@
-# go-onedrive Project Context
+# go-onedrive (odc) Project Context
 
-go-onedrive (odc) is a CLI tool for interacting with OneDrive items as a unix‑style file system.
+`go-onedrive` (cli name: `odc`) is a CLI tool designed to interact with OneDrive as a Unix-style file system, providing a terminal-native way to manage files (ls, cp, mv, rm, etc.).
 
 ## Project Overview
 
-- **Purpose:** Provide users with a terminal‑native way to browse, read, edit, and manipulate OneDrive items as if they were part of a local filesystem.
+- **Purpose:** Provide a robust, coreutils-like experience for managing OneDrive files.
 - **Main Technologies:**
-  - **Runtime:** Go (>= 1.25.0)
-  - **Testing:** `go test`
-  - **Linting/Formatting:** `go vet`, `golangci-lint`, `gofmt`
-- **Architecture:** Monorepo structure with clear layering:
-  - `internal2/interface/cli`: User‑facing terminal UI, input parsing, and display rendering.
-  - `pkg/odc`: Entrypoint for the odc CLI.
-  - `internal2/app`: Application layer containing orchestrating services.
-  - `internal2/domain`: Domain data types, value objects, and interfaces.
-  - `internal2/infra`: Infrastructure for interacting with Microsoft Graph, caching, HTTP, identity, and persistence.
+    - **Runtime:** Go (>= 1.25.3)
+    - **CLI Framework:** Cobra (inferred from `cmd/odc/main.go` and `spf13/cobra` dependency)
+    - **API Client:** Microsoft Graph SDK for Go (`msgraph-sdk-go`)
+    - **Serialization:** Kiota (`microsoft/kiota-*` dependencies)
+    - **Logging:** Zap (`go.uber.org/zap`)
+    - **State/Profile Persistence:** bbolt (`go.etcd.io/bbolt`)
+    - **Task Automation:** Just (`justfile`)
+    - **Documentation:** MkDocs (`mkdocs.yaml`)
+    - **Cloud Auth:** Azure SDK (`azcore`, `azidentity`)
+
+## Architecture
+
+The project follows a modular design, with core functionalities organized within the `internal/feature/` directory. Key architectural components include:
+- **`cmd/odc/`:** The entry point for the CLI application.
+- **`internal/feature/`:** Contains core domain services and feature-specific logic (e.g., `fs`, `state`, `profile`, `drive`, `identity`).
+- **`internal/di/`:** Manages the Dependency Injection container for wiring services.
+- **`pkg/`:** Houses general-purpose utilities and shared components.
+- **`docs/`:** Contains project documentation managed by MkDocs.
 
 ## Building and Running
 
-- **Install Dependencies:**  
-  `go get`
-- **Build CLI:**  
-  `just build`
-
-## Testing and Quality
-
-- **Run all unit tests:**  
-  `go test ./...`
-
-- **Static analysis:**  
-  `go vet ./...`  
-  `golangci-lint run`
+- **Install Dependencies:** `go get ./...` (dependencies are listed in `go.mod`)
+- **Build CLI:** `just build` (outputs `odc` binary in the root directory)
+- **Run CLI:** `just run [args]`
+- **Serve Documentation:** `just serve-docs` (previews documentation locally via MkDocs)
+- **Build Static Docs:** `just generate-docs`
+- **Clean:** `just clean` (removes build artifacts and docs)
 
 ## Development Conventions
 
-- **Contributions:** Follow the process in `CONTRIBUTING.md`.  
-  Requires signing the Google CLA.
-- **Commit Messages:** Follow the
-  [Conventional Commits](https://www.conventionalcommits.org/) standard.
-- **Coding Style:**  
-  - Go code must follow idiomatic Go patterns and odc’s established layering rules.
-- **Imports:**  
-  - Group imports (stdlib → external → internal).  
-  - Avoid unused imports; keep import blocks clean and consistent.
+- **Go Version:** Go 1.25+ (as specified in `go.mod`).
+- **Error Handling:** Prefer wrapping errors with `%w` and using package-level error variables.
+- **Logging:** Utilize the structured logging abstraction provided by `internal/logger`.
+- **Formatting:** Adhere to Go standards; run `go fmt ./...` before committing.
+- **Linting:** Run `golangci-lint run` to ensure code quality.
+- **CLI Command Validation:**
+    - **Fail Fast:** Use Cobra's `PreRunE` to populate the command's `Options` struct and perform validation.
+    - **Options Structs:** Every command should have an `Options` struct with a `Validate() error` method to centralize validation logic.
+- **Testing:** Unit tests are mandatory for new features and bug fixes. Leverage `stretchr/testify` for assertions and mocking, and use `t.Parallel()` where applicable.
+- **Pull Request Process:** Follow the guidelines in `CONTRIBUTING.md`, including forking, branching, building, testing, linting, documentation updates, and submitting PRs.
 
-## Testing Conventions
+## Logging Configuration
 
-- **Go tests:**  
-  - Prefer table‑driven tests.  
-  - Use mocks for Graph API, caching, and identity providers.  
-  - Tests must be deterministic and must not hit the real network.  
-  - Use realistic OneDrive metadata and content fixtures.
+- **Default Output:** Logs are directed to a file (`./logs/app.log`) by default.
+- **Directory:** The `./logs` directory must exist for logging to function correctly. Ensure it is created before running the application.
 
----
-
-# **Skill Usage in This Project**
-
-The odc project uses two specialized skills to ensure consistent, high‑quality contributions: **`docs-writer`** and **`code-writer`**.
-
-These skills must be invoked based on the type of work being performed.
-
-## When to use the `docs-writer` skill
-
-Use the `docs-writer` skill **whenever the task involves documentation**, including:
-
-- Writing new documentation in the `docs/` directory.
-- Editing or reviewing existing `.md` files anywhere in the repo.
-- Updating docs to reflect changes in code behavior.
-- Improving clarity, structure, or consistency of documentation.
-- Suggesting documentation updates when code changes make existing docs incomplete.
-
-If the task touches **any documentation**, the `docs-writer` skill is required.
-
-## When to use the `code-writer` skill
-
-Use the `code-writer` skill **whenever the task involves Go code or runtime behavior**, including:
-
-- Writing new Go files in `cmd/`, `pkg/odc`, or `internal2/`.
-- Editing or refactoring existing Go code.
-- Implementing new services, domain types, or infra adapters.
-- Updating CLI commands or wiring in `interface/cli`.
-- Modifying configuration files that affect runtime behavior (`.json`, `.yaml`, etc.).
-- Writing or updating Go tests.
-- Performing architectural changes across domain/app/infra layers.
-
-If the task modifies **any Go code or runtime‑affecting configuration**, the `code-writer` skill is required.
-
-## When both skills may be needed
-
-Some tasks require **both** skills, such as:
-
-- Adding a new CLI command (code) and documenting it (docs).
-- Changing behavior in `internal2/app` and updating user‑facing docs.
-- Introducing a new feature that requires both implementation and documentation.
-
-In these cases, the assistant should:
-
-1. Use the **`code-writer`** skill for all code changes.  
-2. Use the **`docs-writer`** skill for all documentation changes.

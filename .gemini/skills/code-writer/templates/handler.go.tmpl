@@ -1,0 +1,33 @@
+package {{.PackageName}}
+
+import (
+	"context"
+
+	"github.com/michaeldcanady/go-onedrive/internal/di"
+	"github.com/michaeldcanady/go-onedrive/internal/logger"
+)
+
+// Handler executes the {{.CommandName}} operation.
+type Handler struct {
+	container di.Container
+	log       logger.Logger
+}
+
+// NewHandler initializes a new instance of the {{.CommandName}} Handler.
+func NewHandler(container di.Container, l logger.Logger) *Handler {
+	return &Handler{
+		container: container,
+		log:       l,
+	}
+}
+
+// Handle performs the {{.CommandName}} logic.
+func (h *Handler) Handle(ctx context.Context, opts Options) error {
+	log := h.log.WithContext(ctx)
+	log.Info("starting {{.CommandName}}")
+
+	// 1. Dependency Resolution
+	// 2. Logic Implementation
+
+	return nil
+}

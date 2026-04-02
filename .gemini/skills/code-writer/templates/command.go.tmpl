@@ -1,52 +1,28 @@
 package {{.PackageName}}
 
 import (
-	"fmt"
-
-	"github.com/michaeldcanady/go-onedrive/internal2/domain/di"
+	"github.com/michaeldcanady/go-onedrive/internal/di"
 	"github.com/spf13/cobra"
 )
 
-const (
-	loggerID    = "cli"
-	commandName = "{{.CommandName}}"
-)
-
 // Create{{.StructName}}Cmd constructs and returns the cobra.Command for the {{.CommandName}} operation.
-// It initializes flags and sets up the execution logic using {{.StructName}}Cmd.
-func Create{{.StructName}}Cmd(c di.Container) *cobra.Command {
+func Create{{.StructName}}Cmd(container di.Container) *cobra.Command {
 	var opts Options
 
 	cmd := &cobra.Command{
-		Use:   fmt.Sprintf("%s [args]", commandName),
-		Short: "Short description of the {{.CommandName}} command",
-		Long: `
-Long description of the {{.CommandName}} command.
-`,
-		Example: `
-  # Example usage
-  odc {{.CommandName}} --flag value
-`,
-
-		Args: cobra.NoArgs, // Adjust as needed
-
-		PreRunE: func(_ *cobra.Command, args []string) error {
-			// Populate opts from args if needed
-			return opts.Validate()
-		},
-
-		RunE: func(cmd *cobra.Command, _ []string) error {
-			opts.Stdin = cmd.InOrStdin()
+		Use:   "{{.CommandName}} [args]",
+		Short: "Short description of {{.CommandName}}",
+		Long:  "Detailed description of {{.CommandName}}.",
+		RunE: func(cmd *cobra.Command, args []string) error {
 			opts.Stdout = cmd.OutOrStdout()
-			opts.Stderr = cmd.ErrOrStderr()
-
-			runCmd := New{{.StructName}}Cmd(c)
-			return runCmd.Run(cmd.Context(), opts)
+			
+			l, _ := container.Logger().CreateLogger("{{.CommandName}}")
+			handler := NewHandler(container, l)
+			return handler.Handle(cmd.Context(), opts)
 		},
 	}
 
-	// Define flags here
-	// cmd.Flags().BoolVarP(&opts.SomeFlag, "flag", "f", false, "Flag description")
+	// cmd.Flags().BoolVarP(&opts.Recursive, "recursive", "r", false, "Flag description")
 
 	return cmd
 }

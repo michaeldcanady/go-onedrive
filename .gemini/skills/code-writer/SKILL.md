@@ -1,6 +1,6 @@
 ---
 name: code-writer
-description: Always use this skill when the task involves writing, editing, refactoring, or reviewing Go source code in the odc repository, including files in `cmd/`, `internal2/`, `pkg/`, or any `.go`, `.json`, `.yaml`, or configuration files that affect runtime behavior.
+description: Always use this skill when the task involves writing, editing, refactoring, or reviewing Go source code in the odc repository, including files in `cmd/`, `internal/`, `pkg/`, or any `.go`, `.json`, `.yaml`, or configuration files that affect runtime behavior.
 ---
 
 # `code-writer` skill instructions
@@ -50,12 +50,12 @@ Adhere to these principles when writing or modifying Go code.
   found in the `templates/` directory of this skill. This includes separating the
   command factory, execution logic, and options into distinct files:
   - `command.go`: Cobra command initialization and flag definition.
-  - `command_cmd.go`: Command execution logic and dependency resolution.
+  - `handler.go`: Command execution logic and dependency resolution.
   - `options.go`: Option structure and validation logic.
 - **Subcommand nesting:** Each command and subcommand must be contained within
   its own directory named after the command. Subcommands must be nested
   recursively within their parent command's directory (e.g.,
-  `interface/cli/edit/sessions/list/`).
+  `internal/slices/drive/alias/list/`).
 
 ## Testing and reliability
 
@@ -73,7 +73,7 @@ Adhere to these principles when writing or modifying Go code.
 - **Imports:** Group imports into stdlib, external, and internal sections.
 - **Comments:** Use comments to explain *why*, not *what*. Keep GoDoc concise
   and accurate. All functions, methods, types, constants, and variables should have GoDocs.
-- **Module layout:** Follow odc’s established structure (`cmd/`, `internal2/`,
+- **Module layout:** Follow odc’s established structure (`cmd/`, `internal/`,
   `pkg/`, `testdata/`, etc.).
 
 ---
