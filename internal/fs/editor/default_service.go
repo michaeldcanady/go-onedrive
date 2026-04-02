@@ -71,7 +71,8 @@ func (s *DefaultService) LaunchTempFile(prefix, suffix string, r io.Reader) ([]b
 		return nil, "", fmt.Errorf("failed to read data: %w", err)
 	}
 
-	tmpFile, err := os.CreateTemp("", prefix+"-*"+suffix)
+	tempDir, _ := s.envSvc.TempDir()
+	tmpFile, err := os.CreateTemp(tempDir, prefix+"-*"+suffix)
 	if err != nil {
 		return nil, "", fmt.Errorf("failed to create temp file: %w", err)
 	}

@@ -2,8 +2,11 @@ package logger
 
 import (
 	"fmt"
+	"path/filepath"
+	"strings"
 	"sync"
 
+	"github.com/michaeldcanady/go-onedrive/internal/environment"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
@@ -18,16 +21,29 @@ type ZapService struct {
 	root *zap.Logger
 	// level is the global atomic level used by the root and sub-loggers.
 	level zap.AtomicLevel
+	// env is the environment service used for configuration.
+	env environment.Service
 	// once ensures that the root logger is initialized only once.
 	once sync.Once
 }
 
 // NewZapService initializes a new instance of the ZapService.
-func NewZapService() *ZapService {
-	level := zap.NewAtomicLevelAt(zap.InfoLevel)
+func NewZapService(env environment.Service) *ZapService {
+	var level zapcore.Level
+	if envLevel := env.LogLevel(); envLevel != "" {
+		if l, err := zapcore.ParseLevel(envLevel); err == nil {
+			level = l
+		} else {
+			level = zap.InfoLevel
+		}
+	} else {
+		level = zap.InfoLevel
+	}
+
 	return &ZapService{
 		loggers: make(map[string]*ZapLogger),
-		level:   level,
+		level:   zap.NewAtomicLevelAt(level),
+		env:     env,
 	}
 }
 
@@ -36,14 +52,20 @@ func NewZapService() *ZapService {
 func (s *ZapService) initRoot() error {
 	var err error
 	s.once.Do(func() {
-		// Configure Zap logger to output to a file by default.
-		// NOTE: This configuration does not automatically create the './logs' directory.
-		// The environment must ensure this directory exists before the application starts.
+		// Determine output paths
+		outputPaths := []string{"stdout"}
+		if envOutput := s.env.LogOutput(); envOutput != "" {
+			outputPaths = strings.Split(envOutput, ",")
+		} else if logDir, err := s.env.LogDir(); err == nil && logDir != "" {
+			outputPaths = []string{filepath.Join(logDir, "app.log")}
+		}
+
+		// Configure Zap logger
 		cfg := zap.Config{
-			Encoding: "json", // Use JSON for structured logging
-			Level:    s.level,
-			//OutputPaths:      []string{"./logs/app.log"}, // Log to a file
-			//ErrorOutputPaths: []string{"./logs/app.log"}, // Log errors to the same file
+			Encoding:         "json", // Use JSON for structured logging
+			Level:            s.level,
+			OutputPaths:      outputPaths,
+			ErrorOutputPaths: outputPaths,
 			EncoderConfig: zapcore.EncoderConfig{
 				MessageKey:    "message",
 				LevelKey:      "level",

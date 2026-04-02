@@ -34,4 +34,8 @@ type Service interface {
 	Editor() (string, error)
 	// Visual returns the preferred visual editor.
 	Visual() (string, error)
+	// LogLevel returns the preferred log level.
+	LogLevel() string
+	// LogOutput returns the preferred log output.
+	LogOutput() string
 }
