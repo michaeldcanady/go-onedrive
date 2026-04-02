@@ -24,7 +24,8 @@ builds:
       - arm64
 
 archives:
-  - name_template: >-
+  - id: odc
+    name_template: >-
       {{ .ProjectName }}_
       {{- title .Os }}_
       {{- if eq .Arch "amd64" }}x86_64
@@ -49,11 +50,10 @@ nfpms:
       - rpm
       - apk
     contents:
-      - src: ./odc
+      - src: odc
         dst: /usr/bin/odc
-        type: "config|ghost"
 
-brews:
+homebrew_casks:
   - name: odc
     repository:
       owner: michaeldcanady
@@ -72,8 +72,6 @@ winget:
     package_identifier: michaeldcanady.odc
     publisher_url: https://github.com/michaeldcanady
     publisher_support_url: https://github.com/michaeldcanady/go-onedrive/issues
-    package_url: https://github.com/michaeldcanady/go-onedrive
-    package_locale: en-US
     short_description: "odc is a CLI tool designed to interact with OneDrive as a Unix-style file system."
     license: MIT
     license_url: https://github.com/michaeldcanady/go-onedrive/blob/main/LICENSE
@@ -87,6 +85,10 @@ winget:
       name: microsoft
       branch: master
       token: "{{ .Env.WINGET_GITHUB_TOKEN }}"
+    # Use standard archives
+    use: archive
+    ids:
+      - odc
 
 cloudsmiths:
   - name: michaeldcanady
