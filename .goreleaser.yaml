@@ -33,8 +33,7 @@ archives:
       {{- else }}{{ .Arch }}{{ end }}
       {{- if .Arm }}v{{ .Arm }}{{ end }}
     format_overrides:
-      - goos: windows
-        format: zip
+      - formats: ["zip"]
 
 homebrew_casks:
   -
