@@ -11,6 +11,7 @@ permissions:
 jobs:
   goreleaser:
     runs-on: ubuntu-latest
+    environment: CLOUDSMITH_API_KEY
     steps:
       - name: Checkout
         uses: actions/checkout@v6
