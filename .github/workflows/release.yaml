@@ -37,4 +37,4 @@ jobs:
         with:
           api-key: ${{ secrets.CLOUDSMITH_API_KEY }}
       - name: Push to Cloudsmith
-        run: cloudsmith push deb michaeldcanady/odc/any-distro/any-version dist/*.deb
+        run: cloudsmith push deb michaeldcanady/odc/any-distro dist/*.deb
