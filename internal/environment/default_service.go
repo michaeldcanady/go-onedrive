@@ -196,3 +196,13 @@ func (s *DefaultService) Visual() (string, error) {
 
 	return os.Getenv("VISUAL"), nil
 }
+
+// LogLevel returns the preferred log level.
+func (s *DefaultService) LogLevel() string {
+	return os.Getenv(EnvLogLevel)
+}
+
+// LogOutput returns the preferred log output.
+func (s *DefaultService) LogOutput() string {
+	return os.Getenv(EnvLogOutput)
+}

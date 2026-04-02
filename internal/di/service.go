@@ -3,6 +3,7 @@ package di
 import (
 	"encoding/json"
 	"fmt"
+	"path/filepath"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/michaeldcanady/go-onedrive/internal/config"
@@ -49,10 +50,14 @@ type DefaultContainer struct {
 
 // NewDefaultContainer initializes a new instance of the DefaultContainer with all core services wired.
 func NewDefaultContainer() (*DefaultContainer, error) {
-	logSvc := logger.NewZapService()
-	cliLog, _ := logSvc.CreateLogger("cli")
-
 	envSvc := environment.NewDefaultService("odc")
+
+	if err := envSvc.EnsureAll(); err != nil {
+		return nil, fmt.Errorf("failed to ensure environment directories: %w", err)
+	}
+
+	logSvc := logger.NewZapService(envSvc)
+	cliLog, _ := logSvc.CreateLogger("cli")
 
 	stateSvc, err := state.NewBoltService(envSvc)
 	if err != nil {
@@ -91,9 +96,14 @@ func NewDefaultContainer() (*DefaultContainer, error) {
 
 	editorSvc := editor.NewDefaultService(envSvc, cliLog)
 
+	configSvc := config.NewYAMLService(cliLog)
+	if configDir, err := envSvc.ConfigDir(); err == nil {
+		_ = configSvc.AddPath("default", filepath.Join(configDir, "config.yaml"))
+	}
+
 	return &DefaultContainer{
 		logger:      logSvc,
-		config:      config.NewYAMLService(cliLog),
+		config:      configSvc,
 		state:       stateSvc,
 		identity:    idReg,
 		profile:     profileSvc,
