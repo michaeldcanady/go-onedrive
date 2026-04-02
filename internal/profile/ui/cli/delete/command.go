@@ -2,6 +2,7 @@ package delete
 
 import (
 	"github.com/michaeldcanady/go-onedrive/internal/di"
+	"github.com/michaeldcanady/go-onedrive/internal/profile/ui/cli/shared"
 	"github.com/spf13/cobra"
 )
 
@@ -10,9 +11,10 @@ func CreateDeleteCmd(container di.Container) *cobra.Command {
 	var opts Options
 
 	cmd := &cobra.Command{
-		Use:   "delete [name]",
-		Short: "Delete a configuration profile",
-		Args:  cobra.ExactArgs(1),
+		Use:               "delete [name]",
+		Short:             "Delete a configuration profile",
+		Args:              cobra.ExactArgs(1),
+		ValidArgsFunction: shared.ProviderPathCompletion(container),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			opts.Name = args[0]
 			opts.Stdout = cmd.OutOrStdout()

@@ -1,5 +1,5 @@
 // Package drive provides the drive-related CLI commands.
-package drive
+package cli
 
 import (
 	"github.com/michaeldcanady/go-onedrive/internal/di"

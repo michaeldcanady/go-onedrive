@@ -41,6 +41,10 @@ type DefaultContainer struct {
 	editor editor.Service
 	// drive is the OneDrive drive management service.
 	drive drive.Service
+
+	registry interface {
+		RegisteredNames() ([]string, error)
+	}
 }
 
 // NewDefaultContainer initializes a new instance of the DefaultContainer with all core services wired.
@@ -93,6 +97,7 @@ func NewDefaultContainer() (*DefaultContainer, error) {
 		state:       stateSvc,
 		identity:    idReg,
 		profile:     profileSvc,
+		registry:    fsReg,
 		manager:     registry.NewFileSystemManager(fsReg),
 		environment: envSvc,
 		editor:      editorSvc,
@@ -114,6 +119,12 @@ func (c *DefaultContainer) Identity() idregistry.Service { return c.identity }
 
 // Profile returns the configuration profile service.
 func (c *DefaultContainer) Profile() profile.Service { return c.profile }
+
+func (c *DefaultContainer) ProviderRegistry() interface {
+	RegisteredNames() ([]string, error)
+} {
+	return c.registry
+}
 
 // FS returns the orchestrated filesystem.
 func (c *DefaultContainer) FS() registry.Service { return c.manager }

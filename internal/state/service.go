@@ -17,4 +17,7 @@ type Service interface {
 	RemoveDriveAlias(alias string) error
 	// ListDriveAliases returns all registered drive aliases.
 	ListDriveAliases() (map[string]string, error)
+
+	// GetDriveAliasByDriveID finds an alias associated with a given drive ID.
+	GetDriveAliasByDriveID(driveID string) (string, error)
 }

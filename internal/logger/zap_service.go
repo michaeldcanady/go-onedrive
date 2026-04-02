@@ -2,7 +2,6 @@ package logger
 
 import (
 	"fmt"
-	"path/filepath"
 	"sync"
 
 	"go.uber.org/zap"
@@ -41,15 +40,15 @@ func (s *ZapService) initRoot() error {
 		// NOTE: This configuration does not automatically create the './logs' directory.
 		// The environment must ensure this directory exists before the application starts.
 		cfg := zap.Config{
-			Encoding:         "json", // Use JSON for structured logging
-			Level:            s.level,
-			OutputPaths:      []string{"./logs/app.log"},     // Log to a file
-			ErrorOutputPaths: []string{"./logs/app.log"},    // Log errors to the same file
-			EncoderConfig: zap.EncoderConfig{
-				MessageKey:   "message",
-				LevelKey:     "level",
-				TimeKey:      "time",
-				CallerKey:    "caller",
+			Encoding: "json", // Use JSON for structured logging
+			Level:    s.level,
+			//OutputPaths:      []string{"./logs/app.log"}, // Log to a file
+			//ErrorOutputPaths: []string{"./logs/app.log"}, // Log errors to the same file
+			EncoderConfig: zapcore.EncoderConfig{
+				MessageKey:    "message",
+				LevelKey:      "level",
+				TimeKey:       "time",
+				CallerKey:     "caller",
 				StacktraceKey: "stacktrace",
 				EncodeTime:    zapcore.ISO8601TimeEncoder,
 				EncodeLevel:   zapcore.CapitalLevelEncoder,

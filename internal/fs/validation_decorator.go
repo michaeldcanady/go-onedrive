@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"strings"
 
 	"github.com/michaeldcanady/go-onedrive/internal/logger"
 )
@@ -113,20 +112,10 @@ func (vd *ValidationDecorator) Move(ctx context.Context, src, dst string) error 
 	return vd.next.Move(ctx, src, dst)
 }
 
-// validatePath checks for common path issues like trailing slashes or illegal characters.
+// validatePath checks for common path issues using the common ValidatePathSyntax helper.
 func (vd *ValidationDecorator) validatePath(p string, operation string) error {
-	// Disallow trailing slashes unless it's the root path "/"
-	if strings.HasSuffix(p, "/") && p != "/" {
-		return fmt.Errorf("path '%s' has a trailing slash, which is not allowed for operation '%s'", p, operation)
-	}
-
-	// Disallow illegal characters (e.g., ':', '#', '?', '*', '[', ']', '\') - Windows illegal chars
-	// Note: This list might need to be expanded based on specific provider limitations.
-	illegalChars := []string{":", "#", "?", "*", "[", "]", "\\"}
-	for _, char := range illegalChars {
-		if strings.Contains(p, char) {
-			return fmt.Errorf("path '%s' contains illegal character '%s' for operation '%s'", p, char, operation)
-		}
+	if err := ValidatePathSyntax(p); err != nil {
+		return fmt.Errorf("path validation failed for operation '%s': %w", operation, err)
 	}
 
 	vd.logger.Debug("path validation successful", logger.String("path", p), logger.String("operation", operation))

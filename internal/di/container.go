@@ -26,6 +26,10 @@ type Container interface {
 	Profile() profile.Service
 	// FS returns the orchestrated filesystem.
 	FS() registry.Service
+
+	ProviderRegistry() interface {
+		RegisteredNames() ([]string, error)
+	}
 	// Environment returns the environment service.
 	Environment() environment.Service
 	// Editor returns the editor service.

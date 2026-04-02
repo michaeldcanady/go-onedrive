@@ -24,3 +24,8 @@ func NewOptions() Options {
 		Stderr: os.Stderr,
 	}
 }
+
+func (o Options) Validate() error {
+	// No additional validation needed for edit options at this time
+	return nil
+}

@@ -1,8 +1,14 @@
 package ls
 
 import (
+	"fmt"
+	"os"
+	"slices"
+
 	"github.com/michaeldcanady/go-onedrive/internal/di"
+	"github.com/michaeldcanady/go-onedrive/internal/fs"
 	"github.com/michaeldcanady/go-onedrive/internal/fs/formatting"
+	"github.com/michaeldcanady/go-onedrive/internal/fs/ui/cli"
 	"github.com/spf13/cobra"
 )
 
@@ -12,19 +18,14 @@ func CreateLsCmd(container di.Container) *cobra.Command {
 	var format string
 
 	cmd := &cobra.Command{
-		Use:   "ls <path>",
-		Short: "List items in a directory",
-		Long:  "List the items in a specified directory in OneDrive or the local filesystem.",
-		Args:  cobra.MaximumNArgs(1),
-		ValidArgsFunction: func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-			// This is a basic implementation. A real one would need to:
-			// 1. Initialize a lightweight container.
-			// 2. Resolve the path up to `toComplete`.
-			// 3. List children of that path.
-			// 4. Return their names.
-			return nil, cobra.ShellCompDirectiveDefault
-		},
-		RunE: func(cmd *cobra.Command, args []string) error {
+		Use:               "ls <path>",
+		Short:             "List items in a directory",
+		Long:              "List the items in a specified directory in OneDrive or the local filesystem.",
+		Args:              cobra.MaximumNArgs(1),
+		ValidArgsFunction: cli.ProviderPathCompletion(container),
+		PreRunE: func(cmd *cobra.Command, args []string) error {
+			fmt.Printf("os args: %s", os.Args)
+			return nil
 			if len(args) > 0 {
 				opts.Path = args[0]
 			}
@@ -32,6 +33,28 @@ func CreateLsCmd(container di.Container) *cobra.Command {
 			opts.Stdout = cmd.OutOrStdout()
 			opts.Format = formatting.NewFormat(format)
 
+			// 1. Syntactic check
+			if err := fs.ValidatePathSyntax(opts.Path); err != nil {
+				return fmt.Errorf("invalid path syntax: %w", err)
+			}
+
+			// 2. Provider check (only if a provider prefix is explicitly given)
+			provider, _, found := fs.SplitProviderPath(opts.Path)
+			if found {
+				names, err := container.ProviderRegistry().RegisteredNames()
+				if err != nil {
+					return fmt.Errorf("failed to check registered providers: %w", err)
+				}
+				if !slices.Contains(names, provider) {
+					return fmt.Errorf("unknown provider '%s'; valid providers are: %v", provider, names)
+				}
+			}
+
+			return opts.Validate()
+		},
+		RunE: func(cmd *cobra.Command, args []string) error {
+			fmt.Printf("os args: %s", os.Args)
+			os.Exit(0)
 			l, _ := container.Logger().CreateLogger("ls")
 			handler := NewHandler(container.FS(), l)
 			return handler.Handle(cmd.Context(), opts)

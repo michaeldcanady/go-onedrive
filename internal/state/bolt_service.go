@@ -154,6 +154,8 @@ func (bs *BoltService) Clear(key Key) error {
 	})
 }
 
+// TODO: drive alias management should likely be moved to its own service
+
 // GetDriveAlias retrieves the drive ID associated with a user-defined alias.
 func (bs *BoltService) GetDriveAlias(alias string) (string, error) {
 	var value string
@@ -214,4 +216,28 @@ func (bs *BoltService) ListDriveAliases() (map[string]string, error) {
 		})
 	})
 	return aliases, err
+}
+
+func (bs *BoltService) GetDriveAliasByDriveID(driveID string) (string, error) {
+	var alias string
+	err := bs.db.View(func(tx *bolt.Tx) error {
+		b := tx.Bucket(driveAliasesBucketName)
+		if b == nil {
+			return fmt.Errorf("drive_aliases bucket not found")
+		}
+		return b.ForEach(func(k, v []byte) error {
+			if string(v) == driveID {
+				alias = string(k)
+				return nil // Stop iteration once we find the matching drive ID
+			}
+			return nil
+		})
+	})
+	if err != nil {
+		return "", err
+	}
+	if alias == "" {
+		return "", nil
+	}
+	return alias, nil
 }

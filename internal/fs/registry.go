@@ -83,6 +83,16 @@ func (r *Registry) Resolve(ctx context.Context, path string) (Service, string, e
 	return p, rest, nil
 }
 
+func (r *Registry) RegisteredNames() ([]string, error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	names := make([]string, 0, len(r.providers))
+	for name := range r.providers {
+		names = append(names, name)
+	}
+	return names, nil
+}
+
 // DefaultProviderPrefix is the default provider to use when no prefix is specified.
 const DefaultProviderPrefix = "onedrive"
 

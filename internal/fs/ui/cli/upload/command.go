@@ -2,6 +2,7 @@ package upload
 
 import (
 	"github.com/michaeldcanady/go-onedrive/internal/di"
+	"github.com/michaeldcanady/go-onedrive/internal/fs/ui/cli"
 	"github.com/spf13/cobra"
 )
 
@@ -10,9 +11,10 @@ func CreateUploadCmd(container di.Container) *cobra.Command {
 	var opts Options
 
 	cmd := &cobra.Command{
-		Use:   "upload <local_path> <remote_path>",
-		Short: "Upload files and directories to OneDrive",
-		Args:  cobra.ExactArgs(2),
+		Use:               "upload <local_path> <remote_path>",
+		Short:             "Upload files and directories to OneDrive",
+		Args:              cobra.ExactArgs(2),
+		ValidArgsFunction: cli.ProviderPathCompletion(container),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			opts.Source = args[0]
 			opts.Destination = args[1]
