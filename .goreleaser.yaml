@@ -46,7 +46,7 @@ nfpms:
     license: MIT
     formats:
       - deb
-      #- rpm
+      - rpm
       #- apk
 
 homebrew_casks:
