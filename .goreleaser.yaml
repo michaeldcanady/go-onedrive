@@ -54,42 +54,202 @@ nfpms:
         dst: /usr/bin/odc
 
 homebrew_casks:
-  - name: odc
-    repository:
-      owner: michaeldcanady
-      name: homebrew-tap
-      token: "{{ .Env.GITHUB_TOKEN }}"
-    directory: Formula
-    homepage: https://github.com/michaeldcanady/go-onedrive
-    description: "odc is a CLI tool designed to interact with OneDrive as a Unix-style file system."
-    license: MIT
-    install: |
-      bin.install "odc"
+  -
+    # Name of the cask
+    #
+    # Default: the project name.
+    # Templates: allowed.
+    name: odc
 
-winget:
-  - name: odc
-    publisher: michaeldcanady
-    package_identifier: michaeldcanady.odc
-    publisher_url: https://github.com/michaeldcanady
-    publisher_support_url: https://github.com/michaeldcanady/go-onedrive/issues
-    short_description: "odc is a CLI tool designed to interact with OneDrive as a Unix-style file system."
-    license: MIT
-    license_url: https://github.com/michaeldcanady/go-onedrive/blob/main/LICENSE
-    copyright: "Copyright (c) 2026 michaeldcanady"
-    tags:
-      - onedrive
-      - cli
-      - microsoft
-    repository:
-      owner: winget-pkgs
-      name: microsoft
-      branch: master
-      token: "{{ .Env.WINGET_GITHUB_TOKEN }}"
-    # Use standard archives
-    use: archive
-    ids:
+    # Alternative names for the current cask.
+    #
+    # Useful if you want to publish a versioned cask as well, so users can
+    # more easily downgrade.
+    #
+    # This feature is only available in GoReleaser Pro.
+    # Templates: allowed.
+    alternative_names:
+      - odc@{{ .Version }}
+      - odc@{{ .Major }}
+
+    # Binary name inside the cask
+    #
+    # Default: the cask name.
+    # Templates: allowed.
+    binaries:
       - odc
 
-cloudsmiths:
-  - name: michaeldcanady
-    repository: odc
+    # Completions for different shells
+    #
+    # Templates: allowed.
+    completions:
+      bash: completions/odc.bash
+      zsh: completions/odc.zsh
+      fish: completions/odc.fish
+
+    # Generate shell completions by running the binary at install time.
+    #
+    # All fields except `executable` are optional.
+    #
+    # 
+    generate_completions_from_executable:
+      # Additional subcommand arguments passed to the executable.
+      args:
+        - completions
+
+      # Override the base name used for the completion files.
+      # Default: the binary name.
+      base_name: "odc"
+
+      # How the shell name is passed to the executable.
+      # Known values (rendered as Ruby symbols): arg, clap, click, cobra, flag, none, typer.
+      # Any other string is treated as a custom prefix (e.g. "--complete-").
+      shell_parameter_format: cobra
+
+      # Shells to generate completions for.
+      # Default: [bash, zsh, fish]. cobra and typer also include pwsh by default.
+      shells:
+        - bash
+        - zsh
+        - fish
+        - pwsh
+
+    # This information will be used to build the URL section of your Cask.
+    #
+    # You can set the template, as well as additional parameters.
+    # These parameters can be used to provide extra headers, cookies, or other
+    # download requirements for your application.
+    # See https://docs.brew.sh/Cask-Cookbook#additional-url-parameters for more details.
+    #
+    # All fields are optional.
+    url:
+      # URL which is determined by the given Token (github, gitlab or gitea).
+      #
+      # Default depends on the client.
+      # Templates: allowed.
+      template: "https://github.com/michaeldcanady/go-onedrive/releases/download/{{ .Tag }}/{{ .ArtifactName }}"
+
+      # Download strategy or format specification
+      # See official Cask Cookbook for allowed values.
+      # Templates: allowed.
+      using: ":homebrew_curl"
+
+    # The project name and current git tag are used in the format string.
+    #
+    # Templates: allowed.
+    commit_msg_template: "Brew cask update for odc version {{ .Tag }}"
+
+    # Directory inside the repository to put the cask.
+    # Default: Casks
+    directory: Casks
+
+    # Your app's homepage.
+    #
+    # Default: inferred from global metadata.
+    #homepage: "https://example.com/"
+
+    # Your app's description.
+    #
+    # Templates: allowed.
+    # Default: inferred from global metadata.
+    description: "Software to create fast and easy drum rolls."
+
+    # Setting this will prevent goreleaser to actually try to commit the updated
+    # cask - instead, the cask file will be stored on the dist directory
+    # only, leaving the responsibility of publishing it to the user.
+    # If set to auto, the release will not be uploaded to the homebrew tap
+    # in case there is an indicator for prerelease in the tag e.g. v1.0.0-rc1
+    #
+    # Templates: allowed.
+    skip_upload: true
+
+    # Repository to push the generated files to.
+    repository:
+      # Repository owner.
+      #
+      # Templates: allowed.
+      owner: michaeldcanady
+
+      # Repository name.
+      #
+      # Templates: allowed.
+      name: homebrew-tap
+
+      # Optionally a branch can be provided.
+      #
+      # Default: default repository branch.
+      # Templates: allowed.
+      branch: main
+
+      # Optionally a token can be provided, if it differs from the token
+      # provided to GoReleaser
+      #
+      # Templates: allowed.
+      token: "{{ .Env.HOMEBREW_GITHUB_TOKEN }}"
+
+      # Sets up pull request creation instead of just pushing to the given branch.
+      # Make sure the 'branch' property is different from base before enabling
+      # it.
+      #
+      # This might require a personal access token.
+      pull_request:
+        # Whether to enable it or not.
+        enabled: false
+
+        # Whether to open the PR as a draft or not.
+        draft: false
+
+        # Allows to set a body for the pull request.
+        # If the repository has a pull request template, it will be appended to
+        # this.
+        #
+        # Since: v2.12.
+        #body: |
+        #  cc/ @foobar
+
+        # Base can also be another repository, in which case the owner and name
+        # above will be used as HEAD, allowing cross-repository pull requests.
+        #base:
+        #  owner: goreleaser
+        #  name: my-repo
+        #  branch: main
+
+    # Git author used to commit to the repository.
+    #
+    # {{< inline_version "v2.11" >}}
+    # Default: inferred from global metadata. {{< inline_version "v2.12" >}}
+    commit_author:
+      # Git author name.
+      #
+      # Templates: allowed.
+      name: goreleaserbot
+
+      # Git author email.
+      #
+      # Templates: allowed.
+      email: bot@goreleaser.com
+
+      # Git commit signing configuration.
+      # Only useful if repository is of type 'git'.
+      #
+      # Since: v2.11.
+      signing:
+        # Enable commit signing.
+        #enabled: false
+
+        # The signing key to use.
+        # Can be a key ID, fingerprint, email address, or path to a key file.
+        #
+        # Templates: allowed.
+        #key: "{{ .Env.GPG_SIGNING_KEY }}"
+
+        # The GPG program to use for signing.
+        #
+        # Templates: allowed.
+        #program: gpg2
+
+        # The signature format to use.
+        #
+        # Valid options: openpgp, x509, ssh.
+        # Default: openpgp.
+        #format: openpgp
