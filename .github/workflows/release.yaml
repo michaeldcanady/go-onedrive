@@ -37,4 +37,7 @@ jobs:
         with:
           api-key: ${{ secrets.CLOUDSMITH_API_KEY }}
       - name: Push to Cloudsmith
-        run: cloudsmith push deb michaeldcanady/odc/debian/nodistro dist/*.deb
+        run: |
+          for file in dist/*.deb; do
+            cloudsmith push deb michaeldcanady/odc/debian/nodistro "$file"
+          done
