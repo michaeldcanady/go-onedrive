@@ -35,7 +35,7 @@ archives:
     format_overrides:
       - formats: ["zip"]
 
-nfpms:
+nfpms:  
   - id: odc-linux
     package_name: odc
     file_name_template: "odc_{{ .Os }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}"
@@ -44,7 +44,6 @@ nfpms:
     maintainer: michaeldcanady <michaeldcanady@gmail.com>
     description: "odc is a CLI tool designed to interact with OneDrive as a Unix-style file system."
     license: MIT
-    if: '{{ eq .Os "linux" }}'
     formats:
       - deb
       #- rpm
