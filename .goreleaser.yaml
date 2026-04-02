@@ -43,6 +43,8 @@ homebrew_casks:
     # Templates: allowed.
     name: odc
 
+    description: "odc is a CLI tool designed to interact with OneDrive as a Unix-style file system."
+
     # Alternative names for the current cask.
     #
     # Useful if you want to publish a versioned cask as well, so users can
@@ -125,17 +127,6 @@ homebrew_casks:
     # Default: Casks
     directory: Casks
 
-    # Your app's homepage.
-    #
-    # Default: inferred from global metadata.
-    #homepage: "https://example.com/"
-
-    # Your app's description.
-    #
-    # Templates: allowed.
-    # Default: inferred from global metadata.
-    description: "Software to create fast and easy drum rolls."
-
     # Setting this will prevent goreleaser to actually try to commit the updated
     # cask - instead, the cask file will be stored on the dist directory
     # only, leaving the responsibility of publishing it to the user.
@@ -176,7 +167,7 @@ homebrew_casks:
       # This might require a personal access token.
       pull_request:
         # Whether to enable it or not.
-        enabled: false
+        enabled: true
 
         # Whether to open the PR as a draft or not.
         draft: false
