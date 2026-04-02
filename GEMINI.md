@@ -34,6 +34,31 @@ The project follows a modular design, with core functionalities organized within
 - **Build Static Docs:** `just generate-docs`
 - **Clean:** `just clean` (removes build artifacts and docs)
 
+## Release Process
+
+`odc` uses **GoReleaser** for automated releases and distribution to public registries.
+
+### Automated Release
+1.  **Tag a new version:** `git tag -a vX.Y.Z -m "Release message"`
+2.  **Push the tag:** `git push origin vX.Y.Z`
+3.  The GitHub Action will automatically:
+    - Build binaries for Linux, macOS, and Windows.
+    - Generate `.deb`, `.rpm`, and `.apk` packages.
+    - Publish to the **Homebrew Tap** (`michaeldcanady/homebrew-tap`).
+    - Publish to **Cloudsmith** for Linux package distribution.
+    - Submit a manifest to **WinGet** (`microsoft/winget-pkgs`).
+
+### Prerequisites for First Release
+Before the first release, ensure the following are configured:
+1.  **Homebrew:** Create a repository named `homebrew-tap` in your GitHub account.
+2.  **Cloudsmith:**
+    - Create a free account at [Cloudsmith.com](https://cloudsmith.com/).
+    - Create a repository named `odc`.
+    - Add `CLOUDSMITH_API_KEY` to GitHub Secrets.
+3.  **WinGet:**
+    - Create a Personal Access Token (PAT) with `repo` scope.
+    - Add `WINGET_GITHUB_TOKEN` to GitHub Secrets.
+
 ## Development Conventions
 
 - **Go Version:** Go 1.25+ (as specified in `go.mod`).

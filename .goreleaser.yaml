@@ -1,0 +1,95 @@
+# .goreleaser.yaml
+# See https://goreleaser.com/ for full documentation
+
+project_name: odc
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - id: odc
+    main: ./cmd/odc/
+    binary: odc
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - windows
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+
+archives:
+  - name_template: >-
+      {{ .ProjectName }}_
+      {{- title .Os }}_
+      {{- if eq .Arch "amd64" }}x86_64
+      {{- else if eq .Arch "386" }}i386
+      {{- else }}{{ .Arch }}{{ end }}
+      {{- if .Arm }}v{{ .Arm }}{{ end }}
+    format_overrides:
+      - goos: windows
+        format: zip
+
+nfpms:
+  - id: odc-linux
+    package_name: odc
+    file_name_template: "{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}"
+    vendor: michaeldcanady
+    homepage: https://github.com/michaeldcanady/go-onedrive
+    maintainer: michaeldcanady <michaeldcanady@gmail.com>
+    description: "odc is a CLI tool designed to interact with OneDrive as a Unix-style file system."
+    license: MIT
+    formats:
+      - deb
+      - rpm
+      - apk
+    contents:
+      - src: ./odc
+        dst: /usr/bin/odc
+        type: "config|ghost"
+
+brews:
+  - name: odc
+    repository:
+      owner: michaeldcanady
+      name: homebrew-tap
+      token: "{{ .Env.GITHUB_TOKEN }}"
+    directory: Formula
+    homepage: https://github.com/michaeldcanady/go-onedrive
+    description: "odc is a CLI tool designed to interact with OneDrive as a Unix-style file system."
+    license: MIT
+    install: |
+      bin.install "odc"
+
+wingets:
+  - name: odc
+    publisher: michaeldcanady
+    package_identifier: michaeldcanady.odc
+    publisher_url: https://github.com/michaeldcanady
+    publisher_support_url: https://github.com/michaeldcanady/go-onedrive/issues
+    package_url: https://github.com/michaeldcanady/go-onedrive
+    package_locale: en-US
+    short_description: "odc is a CLI tool designed to interact with OneDrive as a Unix-style file system."
+    license: MIT
+    license_url: https://github.com/michaeldcanady/go-onedrive/blob/main/LICENSE
+    copyright: "Copyright (c) 2026 michaeldcanady"
+    tags:
+      - onedrive
+      - cli
+      - microsoft
+    repository:
+      owner: winget-pkgs
+      name: microsoft
+      branch: master
+      token: "{{ .Env.WINGET_GITHUB_TOKEN }}"
+
+cloudsmiths:
+  - name: michaeldcanady
+    repository: odc
+    # You can also use a custom distribution and version if needed
+    # distributions:
+    #   - debian/bullseye
+    #   - fedora/34
