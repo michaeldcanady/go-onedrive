@@ -68,9 +68,9 @@ homebrew_casks:
     #
     # This feature is only available in GoReleaser Pro.
     # Templates: allowed.
-    alternative_names:
-      - odc@{{ .Version }}
-      - odc@{{ .Major }}
+    #alternative_names:
+    #  - odc@{{ .Version }}
+    #  - odc@{{ .Major }}
 
     # Binary name inside the cask
     #
