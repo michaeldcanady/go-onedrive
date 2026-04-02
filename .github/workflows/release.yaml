@@ -41,3 +41,6 @@ jobs:
           for file in dist/*.deb; do
             cloudsmith push deb michaeldcanady/odc/debian/nodistro "$file"
           done
+          for file in dist/*.rpm; do
+            cloudsmith push rpm michaeldcanady/odc/rhel/any-version "$file"
+          done
