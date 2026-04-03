@@ -23,6 +23,11 @@ nav:
           - Basic Operations: user/tutorials/basic-operations.md
       - How-to Guides:
           - Authenticate: user/how-to/authenticate.md
+          - Manage Profiles: user/how-to/manage-profiles.md
+          - Work with Drives: user/how-to/work-with-drives.md
+          - File Operations: user/how-to/file-operations.md
+          - Transfer Files: user/how-to/transfer-files.md
+          - Edit Files: user/how-to/edit-files.md
       - Reference:
           - CLI Commands: user/reference/cli-commands.md
   - Developer Guide:
