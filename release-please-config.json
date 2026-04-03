@@ -1,0 +1,20 @@
+{
+  "packages": {
+    ".": {
+      "release-type": "go",
+      "separate-pull-requests": true,
+      "bump-minor-pre-major": true,
+      "bump-patch-for-minor-pre-major": true,
+      "include-v-in-tag": true,
+      "include-component-in-tag": false,
+      "package-name": "go-onedrive",
+      "prerelease": true,
+      "prerelease-type": "alpha"
+    }
+  },
+  "plugins": [
+    {
+      "type": "sentence-case"
+    }
+  ]
+}

@@ -42,7 +42,7 @@ nfpms:
     vendor: michaeldcanady
     homepage: https://github.com/michaeldcanady/go-onedrive
     maintainer: michaeldcanady <michaeldcanady@gmail.com>
-    description: "odc is a CLI tool designed to interact with OneDrive as a Unix-style file system."
+    description: "odc is a CLI tool designed to interact with OneDrive as a Unix-style file system, providing a terminal-native way to manage files."
     license: MIT
     formats:
       - deb
@@ -57,7 +57,7 @@ homebrew_casks:
     # Templates: allowed.
     name: odc
 
-    description: "odc is a CLI tool designed to interact with OneDrive as a Unix-style file system."
+    description: "odc is a CLI tool designed to interact with OneDrive as a Unix-style file system, providing a terminal-native way to manage files."
 
     # Alternative names for the current cask.
     #
@@ -148,7 +148,7 @@ homebrew_casks:
     # in case there is an indicator for prerelease in the tag e.g. v1.0.0-rc1
     #
     # Templates: allowed.
-    skip_upload: false
+    skip_upload: auto
 
     # Repository to push the generated files to.
     repository:
