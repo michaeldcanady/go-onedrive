@@ -16,4 +16,6 @@ type Service interface {
 	Delete(ctx context.Context, name string) error
 	// Exists checks if a profile with the given name already exists.
 	Exists(ctx context.Context, name string) (bool, error)
+	// Update saves the specified profile.
+	Update(ctx context.Context, p Profile) error
 }

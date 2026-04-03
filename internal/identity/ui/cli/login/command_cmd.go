@@ -41,19 +41,11 @@ func (h *Handler) Handle(ctx context.Context, opts Options) error {
 
 	log.Info("starting login flow")
 
-	log.Debug("retrieving active profile")
-	profile, err := h.state.Get(state.KeyProfile)
-	if err != nil {
-		log.Error("failed to get current profile", logger.Error(err))
-		return fmt.Errorf("failed to get current profile: %w", err)
-	}
-	log.Debug("active profile retrieved", logger.String("profile", profile))
-
 	log.Debug("loading profile configuration")
-	cfg, err := h.config.GetConfig(ctx, profile)
+	cfg, err := h.config.GetConfig(ctx)
 	if err != nil {
 		log.Error("failed to load configuration", logger.Error(err))
-		return fmt.Errorf("failed to load configuration for profile %s: %w", profile, err)
+		return fmt.Errorf("failed to load configuration: %w", err)
 	}
 
 	provider := cfg.Auth.Provider

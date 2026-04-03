@@ -13,7 +13,8 @@ import (
 
 // BoltService is a persistent implementation of the profile.Service using BoltDB.
 type BoltService struct {
-	db *bolt.DB
+	db  *bolt.DB
+	env environment.Service
 }
 
 // NewBoltService initializes a new instance of the BoltService.
@@ -30,7 +31,8 @@ func NewBoltService(env environment.Service) (*BoltService, error) {
 	}
 
 	bs := &BoltService{
-		db: db,
+		db:  db,
+		env: env,
 	}
 
 	// Ensure profiles bucket is created
@@ -46,6 +48,15 @@ func NewBoltService(env environment.Service) (*BoltService, error) {
 	_, _ = bs.Create(context.Background(), DefaultProfileName)
 
 	return bs, nil
+}
+
+// ResolvePath returns the configuration file path for the specified profile name.
+func (bs *BoltService) ResolvePath(ctx context.Context, profileName string) (string, error) {
+	p, err := bs.Get(ctx, profileName)
+	if err != nil {
+		return "", err
+	}
+	return p.ConfigPath, nil
 }
 
 // Close closes the BoltDB database connection.
@@ -99,10 +110,18 @@ func (bs *BoltService) List(ctx context.Context) ([]Profile, error) {
 
 // Create generates a new profile with the specified name.
 func (bs *BoltService) Create(ctx context.Context, name string) (Profile, error) {
-	p := Profile{
-		Name: name,
+	configDir, err := bs.env.ConfigDir()
+	if err != nil {
+		return Profile{}, fmt.Errorf("failed to get config directory: %w", err)
 	}
-	err := bs.db.Update(func(tx *bolt.Tx) error {
+
+	p := Profile{
+		Name:       name,
+		ConfigPath: filepath.Join(configDir, fmt.Sprintf("%s.yaml", name)),
+		CreatedAt:  time.Now(),
+		UpdatedAt:  time.Now(),
+	}
+	err = bs.db.Update(func(tx *bolt.Tx) error {
 		b, err := bs.getBucket(tx)
 		if err != nil {
 			return err
