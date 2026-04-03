@@ -66,14 +66,9 @@ func CreateRootCmd(container di.Container) (*cobra.Command, error) {
 				}
 			}
 
-			profileName, err := container.State().Get(state.KeyProfile)
-			if err != nil {
-				return fmt.Errorf("failed to get current profile name: %w", err)
-			}
-
 			if strings.TrimSpace(config) != "" {
-				if err := container.Config().AddPath(profileName, config); err != nil {
-					return fmt.Errorf("failed to load config file %s: %w", config, err)
+				if err := container.State().Set(state.KeyConfigOverride, config, state.ScopeSession); err != nil {
+					return fmt.Errorf("failed to set config override: %w", err)
 				}
 			}
 

@@ -95,7 +95,7 @@ func NewDefaultContainer() (*DefaultContainer, error) {
 
 	editorSvc := editor.NewDefaultService(envSvc, cliLog)
 
-	configSvc := config.NewYAMLService(profileSvc, cliLog)
+	configSvc := config.NewYAMLService(profileSvc, stateSvc, cliLog)
 
 	return &DefaultContainer{
 		logger:      logSvc,

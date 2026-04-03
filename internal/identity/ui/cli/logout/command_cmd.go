@@ -37,14 +37,9 @@ func NewHandler(
 func (h *Handler) Handle(ctx context.Context, opts Options) error {
 	h.log.Info("starting logout flow")
 
-	profile, err := h.state.Get(state.KeyProfile)
+	cfg, err := h.config.GetConfig(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to get current profile: %w", err)
-	}
-
-	cfg, err := h.config.GetConfig(ctx, profile)
-	if err != nil {
-		return fmt.Errorf("failed to load configuration for profile %s: %w", profile, err)
+		return fmt.Errorf("failed to load configuration: %w", err)
 	}
 
 	provider := cfg.Auth.Provider
@@ -62,8 +57,8 @@ func (h *Handler) Handle(ctx context.Context, opts Options) error {
 		h.log.Warn("provider logout failed", logger.Error(err))
 	}
 
-	h.log.Info("logout successful", logger.String("profile", profile))
-	fmt.Fprintf(opts.Stdout, "Logged out from profile: %s\n", profile)
+	h.log.Info("logout successful")
+	fmt.Fprintf(opts.Stdout, "Logged out successfully\n")
 
 	return nil
 }
