@@ -24,12 +24,13 @@ import (
 	coreprofile "github.com/michaeldcanady/go-onedrive/internal/profile"
 	profile "github.com/michaeldcanady/go-onedrive/internal/profile/ui/cli"
 	"github.com/michaeldcanady/go-onedrive/internal/state"
+	"github.com/michaeldcanady/go-onedrive/internal/version"
 	"github.com/spf13/cobra"
 )
 
 const (
-	rootShortDescription = "A OneDrive CLI client"
-	rootLongDescription  = `A command-line interface for interacting with Microsoft OneDrive, implemented with Vertical Slice Architecture.`
+	rootShortDescription = "Unix-style OneDrive CLI"
+	rootLongDescription  = `odc is a CLI tool designed to interact with OneDrive as a Unix-style file system, providing a terminal-native way to manage files.`
 )
 
 // CreateRootCmd constructs and returns the cobra.Command for the root application.
@@ -42,6 +43,7 @@ func CreateRootCmd(container di.Container) (*cobra.Command, error) {
 
 	rootCmd := &cobra.Command{
 		Use:           "odc",
+		Version:       version.Version,
 		Short:         rootShortDescription,
 		Long:          rootLongDescription,
 		SilenceUsage:  true,

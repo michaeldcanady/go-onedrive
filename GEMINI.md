@@ -36,9 +36,24 @@ The project follows a modular design, with core functionalities organized within
 
 ## Release Process
 
-`odc` uses **GoReleaser** for automated releases and distribution to public registries.
+`odc` uses **Release Please** for versioning and changelog generation, and **GoReleaser** for automated releases and distribution.
 
-### Automated Release
+### Automated Release Lifecycle
+
+1.  **Pull Request:** When changes are pushed to `main`, **Release Please** automatically creates or updates a Release PR.
+2.  **Versioning:** The version is determined by Conventional Commits.
+3.  **Stages:** The release cycle follows `alpha` -> `beta` -> `rc` -> `full`.
+    - To transition between stages, update the `prerelease-type` in `release-please-config.json`.
+    - For a full release, set `"prerelease": false` in `release-please-config.json`.
+4.  **Tagging:** Merging the Release PR triggers **Release Please** to create a GitHub Release and a corresponding tag (e.g., `v1.2.3-alpha.1`).
+5.  **Distribution:** The new tag triggers the **Release** workflow, which runs **GoReleaser** to:
+    - Build binaries for Linux, macOS, and Windows.
+    - Generate `.deb`, `.rpm`, and `.apk` packages.
+    - Publish to the **Homebrew Tap** (`michaeldcanady/homebrew-tap`) (skipped for pre-releases).
+    - Publish to **Cloudsmith** for Linux package distribution.
+    - Submit a manifest to **WinGet** (`microsoft/winget-pkgs`).
+
+### Manual Tagging (Fallback)
 1.  **Tag a new version:** `git tag -a vX.Y.Z -m "Release message"`
 2.  **Push the tag:** `git push origin vX.Y.Z`
 3.  The GitHub Action will automatically:
