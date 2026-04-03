@@ -8,6 +8,7 @@ import (
 
 	"github.com/michaeldcanady/go-onedrive/internal/di"
 	drive "github.com/michaeldcanady/go-onedrive/internal/drive/ui/cli"
+	configcmd "github.com/michaeldcanady/go-onedrive/internal/config/ui/cli"
 	"github.com/michaeldcanady/go-onedrive/internal/fs/ui/cli/cat"
 	"github.com/michaeldcanady/go-onedrive/internal/fs/ui/cli/cp"
 	"github.com/michaeldcanady/go-onedrive/internal/fs/ui/cli/download"
@@ -129,6 +130,7 @@ Zsh:
 		auth.CreateAuthCmd(container),
 		profile.CreateProfileCmd(container),
 		drive.CreateDriveCmd(container),
+		configcmd.CreateConfigCmd(container),
 		ls.CreateLsCmd(container),
 		cat.CreateCatCmd(container),
 		mkdir.CreateMkdirCmd(container),

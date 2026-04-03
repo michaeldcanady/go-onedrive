@@ -47,7 +47,48 @@ func NewBoltService(env environment.Service) (*BoltService, error) {
 	// Ensure default profile exists
 	_, _ = bs.Create(context.Background(), DefaultProfileName)
 
+	if err := bs.migrateConfigPaths(); err != nil {
+		bs.db.Close()
+		return nil, fmt.Errorf("failed to migrate profile config paths: %w", err)
+	}
+
 	return bs, nil
+}
+
+func (bs *BoltService) migrateConfigPaths() error {
+	configDir, err := bs.env.ConfigDir()
+	if err != nil {
+		return err
+	}
+
+	return bs.db.Update(func(tx *bolt.Tx) error {
+		b, err := bs.getBucket(tx)
+		if err != nil {
+			return err
+		}
+
+		return b.ForEach(func(k, v []byte) error {
+			var p Profile
+			if err := json.Unmarshal(v, &p); err != nil {
+				return nil // Skip invalid entries
+			}
+
+			changed := false
+			if p.ConfigPath == "" {
+				p.ConfigPath = filepath.Join(configDir, fmt.Sprintf("%s.yaml", p.Name))
+				changed = true
+			}
+
+			if changed {
+				data, err := json.Marshal(p)
+				if err != nil {
+					return err
+				}
+				return b.Put(k, data)
+			}
+			return nil
+		})
+	})
 }
 
 // ResolvePath returns the configuration file path for the specified profile name.
