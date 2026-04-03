@@ -7,13 +7,22 @@
       - changed-files:
           - any-glob-to-any-file:
               - "**/*.go"
-              - "!internal*/*/auth/**/*.go"
-              - "!internal*/*/common/**/*.go"
-              - "!internal*/*/fs/**/*.go"
-              - "!internal*/*/file/**/*.go"
-              - "!internal*/*/profile/**/*.go"
-              - "!internal*/*/state/**/*.go"
-              - "!internal*/*/cache/**/*.go"
+              - "!internal/identity/**/*.go"
+              - "!internal/shared/**/*.go"
+              - "!internal/errors/**/*.go"
+              - "!internal/concurrency/**/*.go"
+              - "!internal/fs/**/*.go"
+              - "!internal/drive/**/*.go"
+              - "!internal/profile/**/*.go"
+              - "!internal/state/**/*.go"
+              - "!internal/config/**/*.go"
+              - "!internal/di/**/*.go"
+              - "!internal/environment/**/*.go"
+              - "!internal/logger/**/*.go"
+              - "!internal/middleware/**/*.go"
+              - "!pkg/cache/**/*.go"
+              - "!pkg/ignore/**/*.go"
+              - "!cmd/odc/**/*.go"
               - "go.mod"
               - "go.sum"
 
@@ -21,38 +30,89 @@
   - any:
       - changed-files:
           - any-glob-to-any-file:
-              - "internal*/*/auth/**/*.go"
+              - "internal/identity/**"
 
 "component: common":
   - any:
       - changed-files:
           - any-glob-to-any-file:
-              - "internal*/*/common/**/*.go"
+              - "internal/shared/**"
+              - "internal/errors/**"
+              - "internal/concurrency/**"
+              - "internal/version/**"
 
 "component: filesystem":
   - any:
       - changed-files:
           - any-glob-to-any-file:
-              - "internal*/*/fs/**/*.go"
-              - "internal*/*/file/**/*.go"
+              - "internal/fs/**"
+
+"component: drive":
+  - any:
+      - changed-files:
+          - any-glob-to-any-file:
+              - "internal/drive/**"
 
 "component: profile":
   - any:
       - changed-files:
           - any-glob-to-any-file:
-              - "internal*/*/profile/**/*.go"
+              - "internal/profile/**"
 
 "component: state":
   - any:
       - changed-files:
           - any-glob-to-any-file:
-              - "internal*/*/state/**/*.go"
+              - "internal/state/**"
 
 "component: cache":
   - any:
       - changed-files:
           - any-glob-to-any-file:
-              - "internal*/*/cache/**/*.go"
+              - "pkg/cache/**"
+
+"component: config":
+  - any:
+      - changed-files:
+          - any-glob-to-any-file:
+              - "internal/config/**"
+
+"component: logger":
+  - any:
+      - changed-files:
+          - any-glob-to-any-file:
+              - "internal/logger/**"
+
+"component: di":
+  - any:
+      - changed-files:
+          - any-glob-to-any-file:
+              - "internal/di/**"
+
+"component: environment":
+  - any:
+      - changed-files:
+          - any-glob-to-any-file:
+              - "internal/environment/**"
+
+"component: middleware":
+  - any:
+      - changed-files:
+          - any-glob-to-any-file:
+              - "internal/middleware/**"
+
+"component: ignore":
+  - any:
+      - changed-files:
+          - any-glob-to-any-file:
+              - "pkg/ignore/**"
+
+"component: cli":
+  - any:
+      - changed-files:
+          - any-glob-to-any-file:
+              - "cmd/odc/**"
+              - "internal/root/**"
 
 "component: doc":
   - any:
@@ -73,6 +133,11 @@
               - ".github/dependabot.yaml"
               - ".vale.ini"
               - ".golangci.yml"
+              - "justfile"
+              - ".goreleaser.yaml"
+              - ".release-please-manifest.json"
+              - "release-please-config.json"
+              - "requirements.txt"
 
 # ============================================
 # TYPE LABELS
@@ -82,13 +147,18 @@
   - any:
       - head-branch:
           - "^bug"
+          - "^fix"
 
 "type: chore":
   - any:
       - head-branch:
           - "^chore"
+          - "^ci"
+          - "^build"
 
 "type: task":
   - any:
       - head-branch:
           - "^feature"
+          - "^feat"
+          - "^task"
