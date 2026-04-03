@@ -16,7 +16,7 @@ func CreateCurrentCmd(container di.Container) *cobra.Command {
 			opts.Stdout = cmd.OutOrStdout()
 
 			l, _ := container.Logger().CreateLogger("profile-current")
-			handler := NewHandler(container.State(), l)
+			handler := NewHandler(container.Profile(), l)
 
 			return handler.Handle(cmd.Context(), opts)
 		},

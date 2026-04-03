@@ -24,7 +24,7 @@ func CreateUseCmd(container di.Container) *cobra.Command {
 			}
 
 			l, _ := container.Logger().CreateLogger("profile-use")
-			handler := NewHandler(container.Profile(), container.State(), l)
+			handler := NewHandler(container.Profile(), l)
 
 			return handler.Handle(cmd.Context(), opts)
 		},

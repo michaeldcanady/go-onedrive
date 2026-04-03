@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 
 	"github.com/michaeldcanady/go-onedrive/internal/logger"
+	"github.com/michaeldcanady/go-onedrive/internal/profile"
 	"github.com/michaeldcanady/go-onedrive/internal/state"
 	"gopkg.in/yaml.v3"
 )
@@ -14,7 +15,7 @@ import (
 // YAMLService is an implementation of the Service interface that loads configuration from YAML files.
 type YAMLService struct {
 	// resolver is used to look up configuration paths if not in the override map.
-	resolver PathResolver
+	resolver profile.PathResolver
 	// state is used for looking up configuration path overrides.
 	state state.Service
 	// log is the logger used for reporting configuration events.
@@ -22,7 +23,7 @@ type YAMLService struct {
 }
 
 // NewYAMLService creates a new instance of YAMLService.
-func NewYAMLService(resolver PathResolver, state state.Service, log logger.Logger) *YAMLService {
+func NewYAMLService(resolver profile.PathResolver, state state.Service, log logger.Logger) *YAMLService {
 	return &YAMLService{
 		resolver: resolver,
 		state:    state,

@@ -13,9 +13,3 @@ type Service interface {
 	// SaveConfig saves the Configuration for the active profile.
 	SaveConfig(ctx context.Context, cfg Config) error
 }
-
-// PathResolver defines an interface for resolving profile-specific configuration paths.
-type PathResolver interface {
-	// ResolvePath returns the configuration file path for the specified profile name.
-	ResolvePath(ctx context.Context, profileName string) (string, error)
-}

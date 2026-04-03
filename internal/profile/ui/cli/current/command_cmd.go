@@ -5,20 +5,20 @@ import (
 	"fmt"
 
 	"github.com/michaeldcanady/go-onedrive/internal/logger"
-	"github.com/michaeldcanady/go-onedrive/internal/state"
+	"github.com/michaeldcanady/go-onedrive/internal/profile"
 )
 
 // Handler retrieves the name of the currently active profile.
 type Handler struct {
-	state state.Service
-	log   logger.Logger
+	profiles profile.Service
+	log      logger.Logger
 }
 
 // NewHandler initializes a new instance of the profile current Handler.
-func NewHandler(s state.Service, l logger.Logger) *Handler {
+func NewHandler(p profile.Service, l logger.Logger) *Handler {
 	return &Handler{
-		state: s,
-		log:   l,
+		profiles: p,
+		log:      l,
 	}
 }
 
@@ -26,11 +26,11 @@ func NewHandler(s state.Service, l logger.Logger) *Handler {
 func (h *Handler) Handle(ctx context.Context, opts Options) error {
 	h.log.Info("retrieving current profile")
 
-	profile, err := h.state.Get(state.KeyProfile)
+	p, err := h.profiles.GetActive(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to get current profile: %w", err)
 	}
 
-	fmt.Fprintf(opts.Stdout, "Current profile: %s\n", profile)
+	fmt.Fprintf(opts.Stdout, "Current profile: %s\n", p.Name)
 	return nil
 }

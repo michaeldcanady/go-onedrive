@@ -7,6 +7,7 @@ import (
 
 	"github.com/michaeldcanady/go-onedrive/internal/environment"
 	"github.com/michaeldcanady/go-onedrive/internal/profile"
+
 	bolt "go.etcd.io/bbolt"
 )
 

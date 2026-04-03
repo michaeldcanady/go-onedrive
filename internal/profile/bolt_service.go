@@ -8,17 +8,19 @@ import (
 	"time"
 
 	"github.com/michaeldcanady/go-onedrive/internal/environment"
+	"github.com/michaeldcanady/go-onedrive/internal/state"
 	bolt "go.etcd.io/bbolt"
 )
 
 // BoltService is a persistent implementation of the profile.Service using BoltDB.
 type BoltService struct {
-	db  *bolt.DB
-	env environment.Service
+	db    *bolt.DB
+	env   environment.Service
+	state state.Service
 }
 
 // NewBoltService initializes a new instance of the BoltService.
-func NewBoltService(env environment.Service) (*BoltService, error) {
+func NewBoltService(env environment.Service, state state.Service) (*BoltService, error) {
 	configDir, err := env.ConfigDir()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get config directory: %w", err)
@@ -31,8 +33,9 @@ func NewBoltService(env environment.Service) (*BoltService, error) {
 	}
 
 	bs := &BoltService{
-		db:  db,
-		env: env,
+		db:    db,
+		env:   env,
+		state: state,
 	}
 
 	// Ensure profiles bucket is created
@@ -220,4 +223,27 @@ func (bs *BoltService) Exists(ctx context.Context, name string) (bool, error) {
 		return nil
 	})
 	return exists, err
+}
+
+// GetActive retrieves the currently active profile.
+func (bs *BoltService) GetActive(ctx context.Context) (Profile, error) {
+	name, err := bs.state.Get(state.KeyProfile)
+	if err != nil {
+		return Profile{}, fmt.Errorf("failed to get active profile name: %w", err)
+	}
+
+	return bs.Get(ctx, name)
+}
+
+// SetActive marks a specific profile as the active one.
+func (bs *BoltService) SetActive(ctx context.Context, name string) error {
+	exists, err := bs.Exists(ctx, name)
+	if err != nil {
+		return err
+	}
+	if !exists {
+		return ErrProfileNotFound
+	}
+
+	return bs.state.Set(state.KeyProfile, name, state.ScopeGlobal)
 }

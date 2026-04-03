@@ -63,7 +63,7 @@ func NewDefaultContainer() (*DefaultContainer, error) {
 		return nil, fmt.Errorf("failed to initialize state service: %w", err)
 	}
 
-	profileSvc, err := profile.NewBoltService(envSvc)
+	profileSvc, err := profile.NewBoltService(envSvc, stateSvc)
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize profile service: %w", err)
 	}
