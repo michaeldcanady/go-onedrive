@@ -2,7 +2,6 @@ package ls
 
 import (
 	"fmt"
-	"os"
 	"slices"
 
 	"github.com/michaeldcanady/go-onedrive/internal/di"
@@ -24,8 +23,6 @@ func CreateLsCmd(container di.Container) *cobra.Command {
 		Args:              cobra.MaximumNArgs(1),
 		ValidArgsFunction: cli.ProviderPathCompletion(container),
 		PreRunE: func(cmd *cobra.Command, args []string) error {
-			fmt.Printf("os args: %s", os.Args)
-			return nil
 			if len(args) > 0 {
 				opts.Path = args[0]
 			}
@@ -53,8 +50,6 @@ func CreateLsCmd(container di.Container) *cobra.Command {
 			return opts.Validate()
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			fmt.Printf("os args: %s", os.Args)
-			os.Exit(0)
 			l, _ := container.Logger().CreateLogger("ls")
 			handler := NewHandler(container.FS(), l)
 			return handler.Handle(cmd.Context(), opts)
