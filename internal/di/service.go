@@ -3,7 +3,6 @@ package di
 import (
 	"encoding/json"
 	"fmt"
-	"path/filepath"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/michaeldcanady/go-onedrive/internal/config"
@@ -96,10 +95,7 @@ func NewDefaultContainer() (*DefaultContainer, error) {
 
 	editorSvc := editor.NewDefaultService(envSvc, cliLog)
 
-	configSvc := config.NewYAMLService(cliLog)
-	if configDir, err := envSvc.ConfigDir(); err == nil {
-		_ = configSvc.AddPath("default", filepath.Join(configDir, "config.yaml"))
-	}
+	configSvc := config.NewYAMLService(profileSvc, cliLog)
 
 	return &DefaultContainer{
 		logger:      logSvc,

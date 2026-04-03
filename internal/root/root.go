@@ -71,16 +71,6 @@ func CreateRootCmd(container di.Container) (*cobra.Command, error) {
 				return fmt.Errorf("failed to get current profile name: %w", err)
 			}
 
-			// Original config resolution logic preserved:
-			// If config flag is empty, try to get it from the profile.
-			if strings.TrimSpace(config) == "" {
-				p, err := container.Profile().Get(cmd.Context(), profileName)
-				if err != nil {
-					return fmt.Errorf("failed to get current profile metadata: %w", err)
-				}
-				config = p.ConfigPath
-			}
-
 			if strings.TrimSpace(config) != "" {
 				if err := container.Config().AddPath(profileName, config); err != nil {
 					return fmt.Errorf("failed to load config file %s: %w", config, err)
