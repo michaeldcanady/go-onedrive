@@ -2,9 +2,9 @@ package cli
 
 import (
 	"github.com/michaeldcanady/go-onedrive/internal/di"
-	"github.com/michaeldcanady/go-onedrive/internal/drive/ui/cli/alias/list"
-	"github.com/michaeldcanady/go-onedrive/internal/drive/ui/cli/alias/remove"
-	"github.com/michaeldcanady/go-onedrive/internal/drive/ui/cli/alias/set"
+	"github.com/michaeldcanady/go-onedrive/internal/drive/alias/ui/cli/list"
+	"github.com/michaeldcanady/go-onedrive/internal/drive/alias/ui/cli/remove"
+	"github.com/michaeldcanady/go-onedrive/internal/drive/alias/ui/cli/set"
 	"github.com/spf13/cobra"
 )
 

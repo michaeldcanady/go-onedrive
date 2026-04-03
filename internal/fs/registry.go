@@ -6,6 +6,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/michaeldcanady/go-onedrive/internal/drive/alias"
 	"github.com/michaeldcanady/go-onedrive/internal/logger"
 	"github.com/michaeldcanady/go-onedrive/internal/state"
 )
@@ -17,15 +18,18 @@ type Registry struct {
 	providers map[string]Service
 	// state is the service for tracking the active provider and aliases.
 	state state.Service
+	// alias is the drive alias management service.
+	alias alias.Service
 	// logger is the logger instance.
 	logger logger.Logger
 }
 
 // NewRegistry initializes a new instance of the Registry.
-func NewRegistry(state state.Service, log logger.Logger) *Registry {
+func NewRegistry(state state.Service, alias alias.Service, log logger.Logger) *Registry {
 	return &Registry{
 		providers: make(map[string]Service),
 		state:     state,
+		alias:     alias,
 		logger:    log,
 	}
 }
@@ -66,7 +70,7 @@ func (r *Registry) Resolve(ctx context.Context, path string) (Service, string, e
 	p, err := r.Get(prefix)
 	if err != nil {
 		// Check if prefix is an alias
-		driveID, err := r.state.GetDriveAlias(prefix)
+		driveID, err := r.alias.GetDriveIDByAlias(prefix)
 		if err != nil {
 			return nil, "", fmt.Errorf("unknown provider or alias: %s", prefix)
 		}

@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/michaeldcanady/go-onedrive/internal/drive"
+	"github.com/michaeldcanady/go-onedrive/internal/drive/alias"
 	"github.com/michaeldcanady/go-onedrive/internal/fs/formatting"
 	"github.com/michaeldcanady/go-onedrive/internal/logger"
 	"github.com/michaeldcanady/go-onedrive/internal/state"
@@ -14,14 +15,16 @@ import (
 type Handler struct {
 	drive drive.Service
 	state state.Service
+	alias alias.Service
 	log   logger.Logger
 }
 
 // NewHandler initializes a new instance of the drive get Handler.
-func NewHandler(drive drive.Service, state state.Service, l logger.Logger) *Handler {
+func NewHandler(drive drive.Service, state state.Service, alias alias.Service, l logger.Logger) *Handler {
 	return &Handler{
 		drive: drive,
 		state: state,
+		alias: alias,
 		log:   l,
 	}
 }
@@ -41,7 +44,7 @@ func (h *Handler) Handle(ctx context.Context, opts Options) error {
 	} else {
 		// Resolve the reference
 		var err error
-		driveID, err = h.state.GetDriveAlias(opts.DriveRef)
+		driveID, err = h.alias.GetDriveIDByAlias(opts.DriveRef)
 		if err != nil {
 			// Not an alias, assume it's ID or name
 			driveID = opts.DriveRef

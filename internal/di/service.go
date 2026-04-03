@@ -7,6 +7,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/michaeldcanady/go-onedrive/internal/config"
 	"github.com/michaeldcanady/go-onedrive/internal/drive"
+	"github.com/michaeldcanady/go-onedrive/internal/drive/alias"
 	"github.com/michaeldcanady/go-onedrive/internal/environment"
 	registry "github.com/michaeldcanady/go-onedrive/internal/fs"
 	"github.com/michaeldcanady/go-onedrive/internal/fs/editor"
@@ -41,6 +42,9 @@ type DefaultContainer struct {
 	editor editor.Service
 	// drive is the OneDrive drive management service.
 	drive drive.Service
+
+	// alias is the drive alias management service.
+	alias alias.Service
 
 	registry interface {
 		RegisteredNames() ([]string, error)
@@ -88,8 +92,12 @@ func NewDefaultContainer() (*DefaultContainer, error) {
 
 	driveGateway := onedrive.NewGraphDriveGateway(graphProvider, cliLog)
 	driveSvc := drive.NewDefaultService(driveGateway, cliLog)
+	aliasSvc, err := alias.NewBoltService(envSvc, cliLog)
+	if err != nil {
+		return nil, fmt.Errorf("failed to initialize drive alias service: %w", err)
+	}
 
-	fsReg := registry.NewRegistry(stateSvc, cliLog)
+	fsReg := registry.NewRegistry(stateSvc, aliasSvc, cliLog)
 	fsReg.Register("local", local.NewProvider(cliLog))
 	fsReg.Register("onedrive", onedrive.NewProvider(graphProvider, stateSvc, driveSvc, cliLog))
 
@@ -107,6 +115,7 @@ func NewDefaultContainer() (*DefaultContainer, error) {
 		manager:     registry.NewFileSystemManager(fsReg),
 		environment: envSvc,
 		editor:      editorSvc,
+		alias:       aliasSvc,
 		drive:       driveSvc,
 	}, nil
 }
@@ -143,3 +152,7 @@ func (c *DefaultContainer) Editor() editor.Service { return c.editor }
 
 // Drive returns the OneDrive drive management service.
 func (c *DefaultContainer) Drive() drive.Service { return c.drive }
+
+func (c *DefaultContainer) Alias() alias.Service {
+	return c.alias
+}

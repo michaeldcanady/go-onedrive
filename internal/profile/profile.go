@@ -2,6 +2,7 @@ package profile
 
 import "time"
 
+// TODO: consolidate DefaultProfileName somewhere
 const (
 	// DefaultProfileName is the name of the fallback profile.
 	DefaultProfileName = "default"

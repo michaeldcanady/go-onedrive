@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/michaeldcanady/go-onedrive/internal/drive"
+	"github.com/michaeldcanady/go-onedrive/internal/drive/alias"
 	"github.com/michaeldcanady/go-onedrive/internal/fs/formatting"
 	"github.com/michaeldcanady/go-onedrive/internal/logger"
 	"github.com/michaeldcanady/go-onedrive/internal/state"
@@ -14,14 +15,16 @@ import (
 type Handler struct {
 	drive drive.Service
 	state state.Service
+	alias alias.Service
 	log   logger.Logger
 }
 
 // NewHandler initializes a new instance of the drive list Handler.
-func NewHandler(drive drive.Service, state state.Service, l logger.Logger) *Handler {
+func NewHandler(drive drive.Service, state state.Service, alias alias.Service, l logger.Logger) *Handler {
 	return &Handler{
 		drive: drive,
 		state: state,
+		alias: alias,
 		log:   l,
 	}
 }
@@ -36,13 +39,6 @@ func (h *Handler) Handle(ctx context.Context, opts Options) error {
 	}
 
 	activeDriveID, _ := h.state.Get(state.KeyDrive)
-	aliases, _ := h.state.ListDriveAliases()
-
-	// Prepare alias lookup
-	aliasMap := make(map[string]string)
-	for alias, driveID := range aliases {
-		aliasMap[driveID] = alias
-	}
 
 	columns := []formatting.Column{
 		formatting.NewColumn(" ", func(item any) string {
@@ -52,7 +48,12 @@ func (h *Handler) Handle(ctx context.Context, opts Options) error {
 			return ""
 		}),
 		formatting.NewColumn("Alias", func(item any) string {
-			return aliasMap[item.(drive.Drive).ID]
+			alias, err := h.alias.GetAliasByDriveID(item.(drive.Drive).Name)
+			if err != nil {
+				fmt.Println(err)
+			}
+
+			return alias
 		}),
 		formatting.NewColumn("ID", func(item any) string { return item.(drive.Drive).ID }),
 		formatting.NewColumn("Name", func(item any) string { return item.(drive.Drive).Name }),
