@@ -54,7 +54,7 @@ func (s *YAMLService) GetConfig(ctx context.Context, profile string) (Config, er
 		return Config{}, fmt.Errorf("failed to read config file: %w", err)
 	}
 
-	var cfg Config
+	cfg := s.defaultConfig()
 	if err := yaml.Unmarshal(data, &cfg); err != nil {
 		return Config{}, fmt.Errorf("failed to unmarshal config: %w", err)
 	}
