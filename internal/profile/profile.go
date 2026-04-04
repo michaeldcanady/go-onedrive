@@ -2,11 +2,6 @@ package profile
 
 import "time"
 
-const (
-	// DefaultProfileName is the name of the fallback profile.
-	DefaultProfileName = "default"
-)
-
 // Profile represents a user configuration profile.
 type Profile struct {
 	// Name is the unique identifier for the profile.

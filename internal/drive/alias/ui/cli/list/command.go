@@ -13,7 +13,7 @@ func CreateListCmd(container di.Container) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			opts := Options{Stdout: cmd.OutOrStdout()}
 			log, _ := container.Logger().CreateLogger("alias-list")
-			return NewHandler(container.State(), log).Handle(cmd.Context(), opts)
+			return NewHandler(container.Alias(), log).Handle(cmd.Context(), opts)
 		},
 	}
 }

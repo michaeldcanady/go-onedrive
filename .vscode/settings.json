@@ -76,6 +76,7 @@
         "stretchr",
         "tablewriter",
         "Topicer",
+        "unmarshals",
         "uritemplate"
     ],
     "json.schemas": [

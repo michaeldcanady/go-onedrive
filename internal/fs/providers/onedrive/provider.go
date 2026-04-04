@@ -12,6 +12,7 @@ import (
 	"net/http"
 
 	"github.com/michaeldcanady/go-onedrive/internal/drive"
+	"github.com/michaeldcanady/go-onedrive/internal/drive/alias"
 	coreerrors "github.com/michaeldcanady/go-onedrive/internal/errors"
 	shared "github.com/michaeldcanady/go-onedrive/internal/fs"
 	platform "github.com/michaeldcanady/go-onedrive/internal/identity/providers/shared"
@@ -43,6 +44,7 @@ const (
 type Provider struct {
 	platform platform.PlatformProvider
 	state    state.Service
+	alias    alias.Service
 	driveSvc drive.Service
 	log      logger.Logger
 }
@@ -96,7 +98,7 @@ func (p *Provider) resolveDrive(itemPath string) (string, string) {
 	// If path is "alias:path"
 	if !strings.HasPrefix(itemPath, "/") && strings.Contains(itemPath, ":") {
 		alias, cleanPath, _ := strings.Cut(itemPath, ":")
-		driveID, err := p.state.GetDriveAlias(alias)
+		driveID, err := p.alias.GetDriveIDByAlias(alias)
 		if err == nil {
 			return driveID, cleanPath
 		}

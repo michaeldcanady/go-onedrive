@@ -24,7 +24,7 @@ func CreateGetCmd(container di.Container) *cobra.Command {
 				Stdout:   cmd.OutOrStdout(),
 			}
 			log, _ := container.Logger().CreateLogger("drive-get")
-			return NewHandler(container.Drive(), container.State(), log).Handle(cmd.Context(), opts)
+			return NewHandler(container.Drive(), container.State(), container.Alias(), log).Handle(cmd.Context(), opts)
 		},
 	}
 }
