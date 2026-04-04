@@ -1,0 +1,61 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "odc configuration schema",
+  "description": "Configuration schema for the odc (OneDrive CLI) tool.",
+  "type": "object",
+  "properties": {
+    "auth": {
+      "type": "object",
+      "description": "Authentication and identity provider settings.",
+      "properties": {
+        "provider": {
+          "type": "string",
+          "description": "The identity provider to use.",
+          "default": "microsoft",
+          "enum": [
+            "microsoft"
+          ]
+        },
+        "client_id": {
+          "type": "string",
+          "description": "The unique identifier (Client ID) for the application registered in Azure."
+        },
+        "tenant_id": {
+          "type": "string",
+          "description": "The Azure AD Tenant ID (e.g., your-tenant-id or 'common').",
+          "default": "common"
+        },
+        "client_secret": {
+          "type": "string",
+          "description": "The client secret for Service Principal authentication (only for non-interactive methods)."
+        },
+        "method": {
+          "type": "string",
+          "description": "The default authentication mechanism.",
+          "enum": [
+            "interactive",
+            "browser",
+            "device-code",
+            "device",
+            "client-secret",
+            "secret",
+            "environment",
+            "env"
+          ],
+          "default": "interactive"
+        },
+        "redirect_uri": {
+          "type": "string",
+          "description": "The URI used for receiving authentication responses during interactive browser login.",
+          "format": "uri",
+          "default": "http://localhost:8400"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "auth"
+  ],
+  "additionalProperties": false
+}
