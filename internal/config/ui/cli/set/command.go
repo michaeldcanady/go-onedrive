@@ -25,7 +25,7 @@ func CreateSetCmd(container di.Container) *cobra.Command {
 
 			handler := NewHandler(
 				container.Config(),
-				container.State(),
+				container.Profile(),
 				container.Logger(),
 			)
 

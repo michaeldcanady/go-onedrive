@@ -37,8 +37,8 @@ const (
 // CreateRootCmd constructs and returns the cobra.Command for the root application.
 func CreateRootCmd(container di.Container) (*cobra.Command, error) {
 	var (
-		level       string
-		config      string
+		levelFlag   string
+		configFlag  string
 		profileFlag string
 	)
 
@@ -67,22 +67,27 @@ func CreateRootCmd(container di.Container) (*cobra.Command, error) {
 				}
 			}
 
-			if strings.TrimSpace(config) != "" {
-				if err := container.State().Set(state.KeyConfigOverride, config, state.ScopeSession); err != nil {
+			if strings.TrimSpace(configFlag) != "" {
+				if err := container.State().Set(state.KeyConfigOverride, configFlag, state.ScopeSession); err != nil {
 					return fmt.Errorf("failed to set config override: %w", err)
 				}
 			}
 
+			level := logger.ParseLevel(levelFlag)
+			if level == logger.LevelUnknown {
+				return fmt.Errorf("unknown log level: %s", levelFlag)
+			}
+
 			container.Logger().SetAllLevel(level)
-			cliLogger.Debug("updated all logger level", logger.String("level", level))
-			cliLogger.Debug("updated config path", logger.String("path", config))
+			cliLogger.Debug("updated all logger level", logger.String("level", level.String()))
+			cliLogger.Debug("updated config path", logger.String("path", configFlag))
 
 			return nil
 		},
 	}
 
-	rootCmd.PersistentFlags().StringVar(&config, "config", "", "path to config file")
-	rootCmd.PersistentFlags().StringVar(&level, "level", "info", "set the logging level (e.g., debug, info, warn, error)")
+	rootCmd.PersistentFlags().StringVar(&configFlag, "config", "", "path to config file")
+	rootCmd.PersistentFlags().StringVar(&levelFlag, "level", "info", "set the logging level (e.g., debug, info, warn, error)")
 	rootCmd.PersistentFlags().StringVar(&profileFlag, "profile", "", "name of profile")
 
 	completionCmd := &cobra.Command{

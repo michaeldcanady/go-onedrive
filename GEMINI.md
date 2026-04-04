@@ -84,6 +84,11 @@ Before the first release, ensure the following are configured:
 - **CLI Command Validation:**
     - **Fail Fast:** Use Cobra's `PreRunE` to populate the command's `Options` struct and perform validation.
     - **Options Structs:** Every command should have an `Options` struct with a `Validate() error` method to centralize validation logic.
+- **State vs. Configuration Management:**
+    - **State (`internal/state`):** Represents volatile or persistent runtime status (e.g., active profile name, current drive ID, cached tokens). Internal to the app.
+    - **Config (`internal/config`):** Represents user-defined settings (e.g., Azure Tenant ID, Redirect URIs). External-facing and user-modifiable.
+    - **Domain-First Access Pattern:** Commands (UI layer) MUST NOT access `internal/state` directly. They must use Domain Services (e.g., `profile.Service`, `drive.Service`) which encapsulate state interaction.
+    - **Scoping:** The UI layer determines the scope of state changes (e.g., `state.ScopeGlobal` for persistence, `state.ScopeSession` for transience) and passes it to the Domain Service methods.
 - **Testing:** Unit tests are mandatory for new features and bug fixes. Leverage `stretchr/testify` for assertions and mocking, and use `t.Parallel()` where applicable.
 - **Pull Request Process:** Follow the guidelines in `CONTRIBUTING.md`, including forking, branching, building, testing, linting, documentation updates, and submitting PRs.
 

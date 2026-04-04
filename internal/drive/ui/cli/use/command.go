@@ -20,7 +20,7 @@ func CreateUseCmd(container di.Container) *cobra.Command {
 				Stdout:   cmd.OutOrStdout(),
 			}
 			log, _ := container.Logger().CreateLogger("drive-use")
-			return NewHandler(container.Drive(), container.State(), container.Alias(), log).Handle(cmd.Context(), opts)
+			return NewHandler(container.Drive(), container.Alias(), log).Handle(cmd.Context(), opts)
 		},
 	}
 }

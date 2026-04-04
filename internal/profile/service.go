@@ -2,6 +2,8 @@ package profile
 
 import (
 	"context"
+
+	"github.com/michaeldcanady/go-onedrive/internal/state"
 )
 
 // Service provides operations for managing user configuration profiles.
@@ -20,8 +22,8 @@ type Service interface {
 	Update(ctx context.Context, p Profile) error
 	// GetActive retrieves the currently active profile.
 	GetActive(ctx context.Context) (Profile, error)
-	// SetActive marks a specific profile as the active one.
-	SetActive(ctx context.Context, name string) error
+	// SetActive marks a specific profile as the active one with the given scope.
+	SetActive(ctx context.Context, name string, scope state.Scope) error
 }
 
 // PathResolver defines an interface for resolving profile-specific configuration paths.

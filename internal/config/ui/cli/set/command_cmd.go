@@ -7,40 +7,40 @@ import (
 
 	"github.com/michaeldcanady/go-onedrive/internal/config"
 	"github.com/michaeldcanady/go-onedrive/internal/logger"
-	"github.com/michaeldcanady/go-onedrive/internal/state"
+	"github.com/michaeldcanady/go-onedrive/internal/profile"
 )
 
 // Handler orchestrates the config set operation.
 type Handler struct {
-	config config.Service
-	state  state.Service
-	log    logger.Logger
+	config  config.Service
+	profile profile.Service
+	log     logger.Logger
 }
 
 // NewHandler initializes a new instance of the set Handler.
 func NewHandler(
 	cfg config.Service,
-	st state.Service,
+	prof profile.Service,
 	l logger.Service,
 ) *Handler {
 	cliLog, _ := l.CreateLogger("config-set")
 	return &Handler{
-		config: cfg,
-		state:  st,
-		log:    cliLog,
+		config:  cfg,
+		profile: prof,
+		log:     cliLog,
 	}
 }
 
 // Handle updates the configuration setting.
 func (h *Handler) Handle(ctx context.Context, opts Options) error {
-	profileName, err := h.state.Get(state.KeyProfile)
+	p, err := h.profile.GetActive(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to get current profile: %w", err)
 	}
 
 	cfg, err := h.config.GetConfig(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to load configuration for profile %s: %w", profileName, err)
+		return fmt.Errorf("failed to load configuration for profile %s: %w", p.Name, err)
 	}
 
 	if err := h.setValueByKey(&cfg, opts.Key, opts.Value); err != nil {
@@ -48,10 +48,10 @@ func (h *Handler) Handle(ctx context.Context, opts Options) error {
 	}
 
 	if err := h.config.SaveConfig(ctx, cfg); err != nil {
-		return fmt.Errorf("failed to save configuration for profile %s: %w", profileName, err)
+		return fmt.Errorf("failed to save configuration for profile %s: %w", p.Name, err)
 	}
 
-	fmt.Fprintf(opts.Stdout, "Updated %s for profile %s\n", opts.Key, profileName)
+	fmt.Fprintf(opts.Stdout, "Updated %s for profile %s\n", opts.Key, p.Name)
 	return nil
 }
 

@@ -2,20 +2,17 @@ package login
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 
 	"github.com/michaeldcanady/go-onedrive/internal/config"
 	"github.com/michaeldcanady/go-onedrive/internal/identity/registry"
 	"github.com/michaeldcanady/go-onedrive/internal/identity/shared"
 	"github.com/michaeldcanady/go-onedrive/internal/logger"
-	"github.com/michaeldcanady/go-onedrive/internal/state"
 )
 
 // Handler orchestrates the authentication flow for a specific request.
 type Handler struct {
 	config   config.Service
-	state    state.Service
 	identity registry.Service
 	log      logger.Logger
 }
@@ -23,13 +20,11 @@ type Handler struct {
 // NewHandler initializes a new instance of the login Handler.
 func NewHandler(
 	cfg config.Service,
-	st state.Service,
 	id registry.Service,
 	l logger.Logger,
 ) *Handler {
 	return &Handler{
 		config:   cfg,
-		state:    st,
 		identity: id,
 		log:      l,
 	}
@@ -100,13 +95,7 @@ func (h *Handler) Handle(ctx context.Context, opts Options) error {
 		return fmt.Errorf("authentication failed: %w", err)
 	}
 
-	log.Debug("caching access token")
-	tokenData, err := json.Marshal(token)
-	if err != nil {
-		log.Error("failed to serialize token", logger.Error(err))
-		return fmt.Errorf("failed to serialize token for caching: %w", err)
-	}
-	if err := h.state.Set(state.KeyAccessToken, string(tokenData), state.ScopeGlobal); err != nil {
+	if err := auth.SaveToken(ctx, token); err != nil {
 		log.Error("failed to cache token", logger.Error(err))
 		return fmt.Errorf("failed to cache access token: %w", err)
 	}

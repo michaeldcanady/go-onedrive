@@ -7,13 +7,11 @@ import (
 	"github.com/michaeldcanady/go-onedrive/internal/config"
 	"github.com/michaeldcanady/go-onedrive/internal/identity/registry"
 	"github.com/michaeldcanady/go-onedrive/internal/logger"
-	"github.com/michaeldcanady/go-onedrive/internal/state"
 )
 
 // Handler orchestrates the logout flow for the current profile.
 type Handler struct {
 	config   config.Service
-	state    state.Service
 	identity registry.Service
 	log      logger.Logger
 }
@@ -21,13 +19,11 @@ type Handler struct {
 // NewHandler initializes a new logout Handler.
 func NewHandler(
 	cfg config.Service,
-	st state.Service,
 	id registry.Service,
 	l logger.Logger,
 ) *Handler {
 	return &Handler{
 		config:   cfg,
-		state:    st,
 		identity: id,
 		log:      l,
 	}

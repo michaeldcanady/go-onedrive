@@ -243,8 +243,8 @@ func (bs *BoltService) GetActive(ctx context.Context) (Profile, error) {
 	return bs.Get(ctx, name)
 }
 
-// SetActive marks a specific profile as the active one.
-func (bs *BoltService) SetActive(ctx context.Context, name string) error {
+// SetActive marks a specific profile as the active one with the given scope.
+func (bs *BoltService) SetActive(ctx context.Context, name string, scope state.Scope) error {
 	exists, err := bs.Exists(ctx, name)
 	if err != nil {
 		return err
@@ -253,5 +253,5 @@ func (bs *BoltService) SetActive(ctx context.Context, name string) error {
 		return ErrProfileNotFound
 	}
 
-	return bs.state.Set(state.KeyProfile, name, state.ScopeGlobal)
+	return bs.state.Set(state.KeyProfile, name, scope)
 }
