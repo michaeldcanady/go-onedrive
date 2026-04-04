@@ -10,6 +10,8 @@ type Authenticator interface {
 	ProviderName() string
 	// Authenticate performs the authentication flow and returns the resulting token.
 	Authenticate(ctx context.Context, opts LoginOptions) (AccessToken, error)
+	// SaveToken persists the provided access token.
+	SaveToken(ctx context.Context, token AccessToken) error
 	// Logout removes any cached authentication state for this provider.
 	Logout(ctx context.Context) error
 }

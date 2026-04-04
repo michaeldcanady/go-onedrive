@@ -84,14 +84,14 @@ func NewDefaultContainer() (*DefaultContainer, error) {
 		}
 	}
 
-	msAuth := microsoft.NewAuthenticator(cachedCred, cliLog)
+	msAuth := microsoft.NewAuthenticator(cachedCred, stateSvc, cliLog)
 	idReg := idregistry.NewRegistry()
 	idReg.Register("microsoft", msAuth)
 
 	graphProvider := microsoft.NewGraphProvider(msAuth.Credential(), cliLog)
 
 	driveGateway := onedrive.NewGraphDriveGateway(graphProvider, cliLog)
-	driveSvc := drive.NewDefaultService(driveGateway, cliLog)
+	driveSvc := drive.NewDefaultService(driveGateway, stateSvc, cliLog)
 	aliasSvc, err := alias.NewBoltService(envSvc, cliLog)
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize drive alias service: %w", err)

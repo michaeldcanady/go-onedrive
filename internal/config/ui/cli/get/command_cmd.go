@@ -7,27 +7,23 @@ import (
 
 	"github.com/michaeldcanady/go-onedrive/internal/config"
 	"github.com/michaeldcanady/go-onedrive/internal/logger"
-	"github.com/michaeldcanady/go-onedrive/internal/state"
 	"gopkg.in/yaml.v3"
 )
 
 // Handler orchestrates the config get operation.
 type Handler struct {
 	config config.Service
-	state  state.Service
 	log    logger.Logger
 }
 
 // NewHandler initializes a new instance of the get Handler.
 func NewHandler(
 	cfg config.Service,
-	st state.Service,
 	l logger.Service,
 ) *Handler {
 	cliLog, _ := l.CreateLogger("config-get")
 	return &Handler{
 		config: cfg,
-		state:  st,
 		log:    cliLog,
 	}
 }

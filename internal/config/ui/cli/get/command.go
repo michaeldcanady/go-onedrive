@@ -26,7 +26,6 @@ func CreateGetCmd(container di.Container) *cobra.Command {
 
 			handler := NewHandler(
 				container.Config(),
-				container.State(),
 				container.Logger(),
 			)
 

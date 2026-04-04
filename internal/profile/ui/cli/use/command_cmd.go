@@ -6,6 +6,7 @@ import (
 
 	"github.com/michaeldcanady/go-onedrive/internal/logger"
 	"github.com/michaeldcanady/go-onedrive/internal/profile"
+	"github.com/michaeldcanady/go-onedrive/internal/state"
 )
 
 // Handler executes the profile switch operation.
@@ -26,7 +27,7 @@ func NewHandler(p profile.Service, l logger.Logger) *Handler {
 func (h *Handler) Handle(ctx context.Context, opts Options) error {
 	h.log.Info("switching to profile", logger.String("name", opts.Name))
 
-	if err := h.profiles.SetActive(ctx, opts.Name); err != nil {
+	if err := h.profiles.SetActive(ctx, opts.Name, state.ScopeGlobal); err != nil {
 		return fmt.Errorf("failed to set active profile: %w", err)
 	}
 

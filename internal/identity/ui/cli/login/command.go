@@ -21,7 +21,6 @@ You can specify the method via flags or in your profile configuration.`,
 			l, _ := container.Logger().CreateLogger("auth-login")
 			handler := NewHandler(
 				container.Config(),
-				container.State(),
 				container.Identity(),
 				l,
 			)

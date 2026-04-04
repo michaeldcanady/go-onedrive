@@ -13,16 +13,14 @@ import (
 // Handler executes the drive use operation.
 type Handler struct {
 	drive drive.Service
-	state state.Service
 	alias alias.Service
 	log   logger.Logger
 }
 
 // NewHandler initializes a new instance of the drive use Handler.
-func NewHandler(drive drive.Service, state state.Service, alias alias.Service, l logger.Logger) *Handler {
+func NewHandler(drive drive.Service, alias alias.Service, l logger.Logger) *Handler {
 	return &Handler{
 		drive: drive,
-		state: state,
 		alias: alias,
 		log:   l,
 	}
@@ -45,7 +43,7 @@ func (h *Handler) Handle(ctx context.Context, opts Options) error {
 		driveID = d.ID
 	}
 
-	if err := h.state.Set(state.KeyDrive, driveID, state.ScopeGlobal); err != nil {
+	if err := h.drive.SetActive(ctx, driveID, state.ScopeGlobal); err != nil {
 		return fmt.Errorf("failed to set active drive: %w", err)
 	}
 
