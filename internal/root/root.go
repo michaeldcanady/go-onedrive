@@ -6,9 +6,9 @@ import (
 	"os"
 	"strings"
 
+	configcmd "github.com/michaeldcanady/go-onedrive/internal/config/ui/cli"
 	"github.com/michaeldcanady/go-onedrive/internal/di"
 	drive "github.com/michaeldcanady/go-onedrive/internal/drive/ui/cli"
-	configcmd "github.com/michaeldcanady/go-onedrive/internal/config/ui/cli"
 	"github.com/michaeldcanady/go-onedrive/internal/fs/ui/cli/cat"
 	"github.com/michaeldcanady/go-onedrive/internal/fs/ui/cli/cp"
 	"github.com/michaeldcanady/go-onedrive/internal/fs/ui/cli/download"
@@ -22,8 +22,8 @@ import (
 	auth "github.com/michaeldcanady/go-onedrive/internal/identity/ui/cli"
 	"github.com/michaeldcanady/go-onedrive/internal/logger"
 	"github.com/michaeldcanady/go-onedrive/internal/middleware"
-	coreprofile "github.com/michaeldcanady/go-onedrive/internal/profile"
 	profile "github.com/michaeldcanady/go-onedrive/internal/profile/ui/cli"
+	"github.com/michaeldcanady/go-onedrive/internal/shared"
 	"github.com/michaeldcanady/go-onedrive/internal/state"
 	"github.com/michaeldcanady/go-onedrive/internal/version"
 	"github.com/spf13/cobra"
@@ -57,8 +57,8 @@ func CreateRootCmd(container di.Container) (*cobra.Command, error) {
 			}
 
 			// Ensure a default profile exists
-			if exists, _ := container.Profile().Exists(cmd.Context(), coreprofile.DefaultProfileName); !exists {
-				_, _ = container.Profile().Create(cmd.Context(), coreprofile.DefaultProfileName)
+			if exists, _ := container.Profile().Exists(cmd.Context(), shared.DefaultProfileName); !exists {
+				_, _ = container.Profile().Create(cmd.Context(), shared.DefaultProfileName)
 			}
 
 			if strings.TrimSpace(profileFlag) != "" {

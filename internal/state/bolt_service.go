@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/michaeldcanady/go-onedrive/internal/environment"
+	"github.com/michaeldcanady/go-onedrive/internal/shared"
 
 	bolt "go.etcd.io/bbolt"
 )
@@ -23,9 +24,6 @@ var (
 const (
 	// stateDBFileName is the name of the BoltDB file used for storing state data.
 	stateDBFileName = "state.db"
-
-	// DefaultProfileName is the name of the fallback profile.
-	DefaultProfileName = "default"
 )
 
 // BoltService is a persistent implementation of the state.Service using BoltDB.
@@ -61,7 +59,7 @@ func NewBoltService(env environment.Service) (*BoltService, error) {
 		if err != ErrKeyNotFound {
 			return nil, fmt.Errorf("failed to check for default profile: %w", err)
 		}
-		if err := bs.Set(KeyProfile, DefaultProfileName, ScopeGlobal); err != nil {
+		if err := bs.Set(KeyProfile, shared.DefaultProfileName, ScopeGlobal); err != nil {
 			return nil, fmt.Errorf("failed to set default profile: %w", err)
 		}
 	}
@@ -82,9 +80,6 @@ func (bs *BoltService) ensureBuckets() error {
 		}
 		if _, err := tx.CreateBucketIfNotExists(sessionBucketName); err != nil {
 			return fmt.Errorf("failed to create session bucket: %w", err)
-		}
-		if _, err := tx.CreateBucketIfNotExists(driveAliasesBucketName); err != nil {
-			return fmt.Errorf("failed to create drive_aliases bucket: %w", err)
 		}
 		return nil
 	})

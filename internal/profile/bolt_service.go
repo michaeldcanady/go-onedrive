@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/michaeldcanady/go-onedrive/internal/environment"
+	"github.com/michaeldcanady/go-onedrive/internal/shared"
 	"github.com/michaeldcanady/go-onedrive/internal/state"
 	bolt "go.etcd.io/bbolt"
 )
@@ -39,16 +40,13 @@ func NewBoltService(env environment.Service, state state.Service) (*BoltService,
 	}
 
 	// Ensure profiles bucket is created
-	if err := bs.db.Update(func(tx *bolt.Tx) error {
-		_, err := tx.CreateBucketIfNotExists([]byte("profiles"))
-		return err
-	}); err != nil {
-		bs.db.Close()
-		return nil, fmt.Errorf("failed to create profiles bucket: %w", err)
+	if err := bs.ensureBucket(); err != nil {
+		bs.db.Close() // Close DB if initialization fails
+		return nil, err
 	}
 
 	// Ensure default profile exists
-	_, _ = bs.Create(context.Background(), DefaultProfileName)
+	_, _ = bs.Create(context.Background(), shared.DefaultProfileName)
 
 	if err := bs.migrateConfigPaths(); err != nil {
 		bs.db.Close()
@@ -56,6 +54,16 @@ func NewBoltService(env environment.Service, state state.Service) (*BoltService,
 	}
 
 	return bs, nil
+}
+
+// ensureBuckets creates the top-level buckets if they don't exist.
+func (bs *BoltService) ensureBucket() error {
+	return bs.db.Update(func(tx *bolt.Tx) error {
+		if _, err := tx.CreateBucketIfNotExists([]byte("profiles")); err != nil {
+			return fmt.Errorf("failed to create drive_aliases bucket: %w", err)
+		}
+		return nil
+	})
 }
 
 func (bs *BoltService) migrateConfigPaths() error {
@@ -199,7 +207,7 @@ func (bs *BoltService) Update(ctx context.Context, p Profile) error {
 
 // Delete removes the specified profile name.
 func (bs *BoltService) Delete(ctx context.Context, name string) error {
-	if name == DefaultProfileName {
+	if name == shared.DefaultProfileName {
 		return fmt.Errorf("cannot delete the default profile")
 	}
 	return bs.db.Update(func(tx *bolt.Tx) error {
