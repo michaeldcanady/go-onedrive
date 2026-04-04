@@ -1,9 +1,11 @@
 package set
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/michaeldcanady/go-onedrive/internal/di"
+	aliaspkg "github.com/michaeldcanady/go-onedrive/internal/drive/alias"
 	"github.com/michaeldcanady/go-onedrive/internal/drive/ui/cli/shared"
 	"github.com/spf13/cobra"
 )
@@ -18,15 +20,15 @@ func CreateSetCmd(container di.Container) *cobra.Command {
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			// Validate that the drive ID exists before attempting to set the alias
 			driveID := args[0]
-			_, err := container.Drive().ResolveDrive(cmd.Context(), driveID)
-			if err != nil {
-				return err
-			}
+			//_, err := container.Drive().ResolveDrive(cmd.Context(), driveID)
+			//if err != nil {
+			//	return err
+			//}
 
 			// validate that alias is not already in use for a different drive
 			alias := args[1]
-			existingDriveID, err := container.State().GetDriveAlias(alias)
-			if err != nil {
+			existingDriveID, err := container.Alias().GetDriveIDByAlias(alias)
+			if err != nil && !errors.Is(err, aliaspkg.ErrDriveIDNotFound) {
 				return err
 			}
 			if existingDriveID != "" && existingDriveID != driveID {
@@ -42,7 +44,7 @@ func CreateSetCmd(container di.Container) *cobra.Command {
 				Stdout:  cmd.OutOrStdout(),
 			}
 			log, _ := container.Logger().CreateLogger("alias-set")
-			return NewHandler(container.State(), log).Handle(cmd.Context(), opts)
+			return NewHandler(container.Alias(), log).Handle(cmd.Context(), opts)
 		},
 	}
 }

@@ -6,18 +6,21 @@ import (
 	"strings"
 
 	"github.com/michaeldcanady/go-onedrive/internal/logger"
+	"github.com/michaeldcanady/go-onedrive/internal/state"
 )
 
 // DefaultService provides the default implementation of the drive service.
 type DefaultService struct {
 	gateway Gateway
+	state   state.Service
 	log     logger.Logger
 }
 
 // NewDefaultService initializes a new instance of the DefaultService.
-func NewDefaultService(gateway Gateway, l logger.Logger) *DefaultService {
+func NewDefaultService(gateway Gateway, state state.Service, l logger.Logger) *DefaultService {
 	return &DefaultService{
 		gateway: gateway,
+		state:   state,
 		log:     l,
 	}
 }
@@ -64,4 +67,23 @@ func (s *DefaultService) ResolvePersonalDrive(ctx context.Context) (Drive, error
 	}
 
 	return d, nil
+}
+
+// GetActive retrieves the currently active drive.
+func (s *DefaultService) GetActive(ctx context.Context) (Drive, error) {
+	id, err := s.state.Get(state.KeyDrive)
+	if err != nil {
+		return Drive{}, fmt.Errorf("failed to get active drive ID: %w", err)
+	}
+
+	if id == "" {
+		return s.ResolvePersonalDrive(ctx)
+	}
+
+	return s.ResolveDrive(ctx, id)
+}
+
+// SetActive marks a specific drive as the active one with the given scope.
+func (s *DefaultService) SetActive(ctx context.Context, driveID string, scope state.Scope) error {
+	return s.state.Set(state.KeyDrive, driveID, scope)
 }

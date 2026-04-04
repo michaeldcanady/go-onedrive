@@ -2,6 +2,7 @@ package microsoft
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 
@@ -10,19 +11,22 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/michaeldcanady/go-onedrive/internal/identity/shared"
 	"github.com/michaeldcanady/go-onedrive/internal/logger"
+	"github.com/michaeldcanady/go-onedrive/internal/state"
 )
 
 // Authenticator implements the identity.shared.Authenticator interface for Microsoft.
 type Authenticator struct {
-	cred azcore.TokenCredential
-	log  logger.Logger
+	cred  azcore.TokenCredential
+	state state.Service
+	log   logger.Logger
 }
 
 // NewAuthenticator initializes a new Microsoft authenticator.
-func NewAuthenticator(cred azcore.TokenCredential, log logger.Logger) *Authenticator {
+func NewAuthenticator(cred azcore.TokenCredential, state state.Service, log logger.Logger) *Authenticator {
 	return &Authenticator{
-		cred: cred,
-		log:  log,
+		cred:  cred,
+		state: state,
+		log:   log,
 	}
 }
 
@@ -63,6 +67,22 @@ func (a *Authenticator) Authenticate(ctx context.Context, opts shared.LoginOptio
 	}, nil
 }
 
+// SaveToken persists the provided access token to state.
+func (a *Authenticator) SaveToken(ctx context.Context, token shared.AccessToken) error {
+	a.log.Debug("caching access token")
+
+	tokenData, err := json.Marshal(token)
+	if err != nil {
+		return fmt.Errorf("failed to serialize token for caching: %w", err)
+	}
+
+	if err := a.state.Set(state.KeyAccessToken, string(tokenData), state.ScopeGlobal); err != nil {
+		return fmt.Errorf("failed to cache access token: %w", err)
+	}
+
+	return nil
+}
+
 func (a *Authenticator) createCredential(opts shared.LoginOptions) (azcore.TokenCredential, error) {
 	tenantID := opts.ProviderSpecific["tenant_id"]
 	clientID := opts.ProviderSpecific["client_id"]
@@ -101,10 +121,11 @@ func (a *Authenticator) createCredential(opts shared.LoginOptions) (azcore.Token
 func (a *Authenticator) Logout(ctx context.Context) error {
 	a.log.Info("logging out from microsoft")
 	a.cred = nil
-	return nil
+	return a.state.Clear(state.KeyAccessToken)
 }
 
 // Credential returns the underlying Azure token credential.
 func (a *Authenticator) Credential() azcore.TokenCredential {
 	return a.cred
 }
+

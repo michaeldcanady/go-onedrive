@@ -7,13 +7,11 @@ import (
 	"github.com/michaeldcanady/go-onedrive/internal/config"
 	"github.com/michaeldcanady/go-onedrive/internal/identity/registry"
 	"github.com/michaeldcanady/go-onedrive/internal/logger"
-	"github.com/michaeldcanady/go-onedrive/internal/state"
 )
 
 // Handler orchestrates the logout flow for the current profile.
 type Handler struct {
 	config   config.Service
-	state    state.Service
 	identity registry.Service
 	log      logger.Logger
 }
@@ -21,13 +19,11 @@ type Handler struct {
 // NewHandler initializes a new logout Handler.
 func NewHandler(
 	cfg config.Service,
-	st state.Service,
 	id registry.Service,
 	l logger.Logger,
 ) *Handler {
 	return &Handler{
 		config:   cfg,
-		state:    st,
 		identity: id,
 		log:      l,
 	}
@@ -37,14 +33,9 @@ func NewHandler(
 func (h *Handler) Handle(ctx context.Context, opts Options) error {
 	h.log.Info("starting logout flow")
 
-	profile, err := h.state.Get(state.KeyProfile)
+	cfg, err := h.config.GetConfig(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to get current profile: %w", err)
-	}
-
-	cfg, err := h.config.GetConfig(ctx, profile)
-	if err != nil {
-		return fmt.Errorf("failed to load configuration for profile %s: %w", profile, err)
+		return fmt.Errorf("failed to load configuration: %w", err)
 	}
 
 	provider := cfg.Auth.Provider
@@ -62,8 +53,8 @@ func (h *Handler) Handle(ctx context.Context, opts Options) error {
 		h.log.Warn("provider logout failed", logger.Error(err))
 	}
 
-	h.log.Info("logout successful", logger.String("profile", profile))
-	fmt.Fprintf(opts.Stdout, "Logged out from profile: %s\n", profile)
+	h.log.Info("logout successful")
+	fmt.Fprintf(opts.Stdout, "Logged out successfully\n")
 
 	return nil
 }

@@ -8,16 +8,20 @@ import (
 	"time"
 
 	"github.com/michaeldcanady/go-onedrive/internal/environment"
+	"github.com/michaeldcanady/go-onedrive/internal/shared"
+	"github.com/michaeldcanady/go-onedrive/internal/state"
 	bolt "go.etcd.io/bbolt"
 )
 
 // BoltService is a persistent implementation of the profile.Service using BoltDB.
 type BoltService struct {
-	db *bolt.DB
+	db    *bolt.DB
+	env   environment.Service
+	state state.Service
 }
 
 // NewBoltService initializes a new instance of the BoltService.
-func NewBoltService(env environment.Service) (*BoltService, error) {
+func NewBoltService(env environment.Service, state state.Service) (*BoltService, error) {
 	configDir, err := env.ConfigDir()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get config directory: %w", err)
@@ -30,22 +34,81 @@ func NewBoltService(env environment.Service) (*BoltService, error) {
 	}
 
 	bs := &BoltService{
-		db: db,
+		db:    db,
+		env:   env,
+		state: state,
 	}
 
 	// Ensure profiles bucket is created
-	if err := bs.db.Update(func(tx *bolt.Tx) error {
-		_, err := tx.CreateBucketIfNotExists([]byte("profiles"))
-		return err
-	}); err != nil {
-		bs.db.Close()
-		return nil, fmt.Errorf("failed to create profiles bucket: %w", err)
+	if err := bs.ensureBucket(); err != nil {
+		bs.db.Close() // Close DB if initialization fails
+		return nil, err
 	}
 
 	// Ensure default profile exists
-	_, _ = bs.Create(context.Background(), DefaultProfileName)
+	_, _ = bs.Create(context.Background(), shared.DefaultProfileName)
+
+	if err := bs.migrateConfigPaths(); err != nil {
+		bs.db.Close()
+		return nil, fmt.Errorf("failed to migrate profile config paths: %w", err)
+	}
 
 	return bs, nil
+}
+
+// ensureBuckets creates the top-level buckets if they don't exist.
+func (bs *BoltService) ensureBucket() error {
+	return bs.db.Update(func(tx *bolt.Tx) error {
+		if _, err := tx.CreateBucketIfNotExists([]byte("profiles")); err != nil {
+			return fmt.Errorf("failed to create drive_aliases bucket: %w", err)
+		}
+		return nil
+	})
+}
+
+func (bs *BoltService) migrateConfigPaths() error {
+	configDir, err := bs.env.ConfigDir()
+	if err != nil {
+		return err
+	}
+
+	return bs.db.Update(func(tx *bolt.Tx) error {
+		b, err := bs.getBucket(tx)
+		if err != nil {
+			return err
+		}
+
+		return b.ForEach(func(k, v []byte) error {
+			var p Profile
+			if err := json.Unmarshal(v, &p); err != nil {
+				return nil // Skip invalid entries
+			}
+
+			changed := false
+			if p.ConfigPath == "" {
+				p.ConfigPath = filepath.Join(configDir, fmt.Sprintf("%s.yaml", p.Name))
+				changed = true
+			}
+
+			if changed {
+				data, err := json.Marshal(p)
+				if err != nil {
+					return err
+				}
+				return b.Put(k, data)
+			}
+			return nil
+		})
+	})
+}
+
+// ResolvePath returns the configuration file path for the specified profile name.
+func (bs *BoltService) ResolvePath(ctx context.Context, profileName string) (string, error) {
+	p, err := bs.Get(ctx, profileName)
+	if err != nil {
+		return "", err
+	}
+	return p.ConfigPath, nil
 }
 
 // Close closes the BoltDB database connection.
@@ -99,10 +162,18 @@ func (bs *BoltService) List(ctx context.Context) ([]Profile, error) {
 
 // Create generates a new profile with the specified name.
 func (bs *BoltService) Create(ctx context.Context, name string) (Profile, error) {
-	p := Profile{
-		Name: name,
+	configDir, err := bs.env.ConfigDir()
+	if err != nil {
+		return Profile{}, fmt.Errorf("failed to get config directory: %w", err)
 	}
-	err := bs.db.Update(func(tx *bolt.Tx) error {
+
+	p := Profile{
+		Name:       name,
+		ConfigPath: filepath.Join(configDir, fmt.Sprintf("%s.yaml", name)),
+		CreatedAt:  time.Now(),
+		UpdatedAt:  time.Now(),
+	}
+	err = bs.db.Update(func(tx *bolt.Tx) error {
 		b, err := bs.getBucket(tx)
 		if err != nil {
 			return err
@@ -136,7 +207,7 @@ func (bs *BoltService) Update(ctx context.Context, p Profile) error {
 
 // Delete removes the specified profile name.
 func (bs *BoltService) Delete(ctx context.Context, name string) error {
-	if name == DefaultProfileName {
+	if name == shared.DefaultProfileName {
 		return fmt.Errorf("cannot delete the default profile")
 	}
 	return bs.db.Update(func(tx *bolt.Tx) error {
@@ -160,4 +231,27 @@ func (bs *BoltService) Exists(ctx context.Context, name string) (bool, error) {
 		return nil
 	})
 	return exists, err
+}
+
+// GetActive retrieves the currently active profile.
+func (bs *BoltService) GetActive(ctx context.Context) (Profile, error) {
+	name, err := bs.state.Get(state.KeyProfile)
+	if err != nil {
+		return Profile{}, fmt.Errorf("failed to get active profile name: %w", err)
+	}
+
+	return bs.Get(ctx, name)
+}
+
+// SetActive marks a specific profile as the active one with the given scope.
+func (bs *BoltService) SetActive(ctx context.Context, name string, scope state.Scope) error {
+	exists, err := bs.Exists(ctx, name)
+	if err != nil {
+		return err
+	}
+	if !exists {
+		return ErrProfileNotFound
+	}
+
+	return bs.state.Set(state.KeyProfile, name, scope)
 }

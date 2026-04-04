@@ -13,15 +13,17 @@ func newNoOpStateService() *noOpStateService {
 	return &noOpStateService{}
 }
 
-func (s *noOpStateService) GetDriveAliasByDriveID(driveID string) (string, error) {
+func (s *noOpStateService) GetAliasByDriveID(driveID string) (string, error) {
 	return "", nil
 }
 
 func ProviderPathCompletion(container di.Container, supportAlias bool) func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 	return func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-		var stateSvc interface{ GetDriveAliasByDriveID(string) (string, error) } = newNoOpStateService()
+		var stateSvc interface {
+			GetAliasByDriveID(driveID string) (string, error)
+		} = newNoOpStateService()
 		if supportAlias {
-			stateSvc = container.State()
+			stateSvc = container.Alias()
 		}
 
 		drives, err := container.Drive().ListDrives(cmd.Context())
@@ -32,7 +34,7 @@ func ProviderPathCompletion(container di.Container, supportAlias bool) func(cmd 
 		var results []string
 		for _, drive := range drives {
 			displayName := drive.Name
-			alias, err := stateSvc.GetDriveAliasByDriveID(drive.Name)
+			alias, err := stateSvc.GetAliasByDriveID(drive.Name)
 			if err == nil && alias != "" {
 				displayName = alias
 			}

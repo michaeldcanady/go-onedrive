@@ -4,21 +4,21 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/michaeldcanady/go-onedrive/internal/drive/alias"
 	"github.com/michaeldcanady/go-onedrive/internal/fs/formatting"
 	"github.com/michaeldcanady/go-onedrive/internal/logger"
-	"github.com/michaeldcanady/go-onedrive/internal/state"
 )
 
 // Handler executes the drive alias list operation.
 type Handler struct {
-	state state.Service
+	alias alias.Service
 	log   logger.Logger
 }
 
 // NewHandler initializes a new instance of the drive alias list Handler.
-func NewHandler(state state.Service, l logger.Logger) *Handler {
+func NewHandler(alias alias.Service, l logger.Logger) *Handler {
 	return &Handler{
-		state: state,
+		alias: alias,
 		log:   l,
 	}
 }
@@ -30,7 +30,7 @@ type aliasEntry struct {
 
 // Handle retrieves and displays all registered drive aliases.
 func (h *Handler) Handle(ctx context.Context, opts Options) error {
-	aliases, err := h.state.ListDriveAliases()
+	aliases, err := h.alias.ListAliases()
 	if err != nil {
 		return fmt.Errorf("failed to list drive aliases: %w", err)
 	}

@@ -5,23 +5,23 @@ import (
 	"fmt"
 
 	"github.com/michaeldcanady/go-onedrive/internal/drive"
+	"github.com/michaeldcanady/go-onedrive/internal/drive/alias"
 	"github.com/michaeldcanady/go-onedrive/internal/fs/formatting"
 	"github.com/michaeldcanady/go-onedrive/internal/logger"
-	"github.com/michaeldcanady/go-onedrive/internal/state"
 )
 
 // Handler executes the drive get operation.
 type Handler struct {
 	drive drive.Service
-	state state.Service
+	alias alias.Service
 	log   logger.Logger
 }
 
 // NewHandler initializes a new instance of the drive get Handler.
-func NewHandler(drive drive.Service, state state.Service, l logger.Logger) *Handler {
+func NewHandler(drive drive.Service, alias alias.Service, l logger.Logger) *Handler {
 	return &Handler{
 		drive: drive,
-		state: state,
+		alias: alias,
 		log:   l,
 	}
 }
@@ -30,27 +30,26 @@ func NewHandler(drive drive.Service, state state.Service, l logger.Logger) *Hand
 func (h *Handler) Handle(ctx context.Context, opts Options) error {
 	h.log.Info("fetching drive details", logger.String("ref", opts.DriveRef))
 
-	var driveID string
+	var d drive.Drive
+	var err error
+
 	if opts.DriveRef == "" {
 		// Use active drive
-		var err error
-		driveID, err = h.state.Get(state.KeyDrive)
+		d, err = h.drive.GetActive(ctx)
 		if err != nil {
 			return fmt.Errorf("no active drive set and no drive reference provided: %w", err)
 		}
 	} else {
 		// Resolve the reference
-		var err error
-		driveID, err = h.state.GetDriveAlias(opts.DriveRef)
+		driveID, err := h.alias.GetDriveIDByAlias(opts.DriveRef)
 		if err != nil {
 			// Not an alias, assume it's ID or name
 			driveID = opts.DriveRef
 		}
-	}
-
-	d, err := h.drive.ResolveDrive(ctx, driveID)
-	if err != nil {
-		return fmt.Errorf("failed to get drive details: %w", err)
+		d, err = h.drive.ResolveDrive(ctx, driveID)
+		if err != nil {
+			return fmt.Errorf("failed to get drive details: %w", err)
+		}
 	}
 
 	columns := []formatting.Column{

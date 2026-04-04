@@ -22,7 +22,6 @@ re-authentication.`,
 			l, _ := container.Logger().CreateLogger("auth-logout")
 			handler := NewHandler(
 				container.Config(),
-				container.State(),
 				container.Identity(),
 				l,
 			)

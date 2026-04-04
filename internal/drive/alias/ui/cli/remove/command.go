@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/michaeldcanady/go-onedrive/internal/di"
-	"github.com/michaeldcanady/go-onedrive/internal/drive/ui/cli/alias/shared"
+	"github.com/michaeldcanady/go-onedrive/internal/drive/alias/ui/cli/shared"
 	"github.com/spf13/cobra"
 )
 
@@ -18,7 +18,7 @@ func CreateRemoveCmd(container di.Container) *cobra.Command {
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			// Validate that the alias exists before attempting to remove it
 			alias := args[0]
-			driveID, err := container.State().GetDriveAlias(alias)
+			driveID, err := container.Alias().GetDriveIDByAlias(alias)
 			if err != nil {
 				return err
 			}
@@ -33,7 +33,7 @@ func CreateRemoveCmd(container di.Container) *cobra.Command {
 				Stdout: cmd.OutOrStdout(),
 			}
 			log, _ := container.Logger().CreateLogger("alias-remove")
-			return NewHandler(container.State(), log).Handle(cmd.Context(), opts)
+			return NewHandler(container.Alias(), log).Handle(cmd.Context(), opts)
 		},
 	}
 }

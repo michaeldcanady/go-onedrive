@@ -3,11 +3,11 @@ package di
 import (
 	"encoding/json"
 	"fmt"
-	"path/filepath"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/michaeldcanady/go-onedrive/internal/config"
 	"github.com/michaeldcanady/go-onedrive/internal/drive"
+	"github.com/michaeldcanady/go-onedrive/internal/drive/alias"
 	"github.com/michaeldcanady/go-onedrive/internal/environment"
 	registry "github.com/michaeldcanady/go-onedrive/internal/fs"
 	"github.com/michaeldcanady/go-onedrive/internal/fs/editor"
@@ -43,6 +43,9 @@ type DefaultContainer struct {
 	// drive is the OneDrive drive management service.
 	drive drive.Service
 
+	// alias is the drive alias management service.
+	alias alias.Service
+
 	registry interface {
 		RegisteredNames() ([]string, error)
 	}
@@ -64,7 +67,7 @@ func NewDefaultContainer() (*DefaultContainer, error) {
 		return nil, fmt.Errorf("failed to initialize state service: %w", err)
 	}
 
-	profileSvc, err := profile.NewBoltService(envSvc)
+	profileSvc, err := profile.NewBoltService(envSvc, stateSvc)
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize profile service: %w", err)
 	}
@@ -81,25 +84,26 @@ func NewDefaultContainer() (*DefaultContainer, error) {
 		}
 	}
 
-	msAuth := microsoft.NewAuthenticator(cachedCred, cliLog)
+	msAuth := microsoft.NewAuthenticator(cachedCred, stateSvc, cliLog)
 	idReg := idregistry.NewRegistry()
 	idReg.Register("microsoft", msAuth)
 
 	graphProvider := microsoft.NewGraphProvider(msAuth.Credential(), cliLog)
 
 	driveGateway := onedrive.NewGraphDriveGateway(graphProvider, cliLog)
-	driveSvc := drive.NewDefaultService(driveGateway, cliLog)
+	driveSvc := drive.NewDefaultService(driveGateway, stateSvc, cliLog)
+	aliasSvc, err := alias.NewBoltService(envSvc, cliLog)
+	if err != nil {
+		return nil, fmt.Errorf("failed to initialize drive alias service: %w", err)
+	}
 
-	fsReg := registry.NewRegistry(stateSvc, cliLog)
+	fsReg := registry.NewRegistry(stateSvc, aliasSvc, cliLog)
 	fsReg.Register("local", local.NewProvider(cliLog))
 	fsReg.Register("onedrive", onedrive.NewProvider(graphProvider, stateSvc, driveSvc, cliLog))
 
 	editorSvc := editor.NewDefaultService(envSvc, cliLog)
 
-	configSvc := config.NewYAMLService(cliLog)
-	if configDir, err := envSvc.ConfigDir(); err == nil {
-		_ = configSvc.AddPath("default", filepath.Join(configDir, "config.yaml"))
-	}
+	configSvc := config.NewYAMLService(profileSvc, stateSvc, cliLog)
 
 	return &DefaultContainer{
 		logger:      logSvc,
@@ -111,6 +115,7 @@ func NewDefaultContainer() (*DefaultContainer, error) {
 		manager:     registry.NewFileSystemManager(fsReg),
 		environment: envSvc,
 		editor:      editorSvc,
+		alias:       aliasSvc,
 		drive:       driveSvc,
 	}, nil
 }
@@ -147,3 +152,7 @@ func (c *DefaultContainer) Editor() editor.Service { return c.editor }
 
 // Drive returns the OneDrive drive management service.
 func (c *DefaultContainer) Drive() drive.Service { return c.drive }
+
+func (c *DefaultContainer) Alias() alias.Service {
+	return c.alias
+}

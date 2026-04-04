@@ -4,20 +4,20 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/michaeldcanady/go-onedrive/internal/drive/alias"
 	"github.com/michaeldcanady/go-onedrive/internal/logger"
-	"github.com/michaeldcanady/go-onedrive/internal/state"
 )
 
 // Handler executes the drive alias set operation.
 type Handler struct {
-	state state.Service
+	alias alias.Service
 	log   logger.Logger
 }
 
 // NewHandler initializes a new instance of the drive alias set Handler.
-func NewHandler(state state.Service, l logger.Logger) *Handler {
+func NewHandler(alias alias.Service, l logger.Logger) *Handler {
 	return &Handler{
-		state: state,
+		alias: alias,
 		log:   l,
 	}
 }
@@ -26,7 +26,7 @@ func NewHandler(state state.Service, l logger.Logger) *Handler {
 func (h *Handler) Handle(ctx context.Context, opts Options) error {
 	h.log.Info("setting drive alias", logger.String("alias", opts.Alias), logger.String("driveID", opts.DriveID))
 
-	if err := h.state.SetDriveAlias(opts.Alias, opts.DriveID); err != nil {
+	if err := h.alias.SetAlias(opts.Alias, opts.DriveID); err != nil {
 		return fmt.Errorf("failed to set drive alias: %w", err)
 	}
 

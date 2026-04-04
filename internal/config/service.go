@@ -6,8 +6,10 @@ import (
 
 // Service provides methods to retrieve and manage application configuration.
 type Service interface {
-	// GetConfig retrieves the Configuration for a specific profile.
-	GetConfig(ctx context.Context, profile string) (Config, error)
-	// AddPath registers a file path for a configuration profile.
-	AddPath(profile, path string) error
+	// GetConfig retrieves the Configuration for the active profile.
+	GetConfig(ctx context.Context) (Config, error)
+	// GetPath retrieves the registered file path for the active profile.
+	GetPath(ctx context.Context) (string, bool)
+	// SaveConfig saves the Configuration for the active profile.
+	SaveConfig(ctx context.Context, cfg Config) error
 }

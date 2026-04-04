@@ -106,8 +106,8 @@ func (s *ZapService) CreateLogger(id string) (Logger, error) {
 }
 
 // SetAllLevel updates the severity level for all registered loggers.
-func (s *ZapService) SetAllLevel(level string) {
-	l, err := zapcore.ParseLevel(level)
+func (s *ZapService) SetAllLevel(level Level) {
+	l, err := zapcore.ParseLevel(level.String())
 	if err != nil {
 		return
 	}

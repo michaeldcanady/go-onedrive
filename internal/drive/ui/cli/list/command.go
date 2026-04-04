@@ -23,7 +23,7 @@ marking the currently active drive and showing any defined aliases.`,
 				return err
 			}
 
-			handler := NewHandler(container.Drive(), container.State(), log)
+			handler := NewHandler(container.Drive(), container.Alias(), log)
 			return handler.Handle(cmd.Context(), opts)
 		},
 	}

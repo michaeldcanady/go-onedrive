@@ -6,6 +6,7 @@ import (
 	"os"
 	"strings"
 
+	configcmd "github.com/michaeldcanady/go-onedrive/internal/config/ui/cli"
 	"github.com/michaeldcanady/go-onedrive/internal/di"
 	drive "github.com/michaeldcanady/go-onedrive/internal/drive/ui/cli"
 	"github.com/michaeldcanady/go-onedrive/internal/fs/ui/cli/cat"
@@ -21,8 +22,8 @@ import (
 	auth "github.com/michaeldcanady/go-onedrive/internal/identity/ui/cli"
 	"github.com/michaeldcanady/go-onedrive/internal/logger"
 	"github.com/michaeldcanady/go-onedrive/internal/middleware"
-	coreprofile "github.com/michaeldcanady/go-onedrive/internal/profile"
 	profile "github.com/michaeldcanady/go-onedrive/internal/profile/ui/cli"
+	"github.com/michaeldcanady/go-onedrive/internal/shared"
 	"github.com/michaeldcanady/go-onedrive/internal/state"
 	"github.com/michaeldcanady/go-onedrive/internal/version"
 	"github.com/spf13/cobra"
@@ -36,8 +37,8 @@ const (
 // CreateRootCmd constructs and returns the cobra.Command for the root application.
 func CreateRootCmd(container di.Container) (*cobra.Command, error) {
 	var (
-		level       string
-		config      string
+		levelFlag   string
+		configFlag  string
 		profileFlag string
 	)
 
@@ -56,8 +57,8 @@ func CreateRootCmd(container di.Container) (*cobra.Command, error) {
 			}
 
 			// Ensure a default profile exists
-			if exists, _ := container.Profile().Exists(cmd.Context(), coreprofile.DefaultProfileName); !exists {
-				_, _ = container.Profile().Create(cmd.Context(), coreprofile.DefaultProfileName)
+			if exists, _ := container.Profile().Exists(cmd.Context(), shared.DefaultProfileName); !exists {
+				_, _ = container.Profile().Create(cmd.Context(), shared.DefaultProfileName)
 			}
 
 			if strings.TrimSpace(profileFlag) != "" {
@@ -66,37 +67,27 @@ func CreateRootCmd(container di.Container) (*cobra.Command, error) {
 				}
 			}
 
-			profileName, err := container.State().Get(state.KeyProfile)
-			if err != nil {
-				return fmt.Errorf("failed to get current profile name: %w", err)
+			if strings.TrimSpace(configFlag) != "" {
+				if err := container.State().Set(state.KeyConfigOverride, configFlag, state.ScopeSession); err != nil {
+					return fmt.Errorf("failed to set config override: %w", err)
+				}
 			}
 
-			// Original config resolution logic preserved:
-			// If config flag is empty, try to get it from the profile.
-			if strings.TrimSpace(config) == "" {
-				p, err := container.Profile().Get(cmd.Context(), profileName)
-				if err != nil {
-					return fmt.Errorf("failed to get current profile metadata: %w", err)
-				}
-				config = p.ConfigPath
-			}
-
-			if strings.TrimSpace(config) != "" {
-				if err := container.Config().AddPath(profileName, config); err != nil {
-					return fmt.Errorf("failed to load config file %s: %w", config, err)
-				}
+			level := logger.ParseLevel(levelFlag)
+			if level == logger.LevelUnknown {
+				return fmt.Errorf("unknown log level: %s", levelFlag)
 			}
 
 			container.Logger().SetAllLevel(level)
-			cliLogger.Debug("updated all logger level", logger.String("level", level))
-			cliLogger.Debug("updated config path", logger.String("path", config))
+			cliLogger.Debug("updated all logger level", logger.String("level", level.String()))
+			cliLogger.Debug("updated config path", logger.String("path", configFlag))
 
 			return nil
 		},
 	}
 
-	rootCmd.PersistentFlags().StringVar(&config, "config", "", "path to config file")
-	rootCmd.PersistentFlags().StringVar(&level, "level", "info", "set the logging level (e.g., debug, info, warn, error)")
+	rootCmd.PersistentFlags().StringVar(&configFlag, "config", "", "path to config file")
+	rootCmd.PersistentFlags().StringVar(&levelFlag, "level", "info", "set the logging level (e.g., debug, info, warn, error)")
 	rootCmd.PersistentFlags().StringVar(&profileFlag, "profile", "", "name of profile")
 
 	completionCmd := &cobra.Command{
@@ -144,6 +135,7 @@ Zsh:
 		auth.CreateAuthCmd(container),
 		profile.CreateProfileCmd(container),
 		drive.CreateDriveCmd(container),
+		configcmd.CreateConfigCmd(container),
 		ls.CreateLsCmd(container),
 		cat.CreateCatCmd(container),
 		mkdir.CreateMkdirCmd(container),

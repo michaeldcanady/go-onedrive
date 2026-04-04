@@ -38,8 +38,8 @@ func (z *ZapLogger) Debug(msg string, kv ...Field) {
 }
 
 // SetLevel dynamically updates the logger's severity level.
-func (z *ZapLogger) SetLevel(level string) {
-	l, err := zapcore.ParseLevel(level)
+func (z *ZapLogger) SetLevel(level Level) {
+	l, err := zapcore.ParseLevel(level.String())
 	if err == nil {
 		z.level.SetLevel(l)
 	}

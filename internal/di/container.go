@@ -3,6 +3,7 @@ package di
 import (
 	"github.com/michaeldcanady/go-onedrive/internal/config"
 	"github.com/michaeldcanady/go-onedrive/internal/drive"
+	"github.com/michaeldcanady/go-onedrive/internal/drive/alias"
 	"github.com/michaeldcanady/go-onedrive/internal/environment"
 	registry "github.com/michaeldcanady/go-onedrive/internal/fs"
 	"github.com/michaeldcanady/go-onedrive/internal/fs/editor"
@@ -36,4 +37,6 @@ type Container interface {
 	Editor() editor.Service
 	// Drive returns the drive-related service.
 	Drive() drive.Service
+	// Alias returns the drive alias management service.
+	Alias() alias.Service
 }

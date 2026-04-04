@@ -9,7 +9,7 @@ import (
 
 func ProviderPathCompletion(container di.Container) func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 	return func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-		aliases, err := container.State().ListDriveAliases()
+		aliases, err := container.Alias().ListAliases()
 		if err != nil {
 			return nil, cobra.ShellCompDirectiveError | cobra.ShellCompDirectiveNoFileComp
 		}

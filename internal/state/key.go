@@ -10,6 +10,8 @@ const (
 	KeyDrive
 	// KeyAccessToken represents the cached authentication token.
 	KeyAccessToken
+	// KeyConfigOverride represents a transient configuration path override.
+	KeyConfigOverride
 )
 
 // String returns the string representation of the Key.
@@ -21,6 +23,8 @@ func (k Key) String() string {
 		return "drive"
 	case KeyAccessToken:
 		return "access_token"
+	case KeyConfigOverride:
+		return "config_override"
 	default:
 		return "unknown"
 	}
