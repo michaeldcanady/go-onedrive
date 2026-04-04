@@ -1,49 +1,62 @@
-# Edit files
+# Native File Editing
 
-The `edit` command allows you to modify OneDrive files using your local 
-terminal editor (such as `vim`, `nano`, or the editor defined in your 
-`$EDITOR` environment variable) without manually downloading and 
-uploading.
+The `edit` command in `odc` allows you to modify OneDrive files using your
+favorite local terminal editor (like `vim`, `nano`, or `code`). It streamlines
+your workflow by handling the download and upload process automatically,
+providing a seamless editing experience.
 
-## Edit a file
+## Edit a File
 
-To edit a file, provide its path in OneDrive.
-
-```bash
-odc edit [REMOTE_PATH]
-```
-
-When you run this command:
-
-1.  `odc` downloads the file to a temporary location on your machine.
-2.  Your default editor opens the file.
-3.  You make your changes and save the file.
-4.  Once you exit the editor, `odc` automatically uploads the modified 
-    content back to OneDrive.
-
-## Overwrite existing content
-
-If you need to ensure that your changes overwrite the remote file 
-even if there are potential conflicts, use the `--force` flag.
+To edit a file, provide its path in OneDrive. `odc` will download it to a
+temporary location and open it in your default editor.
 
 ```bash
-odc edit config.json --force
+odc edit /Documents/config.json
 ```
 
-## Configure your editor
+### How it works
+1.  **Download:** `odc` downloads the file to a secure temporary location.
+2.  **Edit:** Your terminal editor opens the file.
+3.  **Save & Exit:** Once you save your changes and exit the editor, `odc`
+    automatically uploads the modified content back to OneDrive.
+4.  **Cleanup:** The temporary file is safely removed from your local machine.
 
-`odc` respects the standard `$EDITOR` environment variable. If it's not 
-set, `odc` defaults to common editors like `vim` or `nano` depending 
-on your operating system.
+## Handle Conflicts
 
-To change your default editor, add the following to your shell profile 
+If you want to ensure that your changes overwrite the remote file even if
+there have been changes since you started editing, use the `--force` flag.
+
+```bash
+odc edit /Documents/config.json --force
+```
+
+## Configure Your Editor
+
+`odc` respects your system's `$EDITOR` environment variable. If it's not set,
+`odc` defaults to common terminal editors.
+
+To set your preferred editor, add the following line to your shell profile
 (e.g., `~/.bashrc` or `~/.zshrc`):
 
 ```bash
-export EDITOR='code --wait' # To use VS Code
+# Example: Use VS Code as your default editor for odc
+export EDITOR='code --wait'
+
+# Example: Use Vim as your default editor
+export EDITOR='vim'
 ```
+
+## Best Practices
+
+- **Save often:** While `odc` only uploads when you exit, saving frequently in
+  your editor is still a good habit.
+- **Wait for upload:** Ensure you stay in your terminal until `odc` confirms the
+  upload has been completed after you exit your editor.
+- **Large files:** For very large files, consider using `download` and `upload`
+  separately for more control over the transfer process.
 
 ## Next steps
 
-After editing your files, you can [manage them](file-operations.md) or 
-[transfer them](transfer-files.md) to other locations.
+- **[File operations](file-operations.md)**
+- **[Transferring files](transfer-files.md)**
+- **[Automation and scripting](automation-and-scripting.md)**
