@@ -32,3 +32,7 @@ generate-docs: build-docs
 # Clean up local build artifacts
 clean-docs:
     rm -rf site
+
+# Generate man pages
+generate-man dir="./man": build
+    ./{{BINARY_NAME}} docs man {{dir}}

@@ -27,6 +27,7 @@ import (
 	"github.com/michaeldcanady/go-onedrive/internal/state"
 	"github.com/michaeldcanady/go-onedrive/internal/version"
 	"github.com/spf13/cobra"
+	"github.com/spf13/cobra/doc"
 )
 
 const (
@@ -131,6 +132,46 @@ Zsh:
 		},
 	}
 
+	docsCmd := &cobra.Command{
+		Use:    "docs",
+		Short:  "Generate documentation",
+		Hidden: true,
+	}
+
+	manCmd := &cobra.Command{
+		Use:   "man [directory]",
+		Short: "Generate man pages",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			dir := args[0]
+			if err := os.MkdirAll(dir, 0755); err != nil {
+				return err
+			}
+			header := &doc.GenManHeader{
+				Title:   "ODC",
+				Section: "1",
+				Source:  "odc " + version.Version,
+				Manual:  "odc User Manual",
+			}
+			return doc.GenManTree(cmd.Root(), header, dir)
+		},
+	}
+
+	markdownCmd := &cobra.Command{
+		Use:   "markdown [directory]",
+		Short: "Generate Markdown documentation",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			dir := args[0]
+			if err := os.MkdirAll(dir, 0755); err != nil {
+				return err
+			}
+			return doc.GenMarkdownTree(cmd.Root(), dir)
+		},
+	}
+
+	docsCmd.AddCommand(manCmd, markdownCmd)
+
 	rootCmd.AddCommand(
 		auth.CreateAuthCmd(container),
 		profile.CreateProfileCmd(container),
@@ -147,6 +188,7 @@ Zsh:
 		download.CreateDownloadCmd(container),
 		edit.CreateEditCmd(container),
 		completionCmd,
+		docsCmd,
 	)
 
 	middleware.ApplyMiddlewareRecursively(rootCmd, middleware.WithCorrelationID)

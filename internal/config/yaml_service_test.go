@@ -83,10 +83,10 @@ func (m *mockStateService) GetDriveAliasByDriveID(driveID string) (string, error
 
 type mockLogger struct{}
 
-func (m *mockLogger) Info(msg string, kv ...logger.Field)                {}
-func (m *mockLogger) Warn(msg string, kv ...logger.Field)                {}
-func (m *mockLogger) Error(msg string, kv ...logger.Field)               {}
-func (m *mockLogger) Debug(msg string, kv ...logger.Field)               {}
-func (m *mockLogger) SetLevel(level string)                              {}
-func (m *mockLogger) With(fields ...logger.Field) logger.Logger          { return m }
-func (m *mockLogger) WithContext(ctx context.Context) logger.Logger       { return m }
+func (m *mockLogger) Info(msg string, kv ...logger.Field)           {}
+func (m *mockLogger) Warn(msg string, kv ...logger.Field)           {}
+func (m *mockLogger) Error(msg string, kv ...logger.Field)          {}
+func (m *mockLogger) Debug(msg string, kv ...logger.Field)          {}
+func (m *mockLogger) SetLevel(level logger.Level)                   {}
+func (m *mockLogger) With(fields ...logger.Field) logger.Logger     { return m }
+func (m *mockLogger) WithContext(ctx context.Context) logger.Logger { return m }
