@@ -73,8 +73,13 @@ func CreateRootCmd(container di.Container) (*cobra.Command, error) {
 				}
 			}
 
-			container.Logger().SetAllLevel(levelFlag)
-			cliLogger.Debug("updated all logger level", logger.String("level", levelFlag))
+			level := logger.ParseLevel(levelFlag)
+			if level == logger.LevelUnknown {
+				return fmt.Errorf("unknown log level: %s", levelFlag)
+			}
+
+			container.Logger().SetAllLevel(level)
+			cliLogger.Debug("updated all logger level", logger.String("level", level.String()))
 			cliLogger.Debug("updated config path", logger.String("path", configFlag))
 
 			return nil

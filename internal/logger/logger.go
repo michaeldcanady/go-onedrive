@@ -16,7 +16,7 @@ type Logger interface {
 	// Debug logs a message at Debug level.
 	Debug(msg string, kv ...Field)
 	// SetLevel dynamically changes the logging level for this logger instance.
-	SetLevel(level string)
+	SetLevel(level Level)
 	// With returns a new logger with the provided fields pre-populated.
 	With(fields ...Field) Logger
 	// WithContext returns a new logger that is aware of the provided context.
