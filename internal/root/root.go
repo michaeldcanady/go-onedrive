@@ -27,6 +27,7 @@ import (
 	"github.com/michaeldcanady/go-onedrive/internal/state"
 	"github.com/michaeldcanady/go-onedrive/internal/version"
 	"github.com/spf13/cobra"
+	"github.com/spf13/cobra/doc"
 )
 
 const (
@@ -51,11 +52,6 @@ func CreateRootCmd(container di.Container) (*cobra.Command, error) {
 		SilenceErrors: true,
 
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-			cliLogger, err := container.Logger().CreateLogger("cli")
-			if err != nil {
-				return fmt.Errorf("failed to initialize cli logger: %w", err)
-			}
-
 			// Ensure a default profile exists
 			if exists, _ := container.Profile().Exists(cmd.Context(), shared.DefaultProfileName); !exists {
 				_, _ = container.Profile().Create(cmd.Context(), shared.DefaultProfileName)
@@ -73,21 +69,41 @@ func CreateRootCmd(container di.Container) (*cobra.Command, error) {
 				}
 			}
 
-			level := logger.ParseLevel(levelFlag)
-			if level == logger.LevelUnknown {
-				return fmt.Errorf("unknown log level: %s", levelFlag)
+			// Load config to get logging settings
+			cfg, _ := container.Config().GetConfig(cmd.Context())
+
+			// Determine final log level: CLI flag > Config > Default
+			finalLevel := logger.LevelUnknown
+			if levelFlag != "" {
+				finalLevel = logger.ParseLevel(levelFlag)
+				if finalLevel == logger.LevelUnknown {
+					return fmt.Errorf("unknown log level: %s", levelFlag)
+				}
+			} else if cfg.Logging.Level != logger.LevelUnknown {
+				finalLevel = cfg.Logging.Level
 			}
 
-			container.Logger().SetAllLevel(level)
-			cliLogger.Debug("updated all logger level", logger.String("level", level.String()))
-			cliLogger.Debug("updated config path", logger.String("path", configFlag))
+			// Reconfigure logger with settings from config and flags
+			if err := container.Logger().Reconfigure(finalLevel, cfg.Logging.Output, cfg.Logging.Format); err != nil {
+				return fmt.Errorf("failed to reconfigure logger: %w", err)
+			}
+
+			cliLogger, err := container.Logger().CreateLogger("cli")
+			if err != nil {
+				return fmt.Errorf("failed to initialize cli logger: %w", err)
+			}
+
+			cliLogger.Debug("logger reconfigured",
+				logger.String("level", finalLevel.String()),
+				logger.String("output", cfg.Logging.Output),
+				logger.String("format", cfg.Logging.Format))
 
 			return nil
 		},
 	}
 
 	rootCmd.PersistentFlags().StringVar(&configFlag, "config", "", "path to config file")
-	rootCmd.PersistentFlags().StringVar(&levelFlag, "level", "info", "set the logging level (e.g., debug, info, warn, error)")
+	rootCmd.PersistentFlags().StringVar(&levelFlag, "level", "", "set the logging level (e.g., debug, info, warn, error)")
 	rootCmd.PersistentFlags().StringVar(&profileFlag, "profile", "", "name of profile")
 
 	completionCmd := &cobra.Command{
@@ -131,6 +147,46 @@ Zsh:
 		},
 	}
 
+	docsCmd := &cobra.Command{
+		Use:    "docs",
+		Short:  "Generate documentation",
+		Hidden: true,
+	}
+
+	manCmd := &cobra.Command{
+		Use:   "man [directory]",
+		Short: "Generate man pages",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			dir := args[0]
+			if err := os.MkdirAll(dir, 0755); err != nil {
+				return err
+			}
+			header := &doc.GenManHeader{
+				Title:   "ODC",
+				Section: "1",
+				Source:  "odc " + version.Version,
+				Manual:  "odc User Manual",
+			}
+			return doc.GenManTree(cmd.Root(), header, dir)
+		},
+	}
+
+	markdownCmd := &cobra.Command{
+		Use:   "markdown [directory]",
+		Short: "Generate Markdown documentation",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			dir := args[0]
+			if err := os.MkdirAll(dir, 0755); err != nil {
+				return err
+			}
+			return doc.GenMarkdownTree(cmd.Root(), dir)
+		},
+	}
+
+	docsCmd.AddCommand(manCmd, markdownCmd)
+
 	rootCmd.AddCommand(
 		auth.CreateAuthCmd(container),
 		profile.CreateProfileCmd(container),
@@ -147,6 +203,7 @@ Zsh:
 		download.CreateDownloadCmd(container),
 		edit.CreateEditCmd(container),
 		completionCmd,
+		docsCmd,
 	)
 
 	middleware.ApplyMiddlewareRecursively(rootCmd, middleware.WithCorrelationID)

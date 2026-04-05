@@ -1,5 +1,7 @@
 package logger
 
+import "strings"
+
 // Level defines the severity of a log message.
 type Level int8
 
@@ -17,7 +19,7 @@ const (
 )
 
 func ParseLevel(level string) Level {
-	switch level {
+	switch strings.ToLower(level) {
 	case "debug":
 		return LevelDebug
 	case "info":
@@ -26,6 +28,8 @@ func ParseLevel(level string) Level {
 		return LevelWarn
 	case "error":
 		return LevelError
+	case "unknown", "":
+		return LevelUnknown
 	default:
 		return LevelUnknown
 	}
@@ -41,6 +45,8 @@ func (l Level) String() string {
 		return "warn"
 	case LevelError:
 		return "error"
+	case LevelUnknown:
+		return "unknown"
 	default:
 		return "unknown"
 	}

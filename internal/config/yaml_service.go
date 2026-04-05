@@ -133,5 +133,8 @@ func (s *YAMLService) defaultConfig() Config {
 			TenantID:    "common",
 			RedirectURI: "http://localhost:8400",
 		},
+		Logging: LoggingConfig{
+			Level: logger.LevelInfo,
+		},
 	}
 }

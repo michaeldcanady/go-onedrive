@@ -48,6 +48,22 @@ The following keys are available for the `microsoft` provider:
 | `auth.method`        | Default auth method (`interactive`, `device-code`).|
 | `auth.redirect_uri`  | The URI used for interactive browser login.     |
 
+## Configuration Schema
+
+If you prefer to edit your configuration manually, we provide a JSON schema 
+to ensure your `config.yaml` is valid. You can use this schema in editors like 
+VS Code to get validation and autocompletion.
+
+To use the schema in VS Code, add the following to your `settings.json`:
+
+```json
+{
+  "yaml.schemas": {
+    "https://raw.githubusercontent.com/michaeldcanady/go-onedrive/main/internal/config/schema.json": "config.yaml"
+  }
+}
+```
+
 ## Next steps
 
 After updating your configuration, you may need to [re-authenticate](authenticate.md) 

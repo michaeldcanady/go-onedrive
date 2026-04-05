@@ -2,6 +2,7 @@ package logger
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -47,38 +48,95 @@ func NewZapService(env environment.Service) *ZapService {
 	}
 }
 
+// Reconfigure updates the logger configuration and recreates the root logger.
+func (s *ZapService) Reconfigure(level Level, output string, format string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	// Sync old logger before replacing it
+	if s.root != nil {
+		_ = s.root.Sync()
+	}
+
+	if level != LevelUnknown {
+		l, err := zapcore.ParseLevel(level.String())
+		if err != nil {
+			return fmt.Errorf("invalid level: %w", err)
+		}
+		s.level.SetLevel(l)
+	}
+
+	// Determine output paths
+	outputPaths := []string{"stdout"}
+	if output != "" {
+		outputPaths = strings.Split(output, ",")
+	} else if envOutput := s.env.LogOutput(); envOutput != "" {
+		outputPaths = strings.Split(envOutput, ",")
+	} else if logDir, err := s.env.LogDir(); err == nil && logDir != "" {
+		outputPaths = []string{filepath.Join(logDir, "app.log")}
+	}
+
+	// Ensure parent directories exist for file outputs
+	for _, path := range outputPaths {
+		if path == "stdout" || path == "stderr" {
+			continue
+		}
+		dir := filepath.Dir(path)
+		if err := os.MkdirAll(dir, 0755); err != nil {
+			return fmt.Errorf("failed to create log directory %s: %w", dir, err)
+		}
+	}
+
+	// Determine format
+	encoding := "json"
+	if format != "" {
+		encoding = format
+	}
+
+	// Configure Zap logger
+	cfg := zap.Config{
+		Encoding:         encoding,
+		Level:            s.level,
+		OutputPaths:      outputPaths,
+		ErrorOutputPaths: outputPaths,
+		EncoderConfig: zapcore.EncoderConfig{
+			MessageKey:    "message",
+			LevelKey:      "level",
+			TimeKey:       "time",
+			CallerKey:     "caller",
+			StacktraceKey: "stacktrace",
+			EncodeTime:    zapcore.ISO8601TimeEncoder,
+			EncodeLevel:   zapcore.CapitalLevelEncoder,
+			EncodeCaller:  zapcore.ShortCallerEncoder,
+		},
+	}
+
+	if encoding == "console" || encoding == "text" {
+		cfg.Encoding = "console"
+		cfg.EncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
+	}
+
+	root, err := cfg.Build()
+	if err != nil {
+		return fmt.Errorf("failed to build logger: %w", err)
+	}
+
+	s.root = root
+
+	// Update all existing sub-loggers
+	for id, logger := range s.loggers {
+		logger.logger = s.root.Named(id)
+	}
+
+	return nil
+}
+
 // initRoot initializes the root zap logger if it hasn't been already.
 // It configures the logger to output to a file by default.
 func (s *ZapService) initRoot() error {
 	var err error
 	s.once.Do(func() {
-		// Determine output paths
-		outputPaths := []string{"stdout"}
-		if envOutput := s.env.LogOutput(); envOutput != "" {
-			outputPaths = strings.Split(envOutput, ",")
-		} else if logDir, err := s.env.LogDir(); err == nil && logDir != "" {
-			outputPaths = []string{filepath.Join(logDir, "app.log")}
-		}
-
-		// Configure Zap logger
-		cfg := zap.Config{
-			Encoding:         "json", // Use JSON for structured logging
-			Level:            s.level,
-			OutputPaths:      outputPaths,
-			ErrorOutputPaths: outputPaths,
-			EncoderConfig: zapcore.EncoderConfig{
-				MessageKey:    "message",
-				LevelKey:      "level",
-				TimeKey:       "time",
-				CallerKey:     "caller",
-				StacktraceKey: "stacktrace",
-				EncodeTime:    zapcore.ISO8601TimeEncoder,
-				EncodeLevel:   zapcore.CapitalLevelEncoder,
-				EncodeCaller:  zapcore.ShortCallerEncoder,
-			},
-		}
-
-		s.root, err = cfg.Build()
+		err = s.Reconfigure(LevelUnknown, "", "")
 	})
 	return err
 }
