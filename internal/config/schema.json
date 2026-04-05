@@ -4,6 +4,54 @@
   "description": "Configuration schema for the odc (OneDrive CLI) tool.",
   "type": "object",
   "properties": {
+    "logging": {
+      "type": "object",
+      "description": "Logging configuration settings.",
+      "properties": {
+        "level": {
+          "type": "string",
+          "description": "The minimum severity level of log messages to output.",
+          "enum": [
+            "debug",
+            "info",
+            "warn",
+            "error",
+            "fatal"
+          ],
+          "default": "info"
+        },
+        "output": {
+          "type": "string",
+          "description": "The destination for log output (e.g., 'stdout', 'stderr', or a file path).",
+          "default": "stdout",
+          "anyOf": [
+            {
+              "const": "stdout",
+              "description": "Log output will be written to standard output (console)."
+            },
+            {
+              "const": "stderr",
+              "description": "Log output will be written to standard error."
+            },
+            {
+              "type": "string",
+              "format": "uri",
+              "description": "A file path to write logs to."
+            }
+          ]
+        },
+        "format": {
+          "type": "string",
+          "description": "The format of log messages (e.g., 'text' or 'json').",
+          "enum": [
+            "text",
+            "json"
+          ],
+          "default": "text"
+        }
+      },
+      "additionalProperties": false
+    },
     "auth": {
       "type": "object",
       "description": "Authentication and identity provider settings.",
@@ -54,8 +102,5 @@
       "additionalProperties": false
     }
   },
-  "required": [
-    "auth"
-  ],
   "additionalProperties": false
 }

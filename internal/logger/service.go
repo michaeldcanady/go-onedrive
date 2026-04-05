@@ -6,4 +6,6 @@ type Service interface {
 	CreateLogger(id string) (Logger, error)
 	// SetAllLevel sets the logging level for all managed Loggers simultaneously.
 	SetAllLevel(level Level)
+	// Reconfigure updates the global logging configuration, including level, output, and format.
+	Reconfigure(level Level, output string, format string) error
 }
