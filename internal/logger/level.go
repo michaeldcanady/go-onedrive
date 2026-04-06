@@ -18,6 +18,7 @@ const (
 	LevelError
 )
 
+// ParseLevel converts a string representation of a logging level into the corresponding [Level]. It returns [LevelUnknown] for unrecognized levels.
 func ParseLevel(level string) Level {
 	switch strings.ToLower(level) {
 	case "debug":
@@ -35,6 +36,7 @@ func ParseLevel(level string) Level {
 	}
 }
 
+// String returns the string representation of the [Level]. It returns "unknown" for unrecognized levels.
 func (l Level) String() string {
 	switch l {
 	case LevelDebug:

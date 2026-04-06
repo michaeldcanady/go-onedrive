@@ -17,7 +17,6 @@ import (
 	shared "github.com/michaeldcanady/go-onedrive/internal/fs"
 	platform "github.com/michaeldcanady/go-onedrive/internal/identity/providers/shared"
 	"github.com/michaeldcanady/go-onedrive/internal/logger"
-	"github.com/michaeldcanady/go-onedrive/internal/state"
 	abstractions "github.com/microsoft/kiota-abstractions-go"
 	"github.com/microsoftgraph/msgraph-sdk-go/drives"
 	"github.com/microsoftgraph/msgraph-sdk-go/models"
@@ -43,22 +42,22 @@ const (
 // Provider implements the filesystem Service interface for Microsoft OneDrive.
 type Provider struct {
 	platform platform.PlatformProvider
-	state    state.Service
 	alias    alias.Service
 	driveSvc drive.Service
 	log      logger.Logger
 }
 
 // NewProvider creates a new instance of the OneDrive filesystem provider.
-func NewProvider(p platform.PlatformProvider, state state.Service, driveSvc drive.Service, log logger.Logger) *Provider {
+func NewProvider(p platform.PlatformProvider, alias alias.Service, driveSvc drive.Service, log logger.Logger) *Provider {
 	return &Provider{
 		platform: p,
-		state:    state,
+		alias:    alias,
 		driveSvc: driveSvc,
 		log:      log,
 	}
 }
 
+// Name returns the name of the provider.
 func (p *Provider) Name() string {
 	return providerName
 }
@@ -94,26 +93,27 @@ func (p *Provider) mapError(err error, path string) error {
 	}
 }
 
+// resolveDrive parses the item path to determine the drive ID and the clean item path within that drive.
 func (p *Provider) resolveDrive(itemPath string) (string, string) {
-	// If path is "alias:path"
+	// If path is "driveID:path" or "alias:path"
 	if !strings.HasPrefix(itemPath, "/") && strings.Contains(itemPath, ":") {
-		alias, cleanPath, _ := strings.Cut(itemPath, ":")
-		driveID, err := p.alias.GetDriveIDByAlias(alias)
+		idOrAlias, cleanPath, _ := strings.Cut(itemPath, ":")
+		// Check if it's an alias first
+		driveID, err := p.alias.GetDriveIDByAlias(idOrAlias)
 		if err == nil {
 			return driveID, cleanPath
 		}
+		// Otherwise assume it's a drive ID
+		return idOrAlias, cleanPath
 	}
 
-	// Default to active drive or "me"
-	driveID, err := p.state.Get(state.KeyDrive)
-	if err != nil || driveID == "" {
-		// Fallback to primary drive
-		return "me", itemPath
-	}
-
-	return driveID, itemPath
+	// Fallback to primary drive if no drive is specified in the path.
+	// Note: Registry.Resolve should have already prepended the active drive ID
+	// if it was available.
+	return "me", itemPath
 }
 
+// expandURI constructs the full API endpoint URI based on the provided templates and path parameters.
 func (p *Provider) expandURI(rootTemplate, relativeTemplate, driveID, itemPath string) string {
 	normalized := p.normalizePath(itemPath)
 	urlTemplate := rootTemplate
@@ -130,6 +130,7 @@ func (p *Provider) expandURI(rootTemplate, relativeTemplate, driveID, itemPath s
 	return uri
 }
 
+// normalizePath cleans up the item path and ensures it is in the correct format for URI templates.
 func (p *Provider) normalizePath(pth string) string {
 	if pth == "" || pth == "/" || pth == "." {
 		return ""
@@ -318,6 +319,7 @@ func (p *Provider) WriteFile(ctx context.Context, itemPath string, r io.Reader, 
 	return p.mapItemToSharedItem(it, itemPath), nil
 }
 
+// writeLargeFile handles uploading large files using OneDrive's resumable upload session API.
 func (p *Provider) writeLargeFile(ctx context.Context, driveID, cleanPath, itemPath string, r io.Reader, opts shared.WriteOptions) (shared.Item, error) {
 	log := p.log.WithContext(ctx).With(
 		logger.String("method", "writeLargeFile"),
@@ -555,6 +557,7 @@ func (p *Provider) Touch(ctx context.Context, itemPath string) (shared.Item, err
 	return p.WriteFile(ctx, itemPath, strings.NewReader(""), shared.WriteOptions{})
 }
 
+// mapItemToSharedItem converts a OneDrive DriveItem to the provider's shared Item format.
 func (p *Provider) mapItemToSharedItem(it models.DriveItemable, itemPath string) shared.Item {
 	if it == nil {
 		return shared.Item{}

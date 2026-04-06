@@ -72,6 +72,7 @@ func (g *GraphDriveGateway) GetPersonalDrive(ctx context.Context) (drive.Drive, 
 	return toDrive(resp), nil
 }
 
+// toDrive converts a Microsoft Graph Driveable object to the provider's internal Drive struct.
 func toDrive(d models.Driveable) drive.Drive {
 	if d == nil {
 		return drive.Drive{}

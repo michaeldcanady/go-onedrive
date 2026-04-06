@@ -99,7 +99,7 @@ func NewDefaultContainer() (*DefaultContainer, error) {
 
 	fsReg := registry.NewRegistry(stateSvc, aliasSvc, cliLog)
 	fsReg.Register("local", local.NewProvider(cliLog))
-	fsReg.Register("onedrive", onedrive.NewProvider(graphProvider, stateSvc, driveSvc, cliLog))
+	fsReg.Register("onedrive", onedrive.NewProvider(graphProvider, aliasSvc, driveSvc, cliLog))
 
 	editorSvc := editor.NewDefaultService(envSvc, cliLog)
 

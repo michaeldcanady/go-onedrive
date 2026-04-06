@@ -5,6 +5,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// WithCorrelationID is a middleware that ensures a correlation ID is present in the command's context. If not, it generates a new one and adds it to the context.
 func WithCorrelationID(cmd *cobra.Command) {
 	original := cmd.RunE
 

@@ -3,6 +3,7 @@ package profile
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"path/filepath"
 	"time"
@@ -13,47 +14,63 @@ import (
 	bolt "go.etcd.io/bbolt"
 )
 
+const (
+	profilesDBFileName = "profiles.db"
+)
+
 // BoltService is a persistent implementation of the profile.Service using BoltDB.
 type BoltService struct {
 	db    *bolt.DB
 	env   environment.Service
-	state state.Service
+	state state.ProfileStore
 }
 
 // NewBoltService initializes a new instance of the BoltService.
-func NewBoltService(env environment.Service, state state.Service) (*BoltService, error) {
-	configDir, err := env.ConfigDir()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get config directory: %w", err)
-	}
-
-	dbFilePath := filepath.Join(configDir, "profiles.db")
-	db, err := bolt.Open(dbFilePath, 0600, &bolt.Options{Timeout: 1 * time.Second})
-	if err != nil {
-		return nil, fmt.Errorf("failed to open BoltDB: %w", err)
-	}
-
+func NewBoltService(env environment.Service, state state.ProfileStore) (*BoltService, error) {
 	bs := &BoltService{
-		db:    db,
+		db:    nil,
 		env:   env,
 		state: state,
 	}
 
+	if err := bs.initializeDatabase(); err != nil {
+		bs.Close() // Close DB if initialization fails
+		return nil, errors.Join(ErrInitializeService, err)
+	}
+
 	// Ensure profiles bucket is created
 	if err := bs.ensureBucket(); err != nil {
-		bs.db.Close() // Close DB if initialization fails
-		return nil, err
+		bs.Close() // Close DB if initialization fails
+		return nil, errors.Join(ErrInitializeService, err)
 	}
 
 	// Ensure default profile exists
-	_, _ = bs.Create(context.Background(), shared.DefaultProfileName)
+	if _, err := bs.Create(context.Background(), shared.DefaultProfileName); err != nil {
+		bs.Close()
+		return nil, errors.Join(ErrInitializeService, err)
+	}
 
 	if err := bs.migrateConfigPaths(); err != nil {
-		bs.db.Close()
-		return nil, fmt.Errorf("failed to migrate profile config paths: %w", err)
+		bs.Close()
+		return nil, errors.Join(ErrInitializeService, err)
 	}
 
 	return bs, nil
+}
+
+func (bs *BoltService) initializeDatabase() error {
+	configDir, err := bs.env.ConfigDir()
+	if err != nil {
+		return errors.Join(ErrFailedToGetConfigDirectory, err)
+	}
+
+	dbFilePath := filepath.Join(configDir, profilesDBFileName)
+	db, err := bolt.Open(dbFilePath, 0600, &bolt.Options{Timeout: 1 * time.Second})
+	if err != nil {
+		return errors.Join(ErrFailedToOpenDatabase, err)
+	}
+	bs.db = db
+	return nil
 }
 
 // ensureBuckets creates the top-level buckets if they don't exist.
@@ -113,6 +130,10 @@ func (bs *BoltService) ResolvePath(ctx context.Context, profileName string) (str
 
 // Close closes the BoltDB database connection.
 func (bs *BoltService) Close() error {
+	if bs.db == nil {
+		return nil
+	}
+
 	return bs.db.Close()
 }
 
@@ -235,7 +256,7 @@ func (bs *BoltService) Exists(ctx context.Context, name string) (bool, error) {
 
 // GetActive retrieves the currently active profile.
 func (bs *BoltService) GetActive(ctx context.Context) (Profile, error) {
-	name, err := bs.state.Get(state.KeyProfile)
+	name, err := bs.state.GetProfile(ctx)
 	if err != nil {
 		return Profile{}, fmt.Errorf("failed to get active profile name: %w", err)
 	}
@@ -253,5 +274,5 @@ func (bs *BoltService) SetActive(ctx context.Context, name string, scope state.S
 		return ErrProfileNotFound
 	}
 
-	return bs.state.Set(state.KeyProfile, name, scope)
+	return bs.state.SetProfile(ctx, name, scope)
 }

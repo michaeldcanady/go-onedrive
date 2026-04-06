@@ -1,8 +1,10 @@
 package state
 
 import (
+	"context"
 	"fmt"
 	"path/filepath"
+	"sync"
 	"time"
 
 	"github.com/michaeldcanady/go-onedrive/internal/environment"
@@ -26,9 +28,12 @@ const (
 	stateDBFileName = "state.db"
 )
 
-// BoltService is a persistent implementation of the state.Service using BoltDB.
+// BoltService is a persistent implementation of the state.Service using BoltDB for global state
+// and an in-memory map for session state.
 type BoltService struct {
-	db *bolt.DB
+	db           *bolt.DB
+	sessionState map[Key]string
+	mu           sync.RWMutex
 }
 
 // NewBoltService initializes a new instance of the BoltService.
@@ -45,7 +50,8 @@ func NewBoltService(env environment.Service) (*BoltService, error) {
 	}
 
 	bs := &BoltService{
-		db: db,
+		db:           db,
+		sessionState: make(map[Key]string),
 	}
 
 	// Ensure top-level buckets are created
@@ -54,12 +60,12 @@ func NewBoltService(env environment.Service) (*BoltService, error) {
 		return nil, err
 	}
 
-	// Set default profile if not set
-	if _, err := bs.Get(KeyProfile); err != nil {
+	// Set default profile if not set in persistent storage
+	if _, err := bs.getGlobal(KeyProfile); err != nil {
 		if err != ErrKeyNotFound {
 			return nil, fmt.Errorf("failed to check for default profile: %w", err)
 		}
-		if err := bs.Set(KeyProfile, shared.DefaultProfileName, ScopeGlobal); err != nil {
+		if err := bs.setGlobal(KeyProfile, shared.DefaultProfileName); err != nil {
 			return nil, fmt.Errorf("failed to set default profile: %w", err)
 		}
 	}
@@ -78,34 +84,40 @@ func (bs *BoltService) ensureBuckets() error {
 		if _, err := tx.CreateBucketIfNotExists(globalBucketName); err != nil {
 			return fmt.Errorf("failed to create global bucket: %w", err)
 		}
-		if _, err := tx.CreateBucketIfNotExists(sessionBucketName); err != nil {
-			return fmt.Errorf("failed to create session bucket: %w", err)
-		}
 		return nil
 	})
 }
 
 // Get retrieves a state value by its key, checking session scope first, then global.
 func (bs *BoltService) Get(key Key) (string, error) {
+	// Check session state first
+	bs.mu.RLock()
+	val, ok := bs.sessionState[key]
+	bs.mu.RUnlock()
+
+	if ok && val != "" {
+		return val, nil
+	}
+
+	// Check global state
+	return bs.getGlobal(key)
+}
+
+func (bs *BoltService) getGlobal(key Key) (string, error) {
 	var value string
 	err := bs.db.View(func(tx *bolt.Tx) error {
 		keyStr := key.String()
-
-		for _, scopeKey := range [][]byte{sessionBucketName, globalBucketName} {
-			b := tx.Bucket(scopeKey)
-			if b == nil {
-				return ErrBucketNotFound
-			}
-
-			v := b.Get([]byte(keyStr))
-			if v == nil {
-				continue // Key not found in this scope, try the next one.
-			}
-			if value = string(v); value != "" {
-				return nil // Return immediately if a non-empty value is found
-			}
+		b := tx.Bucket(globalBucketName)
+		if b == nil {
+			return ErrBucketNotFound
 		}
-		return ErrKeyNotFound
+
+		v := b.Get([]byte(keyStr))
+		if v == nil {
+			return ErrKeyNotFound
+		}
+		value = string(v)
+		return nil
 	})
 
 	if err != nil {
@@ -116,16 +128,22 @@ func (bs *BoltService) Get(key Key) (string, error) {
 
 // Set assigns a value to a key within the specified scope.
 func (bs *BoltService) Set(key Key, value string, scope Scope) error {
+	if scope == ScopeSession {
+		bs.mu.Lock()
+		bs.sessionState[key] = value
+		bs.mu.Unlock()
+		return nil
+	}
+
+	return bs.setGlobal(key, value)
+}
+
+func (bs *BoltService) setGlobal(key Key, value string) error {
 	return bs.db.Update(func(tx *bolt.Tx) error {
 		keyStr := key.String()
-		bucketName := globalBucketName
-		if scope == ScopeSession {
-			bucketName = sessionBucketName
-		}
-
-		b, err := tx.CreateBucketIfNotExists(bucketName)
+		b, err := tx.CreateBucketIfNotExists(globalBucketName)
 		if err != nil {
-			return fmt.Errorf("failed to get or create bucket %s: %w", string(bucketName), err)
+			return fmt.Errorf("failed to get or create bucket %s: %w", string(globalBucketName), err)
 		}
 
 		if err := b.Put([]byte(keyStr), []byte(value)); err != nil {
@@ -137,18 +155,64 @@ func (bs *BoltService) Set(key Key, value string, scope Scope) error {
 
 // Clear removes a state value for the given key from all scopes.
 func (bs *BoltService) Clear(key Key) error {
+	bs.mu.Lock()
+	delete(bs.sessionState, key)
+	bs.mu.Unlock()
+
 	return bs.db.Update(func(tx *bolt.Tx) error {
 		keyStr := key.String()
-
-		for _, bucketName := range [][]byte{sessionBucketName, globalBucketName} {
-			b := tx.Bucket(bucketName)
-			if b == nil {
-				return fmt.Errorf("bucket %s not found", string(bucketName))
-			}
-			if err := b.Delete([]byte(keyStr)); err != nil {
-				return fmt.Errorf("failed to delete state key %s from bucket %s: %w", keyStr, string(bucketName), err)
-			}
+		b := tx.Bucket(globalBucketName)
+		if b == nil {
+			return nil // No bucket, nothing to clear
+		}
+		if err := b.Delete([]byte(keyStr)); err != nil {
+			return fmt.Errorf("failed to delete state key %s from global bucket: %w", keyStr, err)
 		}
 		return nil
 	})
+}
+
+// GetProfile retrieves the currently active profile name.
+func (bs *BoltService) GetProfile(_ context.Context) (string, error) {
+	return bs.Get(KeyProfile)
+}
+
+// SetProfile updates the active profile name.
+func (bs *BoltService) SetProfile(_ context.Context, name string, scope Scope) error {
+	return bs.Set(KeyProfile, name, scope)
+}
+
+// GetDrive retrieves the active drive ID.
+func (bs *BoltService) GetDrive(_ context.Context) (string, error) {
+	return bs.Get(KeyDrive)
+}
+
+// SetDrive updates the active drive ID.
+func (bs *BoltService) SetDrive(_ context.Context, driveID string, scope Scope) error {
+	return bs.Set(KeyDrive, driveID, scope)
+}
+
+// GetAccessToken retrieves the cached access token.
+func (bs *BoltService) GetAccessToken(_ context.Context) (string, error) {
+	return bs.Get(KeyAccessToken)
+}
+
+// SetAccessToken updates the cached access token.
+func (bs *BoltService) SetAccessToken(_ context.Context, token string, scope Scope) error {
+	return bs.Set(KeyAccessToken, token, scope)
+}
+
+// ClearAccessToken removes the cached access token.
+func (bs *BoltService) ClearAccessToken(_ context.Context) error {
+	return bs.Clear(KeyAccessToken)
+}
+
+// GetConfigOverride retrieves the configuration path override.
+func (bs *BoltService) GetConfigOverride(_ context.Context) (string, error) {
+	return bs.Get(KeyConfigOverride)
+}
+
+// SetConfigOverride updates the configuration path override.
+func (bs *BoltService) SetConfigOverride(_ context.Context, path string, scope Scope) error {
+	return bs.Set(KeyConfigOverride, path, scope)
 }

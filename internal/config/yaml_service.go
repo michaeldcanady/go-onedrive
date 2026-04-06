@@ -16,14 +16,20 @@ import (
 type YAMLService struct {
 	// resolver is used to look up configuration paths if not in the override map.
 	resolver profile.PathResolver
-	// state is used for looking up configuration path overrides.
-	state state.Service
+	// state is used for looking up configuration path overrides and active profile.
+	state interface {
+		state.ConfigStore
+		state.ProfileStore
+	}
 	// log is the logger used for reporting configuration events.
 	log logger.Logger
 }
 
 // NewYAMLService creates a new instance of YAMLService.
-func NewYAMLService(resolver profile.PathResolver, state state.Service, log logger.Logger) *YAMLService {
+func NewYAMLService(resolver profile.PathResolver, state interface {
+	state.ConfigStore
+	state.ProfileStore
+}, log logger.Logger) *YAMLService {
 	return &YAMLService{
 		resolver: resolver,
 		state:    state,
@@ -36,13 +42,13 @@ func (s *YAMLService) GetPath(ctx context.Context) (string, bool) {
 	l := s.log.WithContext(ctx)
 
 	// Check for transient override in state service first
-	if path, err := s.state.Get(state.KeyConfigOverride); err == nil && path != "" {
+	if path, err := s.state.GetConfigOverride(ctx); err == nil && path != "" {
 		l.Debug("configuration override detected", logger.String("path", path))
 		return path, true
 	}
 
 	// Fetch current profile from state
-	profile, err := s.state.Get(state.KeyProfile)
+	profile, err := s.state.GetProfile(ctx)
 	if err != nil {
 		l.Warn("failed to fetch active profile from state", logger.Error(err))
 		return "", false

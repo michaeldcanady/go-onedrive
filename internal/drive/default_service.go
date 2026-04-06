@@ -12,12 +12,12 @@ import (
 // DefaultService provides the default implementation of the drive service.
 type DefaultService struct {
 	gateway Gateway
-	state   state.Service
+	state   state.DriveStore
 	log     logger.Logger
 }
 
 // NewDefaultService initializes a new instance of the DefaultService.
-func NewDefaultService(gateway Gateway, state state.Service, l logger.Logger) *DefaultService {
+func NewDefaultService(gateway Gateway, state state.DriveStore, l logger.Logger) *DefaultService {
 	return &DefaultService{
 		gateway: gateway,
 		state:   state,
@@ -71,7 +71,7 @@ func (s *DefaultService) ResolvePersonalDrive(ctx context.Context) (Drive, error
 
 // GetActive retrieves the currently active drive.
 func (s *DefaultService) GetActive(ctx context.Context) (Drive, error) {
-	id, err := s.state.Get(state.KeyDrive)
+	id, err := s.state.GetDrive(ctx)
 	if err != nil {
 		return Drive{}, fmt.Errorf("failed to get active drive ID: %w", err)
 	}
@@ -85,5 +85,5 @@ func (s *DefaultService) GetActive(ctx context.Context) (Drive, error) {
 
 // SetActive marks a specific drive as the active one with the given scope.
 func (s *DefaultService) SetActive(ctx context.Context, driveID string, scope state.Scope) error {
-	return s.state.Set(state.KeyDrive, driveID, scope)
+	return s.state.SetDrive(ctx, driveID, scope)
 }

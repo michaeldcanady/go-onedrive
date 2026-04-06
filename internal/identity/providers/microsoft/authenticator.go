@@ -17,12 +17,12 @@ import (
 // Authenticator implements the identity.shared.Authenticator interface for Microsoft.
 type Authenticator struct {
 	cred  azcore.TokenCredential
-	state state.Service
+	state state.AuthStore
 	log   logger.Logger
 }
 
 // NewAuthenticator initializes a new Microsoft authenticator.
-func NewAuthenticator(cred azcore.TokenCredential, state state.Service, log logger.Logger) *Authenticator {
+func NewAuthenticator(cred azcore.TokenCredential, state state.AuthStore, log logger.Logger) *Authenticator {
 	return &Authenticator{
 		cred:  cred,
 		state: state,
@@ -76,7 +76,7 @@ func (a *Authenticator) SaveToken(ctx context.Context, token shared.AccessToken)
 		return fmt.Errorf("failed to serialize token for caching: %w", err)
 	}
 
-	if err := a.state.Set(state.KeyAccessToken, string(tokenData), state.ScopeGlobal); err != nil {
+	if err := a.state.SetAccessToken(ctx, string(tokenData), state.ScopeGlobal); err != nil {
 		return fmt.Errorf("failed to cache access token: %w", err)
 	}
 
@@ -121,7 +121,7 @@ func (a *Authenticator) createCredential(opts shared.LoginOptions) (azcore.Token
 func (a *Authenticator) Logout(ctx context.Context) error {
 	a.log.Info("logging out from microsoft")
 	a.cred = nil
-	return a.state.Clear(state.KeyAccessToken)
+	return a.state.ClearAccessToken(ctx)
 }
 
 // Credential returns the underlying Azure token credential.

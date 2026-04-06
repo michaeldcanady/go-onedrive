@@ -17,7 +17,7 @@ type Registry struct {
 	// providers maps provider names to their implementations.
 	providers map[string]Service
 	// state is the service for tracking the active provider and aliases.
-	state state.Service
+	state state.DriveStore
 	// alias is the drive alias management service.
 	alias alias.Service
 	// logger is the logger instance.
@@ -25,7 +25,7 @@ type Registry struct {
 }
 
 // NewRegistry initializes a new instance of the Registry.
-func NewRegistry(state state.Service, alias alias.Service, log logger.Logger) *Registry {
+func NewRegistry(state state.DriveStore, alias alias.Service, log logger.Logger) *Registry {
 	return &Registry{
 		providers: make(map[string]Service),
 		state:     state,
@@ -63,6 +63,16 @@ func (r *Registry) Resolve(ctx context.Context, path string) (Service, string, e
 		if err != nil {
 			return nil, "", err
 		}
+
+		// Prepend active drive ID for onedrive provider
+		if DefaultProviderPrefix == "onedrive" {
+			driveID, err := r.state.GetDrive(ctx)
+			if err != nil || driveID == "" {
+				driveID = "me"
+			}
+			path = fmt.Sprintf("%s:%s", driveID, path)
+		}
+
 		return p, path, nil
 	}
 
@@ -83,6 +93,19 @@ func (r *Registry) Resolve(ctx context.Context, path string) (Service, string, e
 		rest = fmt.Sprintf("%s:%s", driveID, rest)
 		return defaultProvider, rest, nil
 	}
+
+	// If it's the onedrive provider and the rest doesn't look like it already has a drive ID,
+	// prepend the active drive ID.
+	if prefix == "onedrive" {
+		if !strings.Contains(rest, ":") {
+			driveID, err := r.state.GetDrive(ctx)
+			if err != nil || driveID == "" {
+				driveID = "me"
+			}
+			rest = fmt.Sprintf("%s:%s", driveID, rest)
+		}
+	}
+
 	// If it's a registered provider, use it directly
 	return p, rest, nil
 }

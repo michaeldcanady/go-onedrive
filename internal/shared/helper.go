@@ -19,6 +19,7 @@ func WithCorrelationID(ctx context.Context, id string) context.Context {
 	return context.WithValue(ctx, correlationIDKey{}, id)
 }
 
+// CorrelationIDFromContext retrieves the correlation id from [context.Context]
 func CorrelationIDFromContext(ctx context.Context) string {
 	if v := ctx.Value(correlationIDKey{}); v != nil {
 		if s, ok := v.(string); ok {

@@ -9,6 +9,7 @@ func String(key, val string) Field {
 	return Field{Key: key, FieldType: FieldTypeString, Value: val}
 }
 
+// _int is a type constraint that allows for any integer type (int, int32, int64).
 type _int interface {
 	int | int32 | int64
 }

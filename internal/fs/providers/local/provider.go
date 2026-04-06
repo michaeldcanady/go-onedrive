@@ -13,6 +13,7 @@ import (
 )
 
 const (
+	// providerName is the identifier for this filesystem provider implementation.
 	providerName = "local"
 )
 
@@ -29,10 +30,12 @@ func NewProvider(log logger.Logger) *Provider {
 	}
 }
 
+// Name returns the name of the provider.
 func (p *Provider) Name() string {
 	return providerName
 }
 
+// mapError translates standard Go errors into the provider's domain-specific error types with appropriate context.
 func (p *Provider) mapError(err error, path string) error {
 	if err == nil {
 		return nil
@@ -190,6 +193,7 @@ func (p *Provider) Touch(ctx context.Context, path string) (shared.Item, error) 
 	return p.Get(ctx, path)
 }
 
+// mapInfoToItem converts an [os.FileInfo] object to the provider's [shared.Item] format, including path and metadata.
 func (p *Provider) mapInfoToItem(path string, info os.FileInfo) shared.Item {
 	itemType := shared.TypeFile
 	if info.IsDir() {

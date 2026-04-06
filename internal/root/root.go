@@ -70,7 +70,10 @@ func CreateRootCmd(container di.Container) (*cobra.Command, error) {
 			}
 
 			// Load config to get logging settings
-			cfg, _ := container.Config().GetConfig(cmd.Context())
+			cfg, err := container.Config().GetConfig(cmd.Context())
+			if err != nil {
+				return fmt.Errorf("failed to load configuration: %w", err)
+			}
 
 			// Determine final log level: CLI flag > Config > Default
 			finalLevel := logger.LevelUnknown
