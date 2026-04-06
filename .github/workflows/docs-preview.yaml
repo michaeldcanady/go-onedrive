@@ -2,8 +2,8 @@ name: Docs preview
 
 on:
   pull_request:
-    branches:
-      - main
+    #branches:
+    #  - main
     paths:
       - 'docs/**'
       - mkdocs.yml
@@ -62,6 +62,7 @@ jobs:
           preview-branch: gh-pages
           umbrella-dir: pr-preview
           action: deploy
+          qr-code: false
 
   remove-preview:
     if: github.event_name == 'pull_request' && github.event.action == 'closed'
