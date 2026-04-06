@@ -24,6 +24,9 @@ Welcome to the `odc` developer guide. This section is intended for contributors 
 
 ## Technical Reference
 
-- **[Domain Interfaces](reference/domain-interfaces.md):** Core interfaces that define the system's behavior.
-- **[Error Handling](reference/cli-error-handling.md):** Standards for handling and reporting errors.
-- **[Testing Standards](how-to/testing.md):** How to write and run unit and integration tests.
+- **[Architecture Overview](explanation/architecture.md):** Understand the core design principles of `odc`.
+- **[Dependency Injection](explanation/dependency-injection.md):** How services are wired and managed.
+- **[Configuration Management](explanation/configuration-management.md):** How user settings and application state are handled.
+# - **[Domain Interfaces](reference/domain-interfaces.md):** Core interfaces that define the system's behavior.
+# - **[Error Handling](reference/cli-error-handling.md):** Standards for handling and reporting errors.
+# - **[Testing Standards](how-to/testing.md):** How to write and run unit and integration tests.

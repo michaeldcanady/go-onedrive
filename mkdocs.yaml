@@ -1,5 +1,5 @@
 repo_url: https://github.com/michaeldcanady/go-onedrive
-site_name: go-onedrive Docs
+site_name: OneDrive CLI Docs
 markdown_extensions:
   - pymdownx.superfences
   - pymdownx.tabbed:
@@ -34,32 +34,32 @@ nav:
       - Overview: developer/index.md
       - Tutorials:
           - Setup: developer/tutorials/setup.md
-          - Developing a Command: developer/tutorials/developing-a-command.md
-          - Adding a New Service: developer/tutorials/adding-a-new-service.md
-          - File Infrastructure: developer/tutorials/infra-file-getting-started.md
+#          - Developing a Command: developer/tutorials/developing-a-command.md
+#          - Adding a New Service: developer/tutorials/adding-a-new-service.md
+#          - File Infrastructure: developer/tutorials/infra-file-getting-started.md
       - How-to Guides:
-          - Testing: developer/how-to/testing.md
-          - Configuring Caching: developer/how-to/configure-caching.md
-          - Conditional Uploads: developer/how-to/conditional-uploads.md
           - Adding a New Subcommand: developer/how-to/add-subcommand.md
+#          - Testing: developer/how-to/testing.md
+#          - Configuring Caching: developer/how-to/configure-caching.md
+#          - Conditional Uploads: developer/how-to/conditional-uploads.md
       - Explanation:
           - Architecture Overview: developer/explanation/architecture.md
-          - CLI Interface Layer: developer/explanation/cli-interface-layer.md
-          - Dependency Injection: developer/explanation/dependency-injection.md
           - Authentication: developer/explanation/authentication.md
-          - Caching Strategy: developer/explanation/caching-strategy.md
+          - Dependency Injection: developer/explanation/dependency-injection.md
           - Configuration Management: developer/explanation/configuration-management.md
-          - Filesystem Abstraction: developer/explanation/filesystem-abstraction.md
-          - Path Normalization: developer/explanation/path-normalization.md
-      - Reference:
-          - Domain Interfaces: developer/reference/domain-interfaces.md
-          - CLI Command Patterns: developer/reference/cli-command-patterns.md
-          - CLI Error Handling: developer/reference/cli-error-handling.md
-          - CLI Output Formatting: developer/reference/cli-output-formatting.md
-          - CLI Filtering and Sorting: developer/reference/cli-filtering-sorting.md
-          - Coding Standards: developer/reference/coding-standards.md
-          - Metadata Repository: developer/reference/metadata-repository.md
-          - Contents Repository: developer/reference/contents-repository.md
+#          - CLI Interface Layer: developer/explanation/cli-interface-layer.md
+#          - Caching Strategy: developer/explanation/caching-strategy.md
+#          - Filesystem Abstraction: developer/explanation/filesystem-abstraction.md
+#          - Path Normalization: developer/explanation/path-normalization.md
+#      - Reference:
+#          - Domain Interfaces: developer/reference/domain-interfaces.md
+#          - CLI Command Patterns: developer/reference/cli-command-patterns.md
+#          - CLI Error Handling: developer/reference/cli-error-handling.md
+#          - CLI Output Formatting: developer/reference/cli-output-formatting.md
+#          - CLI Filtering and Sorting: developer/reference/cli-filtering-sorting.md
+#          - Coding Standards: developer/reference/coding-standards.md
+#          - Metadata Repository: developer/reference/metadata-repository.md
+#          - Contents Repository: developer/reference/contents-repository.md
 
 theme:
   name: material
