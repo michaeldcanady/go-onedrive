@@ -2,8 +2,8 @@ name: Docs preview
 
 on:
   pull_request:
-    #branches:
-    #  - main
+    branches:
+      - main
     paths:
       - 'docs/**'
       - mkdocs.yml
