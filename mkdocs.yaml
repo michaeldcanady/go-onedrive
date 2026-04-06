@@ -51,10 +51,10 @@ nav:
 #          - Caching Strategy: developer/explanation/caching-strategy.md
 #          - Filesystem Abstraction: developer/explanation/filesystem-abstraction.md
 #          - Path Normalization: developer/explanation/path-normalization.md
-#      - Reference:
-#          - Domain Interfaces: developer/reference/domain-interfaces.md
+      - Reference:
+          - Domain Interfaces: developer/reference/domain-interfaces.md
 #          - CLI Command Patterns: developer/reference/cli-command-patterns.md
-#          - CLI Error Handling: developer/reference/cli-error-handling.md
+          - Error Handling: developer/reference/cli-error-handling.md
 #          - CLI Output Formatting: developer/reference/cli-output-formatting.md
 #          - CLI Filtering and Sorting: developer/reference/cli-filtering-sorting.md
 #          - Coding Standards: developer/reference/coding-standards.md
