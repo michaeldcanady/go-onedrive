@@ -29,4 +29,4 @@ Welcome to the `odc` developer guide. This section is intended for contributors 
 - **[Configuration Management](explanation/configuration-management.md):** How user settings and application state are handled.
 - **[Domain Interfaces](reference/domain-interfaces.md):** Core interfaces that define the system's behavior.
 - **[Error Handling](reference/cli-error-handling.md):** Standards for handling and reporting errors.
-# - **[Testing Standards](how-to/testing.md):** How to write and run unit and integration tests.
+- **[Testing Standards](how-to/testing.md):** How to write and run unit and integration tests.
