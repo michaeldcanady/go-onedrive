@@ -14,14 +14,14 @@ on:
       - synchronize
       - reopened
       - closed
-workflow_dispatch:
-  inputs:
-    branch:
-      description: 'Branch to build docs from; defaults to the branch this workflow runs from'
-      required: false
-    pr_number:
-      description: 'PR number (used for deploy path: pr/{number}/)'
-      required: true
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Branch to build docs from; defaults to the branch this workflow runs from'
+        required: false
+      pr_number:
+        description: 'PR number (used for deploy path: pr/{number}/)'
+        required: true
 
 permissions:
   contents: write
