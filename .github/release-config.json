@@ -1,0 +1,17 @@
+{
+  "release-type": "go",
+  "prerelease": false,
+  "packages": {
+    ".": {
+      "type": "go",
+      "extra-files": [
+        "internal/version/version.go",
+        {
+          "type": "json",
+          "path": ".github/prerelease-manifest.json",
+          "jsonpath": "$[\".\"]"
+        }
+      ]
+    }
+  }
+}
