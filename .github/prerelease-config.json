@@ -1,0 +1,14 @@
+{
+  "release-type": "go",
+  "prerelease": true,
+  "prerelease-type": "alpha",
+  "versioning": "prerelease",
+  "packages": {
+    ".": {
+      "type": "go",
+      "extra-files": [
+        "internal/version/version.go"
+      ]
+    }
+  }
+}
