@@ -66,11 +66,13 @@ func (s *BoltService) ensureBucket() error {
 
 // Close closes the BoltDB database connection.
 func (s *BoltService) Close() error {
+	s.log.Debug("closing drive alias database")
 	return s.db.Close()
 }
 
 // GetAliasByDriveID retrieves the alias for a given drive ID, if it exists.
 func (s *BoltService) GetAliasByDriveID(input string) (string, error) {
+	s.log.Debug("resolving alias by drive ID", logger.String("drive_id", input))
 	var alias string
 	err := s.iterateAliases(func(al, driveID string) error {
 		if driveID == input {
@@ -79,11 +81,15 @@ func (s *BoltService) GetAliasByDriveID(input string) (string, error) {
 		}
 		return nil
 	})
+	if err != nil {
+		s.log.Error("failed to iterate aliases by drive ID", logger.Error(err))
+	}
 	return alias, err
 }
 
 // GetDriveIDByAlias retrieves the drive ID associated with a given alias, if it exists.
 func (s *BoltService) GetDriveIDByAlias(alias string) (string, error) {
+	s.log.Debug("resolving drive ID by alias", logger.String("alias", alias))
 	var driveID string
 	err := s.db.View(func(tx *bbolt.Tx) error {
 		bucket := tx.Bucket(driveAliasesBucketName)
@@ -99,9 +105,11 @@ func (s *BoltService) GetDriveIDByAlias(alias string) (string, error) {
 		})
 	})
 	if err != nil {
+		s.log.Error("failed to resolve drive ID by alias", logger.String("alias", alias), logger.Error(err))
 		return "", err
 	}
 	if driveID == "" {
+		s.log.Debug("alias not found", logger.String("alias", alias))
 		return "", ErrDriveIDNotFound
 	}
 	return driveID, nil
@@ -109,6 +117,7 @@ func (s *BoltService) GetDriveIDByAlias(alias string) (string, error) {
 
 // SetAlias assigns an alias to a specific drive ID in the BoltDB.
 func (s *BoltService) SetAlias(driveID string, alias string) error {
+	s.log.Info("setting drive alias", logger.String("drive_id", driveID), logger.String("alias", alias))
 	return s.db.Update(func(tx *bbolt.Tx) error {
 		bucket := tx.Bucket(driveAliasesBucketName)
 		if bucket == nil {
@@ -120,6 +129,7 @@ func (s *BoltService) SetAlias(driveID string, alias string) error {
 
 // DeleteAlias removes the alias associated with a specific drive ID from the BoltDB.
 func (s *BoltService) DeleteAlias(alias string) error {
+	s.log.Info("deleting drive alias", logger.String("alias", alias))
 	driveID, err := s.GetDriveIDByAlias(alias)
 	if err != nil && !errors.Is(err, ErrDriveIDNotFound) {
 		return err
@@ -136,11 +146,15 @@ func (s *BoltService) DeleteAlias(alias string) error {
 
 // ListAliases retrieves all drive IDs and their corresponding aliases from the BoltDB.
 func (s *BoltService) ListAliases() (map[string]string, error) {
+	s.log.Debug("listing drive aliases")
 	aliases := make(map[string]string)
 	err := s.iterateAliases(func(alias string, driveID string) error {
 		aliases[alias] = driveID
 		return nil
 	})
+	if err != nil {
+		s.log.Error("failed to list drive aliases", logger.Error(err))
+	}
 	return aliases, err
 }
 

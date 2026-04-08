@@ -65,6 +65,7 @@ func (m *Matcher) ShouldIgnore(path string, isDir bool) bool {
 	return ignored
 }
 
+// matchPattern checks if a pattern matches a path segment.
 func matchPattern(pattern, path string) bool {
 	// 1. Exact match
 	if pattern == path {

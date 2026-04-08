@@ -13,8 +13,9 @@ import (
 // CreateDriveCmd constructs and returns the cobra.Command for the 'drive' parent command.
 func CreateDriveCmd(container di.Container) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "drive",
-		Short: "Manage OneDrive drives and aliases",
+		Use:   commandUse,
+		Short: commandShort,
+		Long:  commandLong,
 	}
 
 	cmd.AddCommand(

@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/michaeldcanady/go-onedrive/internal/environment"
+	"github.com/michaeldcanady/go-onedrive/internal/logger"
 	"github.com/michaeldcanady/go-onedrive/internal/shared"
 
 	bolt "go.etcd.io/bbolt"
@@ -28,24 +29,27 @@ const (
 
 // BoltService is a persistent implementation of the state.Service using BoltDB.
 type BoltService struct {
-	db *bolt.DB
+	db  *bolt.DB
+	log logger.Logger
 }
 
 // NewBoltService initializes a new instance of the BoltService.
-func NewBoltService(env environment.Service) (*BoltService, error) {
+func NewBoltService(env environment.Service, l logger.Logger) (*BoltService, error) {
 	dbPath, err := env.StateDir()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get state directory: %w", err)
 	}
 
 	dbFilePath := filepath.Join(dbPath, stateDBFileName)
+	l.Debug("opening state database", logger.String("path", dbFilePath))
 	db, err := bolt.Open(dbFilePath, 0600, &bolt.Options{Timeout: 1 * time.Second})
 	if err != nil {
 		return nil, fmt.Errorf("failed to open BoltDB: %w", err)
 	}
 
 	bs := &BoltService{
-		db: db,
+		db:  db,
+		log: l,
 	}
 
 	// Ensure top-level buckets are created
@@ -87,6 +91,7 @@ func (bs *BoltService) ensureBuckets() error {
 
 // Get retrieves a state value by its key, checking session scope first, then global.
 func (bs *BoltService) Get(key Key) (string, error) {
+	bs.log.Debug("getting state value", logger.String("key", key.String()))
 	var value string
 	err := bs.db.View(func(tx *bolt.Tx) error {
 		keyStr := key.String()
@@ -109,6 +114,9 @@ func (bs *BoltService) Get(key Key) (string, error) {
 	})
 
 	if err != nil {
+		if err != ErrKeyNotFound {
+			bs.log.Error("failed to get state value", logger.String("key", key.String()), logger.Error(err))
+		}
 		return "", err
 	}
 	return value, nil
@@ -116,6 +124,7 @@ func (bs *BoltService) Get(key Key) (string, error) {
 
 // Set assigns a value to a key within the specified scope.
 func (bs *BoltService) Set(key Key, value string, scope Scope) error {
+	bs.log.Debug("setting state value", logger.String("key", key.String()), logger.String("scope", scope.String()))
 	return bs.db.Update(func(tx *bolt.Tx) error {
 		keyStr := key.String()
 		bucketName := globalBucketName
@@ -137,6 +146,7 @@ func (bs *BoltService) Set(key Key, value string, scope Scope) error {
 
 // Clear removes a state value for the given key from all scopes.
 func (bs *BoltService) Clear(key Key) error {
+	bs.log.Debug("clearing state value", logger.String("key", key.String()))
 	return bs.db.Update(func(tx *bolt.Tx) error {
 		keyStr := key.String()
 

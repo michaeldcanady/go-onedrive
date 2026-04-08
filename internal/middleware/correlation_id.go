@@ -1,10 +1,13 @@
 package middleware
 
 import (
+	"context"
+
 	"github.com/michaeldcanady/go-onedrive/internal/shared"
 	"github.com/spf13/cobra"
 )
 
+// WithCorrelationID is a middleware that ensures a correlation ID is present in the command's context.
 func WithCorrelationID(cmd *cobra.Command) {
 	original := cmd.RunE
 
@@ -14,6 +17,9 @@ func WithCorrelationID(cmd *cobra.Command) {
 
 	cmd.RunE = func(c *cobra.Command, args []string) error {
 		ctx := c.Context()
+		if ctx == nil {
+			ctx = context.Background()
+		}
 
 		cid := shared.CorrelationIDFromContext(ctx)
 		if cid == "" {

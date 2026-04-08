@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 )
 
+// configBase returns the base directory for configuration files on macOS.
 func configBase() (string, error) {
 	libraryDir, err := libraryBase()
 	if err != nil {
@@ -15,6 +16,7 @@ func configBase() (string, error) {
 	return filepath.Join(libraryDir, "Preferences"), nil
 }
 
+// libraryBase returns the path to the user's Library directory on macOS.
 func libraryBase() (string, error) {
 	home, err := os.UserHomeDir()
 	if err != nil {
@@ -23,6 +25,7 @@ func libraryBase() (string, error) {
 	return filepath.Join(home, "Library"), nil
 }
 
+// applicationSupportBase returns the path to the Application Support directory on macOS.
 func applicationSupportBase() (string, error) {
 	libraryDir, err := libraryBase()
 	if err != nil {

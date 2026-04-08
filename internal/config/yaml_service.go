@@ -53,7 +53,9 @@ func (s *YAMLService) GetPath(ctx context.Context) (string, bool) {
 		path, err := s.resolver.ResolvePath(ctx, profile)
 		if err != nil {
 			l.Debug("resolver could not find path for profile", logger.String("profile", profile), logger.Error(err))
-		} else if path != "" {
+			return "", false
+		}
+		if path != "" {
 			l.Debug("configuration path resolved", logger.String("profile", profile), logger.String("path", path))
 			return path, true
 		}

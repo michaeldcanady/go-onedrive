@@ -63,6 +63,7 @@ func (p *Provider) Name() string {
 	return providerName
 }
 
+// mapError translates errors from the OneDrive SDK into domain-specific errors with appropriate kinds for better error handling in the manager and CLI.
 func (p *Provider) mapError(err error, path string) error {
 	if err == nil {
 		return nil
@@ -94,6 +95,7 @@ func (p *Provider) mapError(err error, path string) error {
 	}
 }
 
+// resolveDrive determines the drive ID and relative path for a given item path, handling aliases and defaults.
 func (p *Provider) resolveDrive(itemPath string) (string, string) {
 	// If path is "alias:path"
 	if !strings.HasPrefix(itemPath, "/") && strings.Contains(itemPath, ":") {
@@ -114,6 +116,7 @@ func (p *Provider) resolveDrive(itemPath string) (string, string) {
 	return driveID, itemPath
 }
 
+// expandURI constructs the full API endpoint URI based on the provided templates and parameters.
 func (p *Provider) expandURI(rootTemplate, relativeTemplate, driveID, itemPath string) string {
 	normalized := p.normalizePath(itemPath)
 	urlTemplate := rootTemplate
@@ -130,6 +133,7 @@ func (p *Provider) expandURI(rootTemplate, relativeTemplate, driveID, itemPath s
 	return uri
 }
 
+// normalizePath cleans up the item path and ensures it is in the correct format for OneDrive API calls.
 func (p *Provider) normalizePath(pth string) string {
 	if pth == "" || pth == "/" || pth == "." {
 		return ""
@@ -168,7 +172,7 @@ func (p *Provider) Get(ctx context.Context, itemPath string) (shared.Item, error
 		return shared.Item{}, p.mapError(err, itemPath)
 	}
 
-	log.Info("retrieved item metadata", logger.String("item_id", *it.GetId()))
+	log.Debug("retrieved item metadata", logger.String("item_id", *it.GetId()))
 	return p.mapItemToSharedItem(it, itemPath), nil
 }
 
@@ -214,7 +218,7 @@ func (p *Provider) List(ctx context.Context, itemPath string, opts shared.ListOp
 		}
 	}
 
-	log.Info("listed items", logger.Int("count", len(items)))
+	log.Debug("listed items", logger.Int("count", len(items)))
 	return items, nil
 }
 
@@ -250,7 +254,7 @@ func (p *Provider) ReadFile(ctx context.Context, itemPath string, opts shared.Re
 		return nil, p.mapError(err, itemPath)
 	}
 
-	log.Info("downloaded content", logger.Int("size", len(content)))
+	log.Debug("downloaded content", logger.Int("size", len(content)))
 	return io.NopCloser(strings.NewReader(string(content))), nil
 }
 
@@ -318,6 +322,7 @@ func (p *Provider) WriteFile(ctx context.Context, itemPath string, r io.Reader, 
 	return p.mapItemToSharedItem(it, itemPath), nil
 }
 
+// writeLargeFile handles uploading files larger than the threshold using OneDrive's resumable upload session API.
 func (p *Provider) writeLargeFile(ctx context.Context, driveID, cleanPath, itemPath string, r io.Reader, opts shared.WriteOptions) (shared.Item, error) {
 	log := p.log.WithContext(ctx).With(
 		logger.String("method", "writeLargeFile"),
@@ -555,6 +560,7 @@ func (p *Provider) Touch(ctx context.Context, itemPath string) (shared.Item, err
 	return p.WriteFile(ctx, itemPath, strings.NewReader(""), shared.WriteOptions{})
 }
 
+// mapItemToSharedItem converts a OneDrive DriveItem to the shared Item format.
 func (p *Provider) mapItemToSharedItem(it models.DriveItemable, itemPath string) shared.Item {
 	if it == nil {
 		return shared.Item{}

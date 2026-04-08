@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/michaeldcanady/go-onedrive/internal/concurrency"
+	"github.com/michaeldcanady/go-onedrive/internal/logger"
 )
 
 const (
@@ -20,6 +21,7 @@ const (
 type FileSystemManager struct {
 	// registry is the source for resolving providers based on path prefixes.
 	registry ServiceRegistry
+	log      logger.Logger
 }
 
 // ServiceRegistry is a subset of the Registry interface needed by the Manager.
@@ -28,9 +30,10 @@ type ServiceRegistry interface {
 }
 
 // NewFileSystemManager initializes a new instance of the FileSystemManager.
-func NewFileSystemManager(registry ServiceRegistry) *FileSystemManager {
+func NewFileSystemManager(registry ServiceRegistry, l logger.Logger) *FileSystemManager {
 	return &FileSystemManager{
 		registry: registry,
+		log:      l,
 	}
 }
 
@@ -40,8 +43,10 @@ func (m *FileSystemManager) Name() string {
 
 // Get retrieves metadata for an item by its path, resolving the appropriate provider.
 func (m *FileSystemManager) Get(ctx context.Context, path string) (Item, error) {
+	m.log.WithContext(ctx).Debug("fs manager: get", logger.String("path", path))
 	p, subPath, err := m.registry.Resolve(ctx, path)
 	if err != nil {
+		m.log.WithContext(ctx).Error("fs manager: failed to resolve provider for get", logger.String("path", path), logger.Error(err))
 		return Item{}, err
 	}
 	return p.Get(ctx, subPath)
@@ -49,8 +54,10 @@ func (m *FileSystemManager) Get(ctx context.Context, path string) (Item, error) 
 
 // Stat returns metadata for an item at the specified path.
 func (m *FileSystemManager) Stat(ctx context.Context, path string) (Item, error) {
+	m.log.WithContext(ctx).Debug("fs manager: stat", logger.String("path", path))
 	p, subPath, err := m.registry.Resolve(ctx, path)
 	if err != nil {
+		m.log.WithContext(ctx).Error("fs manager: failed to resolve provider for stat", logger.String("path", path), logger.Error(err))
 		return Item{}, err
 	}
 	return p.Stat(ctx, subPath)
@@ -58,8 +65,10 @@ func (m *FileSystemManager) Stat(ctx context.Context, path string) (Item, error)
 
 // List returns the children of a directory at the specified path.
 func (m *FileSystemManager) List(ctx context.Context, path string, opts ListOptions) ([]Item, error) {
+	m.log.WithContext(ctx).Debug("fs manager: list", logger.String("path", path), logger.Bool("recursive", opts.Recursive))
 	p, subPath, err := m.registry.Resolve(ctx, path)
 	if err != nil {
+		m.log.WithContext(ctx).Error("fs manager: failed to resolve provider for list", logger.String("path", path), logger.Error(err))
 		return nil, err
 	}
 	return p.List(ctx, subPath, opts)
@@ -67,8 +76,10 @@ func (m *FileSystemManager) List(ctx context.Context, path string, opts ListOpti
 
 // ReadFile opens a read stream for a file's content.
 func (m *FileSystemManager) ReadFile(ctx context.Context, path string, opts ReadOptions) (io.ReadCloser, error) {
+	m.log.WithContext(ctx).Debug("fs manager: read file", logger.String("path", path))
 	p, subPath, err := m.registry.Resolve(ctx, path)
 	if err != nil {
+		m.log.WithContext(ctx).Error("fs manager: failed to resolve provider for read", logger.String("path", path), logger.Error(err))
 		return nil, err
 	}
 	return p.ReadFile(ctx, subPath, opts)
@@ -76,8 +87,10 @@ func (m *FileSystemManager) ReadFile(ctx context.Context, path string, opts Read
 
 // WriteFile creates or updates a file with the content from the provided reader.
 func (m *FileSystemManager) WriteFile(ctx context.Context, path string, r io.Reader, opts WriteOptions) (Item, error) {
+	m.log.WithContext(ctx).Info("fs manager: write file", logger.String("path", path), logger.Bool("overwrite", opts.Overwrite))
 	p, subPath, err := m.registry.Resolve(ctx, path)
 	if err != nil {
+		m.log.WithContext(ctx).Error("fs manager: failed to resolve provider for write", logger.String("path", path), logger.Error(err))
 		return Item{}, err
 	}
 	return p.WriteFile(ctx, subPath, r, opts)
@@ -85,8 +98,10 @@ func (m *FileSystemManager) WriteFile(ctx context.Context, path string, r io.Rea
 
 // Mkdir creates a new directory at the specified path.
 func (m *FileSystemManager) Mkdir(ctx context.Context, path string) error {
+	m.log.WithContext(ctx).Info("fs manager: mkdir", logger.String("path", path))
 	p, subPath, err := m.registry.Resolve(ctx, path)
 	if err != nil {
+		m.log.WithContext(ctx).Error("fs manager: failed to resolve provider for mkdir", logger.String("path", path), logger.Error(err))
 		return err
 	}
 	return p.Mkdir(ctx, subPath)
@@ -94,8 +109,10 @@ func (m *FileSystemManager) Mkdir(ctx context.Context, path string) error {
 
 // Remove deletes an item from its respective provider.
 func (m *FileSystemManager) Remove(ctx context.Context, path string) error {
+	m.log.WithContext(ctx).Info("fs manager: remove", logger.String("path", path))
 	p, subPath, err := m.registry.Resolve(ctx, path)
 	if err != nil {
+		m.log.WithContext(ctx).Error("fs manager: failed to resolve provider for remove", logger.String("path", path), logger.Error(err))
 		return err
 	}
 	return p.Remove(ctx, subPath)
@@ -103,8 +120,10 @@ func (m *FileSystemManager) Remove(ctx context.Context, path string) error {
 
 // Touch creates an empty file or updates the timestamp of an existing one.
 func (m *FileSystemManager) Touch(ctx context.Context, path string) (Item, error) {
+	m.log.WithContext(ctx).Info("fs manager: touch", logger.String("path", path))
 	p, subPath, err := m.registry.Resolve(ctx, path)
 	if err != nil {
+		m.log.WithContext(ctx).Error("fs manager: failed to resolve provider for touch", logger.String("path", path), logger.Error(err))
 		return Item{}, err
 	}
 	return p.Touch(ctx, subPath)
@@ -112,6 +131,9 @@ func (m *FileSystemManager) Touch(ctx context.Context, path string) (Item, error
 
 // Copy duplicates an item from a source path to a destination path, supporting cross-provider copy.
 func (m *FileSystemManager) Copy(ctx context.Context, src, dst string, opts CopyOptions) error {
+	log := m.log.WithContext(ctx).With(logger.String("src", src), logger.String("dst", dst))
+	log.Info("fs manager: copy", logger.Bool("recursive", opts.Recursive))
+
 	srcItem, err := m.Stat(ctx, src)
 	if err != nil {
 		return fmt.Errorf("failed to stat source: %w", err)
@@ -130,6 +152,8 @@ func (m *FileSystemManager) Copy(ctx context.Context, src, dst string, opts Copy
 }
 
 func (m *FileSystemManager) copySingle(ctx context.Context, srcItem Item, src, dst string, opts CopyOptions) error {
+	log := m.log.WithContext(ctx).With(logger.String("src", src), logger.String("dst", dst))
+
 	pSrc, srcSubPath, err := m.registry.Resolve(ctx, src)
 	if err != nil {
 		return err
@@ -142,10 +166,12 @@ func (m *FileSystemManager) copySingle(ctx context.Context, srcItem Item, src, d
 
 	// If same provider, delegate to it for potentially optimized copy.
 	if pSrc == pDst {
+		log.Debug("fs manager: delegating single copy to provider", logger.String("provider", pSrc.Name()))
 		return pSrc.Copy(ctx, srcSubPath, dstSubPath, opts)
 	}
 
 	// Cross-provider copy: stream data from source to destination.
+	log.Info("fs manager: performing cross-provider copy", logger.String("src_provider", pSrc.Name()), logger.String("dst_provider", pDst.Name()))
 	r, err := pSrc.ReadFile(ctx, srcSubPath, ReadOptions{})
 	if err != nil {
 		return fmt.Errorf("failed to read source for cross-provider copy: %w", err)
@@ -165,6 +191,8 @@ func (m *FileSystemManager) copySingle(ctx context.Context, srcItem Item, src, d
 }
 
 func (m *FileSystemManager) copyRecursive(ctx context.Context, src, dst string, opts CopyOptions, pool *concurrency.WorkerPool) error {
+	log := m.log.WithContext(ctx).With(logger.String("src", src), logger.String("dst", dst))
+
 	item, err := m.Stat(ctx, src)
 	if err != nil {
 		return err
@@ -175,12 +203,13 @@ func (m *FileSystemManager) copyRecursive(ctx context.Context, src, dst string, 
 			fileOpts := opts
 			fileOpts.Recursive = false
 			if err := m.copySingle(ctx, item, src, dst, fileOpts); err != nil {
-				// error handling
+				log.Error("fs manager: failed to copy file during recursive operation", logger.String("file", src), logger.Error(err))
 			}
 		})
 		return nil
 	}
 
+	log.Debug("fs manager: recursive copy - creating directory", logger.String("path", dst))
 	if err := m.Mkdir(ctx, dst); err != nil {
 		return err
 	}
@@ -205,6 +234,9 @@ func (m *FileSystemManager) copyRecursive(ctx context.Context, src, dst string, 
 
 // Move relocates or renames an item, supporting cross-provider move via copy and delete.
 func (m *FileSystemManager) Move(ctx context.Context, src, dst string) error {
+	log := m.log.WithContext(ctx).With(logger.String("src", src), logger.String("dst", dst))
+	log.Info("fs manager: move")
+
 	pSrc, srcSubPath, err := m.registry.Resolve(ctx, src)
 	if err != nil {
 		return err
@@ -217,10 +249,12 @@ func (m *FileSystemManager) Move(ctx context.Context, src, dst string) error {
 
 	// If same provider, delegate to it for potentially optimized move.
 	if pSrc == pDst {
+		log.Debug("fs manager: delegating move to provider", logger.String("provider", pSrc.Name()))
 		return pSrc.Move(ctx, srcSubPath, dstSubPath)
 	}
 
 	// Cross-provider move: Copy + Delete.
+	log.Info("fs manager: performing cross-provider move", logger.String("src_provider", pSrc.Name()), logger.String("dst_provider", pDst.Name()))
 	if err := m.Copy(ctx, src, dst, CopyOptions{Overwrite: true}); err != nil {
 		return err
 	}

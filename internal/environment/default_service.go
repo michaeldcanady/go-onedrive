@@ -127,7 +127,13 @@ func (s *DefaultService) TempDir() (string, error) {
 		return "", err
 	}
 
-	return filepath.Join(temp, s.appName), nil
+	tempDir := filepath.Join(temp, s.appName)
+
+	if err := os.MkdirAll(tempDir, os.ModePerm); err != nil {
+		return "", fmt.Errorf("failed to create temp file: %w", err)
+	}
+
+	return tempDir, nil
 }
 
 // StateDir returns the path to the state directory.

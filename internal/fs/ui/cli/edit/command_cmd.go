@@ -50,7 +50,7 @@ func (h *Handler) Handle(ctx context.Context, opts Options) error {
 	defer r.Close()
 
 	log.Debug("launching external editor")
-	newData, _, err := h.editor.LaunchTempFile("odc-edit", ".txt", r)
+	newData, _, err := h.editor.LaunchTempFile(ctx, "odc-edit", ".txt", r)
 	if err != nil {
 		log.Error("editor launch failed", logger.Error(err))
 		return fmt.Errorf("failed to edit file at %s: %w", opts.Path, err)

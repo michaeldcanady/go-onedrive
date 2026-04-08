@@ -62,12 +62,12 @@ func NewDefaultContainer() (*DefaultContainer, error) {
 	logSvc := logger.NewZapService(envSvc)
 	cliLog, _ := logSvc.CreateLogger("cli")
 
-	stateSvc, err := state.NewBoltService(envSvc)
+	stateSvc, err := state.NewBoltService(envSvc, cliLog)
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize state service: %w", err)
 	}
 
-	profileSvc, err := profile.NewBoltService(envSvc, stateSvc)
+	profileSvc, err := profile.NewBoltService(envSvc, stateSvc, cliLog)
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize profile service: %w", err)
 	}
@@ -85,7 +85,7 @@ func NewDefaultContainer() (*DefaultContainer, error) {
 	}
 
 	msAuth := microsoft.NewAuthenticator(cachedCred, stateSvc, cliLog)
-	idReg := idregistry.NewRegistry()
+	idReg := idregistry.NewRegistry(cliLog)
 	idReg.Register("microsoft", msAuth)
 
 	graphProvider := microsoft.NewGraphProvider(msAuth.Credential(), cliLog)
@@ -112,7 +112,7 @@ func NewDefaultContainer() (*DefaultContainer, error) {
 		identity:    idReg,
 		profile:     profileSvc,
 		registry:    fsReg,
-		manager:     registry.NewFileSystemManager(fsReg),
+		manager:     registry.NewFileSystemManager(fsReg, cliLog),
 		environment: envSvc,
 		editor:      editorSvc,
 		alias:       aliasSvc,

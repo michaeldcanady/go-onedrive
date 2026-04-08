@@ -52,11 +52,22 @@ func (m *KiotaLoggingMiddleware) Intercept(pipeline nethttp.Pipeline, middleware
 		logger.Duration("duration", duration),
 	)
 
-	if resp.StatusCode >= 400 {
-		log.Warn("request returned error status",
+	if resp.StatusCode >= 500 {
+		log.Error("request returned server error",
 			logger.Int("status", resp.StatusCode),
 			logger.String("url", req.URL.String()),
 		)
+	} else if resp.StatusCode >= 400 {
+		if resp.StatusCode == http.StatusNotFound {
+			log.Debug("request returned 404 not found",
+				logger.String("url", req.URL.String()),
+			)
+		} else {
+			log.Warn("request returned client error",
+				logger.Int("status", resp.StatusCode),
+				logger.String("url", req.URL.String()),
+			)
+		}
 	}
 
 	return resp, nil

@@ -1,5 +1,7 @@
 package ignore
 
+import "strings"
+
 // Lexer breaks the input into a stream of tokens.
 type Lexer struct {
 	input string
@@ -13,48 +15,96 @@ func NewLexer(input string) *Lexer {
 
 // NextToken returns the next token in the input stream.
 func (l *Lexer) NextToken() Token {
-	if l.pos >= len(l.input) {
+	ch, ok := l.readChar()
+	if !ok {
 		return Token{Type: TokenEOF}
 	}
 
-	ch := l.input[l.pos]
 	switch ch {
 	case charHash:
-		l.pos++
 		return Token{Type: TokenHash, Literal: string(ch)}
 	case charBang:
-		l.pos++
 		return Token{Type: TokenBang, Literal: string(ch)}
 	case charSlash:
-		l.pos++
 		return Token{Type: TokenSlash, Literal: string(ch)}
 	case charSpace:
-		l.pos++
 		return Token{Type: TokenSpace, Literal: string(ch)}
-	case '\n', '\r':
-		// Handle CRLF
-		if ch == '\r' && l.pos+1 < len(l.input) && l.input[l.pos+1] == '\n' {
-			l.pos++
+	case charEscape:
+		// Handle escaped characters
+		next, ok := l.readChar()
+		if !ok {
+			return Token{Type: TokenError, Literal: "unexpected EOF after escape"}
 		}
-		l.pos++
+		// If it's an escaped special char, treat it as text.
+		// If it's escaped text, it's still just part of a text segment.
+		// We'll peek and continue reading text if possible.
+		return l.readTextFrom(string(next))
+	case charNewLine, charReturn:
+		// Handle CRLF
+		if ch == charReturn {
+			if next, ok := l.peekChar(); ok && next == charNewLine {
+				l.readChar() // consume '\n'
+			}
+		}
 		return Token{Type: TokenNewline, Literal: "\n"}
 	default:
+		l.unreadChar()
 		return l.readText()
 	}
 }
 
-func (l *Lexer) readText() Token {
-	start := l.pos
-	for l.pos < len(l.input) {
-		ch := l.input[l.pos]
-		if isSpecial(ch) {
-			break
-		}
-		l.pos++
+// readChar reads the next character and advances the position.
+func (l *Lexer) readChar() (byte, bool) {
+	if l.pos >= len(l.input) {
+		return 0, false
 	}
-	return Token{Type: TokenText, Literal: l.input[start:l.pos]}
+	ch := l.input[l.pos]
+	l.pos++
+	return ch, true
 }
 
+// unreadChar moves the position back by one character.
+func (l *Lexer) unreadChar() {
+	if l.pos > 0 {
+		l.pos--
+	}
+}
+
+// peekChar allows looking at the next character without consuming it.
+func (l *Lexer) peekChar() (byte, bool) {
+	if l.pos >= len(l.input) {
+		return 0, false
+	}
+	return l.input[l.pos], true
+}
+
+// readText reads characters until it encounters a special character or EOF.
+func (l *Lexer) readText() Token {
+	return l.readTextFrom("")
+}
+
+// readTextFrom reads characters until it encounters a special character or EOF, starting with an initial string.
+func (l *Lexer) readTextFrom(initial string) Token {
+	var sb strings.Builder
+	sb.WriteString(initial)
+
+	for {
+		ch, ok := l.readChar()
+		if !ok {
+			break
+		}
+
+		if isSpecial(ch) || ch == charEscape {
+			l.unreadChar()
+			break
+		}
+		sb.WriteByte(ch)
+	}
+
+	return Token{Type: TokenText, Literal: sb.String()}
+}
+
+// isSpecial checks if a character is a special token character.
 func isSpecial(ch byte) bool {
 	switch ch {
 	case charHash, charBang, charSlash, charSpace, charNewLine, charReturn:

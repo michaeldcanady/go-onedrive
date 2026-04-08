@@ -79,11 +79,14 @@ func (p *Parser) parsePattern() *Pattern {
 	}
 
 	pattern.Original = raw
-	if strings.HasSuffix(raw, string(charSlash)) {
+	// Trim leading slash to make it root-relative in our simplified matcher
+	path := strings.TrimPrefix(raw, string(charSlash))
+
+	if strings.HasSuffix(path, string(charSlash)) {
 		pattern.IsDir = true
-		pattern.Path = raw[:len(raw)-1]
+		pattern.Path = path[:len(path)-1]
 	} else {
-		pattern.Path = raw
+		pattern.Path = path
 	}
 
 	return pattern

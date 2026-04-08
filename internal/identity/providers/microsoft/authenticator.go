@@ -37,15 +37,18 @@ func (a *Authenticator) ProviderName() string {
 
 // Authenticate performs the Microsoft-specific login flow.
 func (a *Authenticator) Authenticate(ctx context.Context, opts shared.LoginOptions) (shared.AccessToken, error) {
-	a.log.Info("starting microsoft authentication", logger.String("method", opts.Method.String()))
+	log := a.log.WithContext(ctx).With(logger.String("method", opts.Method.String()))
+	log.Info("starting microsoft authentication")
 
 	if opts.Force {
+		log.Debug("force re-authentication requested, clearing existing credential")
 		a.cred = nil
 	}
 
 	if a.cred == nil {
 		cred, err := a.createCredential(opts)
 		if err != nil {
+			log.Error("failed to create microsoft credential", logger.Error(err))
 			return shared.AccessToken{}, err
 		}
 		a.cred = cred
@@ -53,13 +56,16 @@ func (a *Authenticator) Authenticate(ctx context.Context, opts shared.LoginOptio
 
 	// Common scopes for OneDrive
 	scopes := []string{"https://graph.microsoft.com/.default"}
+	log.Debug("requesting token from credential", logger.String("scopes", fmt.Sprintf("%v", scopes)))
 	token, err := a.cred.GetToken(ctx, policy.TokenRequestOptions{
 		Scopes: scopes,
 	})
 	if err != nil {
+		log.Error("failed to get token from microsoft credential", logger.Error(err))
 		return shared.AccessToken{}, fmt.Errorf("failed to get token: %w", err)
 	}
 
+	log.Info("microsoft authentication successful", logger.Time("expires_at", token.ExpiresOn))
 	return shared.AccessToken{
 		Token:     token.Token,
 		ExpiresAt: token.ExpiresOn,
@@ -69,14 +75,17 @@ func (a *Authenticator) Authenticate(ctx context.Context, opts shared.LoginOptio
 
 // SaveToken persists the provided access token to state.
 func (a *Authenticator) SaveToken(ctx context.Context, token shared.AccessToken) error {
-	a.log.Debug("caching access token")
+	log := a.log.WithContext(ctx)
+	log.Debug("caching access token")
 
 	tokenData, err := json.Marshal(token)
 	if err != nil {
+		log.Error("failed to serialize token for caching", logger.Error(err))
 		return fmt.Errorf("failed to serialize token for caching: %w", err)
 	}
 
 	if err := a.state.Set(state.KeyAccessToken, string(tokenData), state.ScopeGlobal); err != nil {
+		log.Error("failed to persist access token to state", logger.Error(err))
 		return fmt.Errorf("failed to cache access token: %w", err)
 	}
 
@@ -119,7 +128,8 @@ func (a *Authenticator) createCredential(opts shared.LoginOptions) (azcore.Token
 
 // Logout removes cached credentials.
 func (a *Authenticator) Logout(ctx context.Context) error {
-	a.log.Info("logging out from microsoft")
+	log := a.log.WithContext(ctx)
+	log.Info("logging out from microsoft")
 	a.cred = nil
 	return a.state.Clear(state.KeyAccessToken)
 }
