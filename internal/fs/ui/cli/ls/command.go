@@ -27,9 +27,9 @@ func CreateLsCmd(container di.Container) *cobra.Command {
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			opts.Path = args[0]
 			// should allow / for directories
-			if fs.ContainsIllegalChars(opts.Path) {
+			if contains, err := fs.ContainsIllegalChars(opts.Path); contains {
 				return coreerrors.NewInvalidInput(
-					errors.New("path contains illegal characters"),
+					err,
 					fmt.Sprintf("invalid path '%s' due to illegal characters", opts.Path),
 					"Remove the illegal characters from the path",
 				)

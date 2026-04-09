@@ -8,6 +8,8 @@ type Options struct {
 	DriveRef string
 	// Stdout is the destination for the formatted drive details.
 	Stdout io.Writer
+	// Stderr is the destination for any error messages.
+	Stderr io.Writer
 }
 
 func (o *Options) Validate() error {

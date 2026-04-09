@@ -10,7 +10,7 @@ import (
 type Service interface {
 	// ListDrives retrieves all OneDrive drives accessible to the user.
 	ListDrives(ctx context.Context) ([]Drive, error)
-	// ResolveDrive identifies a drive by its ID, name, or alias.
+	// ResolveDrive identifies a drive by its ID or name.
 	ResolveDrive(ctx context.Context, driveRef string) (Drive, error)
 	// ResolvePersonalDrive retrieves the user's primary personal OneDrive drive.
 	ResolvePersonalDrive(ctx context.Context) (Drive, error)

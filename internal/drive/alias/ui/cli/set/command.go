@@ -5,8 +5,10 @@ import (
 	"fmt"
 
 	"github.com/michaeldcanady/go-onedrive/internal/di"
+	"github.com/michaeldcanady/go-onedrive/internal/drive"
 	aliaspkg "github.com/michaeldcanady/go-onedrive/internal/drive/alias"
 	"github.com/michaeldcanady/go-onedrive/internal/drive/ui/cli/shared"
+	coreerrors "github.com/michaeldcanady/go-onedrive/internal/errors"
 	"github.com/spf13/cobra"
 )
 
@@ -21,25 +23,35 @@ func CreateSetCmd(container di.Container) *cobra.Command {
 		ValidArgsFunction: shared.ProviderPathCompletion(container, false),
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			// Validate that the drive ID exists before attempting to set the alias
-			driveID := args[0]
-			//_, err := container.Drive().ResolveDrive(cmd.Context(), driveID)
-			//if err != nil {
-			//	return err
-			//}
+			opts.DriveID = args[0]
+			if d, err := container.Drive().ResolveDrive(cmd.Context(), opts.DriveID); err != nil && !errors.Is(err, drive.ErrDriveNotFound) {
+				return err
+			} else if d == (drive.Drive{}) {
+				return coreerrors.NewNotFound(
+					errors.New("drive not found"),
+					"drive not found",
+					"Use 'odc drive list' to see available drives.",
+				).WithContext(coreerrors.KeyName, opts.DriveID)
+			} else {
+				opts.DriveID = d.ID
+			}
 
 			// validate that alias is not already in use for a different drive
-			alias := args[1]
-			existingDriveID, err := container.Alias().GetDriveIDByAlias(alias)
+			opts.Alias = args[1]
+			existingDriveID, err := container.Alias().GetDriveIDByAlias(opts.Alias)
 			if err != nil && !errors.Is(err, aliaspkg.ErrDriveIDNotFound) {
 				return err
 			}
-			if existingDriveID != "" && existingDriveID != driveID {
-				return fmt.Errorf("alias '%s' is already in use for a different drive", alias)
+			if existingDriveID != "" && existingDriveID != opts.DriveID {
+				return coreerrors.NewConflict(
+					errors.New("alias already in use"),
+					fmt.Sprintf("alias '%s' is already in use for drive ID '%s'", opts.Alias, existingDriveID),
+					"Please choose a different alias or remove the existing one.",
+				).WithContext(coreerrors.KeyDriveID, existingDriveID)
 			}
 
-			opts.Alias = alias
-			opts.DriveID = driveID
 			opts.Stdout = cmd.OutOrStdout()
+			opts.Stderr = cmd.OutOrStderr()
 
 			return opts.Validate()
 		},

@@ -2,6 +2,7 @@ package rm
 
 import (
 	"errors"
+	"fmt"
 	"slices"
 
 	"github.com/michaeldcanady/go-onedrive/internal/di"
@@ -23,7 +24,22 @@ func CreateRmCmd(container di.Container) *cobra.Command {
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			opts.Path = args[0]
 			if err := fs.ValidatePathSyntax(opts.Path); err != nil {
-				return err
+				switch err.(type) {
+				case *fs.TrailingSlashError:
+					return coreerrors.NewInvalidInput(
+						err,
+						fmt.Sprintf("invalid path '%s' due to trailing slash", opts.Path),
+						"Remove the trailing slash from the path",
+					)
+				case *fs.IllegalCharacterError:
+					return coreerrors.NewInvalidInput(
+						err,
+						fmt.Sprintf("invalid path '%s' due to illegal characters", opts.Path),
+						"Remove the illegal characters from the path",
+					)
+				default:
+					return err
+				}
 			}
 
 			provider, _, found := fs.SplitProviderPath(opts.Path)
@@ -53,6 +69,8 @@ func CreateRmCmd(container di.Container) *cobra.Command {
 			return NewHandler(container.FS(), container.Logger()).Handle(cmd.Context(), opts)
 		},
 	}
+
+	// TODO: add flags for recursive deletion and force deletion
 
 	return cmd
 }

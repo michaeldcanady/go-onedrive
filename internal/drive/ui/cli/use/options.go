@@ -8,6 +8,8 @@ type Options struct {
 	DriveRef string
 	// Stdout is the destination for the operation's output messages.
 	Stdout io.Writer
+	// Stderr is the destination for the operation's error messages.
+	Stderr io.Writer
 }
 
 func (o *Options) Validate() error {

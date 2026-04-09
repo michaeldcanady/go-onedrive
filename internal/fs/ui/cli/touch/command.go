@@ -2,6 +2,7 @@ package touch
 
 import (
 	"errors"
+	"fmt"
 	"slices"
 
 	"github.com/michaeldcanady/go-onedrive/internal/di"
@@ -22,11 +23,23 @@ func CreateTouchCmd(container di.Container) *cobra.Command {
 		ValidArgsFunction: cli.ProviderPathCompletion(container),
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			opts.Path = args[0]
-			opts.Stdout = cmd.OutOrStdout()
-
-			// 1. Syntactic check
 			if err := fs.ValidatePathSyntax(opts.Path); err != nil {
-				return err
+				switch err.(type) {
+				case *fs.TrailingSlashError:
+					return coreerrors.NewInvalidInput(
+						err,
+						fmt.Sprintf("invalid path '%s' due to trailing slash", opts.Path),
+						"Remove the trailing slash from the path",
+					)
+				case *fs.IllegalCharacterError:
+					return coreerrors.NewInvalidInput(
+						err,
+						fmt.Sprintf("invalid path '%s' due to illegal characters", opts.Path),
+						"Remove the illegal characters from the path",
+					)
+				default:
+					return err
+				}
 			}
 
 			// 2. Provider check (only if a provider prefix is explicitly given)
@@ -47,6 +60,9 @@ func CreateTouchCmd(container di.Container) *cobra.Command {
 					)
 				}
 			}
+
+			opts.Stdout = cmd.OutOrStdout()
+			opts.Stderr = cmd.ErrOrStderr()
 
 			return opts.Validate()
 		},

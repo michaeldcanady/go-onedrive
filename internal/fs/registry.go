@@ -48,16 +48,37 @@ func (r *Registry) Register(provider string, svc Service) {
 	r.providers[provider] = NewValidationDecorator(svc, r.logger)
 }
 
+// Unregister removes a provider from the registry by its name.
+func (r *Registry) Unregister(provider string) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	delete(r.providers, provider)
+}
+
 // Get retrieves the service for a given provider name.
+// Returns [UnregisteredProvider] if the provider is not registered.
 func (r *Registry) Get(provider string) (Service, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 	svc, ok := r.providers[provider]
 	if !ok {
-		return nil, ErrProviderNotRegistered
+		return nil, NewUnregisteredProvider(provider)
 	}
 	return svc, nil
 }
+
+// RegisteredNames returns a list of all registered provider names.
+func (r *Registry) RegisteredNames() ([]string, error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	names := make([]string, 0, len(r.providers))
+	for name := range r.providers {
+		names = append(names, name)
+	}
+	return names, nil
+}
+
+// TODO: maybe resolve should go so where else?
 
 // Resolve identifies the provider for a path based on its prefix (e.g., "onedrive:path").
 // If no prefix is present, it defaults to "onedrive".
@@ -69,13 +90,13 @@ func (r *Registry) Resolve(ctx context.Context, path string) (Service, string, e
 		log.Debug("no provider prefix found, using default", logger.String("default", DefaultProviderPrefix))
 		p, err := r.Get(DefaultProviderPrefix)
 		if err != nil {
-			if !errors.Is(err, ErrProviderNotRegistered) {
+			if err, ok := err.(*UnregisteredProvider); !ok {
 				log.Error("error retrieving default provider", logger.String("provider", DefaultProviderPrefix), logger.Error(err))
 				return nil, "", err
 			}
 			// If the default provider is not registered, this shouldn't happen
-			log.Warn("default provider not registered, checking if path is an alias", logger.String("path", path))
-			return nil, "", ErrUnknownProviderOrAlias
+			log.Warn("default provider not registered", logger.String("path", path))
+			return nil, "", NewUnregisteredProvider(DefaultProviderPrefix)
 		}
 		return p, path, nil
 	}
@@ -83,7 +104,7 @@ func (r *Registry) Resolve(ctx context.Context, path string) (Service, string, e
 	// Check if prefix is a registered provider
 	p, err := r.Get(prefix)
 	if err != nil {
-		if !errors.Is(err, ErrProviderNotRegistered) {
+		if err, ok := err.(*UnregisteredProvider); !ok {
 			log.Error("error retrieving provider", logger.String("prefix", prefix), logger.Error(err))
 			return nil, "", err
 		}
@@ -96,13 +117,18 @@ func (r *Registry) Resolve(ctx context.Context, path string) (Service, string, e
 				return nil, "", err
 			}
 			log.Error("unknown provider or alias", logger.String("prefix", prefix))
-			return nil, "", ErrUnknownProviderOrAlias
+			return nil, "", NewUnregisteredProvider(prefix)
 		}
-		// If it's an alias, use the default provider (onedrive) and prepend the drive ID
+		// If it's a drive id alias, use the default provider (onedrive) and prepend the drive ID
 		defaultProvider, err := r.Get(DefaultProviderPrefix)
 		if err != nil {
-			log.Error("error retrieving default provider", logger.String("provider", DefaultProviderPrefix), logger.Error(err))
-			return nil, "", err
+			if err, ok := err.(*UnregisteredProvider); !ok {
+				log.Error("error retrieving default provider", logger.String("provider", DefaultProviderPrefix), logger.Error(err))
+				return nil, "", err
+			}
+			// If the default provider is not registered, this shouldn't happen
+			log.Warn("default provider not registered", logger.String("path", path))
+			return nil, "", NewUnregisteredProvider(DefaultProviderPrefix)
 		}
 		// Construct path with drive ID for the default provider
 		rest = fmt.Sprintf("%s:%s", driveID, rest)
@@ -112,16 +138,6 @@ func (r *Registry) Resolve(ctx context.Context, path string) (Service, string, e
 	// If it's a registered provider, use it directly
 	log.Debug("resolved path to registered provider", logger.String("provider", prefix))
 	return p, rest, nil
-}
-
-func (r *Registry) RegisteredNames() ([]string, error) {
-	r.mu.RLock()
-	defer r.mu.RUnlock()
-	names := make([]string, 0, len(r.providers))
-	for name := range r.providers {
-		names = append(names, name)
-	}
-	return names, nil
 }
 
 // DefaultProviderPrefix is the default provider to use when no prefix is specified.

@@ -47,7 +47,12 @@ func (m *FileSystemManager) Get(ctx context.Context, path string) (Item, error) 
 	m.log.WithContext(ctx).Debug("fs manager: get", logger.String("path", path))
 	p, subPath, err := m.registry.Resolve(ctx, path)
 	if err != nil {
-		m.log.WithContext(ctx).Error("fs manager: failed to resolve provider for get", logger.String("path", path), logger.Error(err))
+		if err, ok := err.(*UnregisteredProvider); !ok {
+			m.log.WithContext(ctx).Error("failed to resolve provider for get", logger.String("path", path), logger.Error(err))
+			return Item{}, err
+		}
+
+		m.log.WithContext(ctx).Error("an unknown error occurred", logger.String("path", path), logger.Error(err))
 		return Item{}, errors.NewInvalidInput(err, "could not resolve filesystem provider", "").WithContext(errors.KeyPath, path)
 	}
 	return p.Get(ctx, subPath)
@@ -58,7 +63,12 @@ func (m *FileSystemManager) Stat(ctx context.Context, path string) (Item, error)
 	m.log.WithContext(ctx).Debug("fs manager: stat", logger.String("path", path))
 	p, subPath, err := m.registry.Resolve(ctx, path)
 	if err != nil {
-		m.log.WithContext(ctx).Error("fs manager: failed to resolve provider for stat", logger.String("path", path), logger.Error(err))
+		if err, ok := err.(*UnregisteredProvider); !ok {
+			m.log.WithContext(ctx).Error("failed to resolve provider for stat", logger.String("path", path), logger.Error(err))
+			return Item{}, err
+		}
+
+		m.log.WithContext(ctx).Error("an unknown error occurred", logger.String("path", path), logger.Error(err))
 		return Item{}, errors.NewInvalidInput(err, "could not resolve filesystem provider", "").WithContext(errors.KeyPath, path)
 	}
 	return p.Stat(ctx, subPath)
@@ -69,7 +79,12 @@ func (m *FileSystemManager) List(ctx context.Context, path string, opts ListOpti
 	m.log.WithContext(ctx).Debug("fs manager: list", logger.String("path", path), logger.Bool("recursive", opts.Recursive))
 	p, subPath, err := m.registry.Resolve(ctx, path)
 	if err != nil {
-		m.log.WithContext(ctx).Error("fs manager: failed to resolve provider for list", logger.String("path", path), logger.Error(err))
+		if err, ok := err.(*UnregisteredProvider); !ok {
+			m.log.WithContext(ctx).Error("failed to resolve provider for list", logger.String("path", path), logger.Error(err))
+			return nil, err
+		}
+
+		m.log.WithContext(ctx).Error("an unknown error occurred", logger.String("path", path), logger.Error(err))
 		return nil, errors.NewInvalidInput(err, "could not resolve filesystem provider", "").WithContext(errors.KeyPath, path)
 	}
 	return p.List(ctx, subPath, opts)
@@ -80,6 +95,11 @@ func (m *FileSystemManager) ReadFile(ctx context.Context, path string, opts Read
 	m.log.WithContext(ctx).Debug("fs manager: read file", logger.String("path", path))
 	p, subPath, err := m.registry.Resolve(ctx, path)
 	if err != nil {
+		if err, ok := err.(*UnregisteredProvider); !ok {
+			m.log.WithContext(ctx).Error("failed to resolve provider for list", logger.String("path", path), logger.Error(err))
+			return nil, err
+		}
+
 		m.log.WithContext(ctx).Error("fs manager: failed to resolve provider for read", logger.String("path", path), logger.Error(err))
 		return nil, errors.NewInvalidInput(err, "could not resolve filesystem provider", "").WithContext(errors.KeyPath, path)
 	}

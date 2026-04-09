@@ -1,11 +1,7 @@
 package fs
 
 import (
-	"errors"
-	"fmt"
 	"strings"
-
-	coreerrors "github.com/michaeldcanady/go-onedrive/internal/errors"
 )
 
 // SplitProviderPath splits a path into its provider prefix and the remaining path.
@@ -20,37 +16,28 @@ func SplitProviderPath(path string) (string, string, bool) {
 	return prefix, rest, true
 }
 
-func ContainsIllegalChars(path string) bool {
-	// Disallow illegal characters (e.g., '#', '?', '*', '[', ']', '\') - Windows illegal chars
-	// Note: We exclude ':' here because it's handled as a provider/alias separator by SplitProviderPath.
-	// However, if the path *after* the provider still contains ':', it might be invalid depending on the provider.
+// ContainsIllegalChars checks if the path contains any characters that are not allowed in OneDrive paths.
+// Returns true and an [IllegalCharacterError] if illegal characters are found. Otherwise, returns false and nil error.
+func ContainsIllegalChars(path string) (bool, error) {
 	illegalChars := []string{"#", "?", "*", "[", "]", "\\"}
 	for _, char := range illegalChars {
 		if strings.Contains(path, char) {
-			return true
+			return true, NewIllegalCharacterError(path, char)
 		}
 	}
 
-	return false
+	return false, nil
 }
 
 // ValidatePathSyntax checks for common path issues like trailing slashes or illegal characters.
 func ValidatePathSyntax(p string) error {
 	// Disallow trailing slashes unless it's the root path "/"
 	if strings.HasSuffix(p, "/") && p != "/" {
-		return coreerrors.NewInvalidInput(
-			errors.New("path has a trailing slash, which is not allowed"),
-			fmt.Sprintf("invalid path '%s' due to trailing slash", p),
-			"Remove the trailing slash from the path",
-		)
+		return NewTrailingSlashError(p)
 	}
 
-	if ContainsIllegalChars(p) {
-		return coreerrors.NewInvalidInput(
-			errors.New("path contains illegal characters"),
-			fmt.Sprintf("invalid path '%s' due to illegal characters", p),
-			"Remove the illegal characters from the path",
-		)
+	if contains, err := ContainsIllegalChars(p); contains {
+		return err
 	}
 	return nil
 }

@@ -2,6 +2,7 @@ package mkdir
 
 import (
 	"errors"
+	"fmt"
 	"slices"
 
 	"github.com/michaeldcanady/go-onedrive/internal/di"
@@ -23,7 +24,18 @@ func CreateMkdirCmd(container di.Container) *cobra.Command {
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			opts.Path = args[0]
 			if err := fs.ValidatePathSyntax(opts.Path); err != nil {
-				return err
+				switch err.(type) {
+				case *fs.TrailingSlashError:
+					break
+				case *fs.IllegalCharacterError:
+					return coreerrors.NewInvalidInput(
+						err,
+						fmt.Sprintf("invalid path '%s' due to illegal characters", opts.Path),
+						"Remove the illegal characters from the path",
+					)
+				default:
+					return err
+				}
 			}
 
 			if provider, _, found := fs.SplitProviderPath(opts.Path); found {

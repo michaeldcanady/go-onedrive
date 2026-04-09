@@ -2,6 +2,7 @@ package mv
 
 import (
 	"errors"
+	"fmt"
 	"slices"
 
 	"github.com/michaeldcanady/go-onedrive/internal/di"
@@ -23,7 +24,22 @@ func CreateMvCmd(container di.Container) *cobra.Command {
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			opts.Source = args[0]
 			if err := fs.ValidatePathSyntax(opts.Source); err != nil {
-				return err
+				switch err.(type) {
+				case *fs.TrailingSlashError:
+					return coreerrors.NewInvalidInput(
+						err,
+						fmt.Sprintf("invalid source path '%s' due to trailing slash", opts.Source),
+						"Remove the trailing slash from the source path",
+					)
+				case *fs.IllegalCharacterError:
+					return coreerrors.NewInvalidInput(
+						err,
+						fmt.Sprintf("invalid source path '%s' due to illegal characters", opts.Source),
+						"Remove the illegal characters from the source path",
+					)
+				default:
+					return err
+				}
 			}
 
 			if provider, _, found := fs.SplitProviderPath(opts.Source); found {
@@ -45,7 +61,22 @@ func CreateMvCmd(container di.Container) *cobra.Command {
 
 			opts.Destination = args[1]
 			if err := fs.ValidatePathSyntax(opts.Destination); err != nil {
-				return err
+				switch err.(type) {
+				case *fs.TrailingSlashError:
+					return coreerrors.NewInvalidInput(
+						err,
+						fmt.Sprintf("invalid destination path '%s' due to trailing slash", opts.Destination),
+						"Remove the trailing slash from the destination path",
+					)
+				case *fs.IllegalCharacterError:
+					return coreerrors.NewInvalidInput(
+						err,
+						fmt.Sprintf("invalid destination path '%s' due to illegal characters", opts.Destination),
+						"Remove the illegal characters from the destination path",
+					)
+				default:
+					return err
+				}
 			}
 
 			if provider, _, found := fs.SplitProviderPath(opts.Destination); found {

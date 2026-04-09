@@ -1,8 +1,13 @@
 package use
 
 import (
+	"errors"
+	"fmt"
+
 	"github.com/michaeldcanady/go-onedrive/internal/di"
+	"github.com/michaeldcanady/go-onedrive/internal/drive"
 	"github.com/michaeldcanady/go-onedrive/internal/drive/ui/cli/shared"
+	coreerrors "github.com/michaeldcanady/go-onedrive/internal/errors"
 	"github.com/spf13/cobra"
 )
 
@@ -17,9 +22,28 @@ func CreateUseCmd(container di.Container) *cobra.Command {
 		Args:              cobra.ExactArgs(1),
 		ValidArgsFunction: shared.ProviderPathCompletion(container, true),
 		PreRunE: func(cmd *cobra.Command, args []string) error {
-			// TODO: should be able to use to use alias to set the active drive, but this will require a lookup to resolve the alias to a drive ID before validation
-			opts.DriveRef = args[0]
+			aliasOrRef := args[0]
+
+			d, err := container.Drive().ResolveDrive(cmd.Context(), aliasOrRef)
+			if err != nil && !errors.Is(err, drive.ErrDriveNotFound) {
+				return err
+			}
+			opts.DriveRef = d.ID
+			if d == (drive.Drive{}) {
+				if driveID, err := container.Alias().GetDriveIDByAlias(aliasOrRef); err != nil {
+					return coreerrors.NewNotFound(
+						errors.New("drive ref not found"),
+						fmt.Sprintf("unknown drive reference '%s'", aliasOrRef),
+						"Use 'odc drive list' to see available drives and aliases.",
+					).WithContext(coreerrors.KeyName, aliasOrRef)
+				} else {
+					opts.DriveRef = driveID
+				}
+			}
+
 			opts.Stdout = cmd.OutOrStdout()
+			opts.Stderr = cmd.ErrOrStderr()
+
 			return opts.Validate()
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {

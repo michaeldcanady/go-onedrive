@@ -4,7 +4,7 @@ import (
 	"context"
 	"strings"
 
-	"github.com/michaeldcanady/go-onedrive/internal/errors"
+	coreerrors "github.com/michaeldcanady/go-onedrive/internal/errors"
 	"github.com/michaeldcanady/go-onedrive/internal/logger"
 	"github.com/michaeldcanady/go-onedrive/internal/state"
 )
@@ -33,7 +33,7 @@ func (s *DefaultService) ListDrives(ctx context.Context) ([]Drive, error) {
 	drives, err := s.gateway.ListDrives(ctx)
 	if err != nil {
 		log.Error("failed to list drives", logger.Error(err))
-		return nil, errors.NewAppError(errors.CodeInternal, err, "failed to list drives", "Check your internet connection and authentication status.")
+		return nil, coreerrors.NewAppError(coreerrors.CodeInternal, err, "failed to list drives", "Check your internet connection and authentication status.")
 	}
 
 	return drives, nil
@@ -57,8 +57,10 @@ func (s *DefaultService) ResolveDrive(ctx context.Context, driveRef string) (Dri
 	}
 
 	log.Warn("drive not found during resolution")
-	return Drive{}, errors.NewNotFound(nil, "drive not found", "Use 'odc drive list' to see available drives.").WithContext(errors.KeyName, driveRef)
+	return Drive{}, ErrDriveNotFound
 }
+
+//coreerrors.NewNotFound(errors.New("drive not found"), "drive not found", "Use 'odc drive list' to see available drives.").WithContext(coreerrors.KeyName, driveRef)
 
 // ResolvePersonalDrive retrieves the user's primary personal drive.
 func (s *DefaultService) ResolvePersonalDrive(ctx context.Context) (Drive, error) {
@@ -68,7 +70,7 @@ func (s *DefaultService) ResolvePersonalDrive(ctx context.Context) (Drive, error
 	d, err := s.gateway.GetPersonalDrive(ctx)
 	if err != nil {
 		log.Error("failed to get personal drive", logger.Error(err))
-		return Drive{}, errors.NewAppError(errors.CodeInternal, err, "failed to get personal drive", "")
+		return Drive{}, coreerrors.NewAppError(coreerrors.CodeInternal, err, "failed to get personal drive", "")
 	}
 
 	log.Debug("personal drive resolved successfully", logger.String("id", d.ID))
@@ -81,7 +83,7 @@ func (s *DefaultService) GetActive(ctx context.Context) (Drive, error) {
 	id, err := s.state.Get(state.KeyDrive)
 	if err != nil {
 		log.Error("failed to get active drive ID from state", logger.Error(err))
-		return Drive{}, errors.NewAppError(errors.CodeInternal, err, "failed to get active drive ID", "")
+		return Drive{}, coreerrors.NewAppError(coreerrors.CodeInternal, err, "failed to get active drive ID", "")
 	}
 
 	if id == "" {
