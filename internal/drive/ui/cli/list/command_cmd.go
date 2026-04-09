@@ -2,10 +2,10 @@ package list
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/michaeldcanady/go-onedrive/internal/drive"
 	"github.com/michaeldcanady/go-onedrive/internal/drive/alias"
+	"github.com/michaeldcanady/go-onedrive/internal/errors"
 	"github.com/michaeldcanady/go-onedrive/internal/fs/formatting"
 	"github.com/michaeldcanady/go-onedrive/internal/logger"
 )
@@ -18,21 +18,29 @@ type Handler struct {
 }
 
 // NewHandler initializes a new instance of the drive list Handler.
-func NewHandler(drive drive.Service, alias alias.Service, l logger.Logger) *Handler {
+func NewHandler(
+	drive drive.Service,
+	alias alias.Service,
+	l logger.Service,
+) *Handler {
+	cliLog, _ := l.CreateLogger("drive-list")
 	return &Handler{
 		drive: drive,
 		alias: alias,
-		log:   l,
+		log:   cliLog,
 	}
 }
 
 // Handle retrieves all available drives and their aliases, then displays them in a table.
 func (h *Handler) Handle(ctx context.Context, opts Options) error {
-	h.log.Info("listing available drives")
+	log := h.log.WithContext(ctx)
+
+	log.Info("listing available drives")
 
 	drives, err := h.drive.ListDrives(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to retrieve drives: %w", err)
+		log.Error(err.Error(), errors.LogFields(err)...)
+		return err
 	}
 
 	activeDrive, _ := h.drive.GetActive(ctx)
@@ -47,7 +55,7 @@ func (h *Handler) Handle(ctx context.Context, opts Options) error {
 		formatting.NewColumn("Alias", func(item any) string {
 			alias, err := h.alias.GetAliasByDriveID(item.(drive.Drive).Name)
 			if err != nil {
-				fmt.Println(err)
+				log.Debug("failed to get alias for drive", logger.String("drive_id", item.(drive.Drive).ID), logger.Error(err))
 			}
 
 			return alias

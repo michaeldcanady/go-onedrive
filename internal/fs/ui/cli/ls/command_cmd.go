@@ -2,8 +2,8 @@ package ls
 
 import (
 	"context"
-	"fmt"
 
+	"github.com/michaeldcanady/go-onedrive/internal/errors"
 	registry "github.com/michaeldcanady/go-onedrive/internal/fs"
 	"github.com/michaeldcanady/go-onedrive/internal/fs/filtering"
 	"github.com/michaeldcanady/go-onedrive/internal/fs/formatting"
@@ -18,10 +18,14 @@ type Handler struct {
 }
 
 // NewHandler initializes a new instance of the drive ls Handler.
-func NewHandler(fs registry.Service, l logger.Logger) *Handler {
+func NewHandler(
+	fs registry.Service,
+	l logger.Service,
+) *Handler {
+	cliLog, _ := l.CreateLogger("drive-ls")
 	return &Handler{
 		fs:  fs,
-		log: l,
+		log: cliLog,
 	}
 }
 
@@ -36,8 +40,8 @@ func (h *Handler) Handle(ctx context.Context, opts Options) error {
 		Recursive: opts.Recursive,
 	})
 	if err != nil {
-		log.Error("failed to list items", logger.Error(err))
-		return fmt.Errorf("failed to list items at %s: %w", opts.Path, err)
+		h.log.Error(err.Error(), errors.LogFields(err)...)
+		return err
 	}
 	log.Info("retrieved items from provider", logger.Int("count", len(items)))
 
@@ -50,14 +54,15 @@ func (h *Handler) Handle(ctx context.Context, opts Options) error {
 	}
 	filterer, err := filterFactory.Create(filterOpts...)
 	if err != nil {
-		return fmt.Errorf("failed to create filterer: %w", err)
+		h.log.Error(err.Error(), errors.LogFields(err)...)
+		return err
 	}
 
 	log.Debug("filtering items")
 	items, err = filterer.Filter(items)
 	if err != nil {
-		log.Error("failed to filter items", logger.Error(err))
-		return fmt.Errorf("failed to filter items: %w", err)
+		h.log.Error(err.Error(), errors.LogFields(err)...)
+		return err
 	}
 	log.Debug("items filtered", logger.Int("count", len(items)))
 
@@ -73,14 +78,15 @@ func (h *Handler) Handle(ctx context.Context, opts Options) error {
 	}
 	sorter, err := sortFactory.Create(sortOpts...)
 	if err != nil {
-		return fmt.Errorf("failed to create sorter: %w", err)
+		h.log.Error(err.Error(), errors.LogFields(err)...)
+		return err
 	}
 
 	log.Debug("sorting items")
 	items, err = sorter.Sort(items)
 	if err != nil {
-		log.Error("failed to sort items", logger.Error(err))
-		return fmt.Errorf("failed to sort items: %w", err)
+		h.log.Error(err.Error(), errors.LogFields(err)...)
+		return err
 	}
 	log.Debug("items sorted")
 
@@ -95,7 +101,8 @@ func (h *Handler) Handle(ctx context.Context, opts Options) error {
 	formatterFactory := formatting.NewFormatterFactory()
 	formatter, err := formatterFactory.Create(opts.Format)
 	if err != nil {
-		return fmt.Errorf("failed to create formatter: %w", err)
+		h.log.Error(err.Error(), errors.LogFields(err)...)
+		return err
 	}
 
 	return formatter.Format(opts.Stdout, anyItems)

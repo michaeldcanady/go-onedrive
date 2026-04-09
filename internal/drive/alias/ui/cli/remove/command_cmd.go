@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/michaeldcanady/go-onedrive/internal/drive/alias"
+	"github.com/michaeldcanady/go-onedrive/internal/errors"
 	"github.com/michaeldcanady/go-onedrive/internal/logger"
 )
 
@@ -15,19 +16,26 @@ type Handler struct {
 }
 
 // NewHandler initializes a new instance of the drive alias remove Handler.
-func NewHandler(alias alias.Service, l logger.Logger) *Handler {
+func NewHandler(
+	alias alias.Service,
+	l logger.Service,
+) *Handler {
+	cliLog, _ := l.CreateLogger("alias-remove")
 	return &Handler{
 		alias: alias,
-		log:   l,
+		log:   cliLog,
 	}
 }
 
 // Handle deletes a drive alias.
 func (h *Handler) Handle(ctx context.Context, opts Options) error {
-	h.log.Info("removing drive alias", logger.String("alias", opts.Alias))
+	log := h.log.WithContext(ctx)
+
+	log.Info("removing drive alias", logger.String("alias", opts.Alias))
 
 	if err := h.alias.DeleteAlias(opts.Alias); err != nil {
-		return fmt.Errorf("failed to remove drive alias: %w", err)
+		log.Error(err.Error(), errors.LogFields(err)...)
+		return err
 	}
 
 	fmt.Fprintf(opts.Stdout, "alias '%s' removed\n", opts.Alias)

@@ -12,13 +12,12 @@ func CreateCurrentCmd(container di.Container) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "current",
 		Short: "Display the name of the currently active profile",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		PreRunE: func(cmd *cobra.Command, args []string) error {
 			opts.Stdout = cmd.OutOrStdout()
-
-			l, _ := container.Logger().CreateLogger("profile-current")
-			handler := NewHandler(container.Profile(), l)
-
-			return handler.Handle(cmd.Context(), opts)
+			return opts.Validate()
+		},
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return NewHandler(container.Profile(), container.Logger()).Handle(cmd.Context(), opts)
 		},
 	}
 

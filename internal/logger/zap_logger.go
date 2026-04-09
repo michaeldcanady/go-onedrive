@@ -83,6 +83,9 @@ func (z *ZapLogger) toZapFields(fields ...Field) []zap.Field {
 			zapFields[i] = zap.Error(f.Value.(error))
 		case FieldTypeBool:
 			zapFields[i] = zap.Bool(f.Key, f.Value.(bool))
+		case FieldTypeAny:
+			zapFields[i] = zap.Any(f.Key, f.Value)
+
 		}
 	}
 	return zapFields

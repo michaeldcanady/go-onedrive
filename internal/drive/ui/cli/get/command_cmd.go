@@ -6,6 +6,7 @@ import (
 
 	"github.com/michaeldcanady/go-onedrive/internal/drive"
 	"github.com/michaeldcanady/go-onedrive/internal/drive/alias"
+	"github.com/michaeldcanady/go-onedrive/internal/errors"
 	"github.com/michaeldcanady/go-onedrive/internal/fs/formatting"
 	"github.com/michaeldcanady/go-onedrive/internal/logger"
 )
@@ -18,17 +19,24 @@ type Handler struct {
 }
 
 // NewHandler initializes a new instance of the drive get Handler.
-func NewHandler(drive drive.Service, alias alias.Service, l logger.Logger) *Handler {
+func NewHandler(
+	drive drive.Service,
+	alias alias.Service,
+	l logger.Service,
+) *Handler {
+	cliLog, _ := l.CreateLogger("drive-get")
 	return &Handler{
 		drive: drive,
 		alias: alias,
-		log:   l,
+		log:   cliLog,
 	}
 }
 
 // Handle retrieves and displays details for a specific drive.
 func (h *Handler) Handle(ctx context.Context, opts Options) error {
-	h.log.Info("fetching drive details", logger.String("ref", opts.DriveRef))
+	log := h.log.WithContext(ctx)
+
+	log.Info("fetching drive details", logger.String("ref", opts.DriveRef))
 
 	var d drive.Drive
 	var err error
@@ -37,7 +45,8 @@ func (h *Handler) Handle(ctx context.Context, opts Options) error {
 		// Use active drive
 		d, err = h.drive.GetActive(ctx)
 		if err != nil {
-			return fmt.Errorf("no active drive set and no drive reference provided: %w", err)
+			log.Error(err.Error(), errors.LogFields(err)...)
+			return err
 		}
 	} else {
 		// Resolve the reference
@@ -48,7 +57,8 @@ func (h *Handler) Handle(ctx context.Context, opts Options) error {
 		}
 		d, err = h.drive.ResolveDrive(ctx, driveID)
 		if err != nil {
-			return fmt.Errorf("failed to get drive details: %w", err)
+			log.Error(err.Error(), errors.LogFields(err)...)
+			return err
 		}
 	}
 

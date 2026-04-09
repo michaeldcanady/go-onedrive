@@ -1,10 +1,12 @@
 package download
 
 import (
+	"errors"
 	"fmt"
 	"slices"
 
 	"github.com/michaeldcanady/go-onedrive/internal/di"
+	coreerrors "github.com/michaeldcanady/go-onedrive/internal/errors"
 	"github.com/michaeldcanady/go-onedrive/internal/fs"
 	"github.com/michaeldcanady/go-onedrive/internal/fs/ui/cli"
 	"github.com/spf13/cobra"
@@ -21,48 +23,56 @@ func CreateDownloadCmd(container di.Container) *cobra.Command {
 		ValidArgsFunction: cli.ProviderPathCompletion(container),
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			opts.Source = args[0]
-			opts.Destination = args[1]
-			opts.Stdout = cmd.OutOrStdout()
-
-			// 1. Syntactic check for source path
 			if err := fs.ValidatePathSyntax(opts.Source); err != nil {
 				return fmt.Errorf("invalid source path syntax: %w", err)
 			}
-			// 2. Provider check for source path (only if a provider prefix is explicitly given)
-			provider, _, found := fs.SplitProviderPath(opts.Source)
-			if found {
-				names, err := container.ProviderRegistry().RegisteredNames()
-				if err != nil {
-					return fmt.Errorf("failed to check registered providers: %w", err)
-				}
-				if !slices.Contains(names, provider) {
-					return fmt.Errorf("unknown provider '%s'; valid providers are: %v", provider, names)
+			if provider, _, found := fs.SplitProviderPath(opts.Source); found {
+				if names, err := container.ProviderRegistry().RegisteredNames(); err != nil {
+					return coreerrors.NewAppError(
+						coreerrors.CodeUnknown,
+						errors.New("failed to check registered providers"),
+						"An unexpected error occurred while retrieving registered providers",
+						"Try again, and if the problem persists, check the application logs for more details",
+					)
+				} else if !slices.Contains(names, provider) {
+					return coreerrors.NewInvalidInput(
+						errors.New("unknown provider"),
+						"Unknown provider prefix",
+						"Ensure the provider prefix is correct and corresponds to a registered provider",
+					)
 				}
 			}
 
+			opts.Destination = args[1]
 			// 3. Syntactic check for destination path
 			if err := fs.ValidatePathSyntax(opts.Destination); err != nil {
 				return fmt.Errorf("invalid destination path syntax: %w", err)
 			}
 			// 4. Provider check for destination path (only if a provider prefix is explicitly given)
-			destProvider, _, destFound := fs.SplitProviderPath(opts.Destination)
-			if destFound {
-				names, err := container.ProviderRegistry().RegisteredNames()
-				if err != nil {
-					return fmt.Errorf("failed to check registered providers: %w", err)
-				}
-				if !slices.Contains(names, destProvider) {
-					return fmt.Errorf("unknown provider '%s'; valid providers are: %v", destProvider, names)
+			if provider, _, found := fs.SplitProviderPath(opts.Destination); found {
+				if names, err := container.ProviderRegistry().RegisteredNames(); err != nil {
+					return coreerrors.NewAppError(
+						coreerrors.CodeUnknown,
+						errors.New("failed to check registered providers"),
+						"An unexpected error occurred while retrieving registered providers",
+						"Try again, and if the problem persists, check the application logs for more details",
+					)
+				} else if !slices.Contains(names, provider) {
+					return coreerrors.NewInvalidInput(
+						errors.New("unknown provider"),
+						"Unknown provider prefix",
+						"Ensure the provider prefix is correct and corresponds to a registered provider",
+					)
 				}
 			}
+
+			opts.Stdout = cmd.OutOrStdout()
+			opts.Stderr = cmd.ErrOrStderr()
 
 			return opts.Validate()
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			l, _ := container.Logger().CreateLogger("drive-download")
-			handler := NewHandler(container.FS(), l)
-
-			return handler.Handle(cmd.Context(), opts)
+			return NewHandler(container.FS(), container.Logger()).Handle(cmd.Context(), opts)
 		},
 	}
 

@@ -3,10 +3,9 @@ package edit
 import (
 	"bytes"
 	"context"
-	"errors"
 	"fmt"
 
-	featerrors "github.com/michaeldcanady/go-onedrive/internal/errors"
+	"github.com/michaeldcanady/go-onedrive/internal/errors"
 	registry "github.com/michaeldcanady/go-onedrive/internal/fs"
 	"github.com/michaeldcanady/go-onedrive/internal/fs/editor"
 	"github.com/michaeldcanady/go-onedrive/internal/logger"
@@ -20,11 +19,16 @@ type Handler struct {
 }
 
 // NewHandler initializes a new instance of the drive edit Handler.
-func NewHandler(fs registry.Service, editor editor.Service, l logger.Logger) *Handler {
+func NewHandler(
+	fs registry.Service,
+	editor editor.Service,
+	l logger.Service,
+) *Handler {
+	cliLog, _ := l.CreateLogger("drive-edit")
 	return &Handler{
 		fs:     fs,
 		editor: editor,
-		log:    l,
+		log:    cliLog,
 	}
 }
 
@@ -37,23 +41,23 @@ func (h *Handler) Handle(ctx context.Context, opts Options) error {
 	log.Debug("fetching metadata")
 	item, err := h.fs.Get(ctx, opts.Path)
 	if err != nil {
-		log.Error("failed to get metadata", logger.Error(err))
-		return fmt.Errorf("failed to get item metadata at %s: %w", opts.Path, err)
+		h.log.Error(err.Error(), errors.LogFields(err)...)
+		return err
 	}
 
 	log.Debug("reading file for editing")
 	r, err := h.fs.ReadFile(ctx, opts.Path, registry.ReadOptions{})
 	if err != nil {
-		log.Error("failed to read file", logger.Error(err))
-		return fmt.Errorf("failed to read file at %s: %w", opts.Path, err)
+		h.log.Error(err.Error(), errors.LogFields(err)...)
+		return err
 	}
 	defer r.Close()
 
 	log.Debug("launching external editor")
 	newData, _, err := h.editor.LaunchTempFile(ctx, "odc-edit", ".txt", r)
 	if err != nil {
-		log.Error("editor launch failed", logger.Error(err))
-		return fmt.Errorf("failed to edit file at %s: %w", opts.Path, err)
+		h.log.Error(err.Error(), errors.LogFields(err)...)
+		return err
 	}
 
 	if newData == nil {
@@ -73,12 +77,12 @@ func (h *Handler) Handle(ctx context.Context, opts Options) error {
 
 	_, err = h.fs.WriteFile(ctx, opts.Path, bytes.NewReader(newData), writeOpts)
 	if err != nil {
-		if errors.Is(err, featerrors.ErrPrecondition) {
+		if errors.Is(err, errors.CodePrecondition) {
 			log.Warn("conflict detected, upload aborted")
-			return fmt.Errorf("conflict detected during upload: %w. Use --force to overwrite", err)
+			return errors.NewAppError(errors.CodeConflict, err, "conflict detected during upload", "Use --force to overwrite changes.")
 		}
-		log.Error("failed to upload changes", logger.Error(err))
-		return fmt.Errorf("failed to upload edited changes to %s: %w", opts.Path, err)
+		h.log.Error(err.Error(), errors.LogFields(err)...)
+		return err
 	}
 
 	log.Info("edit completed successfully")

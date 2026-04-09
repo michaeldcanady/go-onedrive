@@ -1,7 +1,13 @@
 package cp
 
 import (
+	"errors"
+	"fmt"
+	"slices"
+
 	"github.com/michaeldcanady/go-onedrive/internal/di"
+	coreerrors "github.com/michaeldcanady/go-onedrive/internal/errors"
+	"github.com/michaeldcanady/go-onedrive/internal/fs"
 	"github.com/michaeldcanady/go-onedrive/internal/fs/ui/cli"
 	"github.com/spf13/cobra"
 )
@@ -15,19 +21,74 @@ func CreateCpCmd(container di.Container) *cobra.Command {
 		Short:             "Copy files and directories",
 		Args:              cobra.ExactArgs(2),
 		ValidArgsFunction: cli.ProviderPathCompletion(container),
-		RunE: func(cmd *cobra.Command, args []string) error {
+		PreRunE: func(cmd *cobra.Command, args []string) error {
 			opts.Source = args[0]
-			opts.Destination = args[1]
-			opts.Stdout = cmd.OutOrStdout()
-
-			if err := opts.Validate(); err != nil {
-				return err
+			if opts.Recursive && fs.ContainsIllegalChars(opts.Source) {
+				return coreerrors.NewInvalidInput(
+					errors.New("source path contains illegal characters"),
+					fmt.Sprintf("invalid source path '%s' due to illegal characters", opts.Source),
+					"Remove the illegal characters from the source path",
+				)
+			} else {
+				if err := fs.ValidatePathSyntax(opts.Source); err != nil {
+					return err
+				}
 			}
 
-			l, _ := container.Logger().CreateLogger("drive-cp")
-			handler := NewHandler(container.FS(), l)
+			if provider, _, found := fs.SplitProviderPath(opts.Source); found {
+				if names, err := container.ProviderRegistry().RegisteredNames(); err != nil {
+					return coreerrors.NewAppError(
+						coreerrors.CodeUnknown,
+						errors.New("failed to check registered providers"),
+						"An unexpected error occurred while retrieving registered providers",
+						"Try again, and if the problem persists, check the application logs for more details",
+					)
+				} else if !slices.Contains(names, provider) {
+					return coreerrors.NewInvalidInput(
+						errors.New("unknown provider"),
+						"Unknown provider prefix",
+						"Ensure the provider prefix is correct and corresponds to a registered provider",
+					)
+				}
+			}
 
-			return handler.Handle(cmd.Context(), opts)
+			opts.Destination = args[1]
+			if opts.Recursive && fs.ContainsIllegalChars(opts.Source) {
+				return coreerrors.NewInvalidInput(
+					errors.New("source path contains illegal characters"),
+					fmt.Sprintf("invalid source path '%s' due to illegal characters", opts.Source),
+					"Remove the illegal characters from the source path",
+				)
+			} else {
+				if err := fs.ValidatePathSyntax(opts.Source); err != nil {
+					return err
+				}
+			}
+
+			if provider, _, found := fs.SplitProviderPath(opts.Source); found {
+				if names, err := container.ProviderRegistry().RegisteredNames(); err != nil {
+					return coreerrors.NewAppError(
+						coreerrors.CodeUnknown,
+						errors.New("failed to check registered providers"),
+						"An unexpected error occurred while retrieving registered providers",
+						"Try again, and if the problem persists, check the application logs for more details",
+					)
+				} else if !slices.Contains(names, provider) {
+					return coreerrors.NewInvalidInput(
+						errors.New("unknown provider"),
+						"Unknown provider prefix",
+						"Ensure the provider prefix is correct and corresponds to a registered provider",
+					)
+				}
+			}
+
+			opts.Stdout = cmd.OutOrStdout()
+			opts.Stderr = cmd.ErrOrStderr()
+
+			return opts.Validate()
+		},
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return NewHandler(container.FS(), container.Logger()).Handle(cmd.Context(), opts)
 		},
 	}
 

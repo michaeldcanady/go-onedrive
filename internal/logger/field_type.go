@@ -16,4 +16,9 @@ const (
 	FieldTypeError
 	// FieldTypeBool represents a boolean-valued log field.
 	FieldTypeBool
+	// FieldTypeAny represents a log field of any type.
+	FieldTypeAny
+
+	// FieldTypeStringer represents a log field that implements the fmt.Stringer interface.
+	FieldTypeStringer
 )

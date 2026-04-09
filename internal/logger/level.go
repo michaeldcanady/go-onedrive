@@ -16,6 +16,8 @@ const (
 	LevelWarn
 	// LevelError represents error messages.
 	LevelError
+	// LevelFatal represents fatal error messages.
+	LevelFatal
 )
 
 func ParseLevel(level string) Level {
@@ -28,6 +30,8 @@ func ParseLevel(level string) Level {
 		return LevelWarn
 	case "error":
 		return LevelError
+	case "fatal":
+		return LevelFatal
 	case "unknown", "":
 		return LevelUnknown
 	default:
@@ -45,9 +49,22 @@ func (l Level) String() string {
 		return "warn"
 	case LevelError:
 		return "error"
+	case LevelFatal:
+		return "fatal"
 	case LevelUnknown:
 		return "unknown"
 	default:
 		return "unknown"
 	}
+}
+
+// MarshalText implements encoding.TextMarshaler for serializing Level as a string.
+func (l Level) MarshalText() ([]byte, error) {
+	return []byte(l.String()), nil
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler for deserializing Level from a string.
+func (l *Level) UnmarshalText(text []byte) error {
+	*l = ParseLevel(string(text))
+	return nil
 }

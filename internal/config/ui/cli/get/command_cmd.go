@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/michaeldcanady/go-onedrive/internal/config"
+	"github.com/michaeldcanady/go-onedrive/internal/errors"
 	"github.com/michaeldcanady/go-onedrive/internal/logger"
 	"gopkg.in/yaml.v3"
 )
@@ -30,15 +31,20 @@ func NewHandler(
 
 // Handle retrieves and displays the configuration.
 func (h *Handler) Handle(ctx context.Context, opts Options) error {
+	log := h.log.WithContext(ctx)
+
 	cfg, err := h.config.GetConfig(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to load configuration: %w", err)
+		log.Error(err.Error(), errors.LogFields(err)...)
+		return err
 	}
 
 	if opts.Key == "" {
 		data, err := yaml.Marshal(cfg)
 		if err != nil {
-			return fmt.Errorf("failed to marshal configuration: %w", err)
+			appErr := errors.NewAppError(errors.CodeInternal, err, "failed to marshal configuration", "")
+			log.Error(appErr.Error(), errors.LogFields(appErr)...)
+			return appErr
 		}
 		fmt.Fprint(opts.Stdout, string(data))
 		return nil
@@ -46,7 +52,9 @@ func (h *Handler) Handle(ctx context.Context, opts Options) error {
 
 	value, err := h.getValueByKey(cfg, opts.Key)
 	if err != nil {
-		return err
+		appErr := errors.NewAppError(errors.CodeInvalidInput, err, "unknown configuration key", "Use 'odc config get' without a key to see all available keys.")
+		log.Error(appErr.Error(), errors.LogFields(appErr)...)
+		return appErr
 	}
 
 	fmt.Fprintf(opts.Stdout, "%s: %v\n", opts.Key, value)
@@ -68,6 +76,12 @@ func (h *Handler) getValueByKey(cfg config.Config, key string) (interface{}, err
 		return cfg.Auth.Method, nil
 	case "auth.redirect_uri":
 		return cfg.Auth.RedirectURI, nil
+	case "logging.level":
+		return cfg.Logging.Level.String(), nil
+	case "logging.output":
+		return cfg.Logging.Output, nil
+	case "logging.format":
+		return cfg.Logging.Format, nil
 	default:
 		return nil, fmt.Errorf("unknown configuration key: %s", key)
 	}

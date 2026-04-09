@@ -7,13 +7,17 @@ import (
 
 // CreateListCmd constructs and returns the cobra.Command for the 'drive alias list' operation.
 func CreateListCmd(container di.Container) *cobra.Command {
+	var opts Options
+
 	return &cobra.Command{
 		Use:   "list",
 		Short: "List all drive aliases",
+		PreRunE: func(cmd *cobra.Command, args []string) error {
+			opts.Stdout = cmd.OutOrStdout()
+			return opts.Validate()
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			opts := Options{Stdout: cmd.OutOrStdout()}
-			log, _ := container.Logger().CreateLogger("alias-list")
-			return NewHandler(container.Alias(), log).Handle(cmd.Context(), opts)
+			return NewHandler(container.Alias(), container.Logger()).Handle(cmd.Context(), opts)
 		},
 	}
 }

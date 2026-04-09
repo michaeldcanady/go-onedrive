@@ -7,3 +7,7 @@ type Options struct {
 	Alias  string
 	Stdout io.Writer
 }
+
+func (o *Options) Validate() error {
+	return nil
+}

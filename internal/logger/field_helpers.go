@@ -1,12 +1,18 @@
 package logger
 
 import (
+	"fmt"
 	"time"
 )
 
 // String creates a Field with a string value.
 func String(key, val string) Field {
 	return Field{Key: key, FieldType: FieldTypeString, Value: val}
+}
+
+// Stringer creates a Field with a value that implements the fmt.Stringer interface.
+func Stringer(key string, val fmt.Stringer) Field {
+	return Field{Key: key, FieldType: FieldTypeStringer, Value: val}
 }
 
 type _int interface {
@@ -36,4 +42,9 @@ func Error(err error) Field {
 // Bool creates a Field with a boolean value.
 func Bool(key string, val bool) Field {
 	return Field{Key: key, FieldType: FieldTypeBool, Value: val}
+}
+
+// Any creates a Field with an arbitrary value.
+func Any(key string, val interface{}) Field {
+	return Field{Key: key, FieldType: FieldTypeAny, Value: val}
 }

@@ -38,20 +38,18 @@ func (p *Provider) mapError(err error, path string) error {
 		return nil
 	}
 
-	kind := coreerrors.ErrInternal
+	var appErr *coreerrors.AppError
 	if os.IsNotExist(err) {
-		kind = coreerrors.ErrNotFound
+		appErr = coreerrors.NewNotFound(err, "file or directory not found", "")
 	} else if os.IsPermission(err) {
-		kind = coreerrors.ErrForbidden
+		appErr = coreerrors.NewForbidden(err, "permission denied", "Check your file system permissions.")
 	} else if os.IsExist(err) {
-		kind = coreerrors.ErrConflict
+		appErr = coreerrors.NewConflict(err, "file or directory already exists", "")
+	} else {
+		appErr = coreerrors.NewInternal(err, "an unexpected local filesystem error occurred", "")
 	}
 
-	return &coreerrors.DomainError{
-		Kind: kind,
-		Err:  err,
-		Path: path,
-	}
+	return appErr.WithContext(coreerrors.KeyPath, path)
 }
 
 // Get retrieves metadata for a single item by its local path.

@@ -1,7 +1,11 @@
 package use
 
 import (
+	"errors"
+	"fmt"
+
 	"github.com/michaeldcanady/go-onedrive/internal/di"
+	coreerrors "github.com/michaeldcanady/go-onedrive/internal/errors"
 	"github.com/michaeldcanady/go-onedrive/internal/profile/ui/cli/shared"
 	"github.com/spf13/cobra"
 )
@@ -15,18 +19,26 @@ func CreateUseCmd(container di.Container) *cobra.Command {
 		Short:             "Switch the active configuration profile",
 		Args:              cobra.ExactArgs(1),
 		ValidArgsFunction: shared.ProviderPathCompletion(container),
-		RunE: func(cmd *cobra.Command, args []string) error {
+		PreRunE: func(cmd *cobra.Command, args []string) error {
 			opts.Name = args[0]
-			opts.Stdout = cmd.OutOrStdout()
 
-			if err := opts.Validate(); err != nil {
+			if exists, err := container.Profile().Exists(cmd.Context(), opts.Name); err != nil {
 				return err
+			} else if !exists {
+				return coreerrors.NewNotFound(
+					errors.New("profile not found"),
+					fmt.Sprintf("profile '%s' does not exist", opts.Name),
+					"Create a new profile using the 'profile create' command",
+				)
 			}
 
-			l, _ := container.Logger().CreateLogger("profile-use")
-			handler := NewHandler(container.Profile(), l)
+			opts.Stdout = cmd.OutOrStdout()
+			opts.Stderr = cmd.OutOrStderr()
 
-			return handler.Handle(cmd.Context(), opts)
+			return opts.Validate()
+		},
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return NewHandler(container.Profile(), container.Logger()).Handle(cmd.Context(), opts)
 		},
 	}
 

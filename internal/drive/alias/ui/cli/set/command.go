@@ -12,6 +12,8 @@ import (
 
 // CreateSetCmd constructs and returns the cobra.Command for the 'drive alias set' operation.
 func CreateSetCmd(container di.Container) *cobra.Command {
+	var opts Options
+
 	return &cobra.Command{
 		Use:               "set <drive-id> <alias>",
 		Short:             "Create or update a drive alias",
@@ -35,16 +37,14 @@ func CreateSetCmd(container di.Container) *cobra.Command {
 				return fmt.Errorf("alias '%s' is already in use for a different drive", alias)
 			}
 
-			return nil
+			opts.Alias = alias
+			opts.DriveID = driveID
+			opts.Stdout = cmd.OutOrStdout()
+
+			return opts.Validate()
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			opts := Options{
-				Alias:   args[1],
-				DriveID: args[0],
-				Stdout:  cmd.OutOrStdout(),
-			}
-			log, _ := container.Logger().CreateLogger("alias-set")
-			return NewHandler(container.Alias(), log).Handle(cmd.Context(), opts)
+			return NewHandler(container.Alias(), container.Logger()).Handle(cmd.Context(), opts)
 		},
 	}
 }

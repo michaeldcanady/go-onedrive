@@ -12,13 +12,13 @@ func CreateListCmd(container di.Container) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "list",
 		Short: "List all configuration profiles",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		PreRunE: func(cmd *cobra.Command, args []string) error {
 			opts.Stdout = cmd.OutOrStdout()
 
-			l, _ := container.Logger().CreateLogger("profile-list")
-			handler := NewHandler(container.Profile(), l)
-
-			return handler.Handle(cmd.Context(), opts)
+			return opts.Validate()
+		},
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return NewHandler(container.Profile(), container.Logger()).Handle(cmd.Context(), opts)
 		},
 	}
 

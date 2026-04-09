@@ -67,3 +67,14 @@ func (m *AuthMethod) UnmarshalJSON(data []byte) error {
 	*m = ParseAuthMethod(s)
 	return nil
 }
+
+// MarshalText implements encoding.TextMarshaler for serializing AuthMethod as a string.
+func (m AuthMethod) MarshalText() ([]byte, error) {
+	return []byte(m.String()), nil
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler for deserializing AuthMethod from a string.
+func (m *AuthMethod) UnmarshalText(text []byte) error {
+	*m = ParseAuthMethod(string(text))
+	return nil
+}

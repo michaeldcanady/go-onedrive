@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/michaeldcanady/go-onedrive/internal/config"
+	"github.com/michaeldcanady/go-onedrive/internal/errors"
 	"github.com/michaeldcanady/go-onedrive/internal/identity/registry"
 	"github.com/michaeldcanady/go-onedrive/internal/identity/shared"
 	"github.com/michaeldcanady/go-onedrive/internal/logger"
@@ -21,12 +22,13 @@ type Handler struct {
 func NewHandler(
 	cfg config.Service,
 	id registry.Service,
-	l logger.Logger,
+	l logger.Service,
 ) *Handler {
+	cliLog, _ := l.CreateLogger("identity-login")
 	return &Handler{
 		config:   cfg,
 		identity: id,
-		log:      l,
+		log:      cliLog,
 	}
 }
 
@@ -39,21 +41,21 @@ func (h *Handler) Handle(ctx context.Context, opts Options) error {
 	log.Debug("loading profile configuration")
 	cfg, err := h.config.GetConfig(ctx)
 	if err != nil {
-		log.Error("failed to load configuration", logger.Error(err))
-		return fmt.Errorf("failed to load configuration: %w", err)
+		h.log.Error(err.Error(), errors.LogFields(err)...)
+		return err
 	}
 
 	provider := cfg.Auth.Provider
-	if provider == "" {
+	if provider == config.AuthProviderUnknown {
 		log.Debug("no provider specified, defaulting to microsoft")
-		provider = "microsoft"
+		provider = config.AuthProviderMicrosoft
 	}
 
-	log.Debug("retrieving authenticator for provider", logger.String("provider", provider))
-	auth, err := h.identity.Get(provider)
+	log.Debug("retrieving authenticator for provider", logger.String("provider", provider.String()))
+	auth, err := h.identity.Get(provider.String())
 	if err != nil {
-		log.Error("unsupported provider", logger.String("provider", provider), logger.Error(err))
-		return fmt.Errorf("provider %s not supported: %w", provider, err)
+		h.log.Error(err.Error(), errors.LogFields(err)...)
+		return err
 	}
 
 	// Determine method: CLI flag takes precedence, then config
@@ -61,8 +63,8 @@ func (h *Handler) Handle(ctx context.Context, opts Options) error {
 	if opts.Method != "" {
 		method = shared.ParseAuthMethod(opts.Method)
 		log.Debug("auth method set via CLI flag", logger.String("method", method.String()))
-	} else if cfg.Auth.Method != "" {
-		method = shared.ParseAuthMethod(cfg.Auth.Method)
+	} else if cfg.Auth.Method != shared.AuthMethodUnknown {
+		method = cfg.Auth.Method
 		log.Debug("auth method set via configuration", logger.String("method", method.String()))
 	}
 
@@ -88,16 +90,16 @@ func (h *Handler) Handle(ctx context.Context, opts Options) error {
 		loginOpts.ProviderSpecific["client_secret"] = cfg.Auth.ClientSecret
 	}
 
-	log.Info("authenticating", logger.String("provider", provider), logger.String("method", method.String()))
+	log.Info("authenticating", logger.String("provider", provider.String()), logger.String("method", method.String()))
 	token, err := auth.Authenticate(ctx, loginOpts)
 	if err != nil {
-		log.Error("authentication failed", logger.Error(err))
-		return fmt.Errorf("authentication failed: %w", err)
+		h.log.Error(err.Error(), errors.LogFields(err)...)
+		return err
 	}
 
 	if err := auth.SaveToken(ctx, token); err != nil {
-		log.Error("failed to cache token", logger.Error(err))
-		return fmt.Errorf("failed to cache access token: %w", err)
+		h.log.Error(err.Error(), errors.LogFields(err)...)
+		return err
 	}
 
 	log.Info("authentication successful and token cached")

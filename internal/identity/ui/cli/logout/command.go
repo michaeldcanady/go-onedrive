@@ -15,18 +15,18 @@ func CreateLogoutCmd(container di.Container) *cobra.Command {
 		Long: `This command clears the authentication state for your active profile.
 Any cached tokens will be invalidated, and subsequent operations will require
 re-authentication.`,
-		RunE: func(cmd *cobra.Command, args []string) error {
+		PreRunE: func(cmd *cobra.Command, args []string) error {
 			opts.Stdout = cmd.OutOrStdout()
 			opts.Stderr = cmd.ErrOrStderr()
 
-			l, _ := container.Logger().CreateLogger("auth-logout")
-			handler := NewHandler(
+			return opts.Validate()
+		},
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return NewHandler(
 				container.Config(),
 				container.Identity(),
-				l,
-			)
-
-			return handler.Handle(cmd.Context(), opts)
+				container.Logger(),
+			).Handle(cmd.Context(), opts)
 		},
 	}
 

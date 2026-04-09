@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/michaeldcanady/go-onedrive/internal/errors"
 	"github.com/michaeldcanady/go-onedrive/internal/logger"
 	"github.com/michaeldcanady/go-onedrive/internal/profile"
 )
@@ -15,27 +16,36 @@ type Handler struct {
 }
 
 // NewHandler initializes a new instance of the profile list Handler.
-func NewHandler(p profile.Service, l logger.Logger) *Handler {
+func NewHandler(
+	p profile.Service,
+	l logger.Service,
+) *Handler {
+	cliLog, _ := l.CreateLogger("profile-list")
 	return &Handler{
 		profiles: p,
-		log:      l,
+		log:      cliLog,
 	}
 }
 
 // Handle retrieves and displays all registered profiles.
 func (h *Handler) Handle(ctx context.Context, opts Options) error {
-	h.log.Info("listing all profiles")
+	log := h.log.WithContext(ctx)
+
+	log.Info("listing all profiles")
 
 	profiles, err := h.profiles.List(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to list profiles: %w", err)
+		log.Error(err.Error(), errors.LogFields(err)...)
+		return err
 	}
 
 	if len(profiles) == 0 {
+		log.Info("no profiles found")
 		fmt.Fprintln(opts.Stdout, "No profiles found.")
 		return nil
 	}
 
+	log.Info("found profiles", logger.Int("count", len(profiles)))
 	fmt.Fprintln(opts.Stdout, "Profiles:")
 	for _, p := range profiles {
 		fmt.Fprintf(opts.Stdout, "- %s\n", p.Name)

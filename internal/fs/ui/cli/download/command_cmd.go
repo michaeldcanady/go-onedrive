@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/michaeldcanady/go-onedrive/internal/errors"
 	shared "github.com/michaeldcanady/go-onedrive/internal/fs"
 	"github.com/michaeldcanady/go-onedrive/internal/logger"
 )
@@ -16,10 +17,14 @@ type Handler struct {
 }
 
 // NewHandler initializes a new instance of the drive download Handler.
-func NewHandler(m shared.Service, l logger.Logger) *Handler {
+func NewHandler(
+	m shared.Service,
+	l logger.Service,
+) *Handler {
+	cliLog, _ := l.CreateLogger("drive-download")
 	return &Handler{
 		manager: m,
-		log:     l,
+		log:     cliLog,
 	}
 }
 
@@ -47,8 +52,8 @@ func (h *Handler) Handle(ctx context.Context, opts Options) error {
 
 	log.Debug("delegating to filesystem manager for copy")
 	if err := h.manager.Copy(ctx, opts.Source, destination, cpOpts); err != nil {
-		log.Error("download failed", logger.Error(err))
-		return fmt.Errorf("failed to download %s to %s: %w", opts.Source, destination, err)
+		h.log.Error(err.Error(), errors.LogFields(err)...)
+		return err
 	}
 
 	log.Info("download completed successfully")

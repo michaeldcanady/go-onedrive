@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/michaeldcanady/go-onedrive/internal/errors"
 	"github.com/michaeldcanady/go-onedrive/internal/logger"
 	"github.com/michaeldcanady/go-onedrive/internal/profile"
 )
@@ -15,19 +16,26 @@ type Handler struct {
 }
 
 // NewHandler initializes a new instance of the profile deletion Handler.
-func NewHandler(p profile.Service, l logger.Logger) *Handler {
+func NewHandler(
+	p profile.Service,
+	l logger.Service,
+) *Handler {
+	cliLog, _ := l.CreateLogger("profile-delete")
 	return &Handler{
 		profiles: p,
-		log:      l,
+		log:      cliLog,
 	}
 }
 
 // Handle executes the logic to delete a profile.
 func (h *Handler) Handle(ctx context.Context, opts Options) error {
-	h.log.Info("deleting profile", logger.String("name", opts.Name))
+	log := h.log.WithContext(ctx)
+
+	log.Info("deleting profile", logger.String("name", opts.Name))
 
 	if err := h.profiles.Delete(ctx, opts.Name); err != nil {
-		return fmt.Errorf("failed to delete profile: %w", err)
+		log.Error(err.Error(), errors.LogFields(err)...)
+		return err
 	}
 
 	fmt.Fprintf(opts.Stdout, "Profile %s deleted successfully.\n", opts.Name)

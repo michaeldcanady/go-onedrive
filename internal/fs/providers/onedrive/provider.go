@@ -64,35 +64,57 @@ func (p *Provider) Name() string {
 }
 
 // mapError translates errors from the OneDrive SDK into domain-specific errors with appropriate kinds for better error handling in the manager and CLI.
-func (p *Provider) mapError(err error, path string) error {
+func (p *Provider) mapError(err error, itemPath string) error {
 	if err == nil {
 		return nil
 	}
 
-	kind := coreerrors.ErrInternal
+	code := coreerrors.CodeInternal
+	safeMsg := "an unexpected OneDrive API error occurred"
+	hint := "Check your internet connection and authentication status."
+
 	var apiErr *abstractions.ApiError
 	if errors.As(err, &apiErr) {
 		switch apiErr.ResponseStatusCode {
 		case 401:
-			kind = coreerrors.ErrUnauthorized
+			code = coreerrors.CodeUnauthorized
+			safeMsg = "unauthorized: please log in again"
+			hint = "Use 'odc auth login' to re-authenticate."
 		case 403:
-			kind = coreerrors.ErrForbidden
+			code = coreerrors.CodeForbidden
+			safeMsg = "forbidden: you do not have permission to access this resource"
 		case 404:
-			kind = coreerrors.ErrNotFound
+			code = coreerrors.CodeNotFound
+			safeMsg = "resource not found in OneDrive"
+			hint = ""
 		case 409:
-			kind = coreerrors.ErrConflict
+			code = coreerrors.CodeConflict
+			safeMsg = "resource conflict: the item already exists or is locked"
 		case 412:
-			kind = coreerrors.ErrPrecondition
-		case 429, 503, 504:
-			kind = coreerrors.ErrTransient
+			code = coreerrors.CodePrecondition
+			safeMsg = "precondition failed (e.g., ETag mismatch)"
+		case 429:
+			code = coreerrors.CodeTransient
+			safeMsg = "too many requests: OneDrive is throttling your requests"
+			hint = "Please wait a moment and try again."
+		case 503, 504:
+			code = coreerrors.CodeTransient
+			safeMsg = "OneDrive service is temporarily unavailable"
+			hint = "Please wait a moment and try again."
 		}
 	}
 
-	return &coreerrors.DomainError{
-		Kind: kind,
-		Err:  err,
-		Path: path,
+	appErr := coreerrors.NewAppError(code, err, safeMsg, hint)
+	if itemPath != "" {
+		appErr.WithContext(coreerrors.KeyPath, itemPath)
 	}
+
+	driveID, _ := p.resolveDrive(itemPath)
+	if driveID != "" {
+		appErr.WithContext(coreerrors.KeyDriveID, driveID)
+	}
+
+	return appErr
 }
 
 // resolveDrive determines the drive ID and relative path for a given item path, handling aliases and defaults.
@@ -234,7 +256,7 @@ func (p *Provider) ReadFile(ctx context.Context, itemPath string, opts shared.Re
 	log.Debug("resolved drive id and path", logger.String("drive_id", driveID))
 
 	if cleanPath == "" || cleanPath == "/" {
-		return nil, &coreerrors.DomainError{Kind: coreerrors.ErrInvalidRequest, Path: itemPath}
+		return nil, coreerrors.NewInvalidInput(nil, "invalid item path for reading content", "The root folder cannot be read as a file.").WithContext(coreerrors.KeyPath, itemPath)
 	}
 
 	uri := p.expandURI("", rootRelativeContentURITemplate, driveID, cleanPath)
@@ -275,7 +297,7 @@ func (p *Provider) WriteFile(ctx context.Context, itemPath string, r io.Reader, 
 	log.Debug("resolved drive id and path", logger.String("drive_id", driveID))
 
 	if cleanPath == "" || cleanPath == "/" {
-		return shared.Item{}, &coreerrors.DomainError{Kind: coreerrors.ErrInvalidRequest, Path: itemPath}
+		return shared.Item{}, coreerrors.NewInvalidInput(nil, "invalid item path for writing content", "The root folder cannot be overwritten as a file.").WithContext(coreerrors.KeyPath, itemPath)
 	}
 
 	// Use resumable upload for large files
@@ -481,7 +503,7 @@ func (p *Provider) Remove(ctx context.Context, itemPath string) error {
 
 // Copy duplicates a file or folder within OneDrive.
 func (p *Provider) Copy(ctx context.Context, src, dst string, opts shared.CopyOptions) error {
-	return &coreerrors.DomainError{Kind: coreerrors.ErrInternal, Err: fmt.Errorf("onedrive internal copy not implemented - use manager for cross-provider/fallback copy"), Path: src}
+	return coreerrors.NewInternal(fmt.Errorf("onedrive internal copy not implemented - use manager for cross-provider/fallback copy"), "copy operation not supported internally", "The FileSystemManager should handle this cross-provider or via fallback.").WithContext(coreerrors.KeyPath, src)
 }
 
 // Move relocates or renames a file or folder within OneDrive.
@@ -498,7 +520,7 @@ func (p *Provider) Move(ctx context.Context, src, dst string) error {
 	dstDriveID, cleanDst := p.resolveDrive(dst)
 
 	if srcDriveID != dstDriveID {
-		return &coreerrors.DomainError{Kind: coreerrors.ErrInvalidRequest, Err: fmt.Errorf("cross-drive move not supported via internal Move - use manager"), Path: src}
+		return coreerrors.NewInvalidInput(nil, "cross-drive move not supported via internal Move", "The FileSystemManager should handle cross-drive moves via Copy and Remove.").WithContext(coreerrors.KeyPath, src)
 	}
 	log.Debug("resolved drive id", logger.String("drive_id", srcDriveID))
 
@@ -511,7 +533,7 @@ func (p *Provider) Move(ctx context.Context, src, dst string) error {
 	log.Debug("retrieving parent metadata for move")
 	parent, err := p.Get(ctx, parentPath)
 	if err != nil {
-		return fmt.Errorf("failed to get destination parent metadata: %w", err)
+		return coreerrors.NewAppError(coreerrors.CodeInternal, err, "failed to get destination parent metadata", "").WithContext(coreerrors.KeyPath, parentPath)
 	}
 
 	requestBody := models.NewDriveItem()

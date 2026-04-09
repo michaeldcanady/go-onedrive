@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/michaeldcanady/go-onedrive/internal/errors"
 	"github.com/michaeldcanady/go-onedrive/internal/logger"
 	"github.com/michaeldcanady/go-onedrive/internal/profile"
 	"github.com/michaeldcanady/go-onedrive/internal/state"
@@ -81,14 +82,22 @@ func (s *YAMLService) GetConfig(ctx context.Context) (Config, error) {
 			l.Info("configuration file not found, using defaults", logger.String("path", path))
 			return s.defaultConfig(), nil
 		}
-		l.Error("failed to read configuration file", logger.String("path", path), logger.Error(err))
-		return Config{}, fmt.Errorf("failed to read config file %s: %w", path, err)
+		return Config{}, errors.NewAppError(
+			errors.CodeReadError,
+			err,
+			"could not read the configuration file",
+			fmt.Sprintf("Check if the file exists at '%s' and you have read permissions.", path),
+		)
 	}
 
 	cfg := s.defaultConfig()
 	if err := yaml.Unmarshal(data, &cfg); err != nil {
-		l.Error("failed to unmarshal configuration", logger.String("path", path), logger.Error(err))
-		return Config{}, fmt.Errorf("failed to unmarshal config: %w", err)
+		return Config{}, errors.NewAppError(
+			errors.CodeInvalidConfig,
+			err,
+			"the configuration file format is invalid",
+			"Ensure the YAML format is correct and matches the supported schema.",
+		)
 	}
 
 	l.Debug("configuration loaded successfully", logger.String("path", path))
@@ -101,25 +110,41 @@ func (s *YAMLService) SaveConfig(ctx context.Context, cfg Config) error {
 	path, ok := s.GetPath(ctx)
 
 	if !ok || path == "" {
-		l.Error("failed to save configuration: no path resolved")
-		return fmt.Errorf("no configuration path could be resolved")
+		return errors.NewAppError(
+			errors.CodeNotFound,
+			nil,
+			"no configuration path could be resolved",
+			"Check if an active profile is set. Use 'odc profile list' to see available profiles.",
+		)
 	}
 
 	// Ensure the parent directory exists
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
-		l.Error("failed to create configuration directory", logger.String("path", path), logger.Error(err))
-		return fmt.Errorf("failed to create configuration directory: %w", err)
+		return errors.NewAppError(
+			errors.CodeWriteError,
+			err,
+			"could not create configuration directory",
+			fmt.Sprintf("Ensure you have write permissions to the directory '%s'.", filepath.Dir(path)),
+		)
 	}
 
 	data, err := yaml.Marshal(cfg)
 	if err != nil {
-		l.Error("failed to marshal configuration", logger.Error(err))
-		return fmt.Errorf("failed to marshal config: %w", err)
+		return errors.NewAppError(
+			errors.CodeInternal,
+			err,
+			"failed to serialize configuration",
+			"This is likely an internal error. Please report it if it persists.",
+		)
 	}
 
 	if err := os.WriteFile(path, data, 0o644); err != nil {
-		l.Error("failed to write configuration file", logger.String("path", path), logger.Error(err))
-		return fmt.Errorf("failed to write config file: %w", err)
+		return errors.NewAppError(
+			errors.CodeWriteError,
+			err,
+			"could not write the configuration file",
+			fmt.Sprintf("Ensure you have write permissions to '%s'.", path),
+		)
 	}
 
 	l.Info("configuration saved successfully", logger.String("path", path))
@@ -130,7 +155,7 @@ func (s *YAMLService) SaveConfig(ctx context.Context, cfg Config) error {
 func (s *YAMLService) defaultConfig() Config {
 	return Config{
 		Auth: AuthenticationConfig{
-			Provider:    "microsoft",
+			Provider:    AuthProviderMicrosoft,
 			ClientID:    "6b1e6ec0-ad93-4175-a0e0-84c02e13f206",
 			TenantID:    "common",
 			RedirectURI: "http://localhost:8400",

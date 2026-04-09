@@ -9,3 +9,7 @@ type Options struct {
 	// Stdout is the destination for the operation's output messages.
 	Stdout io.Writer
 }
+
+func (o *Options) Validate() error {
+	return nil
+}

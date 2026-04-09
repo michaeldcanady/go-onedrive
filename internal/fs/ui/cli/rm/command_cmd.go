@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/michaeldcanady/go-onedrive/internal/errors"
 	registry "github.com/michaeldcanady/go-onedrive/internal/fs"
 	"github.com/michaeldcanady/go-onedrive/internal/logger"
 )
@@ -15,10 +16,14 @@ type Handler struct {
 }
 
 // NewHandler initializes a new instance of the drive rm Handler.
-func NewHandler(fs registry.Service, l logger.Logger) *Handler {
+func NewHandler(
+	fs registry.Service,
+	l logger.Service,
+) *Handler {
+	cliLog, _ := l.CreateLogger("drive-rm")
 	return &Handler{
 		fs:  fs,
-		log: l,
+		log: cliLog,
 	}
 }
 
@@ -30,8 +35,8 @@ func (h *Handler) Handle(ctx context.Context, opts Options) error {
 
 	log.Debug("requesting removal from provider")
 	if err := h.fs.Remove(ctx, opts.Path); err != nil {
-		log.Error("removal failed", logger.Error(err))
-		return fmt.Errorf("failed to remove item at %s: %w", opts.Path, err)
+		h.log.Error(err.Error(), errors.LogFields(err)...)
+		return err
 	}
 
 	log.Info("item removed successfully")

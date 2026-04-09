@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/michaeldcanady/go-onedrive/internal/concurrency"
+	"github.com/michaeldcanady/go-onedrive/internal/errors"
 	"github.com/michaeldcanady/go-onedrive/internal/logger"
 )
 
@@ -47,7 +48,7 @@ func (m *FileSystemManager) Get(ctx context.Context, path string) (Item, error) 
 	p, subPath, err := m.registry.Resolve(ctx, path)
 	if err != nil {
 		m.log.WithContext(ctx).Error("fs manager: failed to resolve provider for get", logger.String("path", path), logger.Error(err))
-		return Item{}, err
+		return Item{}, errors.NewInvalidInput(err, "could not resolve filesystem provider", "").WithContext(errors.KeyPath, path)
 	}
 	return p.Get(ctx, subPath)
 }
@@ -58,7 +59,7 @@ func (m *FileSystemManager) Stat(ctx context.Context, path string) (Item, error)
 	p, subPath, err := m.registry.Resolve(ctx, path)
 	if err != nil {
 		m.log.WithContext(ctx).Error("fs manager: failed to resolve provider for stat", logger.String("path", path), logger.Error(err))
-		return Item{}, err
+		return Item{}, errors.NewInvalidInput(err, "could not resolve filesystem provider", "").WithContext(errors.KeyPath, path)
 	}
 	return p.Stat(ctx, subPath)
 }
@@ -69,7 +70,7 @@ func (m *FileSystemManager) List(ctx context.Context, path string, opts ListOpti
 	p, subPath, err := m.registry.Resolve(ctx, path)
 	if err != nil {
 		m.log.WithContext(ctx).Error("fs manager: failed to resolve provider for list", logger.String("path", path), logger.Error(err))
-		return nil, err
+		return nil, errors.NewInvalidInput(err, "could not resolve filesystem provider", "").WithContext(errors.KeyPath, path)
 	}
 	return p.List(ctx, subPath, opts)
 }
@@ -80,7 +81,7 @@ func (m *FileSystemManager) ReadFile(ctx context.Context, path string, opts Read
 	p, subPath, err := m.registry.Resolve(ctx, path)
 	if err != nil {
 		m.log.WithContext(ctx).Error("fs manager: failed to resolve provider for read", logger.String("path", path), logger.Error(err))
-		return nil, err
+		return nil, errors.NewInvalidInput(err, "could not resolve filesystem provider", "").WithContext(errors.KeyPath, path)
 	}
 	return p.ReadFile(ctx, subPath, opts)
 }
@@ -91,7 +92,7 @@ func (m *FileSystemManager) WriteFile(ctx context.Context, path string, r io.Rea
 	p, subPath, err := m.registry.Resolve(ctx, path)
 	if err != nil {
 		m.log.WithContext(ctx).Error("fs manager: failed to resolve provider for write", logger.String("path", path), logger.Error(err))
-		return Item{}, err
+		return Item{}, errors.NewInvalidInput(err, "could not resolve filesystem provider", "").WithContext(errors.KeyPath, path)
 	}
 	return p.WriteFile(ctx, subPath, r, opts)
 }
@@ -102,7 +103,7 @@ func (m *FileSystemManager) Mkdir(ctx context.Context, path string) error {
 	p, subPath, err := m.registry.Resolve(ctx, path)
 	if err != nil {
 		m.log.WithContext(ctx).Error("fs manager: failed to resolve provider for mkdir", logger.String("path", path), logger.Error(err))
-		return err
+		return errors.NewInvalidInput(err, "could not resolve filesystem provider", "").WithContext(errors.KeyPath, path)
 	}
 	return p.Mkdir(ctx, subPath)
 }
@@ -113,7 +114,7 @@ func (m *FileSystemManager) Remove(ctx context.Context, path string) error {
 	p, subPath, err := m.registry.Resolve(ctx, path)
 	if err != nil {
 		m.log.WithContext(ctx).Error("fs manager: failed to resolve provider for remove", logger.String("path", path), logger.Error(err))
-		return err
+		return errors.NewInvalidInput(err, "could not resolve filesystem provider", "").WithContext(errors.KeyPath, path)
 	}
 	return p.Remove(ctx, subPath)
 }
@@ -124,7 +125,7 @@ func (m *FileSystemManager) Touch(ctx context.Context, path string) (Item, error
 	p, subPath, err := m.registry.Resolve(ctx, path)
 	if err != nil {
 		m.log.WithContext(ctx).Error("fs manager: failed to resolve provider for touch", logger.String("path", path), logger.Error(err))
-		return Item{}, err
+		return Item{}, errors.NewInvalidInput(err, "could not resolve filesystem provider", "").WithContext(errors.KeyPath, path)
 	}
 	return p.Touch(ctx, subPath)
 }
@@ -136,11 +137,11 @@ func (m *FileSystemManager) Copy(ctx context.Context, src, dst string, opts Copy
 
 	srcItem, err := m.Stat(ctx, src)
 	if err != nil {
-		return fmt.Errorf("failed to stat source: %w", err)
+		return err
 	}
 
 	if srcItem.Type == TypeFolder && !opts.Recursive {
-		return fmt.Errorf("omitting directory '%s'", src)
+		return errors.NewInvalidInput(nil, fmt.Sprintf("omitting directory '%s'", src), "Use -r or --recursive to copy directories.")
 	}
 
 	if opts.Recursive {
@@ -156,12 +157,12 @@ func (m *FileSystemManager) copySingle(ctx context.Context, srcItem Item, src, d
 
 	pSrc, srcSubPath, err := m.registry.Resolve(ctx, src)
 	if err != nil {
-		return err
+		return errors.NewInvalidInput(err, "could not resolve source filesystem provider", "").WithContext(errors.KeyPath, src)
 	}
 
 	pDst, dstSubPath, err := m.registry.Resolve(ctx, dst)
 	if err != nil {
-		return err
+		return errors.NewInvalidInput(err, "could not resolve destination filesystem provider", "").WithContext(errors.KeyPath, dst)
 	}
 
 	// If same provider, delegate to it for potentially optimized copy.
@@ -174,7 +175,7 @@ func (m *FileSystemManager) copySingle(ctx context.Context, srcItem Item, src, d
 	log.Info("fs manager: performing cross-provider copy", logger.String("src_provider", pSrc.Name()), logger.String("dst_provider", pDst.Name()))
 	r, err := pSrc.ReadFile(ctx, srcSubPath, ReadOptions{})
 	if err != nil {
-		return fmt.Errorf("failed to read source for cross-provider copy: %w", err)
+		return errors.NewAppError(errors.CodeReadError, err, "failed to read source for cross-provider copy", "").WithContext(errors.KeyPath, src)
 	}
 	defer r.Close()
 
@@ -184,7 +185,7 @@ func (m *FileSystemManager) copySingle(ctx context.Context, srcItem Item, src, d
 	}
 
 	if _, err := pDst.WriteFile(ctx, dstSubPath, r, writeOpts); err != nil {
-		return fmt.Errorf("failed to write destination for cross-provider copy: %w", err)
+		return errors.NewAppError(errors.CodeWriteError, err, "failed to write destination for cross-provider copy", "").WithContext(errors.KeyPath, dst)
 	}
 
 	return nil
@@ -239,12 +240,12 @@ func (m *FileSystemManager) Move(ctx context.Context, src, dst string) error {
 
 	pSrc, srcSubPath, err := m.registry.Resolve(ctx, src)
 	if err != nil {
-		return err
+		return errors.NewInvalidInput(err, "could not resolve source filesystem provider", "").WithContext(errors.KeyPath, src)
 	}
 
 	pDst, dstSubPath, err := m.registry.Resolve(ctx, dst)
 	if err != nil {
-		return err
+		return errors.NewInvalidInput(err, "could not resolve destination filesystem provider", "").WithContext(errors.KeyPath, dst)
 	}
 
 	// If same provider, delegate to it for potentially optimized move.

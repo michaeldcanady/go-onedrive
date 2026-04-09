@@ -1,7 +1,12 @@
 package mv
 
 import (
+	"errors"
+	"slices"
+
 	"github.com/michaeldcanady/go-onedrive/internal/di"
+	coreerrors "github.com/michaeldcanady/go-onedrive/internal/errors"
+	"github.com/michaeldcanady/go-onedrive/internal/fs"
 	"github.com/michaeldcanady/go-onedrive/internal/fs/ui/cli"
 	"github.com/spf13/cobra"
 )
@@ -15,21 +20,62 @@ func CreateMvCmd(container di.Container) *cobra.Command {
 		Short:             "Move files and directories",
 		Args:              cobra.ExactArgs(2),
 		ValidArgsFunction: cli.ProviderPathCompletion(container),
-		RunE: func(cmd *cobra.Command, args []string) error {
+		PreRunE: func(cmd *cobra.Command, args []string) error {
 			opts.Source = args[0]
-			opts.Destination = args[1]
-			opts.Stdout = cmd.OutOrStdout()
-
-			if err := opts.Validate(); err != nil {
+			if err := fs.ValidatePathSyntax(opts.Source); err != nil {
 				return err
 			}
 
-			l, _ := container.Logger().CreateLogger("drive-mv")
-			handler := NewHandler(container.FS(), l)
+			if provider, _, found := fs.SplitProviderPath(opts.Source); found {
+				if names, err := container.ProviderRegistry().RegisteredNames(); err != nil {
+					return coreerrors.NewAppError(
+						coreerrors.CodeUnknown,
+						errors.New("failed to check registered providers"),
+						"An unexpected error occurred while retrieving registered providers",
+						"Try again, and if the problem persists, check the application logs for more details",
+					)
+				} else if !slices.Contains(names, provider) {
+					return coreerrors.NewInvalidInput(
+						errors.New("unknown provider"),
+						"Unknown provider prefix",
+						"Ensure the provider prefix is correct and corresponds to a registered provider",
+					)
+				}
+			}
 
-			return handler.Handle(cmd.Context(), opts)
+			opts.Destination = args[1]
+			if err := fs.ValidatePathSyntax(opts.Destination); err != nil {
+				return err
+			}
+
+			if provider, _, found := fs.SplitProviderPath(opts.Destination); found {
+				if names, err := container.ProviderRegistry().RegisteredNames(); err != nil {
+					return coreerrors.NewAppError(
+						coreerrors.CodeUnknown,
+						errors.New("failed to check registered providers"),
+						"An unexpected error occurred while retrieving registered providers",
+						"Try again, and if the problem persists, check the application logs for more details",
+					)
+				} else if !slices.Contains(names, provider) {
+					return coreerrors.NewInvalidInput(
+						errors.New("unknown provider"),
+						"Unknown provider prefix",
+						"Ensure the provider prefix is correct and corresponds to a registered provider",
+					)
+				}
+			}
+
+			opts.Stdout = cmd.OutOrStdout()
+			opts.Stderr = cmd.ErrOrStderr()
+
+			return opts.Validate()
+		},
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return NewHandler(container.FS(), container.Logger()).Handle(cmd.Context(), opts)
 		},
 	}
+
+	// TODO: add support for recursive moves (e.g. moving a directory with contents)
 
 	return cmd
 }

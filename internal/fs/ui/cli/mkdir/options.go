@@ -11,6 +11,9 @@ type Options struct {
 	Path string
 	// Stdout is the destination for standard output messages.
 	Stdout io.Writer
+
+	// Stderr is the destination for error messages.
+	Stderr io.Writer
 }
 
 // Validate ensures that the provided options are consistent and valid.

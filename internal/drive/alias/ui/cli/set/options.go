@@ -8,3 +8,7 @@ type Options struct {
 	DriveID string
 	Stdout  io.Writer
 }
+
+func (o *Options) Validate() error {
+	return nil
+}

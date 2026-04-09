@@ -9,6 +9,7 @@ import (
 	"syscall"
 
 	"github.com/michaeldcanady/go-onedrive/internal/di"
+	"github.com/michaeldcanady/go-onedrive/internal/errors"
 	"github.com/michaeldcanady/go-onedrive/internal/root"
 )
 
@@ -40,7 +41,7 @@ func main() {
 	}
 
 	if err := cmd.ExecuteContext(ctx); err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		fmt.Fprint(os.Stderr, errors.Format(err))
 		os.Exit(1)
 	}
 }

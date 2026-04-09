@@ -1,10 +1,12 @@
 package ls
 
 import (
+	"errors"
 	"fmt"
 	"slices"
 
 	"github.com/michaeldcanady/go-onedrive/internal/di"
+	coreerrors "github.com/michaeldcanady/go-onedrive/internal/errors"
 	"github.com/michaeldcanady/go-onedrive/internal/fs"
 	"github.com/michaeldcanady/go-onedrive/internal/fs/formatting"
 	"github.com/michaeldcanady/go-onedrive/internal/fs/ui/cli"
@@ -23,36 +25,40 @@ func CreateLsCmd(container di.Container) *cobra.Command {
 		Args:              cobra.MaximumNArgs(1),
 		ValidArgsFunction: cli.ProviderPathCompletion(container),
 		PreRunE: func(cmd *cobra.Command, args []string) error {
-			if len(args) > 0 {
-				opts.Path = args[0]
+			opts.Path = args[0]
+			// should allow / for directories
+			if fs.ContainsIllegalChars(opts.Path) {
+				return coreerrors.NewInvalidInput(
+					errors.New("path contains illegal characters"),
+					fmt.Sprintf("invalid path '%s' due to illegal characters", opts.Path),
+					"Remove the illegal characters from the path",
+				)
+			}
+
+			if provider, _, found := fs.SplitProviderPath(opts.Path); found {
+				if names, err := container.ProviderRegistry().RegisteredNames(); err != nil {
+					return coreerrors.NewAppError(
+						coreerrors.CodeUnknown,
+						errors.New("failed to check registered providers"),
+						"An unexpected error occurred while retrieving registered providers",
+						"Try again, and if the problem persists, check the application logs for more details",
+					)
+				} else if !slices.Contains(names, provider) {
+					return coreerrors.NewInvalidInput(
+						errors.New("unknown provider"),
+						"Unknown provider prefix",
+						"Ensure the provider prefix is correct and corresponds to a registered provider",
+					)
+				}
 			}
 
 			opts.Stdout = cmd.OutOrStdout()
 			opts.Format = formatting.NewFormat(format)
 
-			// 1. Syntactic check
-			if err := fs.ValidatePathSyntax(opts.Path); err != nil {
-				return fmt.Errorf("invalid path syntax: %w", err)
-			}
-
-			// 2. Provider check (only if a provider prefix is explicitly given)
-			provider, _, found := fs.SplitProviderPath(opts.Path)
-			if found {
-				names, err := container.ProviderRegistry().RegisteredNames()
-				if err != nil {
-					return fmt.Errorf("failed to check registered providers: %w", err)
-				}
-				if !slices.Contains(names, provider) {
-					return fmt.Errorf("unknown provider '%s'; valid providers are: %v", provider, names)
-				}
-			}
-
 			return opts.Validate()
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			l, _ := container.Logger().CreateLogger("ls")
-			handler := NewHandler(container.FS(), l)
-			return handler.Handle(cmd.Context(), opts)
+			return NewHandler(container.FS(), container.Logger()).Handle(cmd.Context(), opts)
 		},
 	}
 

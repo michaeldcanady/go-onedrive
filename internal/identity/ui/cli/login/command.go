@@ -14,18 +14,17 @@ func CreateLoginCmd(container di.Container) *cobra.Command {
 		Short: "Authenticate with OneDrive",
 		Long: `Authenticate with OneDrive using various methods (Interactive, Device Code, Service Principal).
 You can specify the method via flags or in your profile configuration.`,
-		RunE: func(cmd *cobra.Command, args []string) error {
+		PreRunE: func(cmd *cobra.Command, args []string) error {
 			opts.Stdout = cmd.OutOrStdout()
 			opts.Stderr = cmd.ErrOrStderr()
-
-			l, _ := container.Logger().CreateLogger("auth-login")
-			handler := NewHandler(
+			return opts.Validate()
+		},
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return NewHandler(
 				container.Config(),
 				container.Identity(),
-				l,
-			)
-
-			return handler.Handle(cmd.Context(), opts)
+				container.Logger(),
+			).Handle(cmd.Context(), opts)
 		},
 	}
 

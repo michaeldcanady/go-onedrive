@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/michaeldcanady/go-onedrive/internal/errors"
 	"github.com/michaeldcanady/go-onedrive/internal/logger"
 	"github.com/michaeldcanady/go-onedrive/internal/state"
 	"github.com/stretchr/testify/assert"
@@ -33,7 +34,7 @@ func TestYAMLService_SaveAndGet(t *testing.T) {
 	// 2. Save config
 	cfg := Config{
 		Auth: AuthenticationConfig{
-			Provider:    "microsoft",
+			Provider:    AuthProviderMicrosoft,
 			ClientID:    "new-client-id",
 			RedirectURI: "http://localhost:1234",
 		},
@@ -53,6 +54,31 @@ func TestYAMLService_SaveAndGet(t *testing.T) {
 	assert.Equal(t, "http://localhost:1234", loadedCfg.Auth.RedirectURI)
 	// Verify defaults were merged for missing fields
 	assert.Equal(t, "common", loadedCfg.Auth.TenantID)
+}
+
+func TestYAMLService_InvalidYAML(t *testing.T) {
+	tmpDir, err := os.MkdirTemp("", "odc-config-invalid-test-*")
+	assert.NoError(t, err)
+	defer os.RemoveAll(tmpDir)
+
+	configPath := filepath.Join(tmpDir, "invalid.yaml")
+	err = os.WriteFile(configPath, []byte("auth: { invalid: yaml"), 0o644)
+	assert.NoError(t, err)
+
+	l := &mockLogger{}
+	st := &mockStateService{data: make(map[string]string)}
+	st.data["config_override"] = configPath
+	svc := NewYAMLService(nil, st, l)
+	ctx := context.Background()
+
+	_, err = svc.GetConfig(ctx)
+	assert.Error(t, err)
+
+	var appErr *errors.AppError
+	assert.ErrorAs(t, err, &appErr)
+	assert.Equal(t, errors.CodeInvalidConfig, appErr.Code)
+	assert.Contains(t, appErr.SafeMsg, "format is invalid")
+	assert.Contains(t, appErr.Hint, "Ensure the YAML format is correct")
 }
 
 type mockStateService struct {

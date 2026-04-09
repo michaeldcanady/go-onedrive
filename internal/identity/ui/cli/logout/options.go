@@ -11,3 +11,7 @@ type Options struct {
 	// Stderr is the destination for error messages.
 	Stderr io.Writer
 }
+
+func (o *Options) Validate() error {
+	return nil
+}
