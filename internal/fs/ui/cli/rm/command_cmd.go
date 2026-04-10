@@ -6,6 +6,7 @@ import (
 
 	"github.com/michaeldcanady/go-onedrive/internal/errors"
 	registry "github.com/michaeldcanady/go-onedrive/internal/fs"
+	"github.com/michaeldcanady/go-onedrive/internal/fs/ui/cli"
 	"github.com/michaeldcanady/go-onedrive/internal/logger"
 )
 
@@ -35,8 +36,9 @@ func (h *Handler) Handle(ctx context.Context, opts Options) error {
 
 	log.Debug("requesting removal from provider")
 	if err := h.fs.Remove(ctx, opts.Path); err != nil {
-		h.log.Error(err.Error(), errors.LogFields(err)...)
-		return err
+		wrapped := cli.WrapError(err, opts.Path)
+		h.log.Error(wrapped.Error(), errors.LogFields(wrapped)...)
+		return wrapped
 	}
 
 	log.Info("item removed successfully")

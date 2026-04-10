@@ -2,12 +2,12 @@ package fs
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"strings"
 	"sync"
 
 	"github.com/michaeldcanady/go-onedrive/internal/drive/alias"
+	"github.com/michaeldcanady/go-onedrive/internal/errors"
 	"github.com/michaeldcanady/go-onedrive/internal/logger"
 	"github.com/michaeldcanady/go-onedrive/internal/state"
 )
@@ -35,17 +35,12 @@ func NewRegistry(state state.Service, alias alias.Service, log logger.Logger) *R
 	}
 }
 
-var (
-	ErrProviderNotRegistered  = errors.New("provider not registered")
-	ErrUnknownProviderOrAlias = errors.New("unknown provider or alias")
-)
-
 // Register associates a service with its provider name.
 func (r *Registry) Register(provider string, svc Service) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	// Wrap the service with the validation decorator
-	r.providers[provider] = NewValidationDecorator(svc, r.logger)
+	r.providers[provider] = svc
 }
 
 // Unregister removes a provider from the registry by its name.
@@ -56,13 +51,13 @@ func (r *Registry) Unregister(provider string) {
 }
 
 // Get retrieves the service for a given provider name.
-// Returns [UnregisteredProvider] if the provider is not registered.
+// Returns [errors.UnregisteredProviderError] if the provider is not registered.
 func (r *Registry) Get(provider string) (Service, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 	svc, ok := r.providers[provider]
 	if !ok {
-		return nil, NewUnregisteredProvider(provider)
+		return nil, errors.NewUnregisteredProviderError(provider, nil)
 	}
 	return svc, nil
 }
@@ -90,13 +85,13 @@ func (r *Registry) Resolve(ctx context.Context, path string) (Service, string, e
 		log.Debug("no provider prefix found, using default", logger.String("default", DefaultProviderPrefix))
 		p, err := r.Get(DefaultProviderPrefix)
 		if err != nil {
-			if err, ok := err.(*UnregisteredProvider); !ok {
+			if _, ok := err.(*errors.UnregisteredProviderError); !ok {
 				log.Error("error retrieving default provider", logger.String("provider", DefaultProviderPrefix), logger.Error(err))
 				return nil, "", err
 			}
 			// If the default provider is not registered, this shouldn't happen
 			log.Warn("default provider not registered", logger.String("path", path))
-			return nil, "", NewUnregisteredProvider(DefaultProviderPrefix)
+			return nil, "", err
 		}
 		return p, path, nil
 	}
@@ -104,7 +99,7 @@ func (r *Registry) Resolve(ctx context.Context, path string) (Service, string, e
 	// Check if prefix is a registered provider
 	p, err := r.Get(prefix)
 	if err != nil {
-		if err, ok := err.(*UnregisteredProvider); !ok {
+		if _, ok := err.(*errors.UnregisteredProviderError); !ok {
 			log.Error("error retrieving provider", logger.String("prefix", prefix), logger.Error(err))
 			return nil, "", err
 		}
@@ -117,18 +112,18 @@ func (r *Registry) Resolve(ctx context.Context, path string) (Service, string, e
 				return nil, "", err
 			}
 			log.Error("unknown provider or alias", logger.String("prefix", prefix))
-			return nil, "", NewUnregisteredProvider(prefix)
+			return nil, "", errors.NewUnregisteredProviderError(prefix, err)
 		}
 		// If it's a drive id alias, use the default provider (onedrive) and prepend the drive ID
 		defaultProvider, err := r.Get(DefaultProviderPrefix)
 		if err != nil {
-			if err, ok := err.(*UnregisteredProvider); !ok {
+			if _, ok := err.(*errors.UnregisteredProviderError); !ok {
 				log.Error("error retrieving default provider", logger.String("provider", DefaultProviderPrefix), logger.Error(err))
 				return nil, "", err
 			}
 			// If the default provider is not registered, this shouldn't happen
 			log.Warn("default provider not registered", logger.String("path", path))
-			return nil, "", NewUnregisteredProvider(DefaultProviderPrefix)
+			return nil, "", errors.NewUnregisteredProviderError(DefaultProviderPrefix, err)
 		}
 		// Construct path with drive ID for the default provider
 		rest = fmt.Sprintf("%s:%s", driveID, rest)

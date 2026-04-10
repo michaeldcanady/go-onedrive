@@ -8,6 +8,7 @@ import (
 	"github.com/michaeldcanady/go-onedrive/internal/errors"
 	registry "github.com/michaeldcanady/go-onedrive/internal/fs"
 	"github.com/michaeldcanady/go-onedrive/internal/fs/editor"
+	"github.com/michaeldcanady/go-onedrive/internal/fs/ui/cli"
 	"github.com/michaeldcanady/go-onedrive/internal/logger"
 )
 
@@ -41,23 +42,26 @@ func (h *Handler) Handle(ctx context.Context, opts Options) error {
 	log.Debug("fetching metadata")
 	item, err := h.fs.Get(ctx, opts.Path)
 	if err != nil {
-		h.log.Error(err.Error(), errors.LogFields(err)...)
-		return err
+		wrapped := cli.WrapError(err, opts.Path)
+		h.log.Error(wrapped.Error(), errors.LogFields(wrapped)...)
+		return wrapped
 	}
 
 	log.Debug("reading file for editing")
 	r, err := h.fs.ReadFile(ctx, opts.Path, registry.ReadOptions{})
 	if err != nil {
-		h.log.Error(err.Error(), errors.LogFields(err)...)
-		return err
+		wrapped := cli.WrapError(err, opts.Path)
+		h.log.Error(wrapped.Error(), errors.LogFields(wrapped)...)
+		return wrapped
 	}
 	defer r.Close()
 
 	log.Debug("launching external editor")
 	newData, _, err := h.editor.LaunchTempFile(ctx, "odc-edit", ".txt", r)
 	if err != nil {
-		h.log.Error(err.Error(), errors.LogFields(err)...)
-		return err
+		wrapped := cli.WrapError(err, opts.Path)
+		h.log.Error(wrapped.Error(), errors.LogFields(wrapped)...)
+		return wrapped
 	}
 
 	if newData == nil {
@@ -81,8 +85,9 @@ func (h *Handler) Handle(ctx context.Context, opts Options) error {
 			log.Warn("conflict detected, upload aborted")
 			return errors.NewAppError(errors.CodeConflict, err, "conflict detected during upload", "Use --force to overwrite changes.")
 		}
-		h.log.Error(err.Error(), errors.LogFields(err)...)
-		return err
+		wrapped := cli.WrapError(err, opts.Path)
+		h.log.Error(wrapped.Error(), errors.LogFields(wrapped)...)
+		return wrapped
 	}
 
 	log.Info("edit completed successfully")

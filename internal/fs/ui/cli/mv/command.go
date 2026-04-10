@@ -22,78 +22,75 @@ func CreateMvCmd(container di.Container) *cobra.Command {
 		Args:              cobra.ExactArgs(2),
 		ValidArgsFunction: cli.ProviderPathCompletion(container),
 		PreRunE: func(cmd *cobra.Command, args []string) error {
-			opts.Source = args[0]
-			if err := fs.ValidatePathSyntax(opts.Source); err != nil {
-				switch err.(type) {
-				case *fs.TrailingSlashError:
+			// 1. Process Source Path
+			srcURI, err := fs.ParseURI(args[0])
+			if err != nil {
+				return coreerrors.NewInvalidInput(
+					err,
+					fmt.Sprintf("invalid source path '%s'", args[0]),
+					"Check the path format and ensure no illegal characters are used.",
+				)
+			}
+			opts.Source = srcURI.ManagerPath()
+
+			if err := fs.ValidatePathSyntax(srcURI.Path); err != nil {
+				if _, ok := err.(*coreerrors.TrailingSlashError); ok {
 					return coreerrors.NewInvalidInput(
 						err,
 						fmt.Sprintf("invalid source path '%s' due to trailing slash", opts.Source),
 						"Remove the trailing slash from the source path",
 					)
-				case *fs.IllegalCharacterError:
-					return coreerrors.NewInvalidInput(
-						err,
-						fmt.Sprintf("invalid source path '%s' due to illegal characters", opts.Source),
-						"Remove the illegal characters from the source path",
-					)
-				default:
-					return err
 				}
+				return err
 			}
 
-			if provider, _, found := fs.SplitProviderPath(opts.Source); found {
-				if names, err := container.ProviderRegistry().RegisteredNames(); err != nil {
-					return coreerrors.NewAppError(
-						coreerrors.CodeUnknown,
-						errors.New("failed to check registered providers"),
-						"An unexpected error occurred while retrieving registered providers",
-						"Try again, and if the problem persists, check the application logs for more details",
-					)
-				} else if !slices.Contains(names, provider) {
-					return coreerrors.NewInvalidInput(
-						errors.New("unknown provider"),
-						"Unknown provider prefix",
-						"Ensure the provider prefix is correct and corresponds to a registered provider",
-					)
-				}
+			// 2. Process Destination Path
+			dstURI, err := fs.ParseURI(args[1])
+			if err != nil {
+				return coreerrors.NewInvalidInput(
+					err,
+					fmt.Sprintf("invalid destination path '%s'", args[1]),
+					"Check the path format and ensure no illegal characters are used.",
+				)
 			}
+			opts.Destination = dstURI.ManagerPath()
 
-			opts.Destination = args[1]
-			if err := fs.ValidatePathSyntax(opts.Destination); err != nil {
-				switch err.(type) {
-				case *fs.TrailingSlashError:
+			if err := fs.ValidatePathSyntax(dstURI.Path); err != nil {
+				if _, ok := err.(*coreerrors.TrailingSlashError); ok {
 					return coreerrors.NewInvalidInput(
 						err,
 						fmt.Sprintf("invalid destination path '%s' due to trailing slash", opts.Destination),
 						"Remove the trailing slash from the destination path",
 					)
-				case *fs.IllegalCharacterError:
-					return coreerrors.NewInvalidInput(
-						err,
-						fmt.Sprintf("invalid destination path '%s' due to illegal characters", opts.Destination),
-						"Remove the illegal characters from the destination path",
-					)
-				default:
-					return err
 				}
+				return err
 			}
 
-			if provider, _, found := fs.SplitProviderPath(opts.Destination); found {
-				if names, err := container.ProviderRegistry().RegisteredNames(); err != nil {
-					return coreerrors.NewAppError(
-						coreerrors.CodeUnknown,
-						errors.New("failed to check registered providers"),
-						"An unexpected error occurred while retrieving registered providers",
-						"Try again, and if the problem persists, check the application logs for more details",
-					)
-				} else if !slices.Contains(names, provider) {
-					return coreerrors.NewInvalidInput(
-						errors.New("unknown provider"),
-						"Unknown provider prefix",
-						"Ensure the provider prefix is correct and corresponds to a registered provider",
-					)
-				}
+			// 3. Check Providers
+			names, err := container.ProviderRegistry().RegisteredNames()
+			if err != nil {
+				return coreerrors.NewAppError(
+					coreerrors.CodeUnknown,
+					errors.New("failed to check registered providers"),
+					"An unexpected error occurred while retrieving registered providers",
+					"Try again, and if the problem persists, check the application logs for more details",
+				)
+			}
+
+			if !slices.Contains(names, srcURI.Provider) {
+				return coreerrors.NewInvalidInput(
+					errors.New("unknown source provider"),
+					fmt.Sprintf("unknown source provider prefix '%s'", srcURI.Provider),
+					"Ensure the provider prefix is correct and corresponds to a registered provider",
+				)
+			}
+
+			if !slices.Contains(names, dstURI.Provider) {
+				return coreerrors.NewInvalidInput(
+					errors.New("unknown destination provider"),
+					fmt.Sprintf("unknown destination provider prefix '%s'", dstURI.Provider),
+					"Ensure the provider prefix is correct and corresponds to a registered provider",
+				)
 			}
 
 			opts.Stdout = cmd.OutOrStdout()

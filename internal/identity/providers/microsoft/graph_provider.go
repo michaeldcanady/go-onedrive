@@ -52,7 +52,7 @@ func (p *GraphProvider) Client(ctx context.Context) (*msgraphsdkgo.GraphServiceC
 	}
 
 	if p.cred == nil {
-		return nil, fmt.Errorf("no authentication credential provided; please run 'login' first")
+		return nil, ErrNotAuthenticated
 	}
 
 	// 1. Create the authentication provider

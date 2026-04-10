@@ -15,12 +15,14 @@ import (
 	"github.com/michaeldcanady/go-onedrive/internal/drive/alias"
 	coreerrors "github.com/michaeldcanady/go-onedrive/internal/errors"
 	shared "github.com/michaeldcanady/go-onedrive/internal/fs"
+	"github.com/michaeldcanady/go-onedrive/internal/identity/providers/microsoft"
 	platform "github.com/michaeldcanady/go-onedrive/internal/identity/providers/shared"
 	"github.com/michaeldcanady/go-onedrive/internal/logger"
 	"github.com/michaeldcanady/go-onedrive/internal/state"
 	abstractions "github.com/microsoft/kiota-abstractions-go"
 	"github.com/microsoftgraph/msgraph-sdk-go/drives"
 	"github.com/microsoftgraph/msgraph-sdk-go/models"
+	"github.com/microsoftgraph/msgraph-sdk-go/models/odataerrors"
 	stduritemplate "github.com/std-uritemplate/std-uritemplate/go/v2"
 )
 
@@ -55,7 +57,7 @@ func NewProvider(p platform.PlatformProvider, state state.Service, driveSvc driv
 		platform: p,
 		state:    state,
 		driveSvc: driveSvc,
-		log:      log,
+		log:      log.With(logger.String("provider", providerName)),
 	}
 }
 
@@ -63,48 +65,45 @@ func (p *Provider) Name() string {
 	return providerName
 }
 
-// mapError translates errors from the OneDrive SDK into domain-specific errors with appropriate kinds for better error handling in the manager and CLI.
-func (p *Provider) mapError(err error, itemPath string) error {
+// mapReadError translates errors from the OneDrive SDK into a ReadError wrapping domain-specific errors.
+func (p *Provider) mapReadError(err error, itemPath string) error {
 	if err == nil {
 		return nil
+	}
+
+	wrapped := p.mapToDomainError(err, itemPath)
+	return NewReadError(itemPath, wrapped)
+}
+
+// mapWriteError translates errors from the OneDrive SDK into a WriteError wrapping domain-specific errors.
+func (p *Provider) mapWriteError(err error, itemPath string) error {
+	if err == nil {
+		return nil
+	}
+
+	wrapped := p.mapToDomainError(err, itemPath)
+	return NewWriteError(itemPath, wrapped)
+}
+
+// mapGenericError translates errors from the OneDrive SDK into domain-specific errors wrapped in an AppError.
+func (p *Provider) mapGenericError(err error, itemPath string) error {
+	if err == nil {
+		return nil
+	}
+
+	domainErr := p.mapToDomainError(err, itemPath)
+
+	// If mapToDomainError already returned one of our custom error types, return it directly.
+	// This supports the "multi-modal branching patterns" desired by the user.
+	if domainErr != err {
+		return domainErr
 	}
 
 	code := coreerrors.CodeInternal
 	safeMsg := "an unexpected OneDrive API error occurred"
 	hint := "Check your internet connection and authentication status."
 
-	var apiErr *abstractions.ApiError
-	if errors.As(err, &apiErr) {
-		switch apiErr.ResponseStatusCode {
-		case 401:
-			code = coreerrors.CodeUnauthorized
-			safeMsg = "unauthorized: please log in again"
-			hint = "Use 'odc auth login' to re-authenticate."
-		case 403:
-			code = coreerrors.CodeForbidden
-			safeMsg = "forbidden: you do not have permission to access this resource"
-		case 404:
-			code = coreerrors.CodeNotFound
-			safeMsg = "resource not found in OneDrive"
-			hint = ""
-		case 409:
-			code = coreerrors.CodeConflict
-			safeMsg = "resource conflict: the item already exists or is locked"
-		case 412:
-			code = coreerrors.CodePrecondition
-			safeMsg = "precondition failed (e.g., ETag mismatch)"
-		case 429:
-			code = coreerrors.CodeTransient
-			safeMsg = "too many requests: OneDrive is throttling your requests"
-			hint = "Please wait a moment and try again."
-		case 503, 504:
-			code = coreerrors.CodeTransient
-			safeMsg = "OneDrive service is temporarily unavailable"
-			hint = "Please wait a moment and try again."
-		}
-	}
-
-	appErr := coreerrors.NewAppError(code, err, safeMsg, hint)
+	appErr := coreerrors.NewAppError(code, domainErr, safeMsg, hint)
 	if itemPath != "" {
 		appErr.WithContext(coreerrors.KeyPath, itemPath)
 	}
@@ -117,25 +116,79 @@ func (p *Provider) mapError(err error, itemPath string) error {
 	return appErr
 }
 
+// mapToDomainError converts low-level SDK errors into domain-specific error types.
+func (p *Provider) mapToDomainError(err error, itemPath string) error {
+	if err == nil {
+		return nil
+	}
+
+	if errors.Is(err, microsoft.ErrNotAuthenticated) {
+		return coreerrors.NewUnauthorizedError(err)
+	}
+
+	// 1. Handle OData specific errors (detailed errors from Graph)
+	var odataErr *odataerrors.ODataError
+	if errors.As(err, &odataErr) {
+		return p.mapStatusCodeToError(odataErr.GetStatusCode(), err, itemPath)
+	}
+
+	// 2. Handle broader Kiota API errors
+	var apiErr *abstractions.ApiError
+	if errors.As(err, &apiErr) {
+		return p.mapStatusCodeToError(apiErr.GetStatusCode(), err, itemPath)
+	}
+
+	// 3. Handle Azure SDK errors (e.g., token acquisition failures)
+	// Some auth failures might not be 401s yet but are still auth-related.
+	errMsg := err.Error()
+	if strings.Contains(errMsg, "AuthenticationFailed") ||
+		strings.Contains(errMsg, "AADSTS") ||
+		strings.Contains(errMsg, "token") ||
+		strings.Contains(errMsg, "expired") {
+		return coreerrors.NewUnauthorizedError(err)
+	}
+
+	return err
+}
+
+// mapStatusCodeToError maps an HTTP status code to a domain-specific error.
+func (p *Provider) mapStatusCodeToError(statusCode int, err error, itemPath string) error {
+	switch statusCode {
+	case 400:
+		return coreerrors.NewBadRequestError(err)
+	case 401:
+		return coreerrors.NewUnauthorizedError(err)
+	case 403:
+		return coreerrors.NewForbiddenError(itemPath, err)
+	case 404:
+		return coreerrors.NewNotFoundError(itemPath, err)
+	case 409:
+		return coreerrors.NewConflictError(itemPath, err)
+	case 410:
+		return NewGoneError(itemPath, err)
+	case 412:
+		return coreerrors.NewPreconditionFailedError(itemPath, err)
+	case 423:
+		return NewLockedError(itemPath, err)
+	case 429:
+		return coreerrors.NewTransientError("too many requests: OneDrive is throttling your requests", err)
+	case 500:
+		return coreerrors.NewInternalError(err)
+	case 503, 504:
+		return coreerrors.NewTransientError("OneDrive service is temporarily unavailable", err)
+	case 507:
+		return NewInsufficientStorageError(err)
+	}
+	return err
+}
+
 // resolveDrive determines the drive ID and relative path for a given item path, handling aliases and defaults.
 func (p *Provider) resolveDrive(itemPath string) (string, string) {
-	// If path is "alias:path"
-	if !strings.HasPrefix(itemPath, "/") && strings.Contains(itemPath, ":") {
-		alias, cleanPath, _ := strings.Cut(itemPath, ":")
-		driveID, err := p.alias.GetDriveIDByAlias(alias)
-		if err == nil {
-			return driveID, cleanPath
-		}
+	if driveID, cleanPath, found := strings.Cut(itemPath, ":"); found {
+		return driveID, p.normalizePath(cleanPath)
 	}
 
-	// Default to active drive or "me"
-	driveID, err := p.state.Get(state.KeyDrive)
-	if err != nil || driveID == "" {
-		// Fallback to primary drive
-		return "me", itemPath
-	}
-
-	return driveID, itemPath
+	return "me", p.normalizePath(itemPath)
 }
 
 // expandURI constructs the full API endpoint URI based on the provided templates and parameters.
@@ -166,10 +219,7 @@ func (p *Provider) normalizePath(pth string) string {
 
 // Get retrieves metadata for a single item by its OneDrive path.
 func (p *Provider) Get(ctx context.Context, itemPath string) (shared.Item, error) {
-	log := p.log.WithContext(ctx).With(
-		logger.String("provider", providerName),
-		logger.String("path", itemPath),
-	)
+	log := p.log.WithContext(ctx)
 
 	log.Debug("resolving drive id and path")
 	driveID, cleanPath := p.resolveDrive(itemPath)
@@ -182,7 +232,7 @@ func (p *Provider) Get(ctx context.Context, itemPath string) (shared.Item, error
 	adapter, err := p.platform.Adapter(ctx)
 	if err != nil {
 		log.Warn("failed to retrieve adapter", logger.Error(err))
-		return shared.Item{}, p.mapError(err, itemPath)
+		return shared.Item{}, p.mapGenericError(err, itemPath)
 	}
 
 	builder := drives.NewItemRootRequestBuilder(uri, adapter)
@@ -191,7 +241,7 @@ func (p *Provider) Get(ctx context.Context, itemPath string) (shared.Item, error
 	it, err := builder.Get(ctx, nil)
 	if err != nil {
 		log.Error("failed to get item metadata", logger.Error(err))
-		return shared.Item{}, p.mapError(err, itemPath)
+		return shared.Item{}, p.mapGenericError(err, itemPath)
 	}
 
 	log.Debug("retrieved item metadata", logger.String("item_id", *it.GetId()))
@@ -200,11 +250,7 @@ func (p *Provider) Get(ctx context.Context, itemPath string) (shared.Item, error
 
 // List enumerates the contents of a directory in OneDrive.
 func (p *Provider) List(ctx context.Context, itemPath string, opts shared.ListOptions) ([]shared.Item, error) {
-	log := p.log.WithContext(ctx).With(
-		logger.String("provider", providerName),
-		logger.String("path", itemPath),
-		logger.Bool("recursive", opts.Recursive),
-	)
+	log := p.log.WithContext(ctx)
 
 	log.Debug("resolving drive id and path")
 	driveID, cleanPath := p.resolveDrive(itemPath)
@@ -216,7 +262,7 @@ func (p *Provider) List(ctx context.Context, itemPath string, opts shared.ListOp
 	adapter, err := p.platform.Adapter(ctx)
 	if err != nil {
 		log.Warn("failed to retrieve adapter", logger.Error(err))
-		return nil, p.mapError(err, itemPath)
+		return nil, p.mapGenericError(err, itemPath)
 	}
 	builder := drives.NewItemItemsRequestBuilder(uri, adapter)
 
@@ -224,7 +270,7 @@ func (p *Provider) List(ctx context.Context, itemPath string, opts shared.ListOp
 	resp, err := builder.Get(ctx, nil)
 	if err != nil {
 		log.Error("failed to list children", logger.Error(err))
-		return nil, p.mapError(err, itemPath)
+		return nil, p.mapGenericError(err, itemPath)
 	}
 
 	var items []shared.Item
@@ -246,17 +292,14 @@ func (p *Provider) List(ctx context.Context, itemPath string, opts shared.ListOp
 
 // ReadFile opens a read stream for a file's content in OneDrive.
 func (p *Provider) ReadFile(ctx context.Context, itemPath string, opts shared.ReadOptions) (io.ReadCloser, error) {
-	log := p.log.WithContext(ctx).With(
-		logger.String("provider", providerName),
-		logger.String("path", itemPath),
-	)
+	log := p.log.WithContext(ctx)
 
-	log.Debug("resolving drive id and path")
+	log.Debug("resolving drive id and path", logger.String("path", itemPath))
 	driveID, cleanPath := p.resolveDrive(itemPath)
-	log.Debug("resolved drive id and path", logger.String("drive_id", driveID))
+	log.Info("resolved drive id and path", logger.String("drive_id", driveID), logger.String("path", cleanPath))
 
-	if cleanPath == "" || cleanPath == "/" {
-		return nil, coreerrors.NewInvalidInput(nil, "invalid item path for reading content", "The root folder cannot be read as a file.").WithContext(coreerrors.KeyPath, itemPath)
+	if cleanPath == "" || strings.HasSuffix(cleanPath, "/") {
+		return nil, NewBadPathError(itemPath, "cannot read content from a directory", nil)
 	}
 
 	uri := p.expandURI("", rootRelativeContentURITemplate, driveID, cleanPath)
@@ -265,7 +308,7 @@ func (p *Provider) ReadFile(ctx context.Context, itemPath string, opts shared.Re
 	adapter, err := p.platform.Adapter(ctx)
 	if err != nil {
 		log.Warn("failed to retrieve adapter", logger.Error(err))
-		return nil, p.mapError(err, itemPath)
+		return nil, p.mapReadError(err, itemPath)
 	}
 	builder := drives.NewItemRootContentRequestBuilder(uri, adapter)
 
@@ -273,7 +316,7 @@ func (p *Provider) ReadFile(ctx context.Context, itemPath string, opts shared.Re
 	content, err := builder.Get(ctx, nil)
 	if err != nil {
 		log.Error("failed to download content", logger.Error(err))
-		return nil, p.mapError(err, itemPath)
+		return nil, p.mapReadError(err, itemPath)
 	}
 
 	log.Debug("downloaded content", logger.Int("size", len(content)))
@@ -287,17 +330,14 @@ func (p *Provider) Stat(ctx context.Context, itemPath string) (shared.Item, erro
 
 // WriteFile creates or updates a file in OneDrive with the content from the reader.
 func (p *Provider) WriteFile(ctx context.Context, itemPath string, r io.Reader, opts shared.WriteOptions) (shared.Item, error) {
-	log := p.log.WithContext(ctx).With(
-		logger.String("provider", providerName),
-		logger.String("path", itemPath),
-	)
+	log := p.log.WithContext(ctx)
 
-	log.Debug("resolving drive id and path")
+	log.Debug("resolving drive id and path", logger.String("path", itemPath))
 	driveID, cleanPath := p.resolveDrive(itemPath)
 	log.Debug("resolved drive id and path", logger.String("drive_id", driveID))
 
-	if cleanPath == "" || cleanPath == "/" {
-		return shared.Item{}, coreerrors.NewInvalidInput(nil, "invalid item path for writing content", "The root folder cannot be overwritten as a file.").WithContext(coreerrors.KeyPath, itemPath)
+	if cleanPath == "" || strings.HasSuffix(cleanPath, "/") {
+		return shared.Item{}, NewBadPathError(itemPath, "cannot write content to a directory", nil)
 	}
 
 	// Use resumable upload for large files
@@ -308,13 +348,20 @@ func (p *Provider) WriteFile(ctx context.Context, itemPath string, r io.Reader, 
 	log.Debug("reading input stream")
 	data, err := io.ReadAll(r)
 	if err != nil {
-		return shared.Item{}, p.mapError(err, itemPath)
+		return shared.Item{}, p.mapWriteError(err, itemPath)
 	}
 
 	// If it turns out the data is larger than threshold after reading, use large file upload
 	if int64(len(data)) > uploadThreshold {
+		log.Info("file size is greater than upload threshold", logger.Int("threshold", uploadThreshold))
 		return p.writeLargeFile(ctx, driveID, cleanPath, itemPath, io.MultiReader(strings.NewReader(string(data)), r), opts)
 	}
+
+	return p.writeFile(ctx, driveID, cleanPath, itemPath, data, opts)
+}
+
+func (p *Provider) writeFile(ctx context.Context, driveID, cleanPath, itemPath string, data []byte, opts shared.WriteOptions) (shared.Item, error) {
+	log := p.log.WithContext(ctx)
 
 	uri := p.expandURI("", rootRelativeContentURITemplate, driveID, cleanPath)
 	log.Debug("expanded uri", logger.String("uri", uri))
@@ -322,7 +369,7 @@ func (p *Provider) WriteFile(ctx context.Context, itemPath string, r io.Reader, 
 	adapter, err := p.platform.Adapter(ctx)
 	if err != nil {
 		log.Warn("failed to retrieve adapter", logger.Error(err))
-		return shared.Item{}, p.mapError(err, itemPath)
+		return shared.Item{}, p.mapWriteError(err, itemPath)
 	}
 
 	config := &drives.ItemRootContentRequestBuilderPutRequestConfiguration{
@@ -337,7 +384,7 @@ func (p *Provider) WriteFile(ctx context.Context, itemPath string, r io.Reader, 
 	it, err := builder.Put(ctx, data, config)
 	if err != nil {
 		log.Error("failed to upload content", logger.Error(err))
-		return shared.Item{}, p.mapError(err, itemPath)
+		return shared.Item{}, p.mapWriteError(err, itemPath)
 	}
 
 	log.Info("uploaded content", logger.Int("size", *it.GetSize()))
@@ -346,15 +393,12 @@ func (p *Provider) WriteFile(ctx context.Context, itemPath string, r io.Reader, 
 
 // writeLargeFile handles uploading files larger than the threshold using OneDrive's resumable upload session API.
 func (p *Provider) writeLargeFile(ctx context.Context, driveID, cleanPath, itemPath string, r io.Reader, opts shared.WriteOptions) (shared.Item, error) {
-	log := p.log.WithContext(ctx).With(
-		logger.String("method", "writeLargeFile"),
-		logger.String("path", itemPath),
-	)
+	log := p.log.WithContext(ctx)
 
 	uri := p.expandURI("", rootRelativeCreateSessionURITemplate, driveID, cleanPath)
 	adapter, err := p.platform.Adapter(ctx)
 	if err != nil {
-		return shared.Item{}, p.mapError(err, itemPath)
+		return shared.Item{}, p.mapWriteError(err, itemPath)
 	}
 
 	// 1. Create Upload Session
@@ -367,7 +411,7 @@ func (p *Provider) writeLargeFile(ctx context.Context, driveID, cleanPath, itemP
 	builder := drives.NewItemItemsItemCreateUploadSessionRequestBuilder(uri, adapter)
 	session, err := builder.Post(ctx, sessionReq, nil)
 	if err != nil {
-		return shared.Item{}, p.mapError(err, itemPath)
+		return shared.Item{}, p.mapWriteError(err, itemPath)
 	}
 
 	uploadURL := *session.GetUploadUrl()
@@ -384,7 +428,7 @@ func (p *Provider) writeLargeFile(ctx context.Context, driveID, cleanPath, itemP
 			chunk := buffer[:n]
 			req, err := http.NewRequestWithContext(ctx, "PUT", uploadURL, strings.NewReader(string(chunk)))
 			if err != nil {
-				return shared.Item{}, p.mapError(err, itemPath)
+				return shared.Item{}, p.mapWriteError(err, itemPath)
 			}
 
 			contentRange := fmt.Sprintf("bytes %d-%d/", uploaded, uploaded+int64(n)-1)
@@ -398,12 +442,12 @@ func (p *Provider) writeLargeFile(ctx context.Context, driveID, cleanPath, itemP
 
 			resp, err := http.DefaultClient.Do(req)
 			if err != nil {
-				return shared.Item{}, p.mapError(err, itemPath)
+				return shared.Item{}, p.mapWriteError(err, itemPath)
 			}
 			defer resp.Body.Close()
 
 			if resp.StatusCode >= 400 {
-				return shared.Item{}, p.mapError(fmt.Errorf("chunk upload failed with status %d", resp.StatusCode), itemPath)
+				return shared.Item{}, p.mapWriteError(fmt.Errorf("chunk upload failed with status %d", resp.StatusCode), itemPath)
 			}
 
 			uploaded += int64(n)
@@ -419,7 +463,7 @@ func (p *Provider) writeLargeFile(ctx context.Context, driveID, cleanPath, itemP
 			break
 		}
 		if err != nil {
-			return shared.Item{}, p.mapError(err, itemPath)
+			return shared.Item{}, p.mapWriteError(err, itemPath)
 		}
 	}
 
@@ -429,10 +473,7 @@ func (p *Provider) writeLargeFile(ctx context.Context, driveID, cleanPath, itemP
 
 // Mkdir creates a new folder in OneDrive at the given path.
 func (p *Provider) Mkdir(ctx context.Context, itemPath string) error {
-	log := p.log.WithContext(ctx).With(
-		logger.String("provider", providerName),
-		logger.String("path", itemPath),
-	)
+	log := p.log.WithContext(ctx)
 
 	log.Debug("resolving drive id and path")
 	driveID, cleanPath := p.resolveDrive(itemPath)
@@ -454,7 +495,7 @@ func (p *Provider) Mkdir(ctx context.Context, itemPath string) error {
 	adapter, err := p.platform.Adapter(ctx)
 	if err != nil {
 		log.Warn("failed to retrieve adapter", logger.Error(err))
-		return p.mapError(err, itemPath)
+		return p.mapGenericError(err, itemPath)
 	}
 	builder := drives.NewItemItemsRequestBuilder(uri, adapter)
 
@@ -462,7 +503,7 @@ func (p *Provider) Mkdir(ctx context.Context, itemPath string) error {
 	_, err = builder.Post(ctx, requestBody, nil)
 	if err != nil {
 		log.Error("failed to create directory", logger.Error(err))
-		return p.mapError(err, itemPath)
+		return p.mapGenericError(err, itemPath)
 	}
 
 	log.Info("created directory")
@@ -471,10 +512,7 @@ func (p *Provider) Mkdir(ctx context.Context, itemPath string) error {
 
 // Remove deletes an item from OneDrive.
 func (p *Provider) Remove(ctx context.Context, itemPath string) error {
-	log := p.log.WithContext(ctx).With(
-		logger.String("provider", providerName),
-		logger.String("path", itemPath),
-	)
+	log := p.log.WithContext(ctx)
 
 	log.Debug("resolving drive id and path")
 	driveID, cleanPath := p.resolveDrive(itemPath)
@@ -486,7 +524,7 @@ func (p *Provider) Remove(ctx context.Context, itemPath string) error {
 	adapter, err := p.platform.Adapter(ctx)
 	if err != nil {
 		log.Warn("failed to retrieve adapter", logger.Error(err))
-		return p.mapError(err, itemPath)
+		return p.mapGenericError(err, itemPath)
 	}
 	builder := drives.NewItemItemsDriveItemItemRequestBuilder(uri, adapter)
 
@@ -494,7 +532,7 @@ func (p *Provider) Remove(ctx context.Context, itemPath string) error {
 	err = builder.Delete(ctx, nil)
 	if err != nil {
 		log.Error("failed to delete item", logger.Error(err))
-		return p.mapError(err, itemPath)
+		return p.mapGenericError(err, itemPath)
 	}
 
 	log.Info("deleted item")
@@ -503,16 +541,12 @@ func (p *Provider) Remove(ctx context.Context, itemPath string) error {
 
 // Copy duplicates a file or folder within OneDrive.
 func (p *Provider) Copy(ctx context.Context, src, dst string, opts shared.CopyOptions) error {
-	return coreerrors.NewInternal(fmt.Errorf("onedrive internal copy not implemented - use manager for cross-provider/fallback copy"), "copy operation not supported internally", "The FileSystemManager should handle this cross-provider or via fallback.").WithContext(coreerrors.KeyPath, src)
+	return NewUnsupportedOperationError(src, "internal copy", coreerrors.NewInternal(fmt.Errorf("onedrive internal copy not implemented - use manager for cross-provider/fallback copy"), "copy operation not supported internally", "The FileSystemManager should handle this cross-provider or via fallback."))
 }
 
 // Move relocates or renames a file or folder within OneDrive.
 func (p *Provider) Move(ctx context.Context, src, dst string) error {
-	log := p.log.WithContext(ctx).With(
-		logger.String("provider", providerName),
-		logger.String("src", src),
-		logger.String("dst", dst),
-	)
+	log := p.log.WithContext(ctx)
 
 	log.Debug("resolving source and destination drives")
 	srcDriveID, cleanSrc := p.resolveDrive(src)
@@ -520,7 +554,7 @@ func (p *Provider) Move(ctx context.Context, src, dst string) error {
 	dstDriveID, cleanDst := p.resolveDrive(dst)
 
 	if srcDriveID != dstDriveID {
-		return coreerrors.NewInvalidInput(nil, "cross-drive move not supported via internal Move", "The FileSystemManager should handle cross-drive moves via Copy and Remove.").WithContext(coreerrors.KeyPath, src)
+		return NewUnsupportedOperationError(src, "cross-drive move", coreerrors.NewInvalidInput(nil, "cross-drive move not supported via internal Move", "The FileSystemManager should handle cross-drive moves via Copy and Remove."))
 	}
 	log.Debug("resolved drive id", logger.String("drive_id", srcDriveID))
 
@@ -533,7 +567,7 @@ func (p *Provider) Move(ctx context.Context, src, dst string) error {
 	log.Debug("retrieving parent metadata for move")
 	parent, err := p.Get(ctx, parentPath)
 	if err != nil {
-		return coreerrors.NewAppError(coreerrors.CodeInternal, err, "failed to get destination parent metadata", "").WithContext(coreerrors.KeyPath, parentPath)
+		return p.mapGenericError(err, parentPath)
 	}
 
 	requestBody := models.NewDriveItem()
@@ -549,7 +583,7 @@ func (p *Provider) Move(ctx context.Context, src, dst string) error {
 	adapter, err := p.platform.Adapter(ctx)
 	if err != nil {
 		log.Warn("failed to retrieve adapter", logger.Error(err))
-		return p.mapError(err, src)
+		return p.mapGenericError(err, src)
 	}
 	builder := drives.NewItemItemsDriveItemItemRequestBuilder(uri, adapter)
 
@@ -557,7 +591,7 @@ func (p *Provider) Move(ctx context.Context, src, dst string) error {
 	_, err = builder.Patch(ctx, requestBody, nil)
 	if err != nil {
 		log.Error("failed to move item", logger.Error(err))
-		return p.mapError(err, src)
+		return p.mapGenericError(err, src)
 	}
 
 	log.Info("moved item")

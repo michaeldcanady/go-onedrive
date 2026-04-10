@@ -1,9 +1,5 @@
 package formatting
 
-import (
-	"fmt"
-)
-
 // FormatterFactory provides operations for initializing configured formatter instances.
 type FormatterFactory struct{}
 
@@ -31,6 +27,6 @@ func (f *FormatterFactory) Create(format Format) (OutputFormatter, error) {
 	case FormatTree:
 		return NewTreeFormatter(), nil
 	default:
-		return nil, fmt.Errorf("unsupported output format: %s", format)
+		return nil, NewUnsupportedFormatError(format, nil)
 	}
 }

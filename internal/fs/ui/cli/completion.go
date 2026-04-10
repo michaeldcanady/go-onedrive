@@ -15,43 +15,35 @@ func ProviderPathCompletion(container di.Container) func(cmd *cobra.Command, arg
 		currentToComplete := toComplete
 		prefixToStrip := ""
 
-		// Attempt to reconstruct the current argument if Bash split it on colons.
-		// We look at the tail of 'args' to see if it ends with a provider prefix.
-		if !strings.Contains(toComplete, ":") && len(args) > 0 {
-			if args[len(args)-1] == ":" && len(args) >= 2 {
-				prefixToStrip = args[len(args)-2] + ":"
-				currentToComplete = prefixToStrip + toComplete
-			} else if strings.HasSuffix(args[len(args)-1], ":") {
-				prefixToStrip = args[len(args)-1]
-				currentToComplete = prefixToStrip + toComplete
-			}
+		// reconstruct currentToComplete if prefixToStrip is set
+		if prefixToStrip != "" {
+			currentToComplete = prefixToStrip + toComplete
 		}
 
 		// 1. Determine if we are completing a provider or a path
-		provider, path, found := fs.SplitProviderPath(currentToComplete)
-
-		// If no colon and doesn't start with a slash, we might be completing a provider name
-		if !found && !strings.HasPrefix(currentToComplete, "/") {
-			names, err := container.ProviderRegistry().RegisteredNames()
-			if err != nil {
-				return nil, cobra.ShellCompDirectiveError
-			}
-
-			var results []string
-			for _, name := range names {
-				if strings.HasPrefix(name, currentToComplete) {
-					results = append(results, name+":")
+		uri, err := fs.ParseURI(currentToComplete)
+		if err != nil {
+			// If parsing fails, it might be an incomplete provider name
+			if !strings.Contains(currentToComplete, ":") && !strings.HasPrefix(currentToComplete, "/") {
+				names, err := container.ProviderRegistry().RegisteredNames()
+				if err != nil {
+					return nil, cobra.ShellCompDirectiveError
 				}
+
+				var results []string
+				for _, name := range names {
+					if strings.HasPrefix(name, currentToComplete) {
+						results = append(results, name+":")
+					}
+				}
+				return results, cobra.ShellCompDirectiveNoSpace | cobra.ShellCompDirectiveNoFileComp
 			}
-			return results, cobra.ShellCompDirectiveNoSpace | cobra.ShellCompDirectiveNoFileComp
+			return nil, cobra.ShellCompDirectiveNoFileComp
 		}
 
-		// 2. We are completing a path.
-		// If not found (no colon), it's the default provider (onedrive).
-		if !found {
-			provider = fs.DefaultProviderPrefix
-			path = currentToComplete
-		}
+		provider := uri.Provider
+		path := uri.Path
+		found := strings.Contains(currentToComplete, ":")
 
 		// If path is empty (just "provider:"), suggest "/"
 		if path == "" {

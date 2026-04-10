@@ -30,19 +30,19 @@ func NewGraphDriveGateway(p shared.PlatformProvider, log logger.Logger) *GraphDr
 func (g *GraphDriveGateway) ListDrives(ctx context.Context) ([]drive.Drive, error) {
 	adapter, err := g.platform.Adapter(ctx)
 	if err != nil {
-		return nil, err
+		return nil, NewGatewayError("ListDrives", err)
 	}
 
 	// Using "me" as a shortcut for the authenticated user.
 	resp, err := users.NewItemDrivesRequestBuilderInternal(map[string]string{"user%2Did": "me"}, adapter).Get(ctx, nil)
 	if err != nil {
-		return nil, err
+		return nil, NewGatewayError("ListDrives", err)
 	}
 
 	var out []drive.Drive
 	pageIterator, err := msgraphsdkcore.NewPageIterator[models.Driveable](resp, adapter, models.CreateDriveCollectionResponseFromDiscriminatorValue)
 	if err != nil {
-		return nil, err
+		return nil, NewGatewayError("ListDrives", err)
 	}
 
 	err = pageIterator.Iterate(ctx, func(d models.Driveable) bool {
@@ -51,7 +51,7 @@ func (g *GraphDriveGateway) ListDrives(ctx context.Context) ([]drive.Drive, erro
 	})
 
 	if err != nil {
-		return nil, err
+		return nil, NewGatewayError("ListDrives", err)
 	}
 
 	return out, nil
@@ -61,12 +61,12 @@ func (g *GraphDriveGateway) ListDrives(ctx context.Context) ([]drive.Drive, erro
 func (g *GraphDriveGateway) GetPersonalDrive(ctx context.Context) (drive.Drive, error) {
 	adapter, err := g.platform.Adapter(ctx)
 	if err != nil {
-		return drive.Drive{}, err
+		return drive.Drive{}, NewGatewayError("GetPersonalDrive", err)
 	}
 
 	resp, err := users.NewItemDriveRequestBuilderInternal(map[string]string{"user%2Did": "me"}, adapter).Get(ctx, nil)
 	if err != nil {
-		return drive.Drive{}, err
+		return drive.Drive{}, NewGatewayError("GetPersonalDrive", err)
 	}
 
 	return toDrive(resp), nil

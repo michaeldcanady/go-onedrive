@@ -25,31 +25,34 @@ func CreateLsCmd(container di.Container) *cobra.Command {
 		Args:              cobra.MaximumNArgs(1),
 		ValidArgsFunction: cli.ProviderPathCompletion(container),
 		PreRunE: func(cmd *cobra.Command, args []string) error {
-			opts.Path = args[0]
-			// should allow / for directories
-			if contains, err := fs.ContainsIllegalChars(opts.Path); contains {
-				return coreerrors.NewInvalidInput(
-					err,
-					fmt.Sprintf("invalid path '%s' due to illegal characters", opts.Path),
-					"Remove the illegal characters from the path",
-				)
+			pathArg := ""
+			if len(args) > 0 {
+				pathArg = args[0]
 			}
 
-			if provider, _, found := fs.SplitProviderPath(opts.Path); found {
-				if names, err := container.ProviderRegistry().RegisteredNames(); err != nil {
-					return coreerrors.NewAppError(
-						coreerrors.CodeUnknown,
-						errors.New("failed to check registered providers"),
-						"An unexpected error occurred while retrieving registered providers",
-						"Try again, and if the problem persists, check the application logs for more details",
-					)
-				} else if !slices.Contains(names, provider) {
-					return coreerrors.NewInvalidInput(
-						errors.New("unknown provider"),
-						"Unknown provider prefix",
-						"Ensure the provider prefix is correct and corresponds to a registered provider",
-					)
-				}
+			uri, err := fs.ParseURI(pathArg)
+			if err != nil {
+				return coreerrors.NewInvalidInput(
+					err,
+					fmt.Sprintf("invalid path '%s'", pathArg),
+					"Check the path format and ensure no illegal characters are used.",
+				)
+			}
+			opts.Path = uri.ManagerPath()
+
+			if names, err := container.ProviderRegistry().RegisteredNames(); err != nil {
+				return coreerrors.NewAppError(
+					coreerrors.CodeUnknown,
+					errors.New("failed to check registered providers"),
+					"An unexpected error occurred while retrieving registered providers",
+					"Try again, and if the problem persists, check the application logs for more details",
+				)
+			} else if !slices.Contains(names, uri.Provider) {
+				return coreerrors.NewInvalidInput(
+					errors.New("unknown provider"),
+					fmt.Sprintf("unknown provider prefix '%s'", uri.Provider),
+					"Ensure the provider prefix is correct and corresponds to a registered provider",
+				)
 			}
 
 			opts.Stdout = cmd.OutOrStdout()

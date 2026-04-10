@@ -1,7 +1,6 @@
 package sorting
 
 import (
-	"fmt"
 	"reflect"
 	"sort"
 	"strings"
@@ -34,7 +33,7 @@ func (s *OptionsSorter) Sort(items []shared.Item) ([]shared.Item, error) {
 	if _, ok := itemType.FieldByNameFunc(func(s string) bool {
 		return strings.EqualFold(s, field)
 	}); !ok {
-		return nil, fmt.Errorf("unknown sort field: %s", field)
+		return nil, NewUnknownSortFieldError(field, nil)
 	}
 
 	sort.Slice(items, func(i, j int) bool {

@@ -7,6 +7,7 @@ import (
 
 	"github.com/michaeldcanady/go-onedrive/internal/errors"
 	shared "github.com/michaeldcanady/go-onedrive/internal/fs"
+	"github.com/michaeldcanady/go-onedrive/internal/fs/ui/cli"
 	"github.com/michaeldcanady/go-onedrive/internal/logger"
 )
 
@@ -51,8 +52,9 @@ func (h *Handler) Handle(ctx context.Context, opts Options) error {
 
 	log.Debug("delegating to filesystem manager for copy")
 	if err := h.manager.Copy(ctx, source, opts.Destination, cpOpts); err != nil {
-		h.log.Error(err.Error(), errors.LogFields(err)...)
-		return err
+		wrapped := cli.WrapError(err, source)
+		h.log.Error(wrapped.Error(), errors.LogFields(wrapped)...)
+		return wrapped
 	}
 
 	log.Info("upload completed successfully")

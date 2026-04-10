@@ -9,7 +9,7 @@ import (
 // compareValues compares two reflect.Values and returns true if vi < vj.
 func compareValues(vi, vj reflect.Value) (bool, error) {
 	if vi.Kind() != vj.Kind() {
-		return false, fmt.Errorf("cannot compare different types: %s and %s", vi.Kind(), vj.Kind())
+		return false, NewComparisonError(fmt.Sprintf("cannot compare different types: %s and %s", vi.Kind(), vj.Kind()), nil)
 	}
 
 	switch vi.Kind() {
@@ -38,5 +38,5 @@ func compareValues(vi, vj reflect.Value) (bool, error) {
 		}
 	}
 
-	return false, fmt.Errorf("unsupported field type for comparison: %s", vi.Kind())
+	return false, NewComparisonError(fmt.Sprintf("unsupported field type for comparison: %s", vi.Kind()), nil)
 }

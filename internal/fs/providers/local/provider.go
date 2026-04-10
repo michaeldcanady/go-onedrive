@@ -33,23 +33,66 @@ func (p *Provider) Name() string {
 	return providerName
 }
 
-func (p *Provider) mapError(err error, path string) error {
+// mapReadError translates errors from the local filesystem into a ReadError wrapping domain-specific errors.
+func (p *Provider) mapReadError(err error, path string) error {
 	if err == nil {
 		return nil
 	}
 
-	var appErr *coreerrors.AppError
-	if os.IsNotExist(err) {
-		appErr = coreerrors.NewNotFound(err, "file or directory not found", "")
-	} else if os.IsPermission(err) {
-		appErr = coreerrors.NewForbidden(err, "permission denied", "Check your file system permissions.")
-	} else if os.IsExist(err) {
-		appErr = coreerrors.NewConflict(err, "file or directory already exists", "")
-	} else {
-		appErr = coreerrors.NewInternal(err, "an unexpected local filesystem error occurred", "")
+	wrapped := p.mapToDomainError(err, path)
+	return NewReadError(path, wrapped)
+}
+
+// mapWriteError translates errors from the local filesystem into a WriteError wrapping domain-specific errors.
+func (p *Provider) mapWriteError(err error, path string) error {
+	if err == nil {
+		return nil
 	}
 
-	return appErr.WithContext(coreerrors.KeyPath, path)
+	wrapped := p.mapToDomainError(err, path)
+	return NewWriteError(path, wrapped)
+}
+
+// mapGenericError translates errors from the local filesystem into domain-specific errors wrapped in an AppError.
+func (p *Provider) mapGenericError(err error, path string) error {
+	if err == nil {
+		return nil
+	}
+
+	domainErr := p.mapToDomainError(err, path)
+
+	// If mapToDomainError already returned one of our custom error types, return it directly.
+	if domainErr != err {
+		return domainErr
+	}
+
+	code := coreerrors.CodeInternal
+	safeMsg := "an unexpected local filesystem error occurred"
+	hint := ""
+
+	appErr := coreerrors.NewAppError(code, domainErr, safeMsg, hint)
+	if path != "" {
+		appErr.WithContext(coreerrors.KeyPath, path)
+	}
+
+	return appErr
+}
+
+// mapToDomainError converts low-level OS errors into domain-specific error types.
+func (p *Provider) mapToDomainError(err error, path string) error {
+	if err == nil {
+		return nil
+	}
+
+	if os.IsNotExist(err) {
+		return coreerrors.NewNotFoundError(path, err)
+	} else if os.IsPermission(err) {
+		return coreerrors.NewForbiddenError(path, err)
+	} else if os.IsExist(err) {
+		return coreerrors.NewConflictError(path, err)
+	}
+
+	return err
 }
 
 // Get retrieves metadata for a single item by its local path.
@@ -58,7 +101,7 @@ func (p *Provider) Get(ctx context.Context, path string) (shared.Item, error) {
 
 	info, err := os.Stat(path)
 	if err != nil {
-		return shared.Item{}, p.mapError(err, path)
+		return shared.Item{}, p.mapGenericError(err, path)
 	}
 	return p.mapInfoToItem(path, info), nil
 }
@@ -69,7 +112,7 @@ func (p *Provider) List(ctx context.Context, path string, opts shared.ListOption
 
 	entries, err := os.ReadDir(path)
 	if err != nil {
-		return nil, p.mapError(err, path)
+		return nil, p.mapGenericError(err, path)
 	}
 
 	var items []shared.Item
@@ -97,7 +140,7 @@ func (p *Provider) ReadFile(ctx context.Context, path string, opts shared.ReadOp
 
 	f, err := os.Open(path)
 	if err != nil {
-		return nil, p.mapError(err, path)
+		return nil, p.mapReadError(err, path)
 	}
 	return f, nil
 }
@@ -120,13 +163,13 @@ func (p *Provider) WriteFile(ctx context.Context, path string, r io.Reader, opts
 
 	f, err := os.OpenFile(path, flags, 0644)
 	if err != nil {
-		return shared.Item{}, p.mapError(err, path)
+		return shared.Item{}, p.mapWriteError(err, path)
 	}
 	defer f.Close()
 
 	_, err = io.Copy(f, r)
 	if err != nil {
-		return shared.Item{}, p.mapError(err, path)
+		return shared.Item{}, p.mapWriteError(err, path)
 	}
 
 	return p.Get(ctx, path)
@@ -137,7 +180,10 @@ func (p *Provider) Mkdir(ctx context.Context, path string) error {
 	p.log.Debug("local.Mkdir", logger.String("path", path))
 
 	err := os.MkdirAll(path, 0755)
-	return p.mapError(err, path)
+	if err != nil {
+		return p.mapGenericError(err, path)
+	}
+	return nil
 }
 
 // Remove deletes an item from the local filesystem.
@@ -145,7 +191,10 @@ func (p *Provider) Remove(ctx context.Context, path string) error {
 	p.log.Debug("local.Remove", logger.String("path", path))
 
 	err := os.RemoveAll(path)
-	return p.mapError(err, path)
+	if err != nil {
+		return p.mapGenericError(err, path)
+	}
+	return nil
 }
 
 // Copy duplicates a file or folder on the local filesystem.
@@ -167,7 +216,10 @@ func (p *Provider) Move(ctx context.Context, src, dst string) error {
 	p.log.Debug("local.Move", logger.String("src", src), logger.String("dst", dst))
 
 	err := os.Rename(src, dst)
-	return p.mapError(err, src)
+	if err != nil {
+		return p.mapGenericError(err, src)
+	}
+	return nil
 }
 
 // Touch creates an empty file or updates the timestamp of an existing one.
@@ -176,13 +228,13 @@ func (p *Provider) Touch(ctx context.Context, path string) (shared.Item, error) 
 
 	f, err := os.OpenFile(path, os.O_RDONLY|os.O_CREATE, 0644)
 	if err != nil {
-		return shared.Item{}, p.mapError(err, path)
+		return shared.Item{}, p.mapWriteError(err, path)
 	}
 	f.Close()
 
 	now := time.Now()
 	if err := os.Chtimes(path, now, now); err != nil {
-		return shared.Item{}, p.mapError(err, path)
+		return shared.Item{}, p.mapWriteError(err, path)
 	}
 
 	return p.Get(ctx, path)

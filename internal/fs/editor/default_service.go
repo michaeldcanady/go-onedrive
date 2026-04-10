@@ -69,7 +69,7 @@ func (s *DefaultService) Launch(path string) error {
 
 	if err := cmd.Run(); err != nil {
 		s.log.Error("editor process exited with error", logger.Error(err), logger.String("path", path))
-		return err
+		return NewEditorLaunchError(path, err)
 	}
 
 	s.log.Debug("editor process finished successfully", logger.String("path", path))
@@ -84,19 +84,19 @@ func (s *DefaultService) LaunchTempFile(ctx context.Context, prefix, suffix stri
 	data, err := io.ReadAll(r)
 	if err != nil {
 		l.Error("failed to read data for temp file", logger.Error(err))
-		return nil, "", fmt.Errorf("failed to read data: %w", err)
+		return nil, "", err
 	}
 
 	tempDir, err := s.envSvc.TempDir()
 	if err != nil {
 		l.Error("failed to get temp directory", logger.Error(err))
-		return nil, "", fmt.Errorf("failed to get temp dir: %w", err)
+		return nil, "", err
 	}
 
 	tmpFile, err := os.CreateTemp(tempDir, prefix+"-*"+suffix)
 	if err != nil {
 		l.Error("failed to create temp file", logger.Error(err))
-		return nil, "", fmt.Errorf("failed to create temp file: %w", err)
+		return nil, "", err
 	}
 	tmpPath := tmpFile.Name()
 	l.Debug("temporary file created", logger.String("path", tmpPath))
@@ -110,23 +110,23 @@ func (s *DefaultService) LaunchTempFile(ctx context.Context, prefix, suffix stri
 	if _, err := tmpFile.Write(data); err != nil {
 		l.Error("failed to write to temp file", logger.String("path", tmpPath), logger.Error(err))
 		_ = tmpFile.Close()
-		return nil, "", fmt.Errorf("failed to write to temp file: %w", err)
+		return nil, "", err
 	}
 	if err := tmpFile.Close(); err != nil {
 		l.Error("failed to close temp file handle", logger.String("path", tmpPath), logger.Error(err))
-		return nil, "", fmt.Errorf("failed to close temp file: %w", err)
+		return nil, "", err
 	}
 
 	initialHash := sha256.Sum256(data)
 
 	if err := s.Launch(tmpPath); err != nil {
-		return nil, "", fmt.Errorf("failed to launch editor: %w", err)
+		return nil, "", err
 	}
 
 	newData, err := os.ReadFile(tmpPath)
 	if err != nil {
 		l.Error("failed to read modified file", logger.String("path", tmpPath), logger.Error(err))
-		return nil, "", fmt.Errorf("failed to read modified file: %w", err)
+		return nil, "", err
 	}
 
 	newHash := sha256.Sum256(newData)
@@ -201,7 +201,7 @@ func (s *DefaultService) getEditor() (string, error) {
 	}
 
 	s.log.Error("failed to detect suitable editor")
-	return "", fmt.Errorf("could not detect a suitable editor")
+	return "", NewNoEditorDetectedError(nil)
 }
 
 // getShell returns the appropriate shell command based on the operating system and environment variables.

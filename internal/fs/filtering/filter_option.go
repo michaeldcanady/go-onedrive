@@ -1,8 +1,6 @@
 package filtering
 
 import (
-	"errors"
-
 	shared "github.com/michaeldcanady/go-onedrive/internal/fs"
 )
 
@@ -13,7 +11,7 @@ type FilterOption func(*FilterOptions) error
 func WithItemType(itemType shared.ItemType) FilterOption {
 	if itemType == shared.TypeUnknown {
 		return func(_ *FilterOptions) error {
-			return errors.New("filtered item type is unknown")
+			return NewUnknownItemTypeError(nil)
 		}
 	}
 	return func(config *FilterOptions) error {

@@ -68,7 +68,7 @@ func (tf *TableFormatter) WithTruncate(truncate bool) *TableFormatter {
 // Format writes the items as an ASCII table to the provided writer, adjusting for terminal width.
 func (tf *TableFormatter) Format(w io.Writer, items []any) error {
 	if len(tf.Columns) == 0 {
-		return fmt.Errorf("no columns defined for table formatter")
+		return NewTableConfigurationError("no columns defined", nil)
 	}
 
 	termWidth := tf.terminal.Width(w)
