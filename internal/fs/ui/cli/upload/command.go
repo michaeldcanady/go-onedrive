@@ -101,7 +101,7 @@ func CreateUploadCmd(container di.Container) *cobra.Command {
 			return opts.Validate()
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return NewHandler(container.FS(), container.Logger()).Handle(cmd.Context(), opts)
+			return NewHandler(container).Handle(cmd.Context(), opts)
 		},
 	}
 

@@ -4,27 +4,30 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/michaeldcanady/go-onedrive/internal/di"
 	"github.com/michaeldcanady/go-onedrive/internal/errors"
 	shared "github.com/michaeldcanady/go-onedrive/internal/fs"
 	"github.com/michaeldcanady/go-onedrive/internal/fs/ui/cli"
 	"github.com/michaeldcanady/go-onedrive/internal/logger"
+	"github.com/michaeldcanady/go-onedrive/pkg/events"
 )
 
 // Handler executes the drive upload operation.
 type Handler struct {
-	manager shared.Service
-	log     logger.Logger
+	container di.Container
+	manager   shared.Service
+	log       logger.Logger
 }
 
 // NewHandler initializes a new instance of the drive upload Handler.
 func NewHandler(
-	m shared.Service,
-	l logger.Service,
+	c di.Container,
 ) *Handler {
-	cliLog, _ := l.CreateLogger("drive-upload")
+	cliLog, _ := c.Logger().CreateLogger("drive-upload")
 	return &Handler{
-		manager: m,
-		log:     cliLog,
+		container: c,
+		manager:   c.FS(),
+		log:       cliLog,
 	}
 }
 
@@ -36,6 +39,14 @@ func (h *Handler) Handle(ctx context.Context, opts Options) error {
 	)
 
 	log.Info("starting upload")
+
+	// Subscribe to progress events
+	h.container.Events().Subscribe((shared.FileTransferProgressEvent{}).Name(), func(e events.Event) {
+		if pe, ok := e.(shared.FileTransferProgressEvent); ok {
+			percent := float64(pe.Transferred) / float64(pe.Total) * 100
+			fmt.Fprintf(opts.Stdout, "\rUploading %s: %.2f%% (%d/%d bytes)", pe.Path, percent, pe.Transferred, pe.Total)
+		}
+	})
 
 	// Ensure source has local: prefix if no prefix is present.
 	source := opts.Source
@@ -57,6 +68,6 @@ func (h *Handler) Handle(ctx context.Context, opts Options) error {
 	}
 
 	log.Info("upload completed successfully")
-	fmt.Fprintf(opts.Stdout, "Uploaded %s to %s\n", opts.Source, opts.Destination)
+	fmt.Fprintf(opts.Stdout, "\nUploaded %s to %s\n", opts.Source, opts.Destination)
 	return nil
 }

@@ -11,6 +11,7 @@ import (
 	"github.com/michaeldcanady/go-onedrive/internal/logger"
 	"github.com/michaeldcanady/go-onedrive/internal/profile"
 	"github.com/michaeldcanady/go-onedrive/internal/state"
+	"github.com/michaeldcanady/go-onedrive/pkg/events"
 )
 
 // Container defines the interface for retrieving and managing core application services.
@@ -39,4 +40,6 @@ type Container interface {
 	Drive() drive.Service
 	// Alias returns the drive alias management service.
 	Alias() alias.Service
+	// Events returns the global event dispatcher.
+	Events() *events.Dispatcher
 }

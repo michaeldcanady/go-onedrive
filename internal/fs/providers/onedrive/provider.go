@@ -20,6 +20,7 @@ import (
 	platform "github.com/michaeldcanady/go-onedrive/internal/identity/providers/shared"
 	"github.com/michaeldcanady/go-onedrive/internal/logger"
 	"github.com/michaeldcanady/go-onedrive/internal/state"
+	"github.com/michaeldcanady/go-onedrive/pkg/events"
 	"github.com/michaeldcanady/go-onedrive/pkg/fsm"
 	abstractions "github.com/microsoft/kiota-abstractions-go"
 	"github.com/microsoftgraph/msgraph-sdk-go/drives"
@@ -50,15 +51,17 @@ type Provider struct {
 	state    state.Service
 	alias    alias.Service
 	driveSvc drive.Service
+	events   *events.Dispatcher
 	log      logger.Logger
 }
 
 // NewProvider creates a new instance of the OneDrive filesystem provider.
-func NewProvider(p platform.PlatformProvider, state state.Service, driveSvc drive.Service, log logger.Logger) *Provider {
+func NewProvider(p platform.PlatformProvider, state state.Service, driveSvc drive.Service, events *events.Dispatcher, log logger.Logger) *Provider {
 	return &Provider{
 		platform: p,
 		state:    state,
 		driveSvc: driveSvc,
+		events:   events,
 		log:      log.With(logger.String("provider", providerName)),
 	}
 }
@@ -515,6 +518,14 @@ func (p *Provider) uploadChunkState(ctx context.Context, data *uploadContext) (f
 	}
 
 	data.uploaded += int64(n)
+
+	if data.provider.events != nil {
+		data.provider.events.Dispatch(shared.FileTransferProgressEvent{
+			Path:        data.uri.String(),
+			Transferred: data.uploaded,
+			Total:       data.totalSize,
+		})
+	}
 
 	if resp.StatusCode == 201 || resp.StatusCode == 200 {
 		// Final chunk uploaded, response contains the DriveItem (potentially)

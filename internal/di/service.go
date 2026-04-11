@@ -19,6 +19,7 @@ import (
 	"github.com/michaeldcanady/go-onedrive/internal/logger"
 	"github.com/michaeldcanady/go-onedrive/internal/profile"
 	"github.com/michaeldcanady/go-onedrive/internal/state"
+	"github.com/michaeldcanady/go-onedrive/pkg/events"
 )
 
 // DefaultContainer provides a concrete implementation of the Container interface.
@@ -46,6 +47,9 @@ type DefaultContainer struct {
 	// alias is the drive alias management service.
 	alias alias.Service
 
+	// events is the global event dispatcher.
+	events *events.Dispatcher
+
 	registry interface {
 		RegisteredNames() ([]string, error)
 	}
@@ -71,6 +75,8 @@ func NewDefaultContainer() (*DefaultContainer, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize profile service: %w", err)
 	}
+
+	eventDispatcher := events.NewDispatcher()
 
 	// Try to load cached token
 	var cachedCred azcore.TokenCredential
@@ -99,7 +105,7 @@ func NewDefaultContainer() (*DefaultContainer, error) {
 
 	fsReg := registry.NewRegistry(stateSvc, aliasSvc, cliLog)
 	fsReg.Register("local", local.NewProvider(cliLog))
-	fsReg.Register("onedrive", onedrive.NewProvider(graphProvider, stateSvc, driveSvc, cliLog))
+	fsReg.Register("onedrive", onedrive.NewProvider(graphProvider, stateSvc, driveSvc, eventDispatcher, cliLog))
 
 	editorSvc := editor.NewDefaultService(envSvc, cliLog)
 
@@ -117,6 +123,7 @@ func NewDefaultContainer() (*DefaultContainer, error) {
 		editor:      editorSvc,
 		alias:       aliasSvc,
 		drive:       driveSvc,
+		events:      eventDispatcher,
 	}, nil
 }
 
@@ -155,4 +162,8 @@ func (c *DefaultContainer) Drive() drive.Service { return c.drive }
 
 func (c *DefaultContainer) Alias() alias.Service {
 	return c.alias
+}
+
+func (c *DefaultContainer) Events() *events.Dispatcher {
+	return c.events
 }

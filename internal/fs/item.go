@@ -21,3 +21,14 @@ type Item struct {
 	// ProviderSpecific contains additional metadata unique to the storage provider.
 	ProviderSpecific any
 }
+
+// FileTransferProgressEvent is emitted during file upload or download.
+type FileTransferProgressEvent struct {
+	Path        string
+	Transferred int64
+	Total       int64
+}
+
+func (e FileTransferProgressEvent) Name() string {
+	return "fs.file_transfer_progress"
+}
