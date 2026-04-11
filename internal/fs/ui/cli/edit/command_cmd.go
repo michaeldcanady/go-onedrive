@@ -55,6 +55,7 @@ func (h *Handler) Handle(ctx context.Context, opts Options) error {
 	return machine.Run(ctx, fsm.StateFunc[editContext](fetchMetadataState))
 }
 
+// fetchMetadataState retrieves the file metadata to prepare for editing.
 func fetchMetadataState(ctx context.Context, data *editContext) (fsm.State[editContext], error) {
 	log := data.handler.log.WithContext(ctx).With(logger.String("path", data.opts.Path.String()))
 	log.Debug("fetching metadata")
@@ -70,6 +71,7 @@ func fetchMetadataState(ctx context.Context, data *editContext) (fsm.State[editC
 	return fsm.StateFunc[editContext](downloadState), nil
 }
 
+// downloadState reads the file content for editing.
 func downloadState(ctx context.Context, data *editContext) (fsm.State[editContext], error) {
 	log := data.handler.log.WithContext(ctx).With(logger.String("path", data.opts.Path.String()))
 	log.Debug("reading file for editing")
@@ -85,6 +87,7 @@ func downloadState(ctx context.Context, data *editContext) (fsm.State[editContex
 	return fsm.StateFunc[editContext](editState), nil
 }
 
+// editState launches the external editor with the file content and captures the edited data.
 func editState(ctx context.Context, data *editContext) (fsm.State[editContext], error) {
 	log := data.handler.log.WithContext(ctx).With(logger.String("path", data.opts.Path.String()))
 	log.Debug("launching external editor")
@@ -108,6 +111,7 @@ func editState(ctx context.Context, data *editContext) (fsm.State[editContext], 
 	return fsm.StateFunc[editContext](uploadState), nil
 }
 
+// uploadState uploads the edited content back to the file system, handling conflicts if they arise.
 func uploadState(ctx context.Context, data *editContext) (fsm.State[editContext], error) {
 	log := data.handler.log.WithContext(ctx).With(logger.String("path", data.opts.Path.String()))
 	log.Info("uploading changes", logger.Int("size", len(data.newData)))

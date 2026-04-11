@@ -20,6 +20,7 @@ import (
 	platform "github.com/michaeldcanady/go-onedrive/internal/identity/providers/shared"
 	"github.com/michaeldcanady/go-onedrive/internal/logger"
 	"github.com/michaeldcanady/go-onedrive/internal/state"
+	"github.com/michaeldcanady/go-onedrive/pkg/fsm"
 	abstractions "github.com/microsoft/kiota-abstractions-go"
 	"github.com/microsoftgraph/msgraph-sdk-go/drives"
 	"github.com/microsoftgraph/msgraph-sdk-go/models"
@@ -397,84 +398,136 @@ func (p *Provider) writeFile(ctx context.Context, driveID, cleanPath string, uri
 	return p.mapItemToSharedItem(it, fs.ToManagerPath(uri)), nil
 }
 
+// uploadContext holds the shared data for the large file upload state machine.
+type uploadContext struct {
+	provider  *Provider
+	driveID   string
+	cleanPath string
+	uri       *shared.URI
+	reader    io.Reader
+	opts      shared.WriteOptions
+
+	uploadURL string
+	totalSize int64
+	uploaded  int64
+	buffer    []byte
+	lastChunk []byte
+	result    shared.Item
+}
+
 // writeLargeFile handles uploading files larger than the threshold using OneDrive's resumable upload session API.
 func (p *Provider) writeLargeFile(ctx context.Context, driveID, cleanPath string, uri *shared.URI, r io.Reader, opts shared.WriteOptions) (shared.Item, error) {
-	log := p.log.WithContext(ctx)
+	data := &uploadContext{
+		provider:  p,
+		driveID:   driveID,
+		cleanPath: cleanPath,
+		uri:       uri,
+		reader:    r,
+		opts:      opts,
+		totalSize: opts.Size,
+		buffer:    make([]byte, uploadChunkSize),
+	}
 
-	apiUrl := p.expandURI("", rootRelativeCreateSessionURITemplate, driveID, cleanPath)
-	adapter, err := p.platform.Adapter(ctx)
+	machine := fsm.NewMachine(data)
+	err := machine.Run(ctx, fsm.StateFunc[uploadContext](p.createSessionState))
 	if err != nil {
-		return shared.Item{}, p.mapWriteError(err, uri)
+		return shared.Item{}, err
+	}
+
+	return data.result, nil
+}
+
+func (p *Provider) createSessionState(ctx context.Context, data *uploadContext) (fsm.State[uploadContext], error) {
+	log := data.provider.log.WithContext(ctx)
+
+	apiUrl := data.provider.expandURI("", rootRelativeCreateSessionURITemplate, data.driveID, data.cleanPath)
+	adapter, err := data.provider.platform.Adapter(ctx)
+	if err != nil {
+		return nil, data.provider.mapWriteError(err, data.uri)
 	}
 
 	// 1. Create Upload Session
 	sessionReq := drives.NewItemItemsItemCreateUploadSessionPostRequestBody()
 	itemProps := models.NewDriveItemUploadableProperties()
-	name := path.Base(cleanPath)
+	name := path.Base(data.cleanPath)
 	itemProps.SetName(&name)
 	sessionReq.SetItem(itemProps)
 
 	builder := drives.NewItemItemsItemCreateUploadSessionRequestBuilder(apiUrl, adapter)
 	session, err := builder.Post(ctx, sessionReq, nil)
 	if err != nil {
-		return shared.Item{}, p.mapWriteError(err, uri)
+		return nil, data.provider.mapWriteError(err, data.uri)
 	}
 
-	uploadURL := *session.GetUploadUrl()
-	log.Debug("created upload session", logger.String("url", uploadURL))
+	data.uploadURL = *session.GetUploadUrl()
+	log.Debug("created upload session", logger.String("url", data.uploadURL))
 
-	// 2. Upload Chunks
-	totalSize := opts.Size
-	var uploaded int64
+	return fsm.StateFunc[uploadContext](p.readChunkState), nil
+}
 
-	buffer := make([]byte, uploadChunkSize)
-	for {
-		n, err := r.Read(buffer)
-		if n > 0 {
-			chunk := buffer[:n]
-			req, err := http.NewRequestWithContext(ctx, "PUT", uploadURL, strings.NewReader(string(chunk)))
-			if err != nil {
-				return shared.Item{}, p.mapWriteError(err, uri)
-			}
+func (p *Provider) readChunkState(ctx context.Context, data *uploadContext) (fsm.State[uploadContext], error) {
+	n, err := data.reader.Read(data.buffer)
+	if n > 0 {
+		data.lastChunk = make([]byte, n)
+		copy(data.lastChunk, data.buffer[:n])
+		return fsm.StateFunc[uploadContext](p.uploadChunkState), nil
+	}
 
-			contentRange := fmt.Sprintf("bytes %d-%d/", uploaded, uploaded+int64(n)-1)
-			if totalSize > 0 {
-				contentRange += fmt.Sprintf("%d", totalSize)
-			} else {
-				contentRange += "*"
-			}
-			req.Header.Set("Content-Range", contentRange)
-			req.Header.Set("Content-Length", fmt.Sprintf("%d", n))
-
-			resp, err := http.DefaultClient.Do(req)
-			if err != nil {
-				return shared.Item{}, p.mapWriteError(err, uri)
-			}
-			defer resp.Body.Close()
-
-			if resp.StatusCode >= 400 {
-				return shared.Item{}, p.mapWriteError(fmt.Errorf("chunk upload failed with status %d", resp.StatusCode), uri)
-			}
-
-			uploaded += int64(n)
-
-			if resp.StatusCode == 201 || resp.StatusCode == 200 {
-				// Final chunk uploaded, response contains the DriveItem (potentially)
-				// For simplicity, we Stat the item to get the final metadata.
-				return p.Get(ctx, uri)
-			}
-		}
-
-		if err == io.EOF {
-			break
-		}
+	if err == io.EOF {
+		// Finished reading, now get final metadata
+		res, err := data.provider.Get(ctx, data.uri)
 		if err != nil {
-			return shared.Item{}, p.mapWriteError(err, uri)
+			return nil, data.provider.mapWriteError(err, data.uri)
 		}
+		data.result = res
+		return nil, nil
 	}
 
-	// If we got here, we might have finished without a 200/201 (e.g. totalSize was unknown)
-	return p.Get(ctx, uri)
+	return nil, data.provider.mapWriteError(err, data.uri)
+}
+
+func (p *Provider) uploadChunkState(ctx context.Context, data *uploadContext) (fsm.State[uploadContext], error) {
+	log := data.provider.log.WithContext(ctx)
+
+	n := len(data.lastChunk)
+	req, err := http.NewRequestWithContext(ctx, "PUT", data.uploadURL, strings.NewReader(string(data.lastChunk)))
+	if err != nil {
+		return nil, data.provider.mapWriteError(err, data.uri)
+	}
+
+	contentRange := fmt.Sprintf("bytes %d-%d/", data.uploaded, data.uploaded+int64(n)-1)
+	if data.totalSize > 0 {
+		contentRange += fmt.Sprintf("%d", data.totalSize)
+	} else {
+		contentRange += "*"
+	}
+	req.Header.Set("Content-Range", contentRange)
+	req.Header.Set("Content-Length", fmt.Sprintf("%d", n))
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, data.provider.mapWriteError(err, data.uri)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode >= 400 {
+		return nil, data.provider.mapWriteError(fmt.Errorf("chunk upload failed with status %d", resp.StatusCode), data.uri)
+	}
+
+	data.uploaded += int64(n)
+
+	if resp.StatusCode == 201 || resp.StatusCode == 200 {
+		// Final chunk uploaded, response contains the DriveItem (potentially)
+		res, err := data.provider.Get(ctx, data.uri)
+		if err != nil {
+			return nil, data.provider.mapWriteError(err, data.uri)
+		}
+		data.result = res
+		return nil, nil
+	}
+
+	log.Debug("uploaded chunk", logger.Int("uploaded", data.uploaded), logger.Int("total", data.totalSize))
+	return fsm.StateFunc[uploadContext](p.readChunkState), nil
 }
 
 // Mkdir creates a new folder in OneDrive at the given path.
