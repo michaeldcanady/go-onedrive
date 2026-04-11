@@ -30,7 +30,7 @@ func CreateMkdirCmd(container di.Container) *cobra.Command {
 					"Check the path format and ensure no illegal characters are used.",
 				)
 			}
-			opts.Path = uri.ManagerPath()
+			opts.Path = uri
 
 			if err := fs.ValidatePathSyntax(uri.Path); err != nil {
 				switch err.(type) {
@@ -57,6 +57,7 @@ func CreateMkdirCmd(container di.Container) *cobra.Command {
 			}
 
 			opts.Stdout = cmd.OutOrStdout()
+			opts.Stderr = cmd.ErrOrStderr()
 
 			return opts.Validate()
 		},

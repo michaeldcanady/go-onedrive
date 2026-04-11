@@ -3,12 +3,14 @@ package mkdir
 import (
 	"errors"
 	"io"
+
+	"github.com/michaeldcanady/go-onedrive/internal/fs"
 )
 
 // Options provides the settings for the drive mkdir command.
 type Options struct {
 	// Path is the filesystem path of the directory to create.
-	Path string
+	Path *fs.URI
 	// Stdout is the destination for standard output messages.
 	Stdout io.Writer
 
@@ -18,7 +20,7 @@ type Options struct {
 
 // Validate ensures that the provided options are consistent and valid.
 func (o *Options) Validate() error {
-	if o.Path == "" {
+	if o.Path == nil {
 		return errors.New("path is required")
 	}
 	return nil

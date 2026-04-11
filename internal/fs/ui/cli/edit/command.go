@@ -38,7 +38,7 @@ to OneDrive.`,
 					"Check the path format and ensure no illegal characters are used.",
 				)
 			}
-			opts.Path = uri.ManagerPath()
+			opts.Path = uri
 
 			if err := fs.ValidatePathSyntax(uri.Path); err != nil {
 				switch err.(type) {

@@ -30,14 +30,14 @@ func CreateRmCmd(container di.Container) *cobra.Command {
 					"Check the path format and ensure no illegal characters are used.",
 				)
 			}
-			opts.Path = uri.ManagerPath()
+			opts.Path = uri
 
 			if err := fs.ValidatePathSyntax(uri.Path); err != nil {
 				switch err.(type) {
 				case *coreerrors.TrailingSlashError:
 					return coreerrors.NewInvalidInput(
 						err,
-						fmt.Sprintf("invalid path '%s' due to trailing slash", opts.Path),
+						fmt.Sprintf("invalid path '%s' due to trailing slash", opts.Path.String()),
 						"Remove the trailing slash from the path",
 					)
 				default:

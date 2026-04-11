@@ -30,18 +30,18 @@ func NewHandler(
 
 // Handle removes an item from the filesystem.
 func (h *Handler) Handle(ctx context.Context, opts Options) error {
-	log := h.log.WithContext(ctx).With(logger.String("path", opts.Path))
+	log := h.log.WithContext(ctx).With(logger.String("path", opts.Path.String()))
 
 	log.Info("removing item")
 
 	log.Debug("requesting removal from provider")
 	if err := h.fs.Remove(ctx, opts.Path); err != nil {
-		wrapped := cli.WrapError(err, opts.Path)
+		wrapped := cli.WrapError(err, opts.Path.String())
 		h.log.Error(wrapped.Error(), errors.LogFields(wrapped)...)
 		return wrapped
 	}
 
 	log.Info("item removed successfully")
-	fmt.Fprintf(opts.Stdout, "Item removed: %s\n", opts.Path)
+	fmt.Fprintf(opts.Stdout, "Item removed: %s\n", opts.Path.String())
 	return nil
 }

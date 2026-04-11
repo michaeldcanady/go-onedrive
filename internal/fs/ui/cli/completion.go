@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"path"
 	"strings"
 
 	"github.com/michaeldcanady/go-onedrive/internal/di"
@@ -12,92 +13,72 @@ import (
 // It handles the case where Bash splits words at colons by reconstructing the full path from args.
 func ProviderPathCompletion(container di.Container) func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 	return func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-		currentToComplete := toComplete
-		prefixToStrip := ""
 
-		// reconstruct currentToComplete if prefixToStrip is set
-		if prefixToStrip != "" {
-			currentToComplete = prefixToStrip + toComplete
-		}
+		// Reconstruct full token in case Bash split on ':'
+		full := strings.Join(append(args, toComplete), "")
+		hasPrefix := strings.Contains(full, ":")
 
-		// 1. Determine if we are completing a provider or a path
-		uri, err := fs.ParseURI(currentToComplete)
+		uri, err := fs.ParseURI(full)
 		if err != nil {
-			// If parsing fails, it might be an incomplete provider name
-			if !strings.Contains(currentToComplete, ":") && !strings.HasPrefix(currentToComplete, "/") {
+			// Probably completing provider name
+			if !strings.Contains(full, ":") && !strings.HasPrefix(full, "/") {
 				names, err := container.ProviderRegistry().RegisteredNames()
 				if err != nil {
 					return nil, cobra.ShellCompDirectiveError
 				}
-
-				var results []string
-				for _, name := range names {
-					if strings.HasPrefix(name, currentToComplete) {
-						results = append(results, name+":")
+				var out []string
+				for _, n := range names {
+					if strings.HasPrefix(n, full) {
+						out = append(out, n+":")
 					}
 				}
-				return results, cobra.ShellCompDirectiveNoSpace | cobra.ShellCompDirectiveNoFileComp
+				return out, cobra.ShellCompDirectiveNoSpace | cobra.ShellCompDirectiveNoFileComp
 			}
 			return nil, cobra.ShellCompDirectiveNoFileComp
 		}
 
-		provider := uri.Provider
-		path := uri.Path
-		found := strings.Contains(currentToComplete, ":")
-
-		// If path is empty (just "provider:"), suggest "/"
-		if path == "" {
-			res := "/"
-			if found && prefixToStrip == "" {
-				res = provider + ":" + res
+		// If path is empty → suggest root
+		if uri.Path == "" || uri.Path == "." {
+			root := "/"
+			if hasPrefix {
+				root = uri.Provider + ":" + root
 			}
-			return []string{res}, cobra.ShellCompDirectiveNoSpace | cobra.ShellCompDirectiveNoFileComp
+			return []string{root}, cobra.ShellCompDirectiveNoSpace | cobra.ShellCompDirectiveNoFileComp
 		}
 
-		// Find parent directory and prefix
-		lastSlash := strings.LastIndex(path, "/")
-		if lastSlash == -1 {
-			// No slash after the colon (e.g. "local:tm") or path is just "tm"
-			res := "/"
-			if found && prefixToStrip == "" {
-				res = provider + ":" + res
-			}
-			return []string{res}, cobra.ShellCompDirectiveNoSpace | cobra.ShellCompDirectiveNoFileComp
+		// Split into directory + search prefix
+		dir, file := path.Split(uri.Path)
+		if dir == "" {
+			dir = "/"
 		}
 
-		listDir := path[:lastSlash+1]
-		searchPrefix := path[lastSlash+1:]
+		// Build manager path (provider:path)
+		listPath := (&fs.URI{
+			Provider: uri.Provider,
+			DriveRef: uri.DriveRef,
+			Path:     strings.TrimSuffix(dir, "/"),
+		})
 
-		// Trim trailing slash for validation (except for root "/")
-		cleanListDir := listDir
-		if len(cleanListDir) > 1 && strings.HasSuffix(cleanListDir, "/") {
-			cleanListDir = strings.TrimSuffix(cleanListDir, "/")
-		}
-
-		// Full path for manager to resolve correctly
-		managerListDir := provider + ":" + cleanListDir
-
-		items, err := container.FS().List(cmd.Context(), managerListDir, fs.ListOptions{})
+		items, err := container.FS().List(cmd.Context(), listPath, fs.ListOptions{})
 		if err != nil {
 			return nil, cobra.ShellCompDirectiveNoFileComp
 		}
 
 		var results []string
 		for _, item := range items {
-			if strings.HasPrefix(item.Name, searchPrefix) {
-				res := listDir + item.Name
-				if item.Type == fs.TypeFolder {
-					res += "/"
-				}
+			if !strings.HasPrefix(item.Name, file) {
+				continue
+			}
 
-				// If we reconstructed the prefix from 'args' (meaning the shell split it),
-				// we return the path without the prefix so the shell matches it correctly.
-				// If the prefix was in 'toComplete', we return the full path.
-				if found && prefixToStrip == "" {
-					results = append(results, provider+":"+res)
-				} else {
-					results = append(results, res)
-				}
+			entry := dir + item.Name
+			if item.Type == fs.TypeFolder {
+				entry += "/"
+			}
+
+			if hasPrefix {
+				results = append(results, uri.Provider+":"+entry)
+			} else {
+				results = append(results, entry)
 			}
 		}
 

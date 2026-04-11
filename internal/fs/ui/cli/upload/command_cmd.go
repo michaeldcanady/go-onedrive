@@ -3,7 +3,6 @@ package upload
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/michaeldcanady/go-onedrive/internal/errors"
 	shared "github.com/michaeldcanady/go-onedrive/internal/fs"
@@ -32,17 +31,17 @@ func NewHandler(
 // Handle uploads an item from the local filesystem to the remote destination.
 func (h *Handler) Handle(ctx context.Context, opts Options) error {
 	log := h.log.WithContext(ctx).With(
-		logger.String("source", opts.Source),
-		logger.String("destination", opts.Destination),
+		logger.String("source", opts.Source.String()),
+		logger.String("destination", opts.Destination.String()),
 	)
 
 	log.Info("starting upload")
 
 	// Ensure source has local: prefix if no prefix is present.
 	source := opts.Source
-	if !strings.Contains(source, ":") {
-		log.Debug("adding local prefix to source")
-		source = "local:" + source
+	if source.Provider == "" {
+		log.Debug("setting local provider for source")
+		source.Provider = "local"
 	}
 
 	cpOpts := shared.CopyOptions{
@@ -52,7 +51,7 @@ func (h *Handler) Handle(ctx context.Context, opts Options) error {
 
 	log.Debug("delegating to filesystem manager for copy")
 	if err := h.manager.Copy(ctx, source, opts.Destination, cpOpts); err != nil {
-		wrapped := cli.WrapError(err, source)
+		wrapped := cli.WrapError(err, source.String())
 		h.log.Error(wrapped.Error(), errors.LogFields(wrapped)...)
 		return wrapped
 	}

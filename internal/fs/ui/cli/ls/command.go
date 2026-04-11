@@ -38,7 +38,7 @@ func CreateLsCmd(container di.Container) *cobra.Command {
 					"Check the path format and ensure no illegal characters are used.",
 				)
 			}
-			opts.Path = uri.ManagerPath()
+			opts.Path = uri
 
 			if names, err := container.ProviderRegistry().RegisteredNames(); err != nil {
 				return coreerrors.NewAppError(

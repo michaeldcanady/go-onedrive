@@ -31,13 +31,13 @@ func CreateDownloadCmd(container di.Container) *cobra.Command {
 					"Check the path format and ensure no illegal characters are used.",
 				)
 			}
-			opts.Source = srcURI.ManagerPath()
+			opts.Source = srcURI
 
 			if err := fs.ValidatePathSyntax(srcURI.Path); err != nil {
 				if _, ok := err.(*coreerrors.TrailingSlashError); ok && !opts.Recursive {
 					return coreerrors.NewInvalidInput(
 						err,
-						fmt.Sprintf("invalid source path '%s' due to trailing slash", opts.Source),
+						fmt.Sprintf("invalid source path '%s' due to trailing slash", opts.Source.String()),
 						"Remove the trailing slash from the source path",
 					)
 				}
@@ -55,13 +55,13 @@ func CreateDownloadCmd(container di.Container) *cobra.Command {
 					"Check the path format and ensure no illegal characters are used.",
 				)
 			}
-			opts.Destination = dstURI.ManagerPath()
+			opts.Destination = dstURI
 
 			if err := fs.ValidatePathSyntax(dstURI.Path); err != nil {
 				if _, ok := err.(*coreerrors.TrailingSlashError); ok && !opts.Recursive {
 					return coreerrors.NewInvalidInput(
 						err,
-						fmt.Sprintf("invalid destination path '%s' due to trailing slash", opts.Destination),
+						fmt.Sprintf("invalid destination path '%s' due to trailing slash", opts.Destination.String()),
 						"Remove the trailing slash from the destination path",
 					)
 				}

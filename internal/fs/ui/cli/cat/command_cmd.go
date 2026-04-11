@@ -30,14 +30,14 @@ func NewHandler(
 
 // Handle retrieves and writes the content of a file to stdout.
 func (h *Handler) Handle(ctx context.Context, opts Options) error {
-	log := h.log.WithContext(ctx).With(logger.String("path", opts.Path))
+	log := h.log.WithContext(ctx).With(logger.String("path", opts.Path.String()))
 
 	log.Info("reading file content")
 
 	log.Debug("fetching file reader")
 	reader, err := h.fs.ReadFile(ctx, opts.Path, registry.ReadOptions{})
 	if err != nil {
-		wrapped := cli.WrapError(err, opts.Path)
+		wrapped := cli.WrapError(err, opts.Path.String())
 		h.log.Error(wrapped.Error(), errors.LogFields(wrapped)...)
 		return wrapped
 	}
@@ -45,7 +45,7 @@ func (h *Handler) Handle(ctx context.Context, opts Options) error {
 
 	log.Debug("copying content to stdout")
 	if _, err := io.Copy(opts.Stdout, reader); err != nil {
-		wrapped := cli.WrapError(err, opts.Path)
+		wrapped := cli.WrapError(err, opts.Path.String())
 		h.log.Error(wrapped.Error(), errors.LogFields(wrapped)...)
 		return wrapped
 	}

@@ -31,20 +31,20 @@ func NewHandler(
 // Handle moves an item from the source to the destination.
 func (h *Handler) Handle(ctx context.Context, opts Options) error {
 	log := h.log.WithContext(ctx).With(
-		logger.String("source", opts.Source),
-		logger.String("destination", opts.Destination),
+		logger.String("source", opts.Source.String()),
+		logger.String("destination", opts.Destination.String()),
 	)
 
 	log.Info("starting move operation")
 
 	log.Debug("delegating to filesystem manager for move")
 	if err := h.manager.Move(ctx, opts.Source, opts.Destination); err != nil {
-		wrapped := cli.WrapError(err, opts.Source)
+		wrapped := cli.WrapError(err, opts.Source.String())
 		h.log.Error(wrapped.Error(), errors.LogFields(wrapped)...)
 		return wrapped
 	}
 
 	log.Info("move completed successfully")
-	fmt.Fprintf(opts.Stdout, "Moved %s to %s\n", opts.Source, opts.Destination)
+	fmt.Fprintf(opts.Stdout, "Moved %s to %s\n", opts.Source.String(), opts.Destination.String())
 	return nil
 }

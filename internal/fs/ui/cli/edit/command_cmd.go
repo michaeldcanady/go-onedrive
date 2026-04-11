@@ -35,14 +35,14 @@ func NewHandler(
 
 // Handle retrieves a file, opens it in an editor, and uploads changes.
 func (h *Handler) Handle(ctx context.Context, opts Options) error {
-	log := h.log.WithContext(ctx).With(logger.String("path", opts.Path))
+	log := h.log.WithContext(ctx).With(logger.String("path", opts.Path.String()))
 
 	log.Info("editing file")
 
 	log.Debug("fetching metadata")
 	item, err := h.fs.Get(ctx, opts.Path)
 	if err != nil {
-		wrapped := cli.WrapError(err, opts.Path)
+		wrapped := cli.WrapError(err, opts.Path.String())
 		h.log.Error(wrapped.Error(), errors.LogFields(wrapped)...)
 		return wrapped
 	}
@@ -50,7 +50,7 @@ func (h *Handler) Handle(ctx context.Context, opts Options) error {
 	log.Debug("reading file for editing")
 	r, err := h.fs.ReadFile(ctx, opts.Path, registry.ReadOptions{})
 	if err != nil {
-		wrapped := cli.WrapError(err, opts.Path)
+		wrapped := cli.WrapError(err, opts.Path.String())
 		h.log.Error(wrapped.Error(), errors.LogFields(wrapped)...)
 		return wrapped
 	}
@@ -59,7 +59,7 @@ func (h *Handler) Handle(ctx context.Context, opts Options) error {
 	log.Debug("launching external editor")
 	newData, _, err := h.editor.LaunchTempFile(ctx, "odc-edit", ".txt", r)
 	if err != nil {
-		wrapped := cli.WrapError(err, opts.Path)
+		wrapped := cli.WrapError(err, opts.Path.String())
 		h.log.Error(wrapped.Error(), errors.LogFields(wrapped)...)
 		return wrapped
 	}
@@ -85,12 +85,12 @@ func (h *Handler) Handle(ctx context.Context, opts Options) error {
 			log.Warn("conflict detected, upload aborted")
 			return errors.NewAppError(errors.CodeConflict, err, "conflict detected during upload", "Use --force to overwrite changes.")
 		}
-		wrapped := cli.WrapError(err, opts.Path)
+		wrapped := cli.WrapError(err, opts.Path.String())
 		h.log.Error(wrapped.Error(), errors.LogFields(wrapped)...)
 		return wrapped
 	}
 
 	log.Info("edit completed successfully")
-	_, _ = fmt.Fprintf(opts.Stdout, "successfully updated file \"%s\"\n", opts.Path)
+	_, _ = fmt.Fprintf(opts.Stdout, "successfully updated file \"%s\"\n", opts.Path.String())
 	return nil
 }

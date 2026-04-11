@@ -6,13 +6,14 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/michaeldcanady/go-onedrive/internal/fs"
 	"github.com/michaeldcanady/go-onedrive/internal/fs/formatting"
 )
 
 // Options provides the user-facing settings for the drive ls command.
 type Options struct {
 	// Path is the filesystem path to list.
-	Path string
+	Path *fs.URI
 	// Recursive determines whether to list subdirectories.
 	Recursive bool
 	// Format is the output format (e.g., "short", "long", "json", "tree").
@@ -29,6 +30,10 @@ type Options struct {
 
 // Validate ensures that the provided options are consistent and valid.
 func (o *Options) Validate() error {
+	if o.Path == nil {
+		return fmt.Errorf("path is required")
+	}
+
 	// Validate SortField
 	validSortFields := []string{"name", "size", "modified"}
 	if !slices.Contains(validSortFields, o.SortField) {

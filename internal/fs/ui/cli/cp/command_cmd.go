@@ -31,8 +31,8 @@ func NewHandler(
 // Handle copies an item from the source to the destination.
 func (h *Handler) Handle(ctx context.Context, opts Options) error {
 	log := h.log.WithContext(ctx).With(
-		logger.String("source", opts.Source),
-		logger.String("destination", opts.Destination),
+		logger.String("source", opts.Source.String()),
+		logger.String("destination", opts.Destination.String()),
 		logger.Bool("recursive", opts.Recursive),
 	)
 
@@ -45,12 +45,12 @@ func (h *Handler) Handle(ctx context.Context, opts Options) error {
 
 	log.Debug("delegating to filesystem manager for copy")
 	if err := h.manager.Copy(ctx, opts.Source, opts.Destination, cpOpts); err != nil {
-		wrapped := cli.WrapError(err, opts.Source)
+		wrapped := cli.WrapError(err, opts.Source.String())
 		h.log.Error(wrapped.Error(), errors.LogFields(wrapped)...)
 		return wrapped
 	}
 
 	log.Info("copy completed successfully")
-	fmt.Fprintf(opts.Stdout, "Copied %s to %s\n", opts.Source, opts.Destination)
+	fmt.Fprintf(opts.Stdout, "Copied %s to %s\n", opts.Source.String(), opts.Destination.String())
 	return nil
 }

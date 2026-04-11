@@ -32,7 +32,7 @@ func NewHandler(
 
 // Handle retrieves, filters, sorts, and displays the contents of a directory.
 func (h *Handler) Handle(ctx context.Context, opts Options) error {
-	log := h.log.WithContext(ctx).With(logger.String("path", opts.Path))
+	log := h.log.WithContext(ctx).With(logger.String("path", opts.Path.String()))
 
 	log.Info("listing directory")
 
@@ -41,7 +41,7 @@ func (h *Handler) Handle(ctx context.Context, opts Options) error {
 		Recursive: opts.Recursive,
 	})
 	if err != nil {
-		wrapped := cli.WrapError(err, opts.Path)
+		wrapped := cli.WrapError(err, opts.Path.String())
 		h.log.Error(wrapped.Error(), errors.LogFields(wrapped)...)
 		return wrapped
 	}
@@ -56,7 +56,7 @@ func (h *Handler) Handle(ctx context.Context, opts Options) error {
 	}
 	filterer, err := filterFactory.Create(filterOpts...)
 	if err != nil {
-		wrapped := cli.WrapError(err, opts.Path)
+		wrapped := cli.WrapError(err, opts.Path.String())
 		h.log.Error(wrapped.Error(), errors.LogFields(wrapped)...)
 		return wrapped
 	}
@@ -64,7 +64,7 @@ func (h *Handler) Handle(ctx context.Context, opts Options) error {
 	log.Debug("filtering items")
 	items, err = filterer.Filter(items)
 	if err != nil {
-		wrapped := cli.WrapError(err, opts.Path)
+		wrapped := cli.WrapError(err, opts.Path.String())
 		h.log.Error(wrapped.Error(), errors.LogFields(wrapped)...)
 		return wrapped
 	}
@@ -82,7 +82,7 @@ func (h *Handler) Handle(ctx context.Context, opts Options) error {
 	}
 	sorter, err := sortFactory.Create(sortOpts...)
 	if err != nil {
-		wrapped := cli.WrapError(err, opts.Path)
+		wrapped := cli.WrapError(err, opts.Path.String())
 		h.log.Error(wrapped.Error(), errors.LogFields(wrapped)...)
 		return wrapped
 	}
@@ -90,7 +90,7 @@ func (h *Handler) Handle(ctx context.Context, opts Options) error {
 	log.Debug("sorting items")
 	items, err = sorter.Sort(items)
 	if err != nil {
-		wrapped := cli.WrapError(err, opts.Path)
+		wrapped := cli.WrapError(err, opts.Path.String())
 		h.log.Error(wrapped.Error(), errors.LogFields(wrapped)...)
 		return wrapped
 	}
@@ -107,7 +107,7 @@ func (h *Handler) Handle(ctx context.Context, opts Options) error {
 	formatterFactory := formatting.NewFormatterFactory()
 	formatter, err := formatterFactory.Create(opts.Format)
 	if err != nil {
-		wrapped := cli.WrapError(err, opts.Path)
+		wrapped := cli.WrapError(err, opts.Path.String())
 		h.log.Error(wrapped.Error(), errors.LogFields(wrapped)...)
 		return wrapped
 	}

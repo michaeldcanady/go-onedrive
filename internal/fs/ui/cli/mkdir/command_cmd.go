@@ -30,18 +30,18 @@ func NewHandler(
 
 // Handle creates a new directory.
 func (h *Handler) Handle(ctx context.Context, opts Options) error {
-	log := h.log.WithContext(ctx).With(logger.String("path", opts.Path))
+	log := h.log.WithContext(ctx).With(logger.String("path", opts.Path.String()))
 
 	log.Info("creating directory")
 
 	log.Debug("requesting directory creation from provider")
 	if err := h.fs.Mkdir(ctx, opts.Path); err != nil {
-		wrapped := cli.WrapError(err, opts.Path)
+		wrapped := cli.WrapError(err, opts.Path.String())
 		h.log.Error(wrapped.Error(), errors.LogFields(wrapped)...)
 		return wrapped
 	}
 
 	log.Info("directory created successfully")
-	fmt.Fprintf(opts.Stdout, "Directory created: %s\n", opts.Path)
+	fmt.Fprintf(opts.Stdout, "Directory created: %s\n", opts.Path.String())
 	return nil
 }

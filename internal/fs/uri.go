@@ -24,13 +24,26 @@ func (u *URI) String() string {
 	return fmt.Sprintf("%s:%s", u.Provider, u.Path)
 }
 
-// ManagerPath returns the path format expected by the FileSystemManager (provider:path).
+// ToManagerPath converts the URI to the path format expected by the FileSystemManager (provider:path).
 // Note: For OneDrive, the path might already contain the drive ID if it was parsed from a 3-part URI.
-func (u *URI) ManagerPath() string {
+func ToManagerPath(u *URI) string {
 	if u.Provider == DefaultProviderPrefix && u.DriveRef != "" && u.DriveRef != "me" {
 		return fmt.Sprintf("%s:%s:%s", u.Provider, u.DriveRef, u.Path)
 	}
 	return fmt.Sprintf("%s:%s", u.Provider, u.Path)
+}
+
+// ParentURI returns a new URI representing the parent directory of the given URI.
+func ParentURI(u *URI) *URI {
+	parentPath := path.Dir(u.Path)
+	if parentPath == "." || parentPath == "/" {
+		parentPath = ""
+	}
+	return &URI{
+		Provider: u.Provider,
+		DriveRef: u.DriveRef,
+		Path:     parentPath,
+	}
 }
 
 // ParseURI parses a raw string into a [URI] structure.
