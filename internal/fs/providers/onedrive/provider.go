@@ -12,7 +12,6 @@ import (
 	"net/http"
 
 	"github.com/michaeldcanady/go-onedrive/internal/drive"
-	"github.com/michaeldcanady/go-onedrive/internal/drive/alias"
 	coreerrors "github.com/michaeldcanady/go-onedrive/internal/errors"
 	"github.com/michaeldcanady/go-onedrive/internal/fs"
 	shared "github.com/michaeldcanady/go-onedrive/internal/fs"
@@ -47,7 +46,6 @@ const (
 type Provider struct {
 	platform platform.PlatformProvider
 	state    state.Service
-	alias    alias.Service
 	driveSvc drive.Service
 	log      logger.Logger
 }

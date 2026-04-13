@@ -6,7 +6,6 @@ import (
 
 	"github.com/michaeldcanady/go-onedrive/internal/di"
 	"github.com/michaeldcanady/go-onedrive/internal/drive"
-	aliaspkg "github.com/michaeldcanady/go-onedrive/internal/drive/alias"
 	"github.com/michaeldcanady/go-onedrive/internal/drive/ui/cli/shared"
 	coreerrors "github.com/michaeldcanady/go-onedrive/internal/errors"
 	"github.com/spf13/cobra"
@@ -39,7 +38,7 @@ func CreateSetCmd(container di.Container) *cobra.Command {
 			// validate that alias is not already in use for a different drive
 			opts.Alias = args[1]
 			existingDriveID, err := container.Alias().GetDriveIDByAlias(opts.Alias)
-			if err != nil && !errors.Is(err, aliaspkg.ErrDriveIDNotFound) {
+			if err != nil && !errors.Is(err, coreerrors.CodeNotFound) {
 				return err
 			}
 			if existingDriveID != "" && existingDriveID != opts.DriveID {

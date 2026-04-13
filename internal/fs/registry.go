@@ -90,7 +90,7 @@ func (r *Registry) Resolve(ctx context.Context, uri *URI) (Service, *URI, error)
 		// Check if prefix is an alias
 		driveID, err := r.alias.GetDriveIDByAlias(uri.Provider)
 		if err != nil {
-			if !errors.Is(err, alias.ErrDriveIDNotFound) {
+			if !errors.Is(err, errors.CodeNotFound) {
 				log.Error("error retrieving drive ID for alias", logger.String("alias", uri.Provider), logger.Error(err))
 				return nil, nil, err
 			}

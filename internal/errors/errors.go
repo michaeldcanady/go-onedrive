@@ -29,3 +29,13 @@ func NewForbidden(err error, safeMsg, hint string) *AppError {
 func NewConflict(err error, safeMsg, hint string) *AppError {
 	return NewAppError(CodeConflict, err, safeMsg, hint)
 }
+
+// NewReadError creates a new AppError for failures while reading data.
+func NewReadError(err error, safeMsg, hint string) *AppError {
+	return NewAppError(CodeReadError, err, safeMsg, hint)
+}
+
+// NewWriteError creates a new AppError for failures while writing data.
+func NewWriteError(err error, safeMsg, hint string) *AppError {
+	return NewAppError(CodeWriteError, err, safeMsg, hint)
+}

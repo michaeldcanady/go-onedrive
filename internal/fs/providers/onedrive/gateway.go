@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/michaeldcanady/go-onedrive/internal/drive"
-	"github.com/michaeldcanady/go-onedrive/internal/identity/providers/shared"
 	platform "github.com/michaeldcanady/go-onedrive/internal/identity/providers/shared"
 	"github.com/michaeldcanady/go-onedrive/internal/logger"
 	msgraphsdkcore "github.com/microsoftgraph/msgraph-sdk-go-core"
@@ -19,7 +18,7 @@ type GraphDriveGateway struct {
 }
 
 // NewGraphDriveGateway initializes a new instance of the GraphDriveGateway.
-func NewGraphDriveGateway(p shared.PlatformProvider, log logger.Logger) *GraphDriveGateway {
+func NewGraphDriveGateway(p platform.PlatformProvider, log logger.Logger) *GraphDriveGateway {
 	return &GraphDriveGateway{
 		platform: p,
 		log:      log,

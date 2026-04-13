@@ -2,11 +2,11 @@ package alias
 
 import (
 	"errors"
-	"fmt"
 	"path/filepath"
 	"time"
 
 	"github.com/michaeldcanady/go-onedrive/internal/environment"
+	coreerrors "github.com/michaeldcanady/go-onedrive/internal/errors"
 	"github.com/michaeldcanady/go-onedrive/internal/logger"
 	"go.etcd.io/bbolt"
 )
@@ -19,8 +19,6 @@ const (
 var (
 	// driveAliasesBucketName is used to store user-defined drive aliases.
 	driveAliasesBucketName = []byte("drive_aliases")
-
-	ErrDriveIDNotFound = errors.New("drive ID not found for alias")
 )
 
 // BoltService is a persistent implementation of the alias.Service using BoltDB.
@@ -35,13 +33,13 @@ type BoltService struct {
 func NewBoltService(env environment.Service, log logger.Logger) (*BoltService, error) {
 	dbPath, err := env.StateDir()
 	if err != nil {
-		return nil, fmt.Errorf("failed to get state directory: %w", err)
+		return nil, coreerrors.NewInternal(err, "failed to get state directory", "Ensure the application has proper permissions to access its state directory.")
 	}
 
 	dbFilePath := filepath.Join(dbPath, aliasDBFileName)
 	db, err := bbolt.Open(dbFilePath, 0600, &bbolt.Options{Timeout: 1 * time.Second})
 	if err != nil {
-		return nil, fmt.Errorf("failed to open BoltDB: %w", err)
+		return nil, coreerrors.NewInternal(err, "failed to open drive alias database", "Check if another instance of the application is running or if the state directory is accessible.")
 	}
 
 	bs := &BoltService{
@@ -50,7 +48,7 @@ func NewBoltService(env environment.Service, log logger.Logger) (*BoltService, e
 	}
 
 	if err := bs.ensureBucket(); err != nil {
-		return nil, fmt.Errorf("failed to ensure bucket: %w", err)
+		return nil, err
 	}
 
 	return bs, nil
@@ -60,8 +58,20 @@ func NewBoltService(env environment.Service, log logger.Logger) (*BoltService, e
 func (s *BoltService) ensureBucket() error {
 	return s.db.Update(func(tx *bbolt.Tx) error {
 		_, err := tx.CreateBucketIfNotExists(driveAliasesBucketName)
-		return err
+		if err != nil {
+			return coreerrors.NewWriteError(err, "failed to create drive aliases bucket", "This may indicate a file system error or disk space issue.")
+		}
+		return nil
 	})
+}
+
+func (s *BoltService) getBucket(tx *bbolt.Tx) (*bbolt.Bucket, error) {
+	b := tx.Bucket(driveAliasesBucketName)
+	if b == nil {
+		s.log.Error("drive aliases bucket not found", logger.String("bucket", string(driveAliasesBucketName)))
+		return nil, NewBucketNotFoundError()
+	}
+	return b, nil
 }
 
 // Close closes the BoltDB database connection.
@@ -92,25 +102,25 @@ func (s *BoltService) GetDriveIDByAlias(alias string) (string, error) {
 	s.log.Debug("resolving drive ID by alias", logger.String("alias", alias))
 	var driveID string
 	err := s.db.View(func(tx *bbolt.Tx) error {
-		bucket := tx.Bucket(driveAliasesBucketName)
-		if bucket == nil {
-			return fmt.Errorf("bucket %s not found", driveAliasesBucketName)
+		bucket, err := s.getBucket(tx)
+		if err != nil {
+			return err
 		}
-		return bucket.ForEach(func(k, v []byte) error {
-			if string(v) == alias {
-				driveID = string(k)
-				return nil // Stop iteration once we find the alias
-			}
-			return nil
-		})
+		v := bucket.Get([]byte(alias))
+		if v != nil {
+			driveID = string(v)
+		}
+		return nil
 	})
 	if err != nil {
-		s.log.Error("failed to resolve drive ID by alias", logger.String("alias", alias), logger.Error(err))
+		if !errors.Is(err, coreerrors.CodeNotFound) && !errors.Is(err, coreerrors.CodeInternal) {
+			s.log.Error("failed to resolve drive ID by alias", logger.String("alias", alias), logger.Error(err))
+		}
 		return "", err
 	}
 	if driveID == "" {
 		s.log.Debug("alias not found", logger.String("alias", alias))
-		return "", ErrDriveIDNotFound
+		return "", NewAliasNotFoundError(alias)
 	}
 	return driveID, nil
 }
@@ -119,28 +129,32 @@ func (s *BoltService) GetDriveIDByAlias(alias string) (string, error) {
 func (s *BoltService) SetAlias(driveID string, alias string) error {
 	s.log.Info("setting drive alias", logger.String("drive_id", driveID), logger.String("alias", alias))
 	return s.db.Update(func(tx *bbolt.Tx) error {
-		bucket := tx.Bucket(driveAliasesBucketName)
-		if bucket == nil {
-			return fmt.Errorf("bucket %s not found", driveAliasesBucketName)
+		bucket, err := s.getBucket(tx)
+		if err != nil {
+			return err
 		}
-		return bucket.Put([]byte(alias), []byte(driveID))
+		err = bucket.Put([]byte(alias), []byte(driveID))
+		if err != nil {
+			return coreerrors.NewWriteError(err, "failed to save drive alias", "Try again or check if the database file is read-only.")
+		}
+		return nil
 	})
 }
 
 // DeleteAlias removes the alias associated with a specific drive ID from the BoltDB.
 func (s *BoltService) DeleteAlias(alias string) error {
 	s.log.Info("deleting drive alias", logger.String("alias", alias))
-	driveID, err := s.GetDriveIDByAlias(alias)
-	if err != nil && !errors.Is(err, ErrDriveIDNotFound) {
-		return err
-	}
 
 	return s.db.Update(func(tx *bbolt.Tx) error {
-		bucket := tx.Bucket(driveAliasesBucketName)
-		if bucket == nil {
-			return fmt.Errorf("bucket %s not found", driveAliasesBucketName)
+		bucket, err := s.getBucket(tx)
+		if err != nil {
+			return err
 		}
-		return bucket.Delete([]byte(driveID))
+		err = bucket.Delete([]byte(alias))
+		if err != nil {
+			return coreerrors.NewWriteError(err, "failed to delete drive alias", "Try again or check if the database file is read-only.")
+		}
+		return nil
 	})
 }
 
@@ -160,9 +174,9 @@ func (s *BoltService) ListAliases() (map[string]string, error) {
 
 func (s *BoltService) iterateAliases(fn func(alias string, driveID string) error) error {
 	return s.db.View(func(tx *bbolt.Tx) error {
-		bucket := tx.Bucket(driveAliasesBucketName)
-		if bucket == nil {
-			return fmt.Errorf("bucket %s not found", driveAliasesBucketName)
+		bucket, err := s.getBucket(tx)
+		if err != nil {
+			return err
 		}
 		return bucket.ForEach(func(k, v []byte) error {
 			return fn(string(k), string(v))
