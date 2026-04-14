@@ -2,14 +2,13 @@ package sorting
 
 import (
 	"fmt"
-	"reflect"
-	"sort"
 	"strings"
 
 	shared "github.com/michaeldcanady/go-onedrive/internal/fs"
+	"github.com/michaeldcanady/go-onedrive/pkg/order"
 )
 
-// OptionsSorter implements the Sorter interface using reflection based on the given configuration.
+// OptionsSorter implements the Sorter interface using predefined comparators based on configuration.
 type OptionsSorter struct {
 	// opts is the configuration used to determine the field and direction for sorting.
 	opts SortingOptions
@@ -22,39 +21,46 @@ func NewOptionsSorter(opts SortingOptions) *OptionsSorter {
 
 // Sort orders a collection of items according to the internal options and returns the resulting slice.
 func (s *OptionsSorter) Sort(items []shared.Item) ([]shared.Item, error) {
-	if s.opts.Field == "" {
+	if len(s.opts.Criteria) == 0 {
 		return items, nil
 	}
 
-	field := s.opts.Field
-	desc := s.opts.Direction == DirectionDescending
+	sorter := order.NewSorter(items)
 
-	// Validate field exists on shared.Item
-	itemType := reflect.TypeOf(shared.Item{})
-	if _, ok := itemType.FieldByNameFunc(func(s string) bool {
-		return strings.EqualFold(s, field)
-	}); !ok {
-		return nil, fmt.Errorf("unknown sort field: %s", field)
+	for _, c := range s.opts.Criteria {
+		if c.Field == "" {
+			continue
+		}
+
+		cmp, ok := s.getComparator(c.Field)
+		if !ok {
+			return nil, fmt.Errorf("unknown sort field: %s", c.Field)
+		}
+
+		if c.Direction == DirectionDescending {
+			cmp = Reverse(cmp)
+		}
+
+		sorter.AddComparator(order.Comparator[shared.Item](cmp))
 	}
 
-	sort.Slice(items, func(i, j int) bool {
-		vi := reflect.ValueOf(items[i]).FieldByNameFunc(func(s string) bool {
-			return strings.EqualFold(s, field)
-		})
-		vj := reflect.ValueOf(items[j]).FieldByNameFunc(func(s string) bool {
-			return strings.EqualFold(s, field)
-		})
+	return sorter.Sort(), nil
+}
 
-		less, err := compareValues(vi, vj)
-		if err != nil {
-			return false
-		}
-
-		if desc {
-			return !less
-		}
-		return less
-	})
-
-	return items, nil
+// getComparator returns the appropriate ItemComparator for the given field name.
+func (s *OptionsSorter) getComparator(field string) (ItemComparator, bool) {
+	switch strings.ToLower(field) {
+	case "name":
+		return CompareByName, true
+	case "size":
+		return CompareBySize, true
+	case "path":
+		return CompareByPath, true
+	case "type":
+		return CompareByType, true
+	case "modifiedat", "modified":
+		return CompareByModifiedAt, true
+	default:
+		return nil, false
+	}
 }

@@ -59,7 +59,7 @@ func CreateLsCmd(container di.Container) *cobra.Command {
 	cmd.Flags().StringVarP(&format, "format", "o", "short", "Output format (short, long, json, yaml, tree)")
 	cmd.Flags().BoolVarP(&opts.Recursive, "recursive", "r", false, "List items recursively")
 	cmd.Flags().BoolVarP(&opts.All, "all", "a", false, "Show hidden items")
-	cmd.Flags().StringVar(&opts.SortField, "sort", "name", "Sort items by field (name, size, modified)")
+	cmd.Flags().StringSliceVar(&opts.SortFields, "sort", []string{"name"}, "Sort items by field (name, size, modified)")
 	cmd.Flags().BoolVar(&opts.SortDescending, "desc", false, "Sort in descending order")
 
 	return cmd
