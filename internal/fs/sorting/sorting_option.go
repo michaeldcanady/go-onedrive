@@ -7,24 +7,31 @@ import (
 // SortingOption is a functional configuration pattern for SortingOptions.
 type SortingOption func(*SortingOptions) error
 
-// WithDirection configures the sorter to use either ascending or descending order.
+// WithDirection configures the last added sorting criterion with the given direction.
+// If no criteria exist, it does nothing and returns an error.
 func WithDirection(direction Direction) SortingOption {
 	return func(o *SortingOptions) error {
 		if o == nil {
 			return errors.New("sorting options is nil")
 		}
-		o.Direction = direction
+		if len(o.Criteria) == 0 {
+			return errors.New("cannot set direction: no sorting field specified")
+		}
+		o.Criteria[len(o.Criteria)-1].Direction = direction
 		return nil
 	}
 }
 
-// WithField configures the sorter to order items based on the given struct field name.
+// WithField appends a new sorting criterion with the given field name and default ascending direction.
 func WithField(name string) SortingOption {
 	return func(o *SortingOptions) error {
 		if o == nil {
 			return errors.New("sorting options is nil")
 		}
-		o.Field = name
+		o.Criteria = append(o.Criteria, SortingCriteria{
+			Field:     name,
+			Direction: DirectionAscending,
+		})
 		return nil
 	}
 }

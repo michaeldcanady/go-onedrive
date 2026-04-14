@@ -4,12 +4,18 @@ import (
 	"errors"
 )
 
-// SortingOptions defines the configuration criteria used by a sorter.
-type SortingOptions struct {
-	// Direction determines whether to order items ascending or descending.
-	Direction Direction
+// SortingCriteria defines a single field and its sort direction.
+type SortingCriteria struct {
 	// Field identifies the Item struct property to sort by (e.g., "Name", "Size").
 	Field string
+	// Direction determines whether to order items ascending or descending.
+	Direction Direction
+}
+
+// SortingOptions defines the configuration criteria used by a sorter.
+type SortingOptions struct {
+	// Criteria is a list of sorting criteria to be applied in order.
+	Criteria []SortingCriteria
 }
 
 const (
@@ -20,8 +26,12 @@ const (
 // NewSortingOptions initializes a new instance of SortingOptions with default settings.
 func NewSortingOptions() *SortingOptions {
 	return &SortingOptions{
-		Direction: defaultSortDirection,
-		Field:     defaultSortByField,
+		Criteria: []SortingCriteria{
+			{
+				Field:     defaultSortByField,
+				Direction: defaultSortDirection,
+			},
+		},
 	}
 }
 
@@ -29,6 +39,14 @@ func NewSortingOptions() *SortingOptions {
 func (o *SortingOptions) Apply(opts []SortingOption) error {
 	if o == nil {
 		return errors.New("sorting options configuration is nil")
+	}
+
+	// If options are provided, we might want to clear the default criteria
+	// but only if the first option is WithField.
+	// However, for backward compatibility, we'll just let Apply handle it.
+	// Actually, let's clear it if ANY options are provided to avoid "Name" being always first.
+	if len(opts) > 0 {
+		o.Criteria = nil
 	}
 
 	for _, opt := range opts {
