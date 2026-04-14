@@ -2,6 +2,7 @@ package filtering
 
 import (
 	"errors"
+	"time"
 
 	shared "github.com/michaeldcanady/go-onedrive/internal/fs"
 )
@@ -12,6 +13,16 @@ type FilterOptions struct {
 	ItemType shared.ItemType
 	// IncludeAll determines whether hidden items (names starting with '.') are included.
 	IncludeAll bool
+	// Names restricts results to items matching any of the given glob patterns.
+	Names []string
+	// MinSize restricts results to items with at least the given size in bytes.
+	MinSize *int64
+	// MaxSize restricts results to items with at most the given size in bytes.
+	MaxSize *int64
+	// ModifiedBefore restricts results to items modified before the given time.
+	ModifiedBefore *time.Time
+	// ModifiedAfter restricts results to items modified after the given time.
+	ModifiedAfter *time.Time
 }
 
 // NewFilterOptions initializes a new instance of FilterOptions with default settings.
@@ -19,6 +30,7 @@ func NewFilterOptions() *FilterOptions {
 	return &FilterOptions{
 		ItemType:   shared.TypeUnknown,
 		IncludeAll: false,
+		Names:      nil,
 	}
 }
 
