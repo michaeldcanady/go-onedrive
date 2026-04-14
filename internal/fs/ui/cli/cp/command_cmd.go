@@ -25,8 +25,8 @@ func NewHandler(m shared.Service, l logger.Logger) *Handler {
 // Handle copies an item from the source to the destination.
 func (h *Handler) Handle(ctx context.Context, opts Options) error {
 	log := h.log.WithContext(ctx).With(
-		logger.String("source", opts.Source),
-		logger.String("destination", opts.Destination),
+		logger.String("source", opts.SourceURI.String()),
+		logger.String("destination", opts.DestinationURI.String()),
 		logger.Bool("recursive", opts.Recursive),
 	)
 
@@ -38,12 +38,12 @@ func (h *Handler) Handle(ctx context.Context, opts Options) error {
 	}
 
 	log.Debug("delegating to filesystem manager for copy")
-	if err := h.manager.Copy(ctx, opts.Source, opts.Destination, cpOpts); err != nil {
+	if err := h.manager.Copy(ctx, opts.SourceURI.String(), opts.DestinationURI.String(), cpOpts); err != nil {
 		log.Error("copy failed", logger.Error(err))
-		return fmt.Errorf("failed to copy %s to %s: %w", opts.Source, opts.Destination, err)
+		return fmt.Errorf("failed to copy %s to %s: %w", opts.SourceURI.String(), opts.DestinationURI.String(), err)
 	}
 
 	log.Info("copy completed successfully")
-	fmt.Fprintf(opts.Stdout, "Copied %s to %s\n", opts.Source, opts.Destination)
+	fmt.Fprintf(opts.Stdout, "Copied %s to %s\n", opts.SourceURI.String(), opts.DestinationURI.String())
 	return nil
 }
