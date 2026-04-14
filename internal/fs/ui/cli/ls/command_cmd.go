@@ -27,17 +27,17 @@ func NewHandler(fs registry.Service, l logger.Logger) *Handler {
 
 // Handle retrieves, filters, sorts, and displays the contents of a directory.
 func (h *Handler) Handle(ctx context.Context, opts Options) error {
-	log := h.log.WithContext(ctx).With(logger.String("path", opts.Path))
+	log := h.log.WithContext(ctx).With(logger.String("path", opts.URI.String()))
 
 	log.Info("listing directory")
 
 	log.Debug("fetching items from provider")
-	items, err := h.fs.List(ctx, opts.Path, registry.ListOptions{
+	items, err := h.fs.List(ctx, opts.URI.String(), registry.ListOptions{
 		Recursive: opts.Recursive,
 	})
 	if err != nil {
 		log.Error("failed to list items", logger.Error(err))
-		return fmt.Errorf("failed to list items at %s: %w", opts.Path, err)
+		return fmt.Errorf("failed to list items at %s: %w", opts.URI.String(), err)
 	}
 	log.Info("retrieved items from provider", logger.Int("count", len(items)))
 
