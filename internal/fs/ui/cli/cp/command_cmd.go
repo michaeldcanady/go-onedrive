@@ -38,12 +38,12 @@ func (h *Handler) Handle(ctx context.Context, opts Options) error {
 	}
 
 	log.Debug("delegating to filesystem manager for copy")
-	if err := h.manager.Copy(ctx, opts.SourceURI.String(), opts.DestinationURI.String(), cpOpts); err != nil {
+	if err := h.manager.Copy(ctx, opts.SourceURI, opts.DestinationURI, cpOpts); err != nil {
 		log.Error("copy failed", logger.Error(err))
-		return fmt.Errorf("failed to copy %s to %s: %w", opts.SourceURI.String(), opts.DestinationURI.String(), err)
+		return fmt.Errorf("failed to copy %s to %s: %w", opts.SourceURI, opts.DestinationURI, err)
 	}
 
 	log.Info("copy completed successfully")
-	fmt.Fprintf(opts.Stdout, "Copied %s to %s\n", opts.SourceURI.String(), opts.DestinationURI.String())
+	fmt.Fprintf(opts.Stdout, "Copied %s to %s\n", opts.SourceURI, opts.DestinationURI)
 	return nil
 }

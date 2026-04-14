@@ -30,7 +30,7 @@ func (h *Handler) Handle(ctx context.Context, opts Options) error {
 	log.Info("reading file content")
 
 	log.Debug("fetching file reader")
-	reader, err := h.fs.ReadFile(ctx, opts.URI.String(), registry.ReadOptions{})
+	reader, err := h.fs.ReadFile(ctx, opts.URI, registry.ReadOptions{})
 	if err != nil {
 		log.Error("failed to read file", logger.Error(err))
 		return fmt.Errorf("failed to read file at %s: %w", opts.URI.String(), err)

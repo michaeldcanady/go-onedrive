@@ -29,7 +29,7 @@ func (h *Handler) Handle(ctx context.Context, opts Options) error {
 	log.Info("removing item")
 
 	log.Debug("requesting removal from provider")
-	if err := h.fs.Remove(ctx, opts.URI.String()); err != nil {
+	if err := h.fs.Remove(ctx, opts.URI); err != nil {
 		log.Error("removal failed", logger.Error(err))
 		return fmt.Errorf("failed to remove item at %s: %w", opts.URI.String(), err)
 	}

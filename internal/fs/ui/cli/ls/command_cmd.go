@@ -32,7 +32,7 @@ func (h *Handler) Handle(ctx context.Context, opts Options) error {
 	log.Info("listing directory")
 
 	log.Debug("fetching items from provider")
-	items, err := h.fs.List(ctx, opts.URI.String(), registry.ListOptions{
+	items, err := h.fs.List(ctx, opts.URI, registry.ListOptions{
 		Recursive: opts.Recursive,
 	})
 	if err != nil {

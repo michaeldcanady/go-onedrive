@@ -2,23 +2,22 @@ package fs
 
 import (
 	"context"
-	"fmt"
 	"io"
 
 	"github.com/michaeldcanady/go-onedrive/internal/logger"
 )
 
-// ValidationDecorator is a middleware that validates requests before they reach the underlying service.
+// ValidationDecorator wraps a filesystem service and performs pre-operation validation on all paths.
 type ValidationDecorator struct {
 	next   Service
 	logger logger.Logger
 }
 
-// NewValidationDecorator creates a new ValidationDecorator.
-func NewValidationDecorator(next Service, l logger.Logger) Service {
+// NewValidationDecorator initializes a new instance of the ValidationDecorator.
+func NewValidationDecorator(next Service, logger logger.Logger) *ValidationDecorator {
 	return &ValidationDecorator{
 		next:   next,
-		logger: l,
+		logger: logger,
 	}
 }
 
@@ -26,98 +25,104 @@ func (vd *ValidationDecorator) Name() string {
 	return vd.next.Name()
 }
 
-// Get validates the path and then calls the next service's Get method.
-func (vd *ValidationDecorator) Get(ctx context.Context, path string) (Item, error) {
-	if err := vd.validatePath(path, "get"); err != nil {
+// Get validates the URI before retrieving metadata.
+func (vd *ValidationDecorator) Get(ctx context.Context, uri *URI) (Item, error) {
+	if err := vd.validateURI(uri, "Get"); err != nil {
 		return Item{}, err
 	}
-	return vd.next.Get(ctx, path)
+	return vd.next.Get(ctx, uri)
 }
 
-// List validates the path and then calls the next service's List method.
-func (vd *ValidationDecorator) List(ctx context.Context, path string, opts ListOptions) ([]Item, error) {
-	if err := vd.validatePath(path, "list"); err != nil {
+// Stat validates the URI before retrieving metadata.
+func (vd *ValidationDecorator) Stat(ctx context.Context, uri *URI) (Item, error) {
+	if err := vd.validateURI(uri, "Stat"); err != nil {
+		return Item{}, err
+	}
+	return vd.next.Stat(ctx, uri)
+}
+
+// List validates the URI before retrieving children.
+func (vd *ValidationDecorator) List(ctx context.Context, uri *URI, opts ListOptions) ([]Item, error) {
+	if err := vd.validateURI(uri, "List"); err != nil {
 		return nil, err
 	}
-	return vd.next.List(ctx, path, opts)
+	return vd.next.List(ctx, uri, opts)
 }
 
-// ReadFile validates the path and then calls the next service's ReadFile method.
-func (vd *ValidationDecorator) ReadFile(ctx context.Context, path string, opts ReadOptions) (io.ReadCloser, error) {
-	if err := vd.validatePath(path, "read"); err != nil {
+// ReadFile validates the URI before opening a read stream.
+func (vd *ValidationDecorator) ReadFile(ctx context.Context, uri *URI, opts ReadOptions) (io.ReadCloser, error) {
+	if err := vd.validateURI(uri, "ReadFile"); err != nil {
 		return nil, err
 	}
-	return vd.next.ReadFile(ctx, path, opts)
+	return vd.next.ReadFile(ctx, uri, opts)
 }
 
-// Stat validates the path and then calls the next service's Stat method.
-func (vd *ValidationDecorator) Stat(ctx context.Context, path string) (Item, error) {
-	if err := vd.validatePath(path, "stat"); err != nil {
+// WriteFile validates the URI before uploading content.
+func (vd *ValidationDecorator) WriteFile(ctx context.Context, uri *URI, r io.Reader, opts WriteOptions) (Item, error) {
+	if err := vd.validateURI(uri, "WriteFile"); err != nil {
 		return Item{}, err
 	}
-	return vd.next.Stat(ctx, path)
+	return vd.next.WriteFile(ctx, uri, r, opts)
 }
 
-// WriteFile validates the path and then calls the next service's WriteFile method.
-func (vd *ValidationDecorator) WriteFile(ctx context.Context, path string, r io.Reader, opts WriteOptions) (Item, error) {
-	if err := vd.validatePath(path, "write"); err != nil {
+// Mkdir validates the URI before creating a directory.
+func (vd *ValidationDecorator) Mkdir(ctx context.Context, uri *URI) error {
+	if err := vd.validateURI(uri, "Mkdir"); err != nil {
+		return err
+	}
+	return vd.next.Mkdir(ctx, uri)
+}
+
+// Remove validates the URI before deletion.
+func (vd *ValidationDecorator) Remove(ctx context.Context, uri *URI) error {
+	if err := vd.validateURI(uri, "Remove"); err != nil {
+		return err
+	}
+	return vd.next.Remove(ctx, uri)
+}
+
+// Touch validates the URI before creation or update.
+func (vd *ValidationDecorator) Touch(ctx context.Context, uri *URI) (Item, error) {
+	if err := vd.validateURI(uri, "Touch"); err != nil {
 		return Item{}, err
 	}
-	return vd.next.WriteFile(ctx, path, r, opts)
+	return vd.next.Touch(ctx, uri)
 }
 
-// Mkdir validates the path and then calls the next service's Mkdir method.
-func (vd *ValidationDecorator) Mkdir(ctx context.Context, path string) error {
-	if err := vd.validatePath(path, "mkdir"); err != nil {
+// Copy validates both source and destination URIs.
+func (vd *ValidationDecorator) Copy(ctx context.Context, src, dst *URI, opts CopyOptions) error {
+	if err := vd.validateURI(src, "Copy.Source"); err != nil {
 		return err
 	}
-	return vd.next.Mkdir(ctx, path)
-}
-
-// Remove validates the path and then calls the next service's Remove method.
-func (vd *ValidationDecorator) Remove(ctx context.Context, path string) error {
-	if err := vd.validatePath(path, "remove"); err != nil {
-		return err
-	}
-	return vd.next.Remove(ctx, path)
-}
-
-// Touch validates the path and then calls the next service's Touch method.
-func (vd *ValidationDecorator) Touch(ctx context.Context, path string) (Item, error) {
-	if err := vd.validatePath(path, "touch"); err != nil {
-		return Item{}, err
-	}
-	return vd.next.Touch(ctx, path)
-}
-
-// Copy validates source and destination paths and then calls the next service's Copy method.
-func (vd *ValidationDecorator) Copy(ctx context.Context, src, dst string, opts CopyOptions) error {
-	if err := vd.validatePath(src, "copy source"); err != nil {
-		return err
-	}
-	if err := vd.validatePath(dst, "copy destination"); err != nil {
+	if err := vd.validateURI(dst, "Copy.Destination"); err != nil {
 		return err
 	}
 	return vd.next.Copy(ctx, src, dst, opts)
 }
 
-// Move validates source and destination paths and then calls the next service's Move method.
-func (vd *ValidationDecorator) Move(ctx context.Context, src, dst string) error {
-	if err := vd.validatePath(src, "move source"); err != nil {
+// Move validates both source and destination URIs.
+func (vd *ValidationDecorator) Move(ctx context.Context, src, dst *URI) error {
+	if err := vd.validateURI(src, "Move.Source"); err != nil {
 		return err
 	}
-	if err := vd.validatePath(dst, "move destination"); err != nil {
+	if err := vd.validateURI(dst, "Move.Destination"); err != nil {
 		return err
 	}
 	return vd.next.Move(ctx, src, dst)
 }
 
-// validatePath checks for common path issues using the common ValidatePathSyntax helper.
-func (vd *ValidationDecorator) validatePath(p string, operation string) error {
-	if err := ValidatePathSyntax(p); err != nil {
-		return fmt.Errorf("path validation failed for operation '%s': %w", operation, err)
+// validateURI checks for common URI/path issues.
+func (vd *ValidationDecorator) validateURI(uri *URI, operation string) error {
+	if err := ValidatePathSyntax(uri.Path); err != nil {
+		vd.logger.Error("URI validation failed",
+			logger.String("path", uri.Path),
+			logger.String("operation", operation),
+			logger.Error(err))
+		return err
 	}
 
-	vd.logger.Debug("path validation successful", logger.String("path", p), logger.String("operation", operation))
+	vd.logger.Debug("URI validation successful",
+		logger.String("path", uri.Path),
+		logger.String("operation", operation))
 	return nil
 }

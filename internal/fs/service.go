@@ -20,32 +20,32 @@ type Namer interface {
 
 // Reader defines the operations for retrieving item information and file contents.
 type Reader interface {
-	// Get retrieves a single Item by its path.
-	Get(ctx context.Context, path string) (Item, error)
-	// List returns the immediate children of the specified directory path.
-	List(ctx context.Context, path string, opts ListOptions) ([]Item, error)
-	// ReadFile provides an io.ReadCloser for the content of the file at path.
-	ReadFile(ctx context.Context, path string, opts ReadOptions) (io.ReadCloser, error)
-	// Stat returns metadata for an item at the specified path.
-	Stat(ctx context.Context, path string) (Item, error)
+	// Get retrieves a single Item by its structured URI.
+	Get(ctx context.Context, uri *URI) (Item, error)
+	// List returns the immediate children of the specified directory URI.
+	List(ctx context.Context, uri *URI, opts ListOptions) ([]Item, error)
+	// ReadFile provides an io.ReadCloser for the content of the file at the specified URI.
+	ReadFile(ctx context.Context, uri *URI, opts ReadOptions) (io.ReadCloser, error)
+	// Stat returns metadata for an item at the specified URI.
+	Stat(ctx context.Context, uri *URI) (Item, error)
 }
 
 // Writer defines the operations for modifying and creating items in the filesystem.
 type Writer interface {
-	// WriteFile uploads or updates a file with the content from the provided reader.
-	WriteFile(ctx context.Context, path string, r io.Reader, opts WriteOptions) (Item, error)
-	// Mkdir creates a new directory at the specified path.
-	Mkdir(ctx context.Context, path string) error
-	// Touch creates a new empty file or updates the modification time of an existing one.
-	Touch(ctx context.Context, path string) (Item, error)
+	// WriteFile uploads or updates a file with the content from the provided reader at the specified URI.
+	WriteFile(ctx context.Context, uri *URI, r io.Reader, opts WriteOptions) (Item, error)
+	// Mkdir creates a new directory at the specified URI.
+	Mkdir(ctx context.Context, uri *URI) error
+	// Touch creates a new empty file or updates the modification time of an existing one at the specified URI.
+	Touch(ctx context.Context, uri *URI) (Item, error)
 }
 
 // Manager defines the operations for higher-level filesystem management and item manipulation.
 type Manager interface {
-	// Remove deletes an item from the filesystem.
-	Remove(ctx context.Context, path string) error
-	// Copy duplicates an item from a source path to a destination path.
-	Copy(ctx context.Context, src, dst string, opts CopyOptions) error
-	// Move relocates an item from a source path to a destination path.
-	Move(ctx context.Context, src, dst string) error
+	// Remove deletes an item from the filesystem at the specified URI.
+	Remove(ctx context.Context, uri *URI) error
+	// Copy duplicates an item from a source URI to a destination URI.
+	Copy(ctx context.Context, src, dst *URI, opts CopyOptions) error
+	// Move relocates an item from a source URI to a destination URI.
+	Move(ctx context.Context, src, dst *URI) error
 }

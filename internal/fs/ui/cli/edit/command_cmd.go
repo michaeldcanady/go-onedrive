@@ -35,14 +35,14 @@ func (h *Handler) Handle(ctx context.Context, opts Options) error {
 	log.Info("editing file")
 
 	log.Debug("fetching metadata")
-	item, err := h.fs.Get(ctx, opts.URI.String())
+	item, err := h.fs.Get(ctx, opts.URI)
 	if err != nil {
 		log.Error("failed to get metadata", logger.Error(err))
 		return fmt.Errorf("failed to get item metadata at %s: %w", opts.URI.String(), err)
 	}
 
 	log.Debug("reading file for editing")
-	r, err := h.fs.ReadFile(ctx, opts.URI.String(), registry.ReadOptions{})
+	r, err := h.fs.ReadFile(ctx, opts.URI, registry.ReadOptions{})
 	if err != nil {
 		log.Error("failed to read file", logger.Error(err))
 		return fmt.Errorf("failed to read file at %s: %w", opts.URI.String(), err)
@@ -71,7 +71,7 @@ func (h *Handler) Handle(ctx context.Context, opts Options) error {
 		writeOpts.IfMatch = item.ETag
 	}
 
-	_, err = h.fs.WriteFile(ctx, opts.URI.String(), bytes.NewReader(newData), writeOpts)
+	_, err = h.fs.WriteFile(ctx, opts.URI, bytes.NewReader(newData), writeOpts)
 	if err != nil {
 		if errors.Is(err, featerrors.ErrPrecondition) {
 			log.Warn("conflict detected, upload aborted")

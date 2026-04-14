@@ -27,15 +27,14 @@ func ProviderPathCompletion(container di.Container) func(cmd *cobra.Command, arg
 			}
 		}
 
-		// 1. Determine if we are completing a provider or a path
-		provider, path, found := fs.SplitProviderPath(currentToComplete)
+		// 1. Determine if we are completing a provider/alias or a path
+		uri, err := container.URIFactory().FromString(currentToComplete)
+		found := strings.Contains(currentToComplete, ":")
 
-		// If no colon and doesn't start with a slash, we might be completing a provider name
-		if !found && !strings.HasPrefix(currentToComplete, "/") {
-			names, err := container.ProviderRegistry().RegisteredNames()
-			if err != nil {
-				return nil, cobra.ShellCompDirectiveError
-			}
+		// If parsing failed and it doesn't look like a path (no slash), we might be completing a provider/alias name
+		if err != nil && !strings.HasPrefix(currentToComplete, "/") && !strings.Contains(currentToComplete, "/") {
+			names, _ := container.ProviderRegistry().RegisteredNames()
+			// TODO: Add aliases to completion?
 
 			var results []string
 			for _, name := range names {
@@ -46,46 +45,48 @@ func ProviderPathCompletion(container di.Container) func(cmd *cobra.Command, arg
 			return results, cobra.ShellCompDirectiveNoSpace | cobra.ShellCompDirectiveNoFileComp
 		}
 
-		// 2. We are completing a path.
-		// If not found (no colon), it's the default provider (onedrive).
-		if !found {
-			provider = fs.DefaultProviderPrefix
-			path = currentToComplete
+		if err != nil {
+			// If it has a colon but isn't a known provider/alias, we can't complete it easily here.
+			return nil, cobra.ShellCompDirectiveNoFileComp
 		}
 
+		// 2. We are completing a path within a provider/alias.
 		// If path is empty (just "provider:"), suggest "/"
-		if path == "" {
+		if uri.Path == "" {
 			res := "/"
 			if found && prefixToStrip == "" {
-				res = provider + ":" + res
+				res = currentToComplete + res
 			}
 			return []string{res}, cobra.ShellCompDirectiveNoSpace | cobra.ShellCompDirectiveNoFileComp
 		}
 
 		// Find parent directory and prefix
-		lastSlash := strings.LastIndex(path, "/")
+		lastSlash := strings.LastIndex(uri.Path, "/")
 		if lastSlash == -1 {
 			// No slash after the colon (e.g. "local:tm") or path is just "tm"
 			res := "/"
 			if found && prefixToStrip == "" {
-				res = provider + ":" + res
+				// Reconstruct the "provider:" part
+				prefix, _, _ := strings.Cut(currentToComplete, ":")
+				res = prefix + ":" + res
 			}
 			return []string{res}, cobra.ShellCompDirectiveNoSpace | cobra.ShellCompDirectiveNoFileComp
 		}
 
-		listDir := path[:lastSlash+1]
-		searchPrefix := path[lastSlash+1:]
+		listDirPath := uri.Path[:lastSlash+1]
+		searchPrefix := uri.Path[lastSlash+1:]
 
 		// Trim trailing slash for validation (except for root "/")
-		cleanListDir := listDir
-		if len(cleanListDir) > 1 && strings.HasSuffix(cleanListDir, "/") {
-			cleanListDir = strings.TrimSuffix(cleanListDir, "/")
+		cleanListDirPath := listDirPath
+		if len(cleanListDirPath) > 1 && strings.HasSuffix(cleanListDirPath, "/") {
+			cleanListDirPath = strings.TrimSuffix(cleanListDirPath, "/")
 		}
 
-		// Full path for manager to resolve correctly
-		managerListDir := provider + ":" + cleanListDir
+		// Create a URI for the directory to list
+		listURI := *uri
+		listURI.Path = cleanListDirPath
 
-		items, err := container.FS().List(cmd.Context(), managerListDir, fs.ListOptions{})
+		items, err := container.FS().List(cmd.Context(), &listURI, fs.ListOptions{})
 		if err != nil {
 			return nil, cobra.ShellCompDirectiveNoFileComp
 		}
@@ -93,7 +94,7 @@ func ProviderPathCompletion(container di.Container) func(cmd *cobra.Command, arg
 		var results []string
 		for _, item := range items {
 			if strings.HasPrefix(item.Name, searchPrefix) {
-				res := listDir + item.Name
+				res := listDirPath + item.Name
 				if item.Type == fs.TypeFolder {
 					res += "/"
 				}
@@ -102,7 +103,8 @@ func ProviderPathCompletion(container di.Container) func(cmd *cobra.Command, arg
 				// we return the path without the prefix so the shell matches it correctly.
 				// If the prefix was in 'toComplete', we return the full path.
 				if found && prefixToStrip == "" {
-					results = append(results, provider+":"+res)
+					prefix, _, _ := strings.Cut(currentToComplete, ":")
+					results = append(results, prefix+":"+res)
 				} else {
 					results = append(results, res)
 				}

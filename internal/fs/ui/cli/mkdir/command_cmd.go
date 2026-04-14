@@ -29,7 +29,7 @@ func (h *Handler) Handle(ctx context.Context, opts Options) error {
 	log.Info("creating directory")
 
 	log.Debug("requesting directory creation from provider")
-	if err := h.fs.Mkdir(ctx, opts.URI.String()); err != nil {
+	if err := h.fs.Mkdir(ctx, opts.URI); err != nil {
 		log.Error("directory creation failed", logger.Error(err))
 		return fmt.Errorf("failed to create directory at %s: %w", opts.URI.String(), err)
 	}

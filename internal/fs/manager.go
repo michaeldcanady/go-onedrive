@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"path"
-	"strings"
 
 	"github.com/michaeldcanady/go-onedrive/internal/concurrency"
 )
@@ -24,7 +23,7 @@ type FileSystemManager struct {
 
 // ServiceRegistry is a subset of the Registry interface needed by the Manager.
 type ServiceRegistry interface {
-	Resolve(ctx context.Context, path string) (Service, string, error)
+	Get(provider string) (Service, error)
 }
 
 // NewFileSystemManager initializes a new instance of the FileSystemManager.
@@ -38,87 +37,87 @@ func (m *FileSystemManager) Name() string {
 	return "fs_manager"
 }
 
-// Get retrieves metadata for an item by its path, resolving the appropriate provider.
-func (m *FileSystemManager) Get(ctx context.Context, path string) (Item, error) {
-	p, subPath, err := m.registry.Resolve(ctx, path)
+// Get retrieves metadata for an item by its structured URI.
+func (m *FileSystemManager) Get(ctx context.Context, uri *URI) (Item, error) {
+	p, err := m.registry.Get(uri.Provider)
 	if err != nil {
 		return Item{}, err
 	}
-	return p.Get(ctx, subPath)
+	return p.Get(ctx, uri)
 }
 
-// Stat returns metadata for an item at the specified path.
-func (m *FileSystemManager) Stat(ctx context.Context, path string) (Item, error) {
-	p, subPath, err := m.registry.Resolve(ctx, path)
+// Stat returns metadata for an item at the specified URI.
+func (m *FileSystemManager) Stat(ctx context.Context, uri *URI) (Item, error) {
+	p, err := m.registry.Get(uri.Provider)
 	if err != nil {
 		return Item{}, err
 	}
-	return p.Stat(ctx, subPath)
+	return p.Stat(ctx, uri)
 }
 
-// List returns the children of a directory at the specified path.
-func (m *FileSystemManager) List(ctx context.Context, path string, opts ListOptions) ([]Item, error) {
-	p, subPath, err := m.registry.Resolve(ctx, path)
+// List returns the children of a directory at the specified URI.
+func (m *FileSystemManager) List(ctx context.Context, uri *URI, opts ListOptions) ([]Item, error) {
+	p, err := m.registry.Get(uri.Provider)
 	if err != nil {
 		return nil, err
 	}
-	return p.List(ctx, subPath, opts)
+	return p.List(ctx, uri, opts)
 }
 
 // ReadFile opens a read stream for a file's content.
-func (m *FileSystemManager) ReadFile(ctx context.Context, path string, opts ReadOptions) (io.ReadCloser, error) {
-	p, subPath, err := m.registry.Resolve(ctx, path)
+func (m *FileSystemManager) ReadFile(ctx context.Context, uri *URI, opts ReadOptions) (io.ReadCloser, error) {
+	p, err := m.registry.Get(uri.Provider)
 	if err != nil {
 		return nil, err
 	}
-	return p.ReadFile(ctx, subPath, opts)
+	return p.ReadFile(ctx, uri, opts)
 }
 
 // WriteFile creates or updates a file with the content from the provided reader.
-func (m *FileSystemManager) WriteFile(ctx context.Context, path string, r io.Reader, opts WriteOptions) (Item, error) {
-	p, subPath, err := m.registry.Resolve(ctx, path)
+func (m *FileSystemManager) WriteFile(ctx context.Context, uri *URI, r io.Reader, opts WriteOptions) (Item, error) {
+	p, err := m.registry.Get(uri.Provider)
 	if err != nil {
 		return Item{}, err
 	}
-	return p.WriteFile(ctx, subPath, r, opts)
+	return p.WriteFile(ctx, uri, r, opts)
 }
 
-// Mkdir creates a new directory at the specified path.
-func (m *FileSystemManager) Mkdir(ctx context.Context, path string) error {
-	p, subPath, err := m.registry.Resolve(ctx, path)
+// Mkdir creates a new directory at the specified URI.
+func (m *FileSystemManager) Mkdir(ctx context.Context, uri *URI) error {
+	p, err := m.registry.Get(uri.Provider)
 	if err != nil {
 		return err
 	}
-	return p.Mkdir(ctx, subPath)
+	return p.Mkdir(ctx, uri)
 }
 
 // Remove deletes an item from its respective provider.
-func (m *FileSystemManager) Remove(ctx context.Context, path string) error {
-	p, subPath, err := m.registry.Resolve(ctx, path)
+func (m *FileSystemManager) Remove(ctx context.Context, uri *URI) error {
+	p, err := m.registry.Get(uri.Provider)
 	if err != nil {
 		return err
 	}
-	return p.Remove(ctx, subPath)
+	return p.Remove(ctx, uri)
 }
 
 // Touch creates an empty file or updates the timestamp of an existing one.
-func (m *FileSystemManager) Touch(ctx context.Context, path string) (Item, error) {
-	p, subPath, err := m.registry.Resolve(ctx, path)
+func (m *FileSystemManager) Touch(ctx context.Context, uri *URI) (Item, error) {
+	p, err := m.registry.Get(uri.Provider)
 	if err != nil {
 		return Item{}, err
 	}
-	return p.Touch(ctx, subPath)
+	return p.Touch(ctx, uri)
 }
 
-// Copy duplicates an item from a source path to a destination path, supporting cross-provider copy.
-func (m *FileSystemManager) Copy(ctx context.Context, src, dst string, opts CopyOptions) error {
+// Copy duplicates an item from a source URI to a destination URI, supporting cross-provider copy.
+func (m *FileSystemManager) Copy(ctx context.Context, src, dst *URI, opts CopyOptions) error {
 	srcItem, err := m.Stat(ctx, src)
 	if err != nil {
 		return fmt.Errorf("failed to stat source: %w", err)
 	}
 
 	if srcItem.Type == TypeFolder && !opts.Recursive {
-		return fmt.Errorf("omitting directory '%s'", src)
+		return fmt.Errorf("omitting directory '%s'", src.String())
 	}
 
 	if opts.Recursive {
@@ -129,24 +128,24 @@ func (m *FileSystemManager) Copy(ctx context.Context, src, dst string, opts Copy
 	return m.copySingle(ctx, srcItem, src, dst, opts)
 }
 
-func (m *FileSystemManager) copySingle(ctx context.Context, srcItem Item, src, dst string, opts CopyOptions) error {
-	pSrc, srcSubPath, err := m.registry.Resolve(ctx, src)
+func (m *FileSystemManager) copySingle(ctx context.Context, srcItem Item, src, dst *URI, opts CopyOptions) error {
+	pSrc, err := m.registry.Get(src.Provider)
 	if err != nil {
 		return err
 	}
 
-	pDst, dstSubPath, err := m.registry.Resolve(ctx, dst)
+	pDst, err := m.registry.Get(dst.Provider)
 	if err != nil {
 		return err
 	}
 
 	// If same provider, delegate to it for potentially optimized copy.
 	if pSrc == pDst {
-		return pSrc.Copy(ctx, srcSubPath, dstSubPath, opts)
+		return pSrc.Copy(ctx, src, dst, opts)
 	}
 
 	// Cross-provider copy: stream data from source to destination.
-	r, err := pSrc.ReadFile(ctx, srcSubPath, ReadOptions{})
+	r, err := pSrc.ReadFile(ctx, src, ReadOptions{})
 	if err != nil {
 		return fmt.Errorf("failed to read source for cross-provider copy: %w", err)
 	}
@@ -157,14 +156,14 @@ func (m *FileSystemManager) copySingle(ctx context.Context, srcItem Item, src, d
 		Size:      srcItem.Size,
 	}
 
-	if _, err := pDst.WriteFile(ctx, dstSubPath, r, writeOpts); err != nil {
+	if _, err := pDst.WriteFile(ctx, dst, r, writeOpts); err != nil {
 		return fmt.Errorf("failed to write destination for cross-provider copy: %w", err)
 	}
 
 	return nil
 }
 
-func (m *FileSystemManager) copyRecursive(ctx context.Context, src, dst string, opts CopyOptions, pool *concurrency.WorkerPool) error {
+func (m *FileSystemManager) copyRecursive(ctx context.Context, src, dst *URI, opts CopyOptions, pool *concurrency.WorkerPool) error {
 	item, err := m.Stat(ctx, src)
 	if err != nil {
 		return err
@@ -204,20 +203,20 @@ func (m *FileSystemManager) copyRecursive(ctx context.Context, src, dst string, 
 }
 
 // Move relocates or renames an item, supporting cross-provider move via copy and delete.
-func (m *FileSystemManager) Move(ctx context.Context, src, dst string) error {
-	pSrc, srcSubPath, err := m.registry.Resolve(ctx, src)
+func (m *FileSystemManager) Move(ctx context.Context, src, dst *URI) error {
+	pSrc, err := m.registry.Get(src.Provider)
 	if err != nil {
 		return err
 	}
 
-	pDst, dstSubPath, err := m.registry.Resolve(ctx, dst)
+	pDst, err := m.registry.Get(dst.Provider)
 	if err != nil {
 		return err
 	}
 
 	// If same provider, delegate to it for potentially optimized move.
 	if pSrc == pDst {
-		return pSrc.Move(ctx, srcSubPath, dstSubPath)
+		return pSrc.Move(ctx, src, dst)
 	}
 
 	// Cross-provider move: Copy + Delete.
@@ -225,16 +224,12 @@ func (m *FileSystemManager) Move(ctx context.Context, src, dst string) error {
 		return err
 	}
 
-	return pSrc.Remove(ctx, srcSubPath)
+	return pSrc.Remove(ctx, src)
 }
 
-// Join combines a base path and a name, preserving the provider prefix if present.
-func (m *FileSystemManager) Join(base, name string) string {
-	prefix, subPath, found := strings.Cut(base, ":")
-	if !found {
-		return path.Join(base, name)
-	}
-
-	subPath = strings.TrimPrefix(subPath, "//")
-	return prefix + ":" + path.Join(subPath, name)
+// Join combines a base URI and a name, returning a new URI.
+func (m *FileSystemManager) Join(base *URI, name string) *URI {
+	newURI := *base // shallow copy
+	newURI.Path = path.Join(base.Path, name)
+	return &newURI
 }

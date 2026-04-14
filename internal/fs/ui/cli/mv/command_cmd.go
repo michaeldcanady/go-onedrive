@@ -32,12 +32,12 @@ func (h *Handler) Handle(ctx context.Context, opts Options) error {
 	log.Info("starting move operation")
 
 	log.Debug("delegating to filesystem manager for move")
-	if err := h.manager.Move(ctx, opts.SourceURI.String(), opts.DestinationURI.String()); err != nil {
+	if err := h.manager.Move(ctx, opts.SourceURI, opts.DestinationURI); err != nil {
 		log.Error("move failed", logger.Error(err))
-		return fmt.Errorf("failed to move %s to %s: %w", opts.SourceURI.String(), opts.DestinationURI.String(), err)
+		return fmt.Errorf("failed to move %s to %s: %w", opts.SourceURI, opts.DestinationURI, err)
 	}
 
 	log.Info("move completed successfully")
-	fmt.Fprintf(opts.Stdout, "Moved %s to %s\n", opts.SourceURI.String(), opts.DestinationURI.String())
+	fmt.Fprintf(opts.Stdout, "Moved %s to %s\n", opts.SourceURI, opts.DestinationURI)
 	return nil
 }
