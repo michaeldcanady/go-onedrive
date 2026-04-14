@@ -15,15 +15,28 @@ func CreateUploadCmd(container di.Container) *cobra.Command {
 		Short:             "Upload files and directories to OneDrive",
 		Args:              cobra.ExactArgs(2),
 		ValidArgsFunction: cli.ProviderPathCompletion(container),
-		RunE: func(cmd *cobra.Command, args []string) error {
+		PreRunE: func(cmd *cobra.Command, args []string) error {
 			opts.Source = args[0]
-			opts.Destination = args[1]
 			opts.Stdout = cmd.OutOrStdout()
 
-			if err := opts.Validate(); err != nil {
+			// Resolve URI using the factory
+			sourceURI, err := container.URIFactory().FromString(opts.Source)
+			if err != nil {
 				return err
 			}
+			opts.SourceURI = sourceURI
 
+			opts.Destination = args[1]
+			// Resolve URI using the factory
+			destinationURI, err := container.URIFactory().FromString(opts.Destination)
+			if err != nil {
+				return err
+			}
+			opts.DestinationURI = destinationURI
+
+			return opts.Validate()
+		},
+		RunE: func(cmd *cobra.Command, args []string) error {
 			l, _ := container.Logger().CreateLogger("drive-upload")
 			handler := NewHandler(container.FS(), l)
 
