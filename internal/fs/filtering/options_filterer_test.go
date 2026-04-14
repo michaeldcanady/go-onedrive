@@ -20,11 +20,19 @@ func TestOptionsFilterer_Filter(t *testing.T) {
 	tests := []struct {
 		name     string
 		opts     FilterOptions
+		items    []shared.Item
 		expected []string
 	}{
 		{
+			name:     "empty items slice",
+			opts:     *NewFilterOptions(),
+			items:    []shared.Item{},
+			expected: []string{},
+		},
+		{
 			name:     "default options (exclude hidden)",
 			opts:     *NewFilterOptions(),
+			items:    items,
 			expected: []string{"file1.txt", "file2.jpg", "folder1"},
 		},
 		{
@@ -32,6 +40,7 @@ func TestOptionsFilterer_Filter(t *testing.T) {
 			opts: FilterOptions{
 				IncludeAll: true,
 			},
+			items:    items,
 			expected: []string{"file1.txt", "file2.jpg", ".hidden", "folder1"},
 		},
 		{
@@ -40,7 +49,17 @@ func TestOptionsFilterer_Filter(t *testing.T) {
 				ItemType:   shared.TypeFile,
 				IncludeAll: true,
 			},
+			items:    items,
 			expected: []string{"file1.txt", "file2.jpg", ".hidden"},
+		},
+		{
+			name: "filter by type (folders only)",
+			opts: FilterOptions{
+				ItemType:   shared.TypeFolder,
+				IncludeAll: true,
+			},
+			items:    items,
+			expected: []string{"folder1"},
 		},
 		{
 			name: "filter by name glob",
@@ -48,6 +67,7 @@ func TestOptionsFilterer_Filter(t *testing.T) {
 				Names:      []string{"*.txt"},
 				IncludeAll: true,
 			},
+			items:    items,
 			expected: []string{"file1.txt"},
 		},
 		{
@@ -56,6 +76,7 @@ func TestOptionsFilterer_Filter(t *testing.T) {
 				Names:      []string{"*.txt", "*.jpg"},
 				IncludeAll: true,
 			},
+			items:    items,
 			expected: []string{"file1.txt", "file2.jpg"},
 		},
 		{
@@ -64,6 +85,7 @@ func TestOptionsFilterer_Filter(t *testing.T) {
 				MinSize:    ptr(int64(150)),
 				IncludeAll: true,
 			},
+			items:    items,
 			expected: []string{"file2.jpg"},
 		},
 		{
@@ -72,6 +94,7 @@ func TestOptionsFilterer_Filter(t *testing.T) {
 				MaxSize:    ptr(int64(150)),
 				IncludeAll: true,
 			},
+			items:    items,
 			expected: []string{"file1.txt", ".hidden", "folder1"},
 		},
 		{
@@ -80,14 +103,35 @@ func TestOptionsFilterer_Filter(t *testing.T) {
 				ModifiedAfter: ptr(now.Add(-30 * time.Minute)),
 				IncludeAll:    true,
 			},
+			items:    items,
 			expected: []string{"file1.txt", ".hidden", "folder1"},
+		},
+		{
+			name: "combined type, name and size",
+			opts: FilterOptions{
+				ItemType:   shared.TypeFile,
+				Names:      []string{"file*"},
+				MinSize:    ptr(int64(150)),
+				IncludeAll: true,
+			},
+			items:    items,
+			expected: []string{"file2.jpg"},
+		},
+		{
+			name: "no items match criteria",
+			opts: FilterOptions{
+				ItemType: shared.TypeFolder,
+				Names:    []string{"non-existent"},
+			},
+			items:    items,
+			expected: []string{},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			f := NewOptionsFilterer(tt.opts)
-			filtered, err := f.Filter(items)
+			filtered, err := f.Filter(tt.items)
 			assert.NoError(t, err)
 
 			var names []string
