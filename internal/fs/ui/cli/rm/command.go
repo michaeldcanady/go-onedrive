@@ -1,11 +1,7 @@
 package rm
 
 import (
-	"fmt"
-	"slices"
-
 	"github.com/michaeldcanady/go-onedrive/internal/di"
-	"github.com/michaeldcanady/go-onedrive/internal/fs"
 	"github.com/michaeldcanady/go-onedrive/internal/fs/ui/cli"
 	"github.com/spf13/cobra"
 )
@@ -16,29 +12,19 @@ func CreateRmCmd(container di.Container) *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:               "rm <path>",
-		Short:             "Remove a file or directory",
+		Short:             "Remove an item",
 		Args:              cobra.ExactArgs(1),
 		ValidArgsFunction: cli.ProviderPathCompletion(container),
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			opts.Path = args[0]
 			opts.Stdout = cmd.OutOrStdout()
 
-			// 1. Syntactic check
-			if err := fs.ValidatePathSyntax(opts.Path); err != nil {
-				return fmt.Errorf("invalid path syntax: %w", err)
+			// Resolve URI using the factory
+			uri, err := container.URIFactory().FromString(opts.Path)
+			if err != nil {
+				return err
 			}
-
-			// 2. Provider check (only if a provider prefix is explicitly given)
-			provider, _, found := fs.SplitProviderPath(opts.Path)
-			if found {
-				names, err := container.ProviderRegistry().RegisteredNames()
-				if err != nil {
-					return fmt.Errorf("failed to check registered providers: %w", err)
-				}
-				if !slices.Contains(names, provider) {
-					return fmt.Errorf("unknown provider '%s'; valid providers are: %v", provider, names)
-				}
-			}
+			opts.URI = uri
 
 			return opts.Validate()
 		},
@@ -52,3 +38,4 @@ func CreateRmCmd(container di.Container) *cobra.Command {
 
 	return cmd
 }
+
