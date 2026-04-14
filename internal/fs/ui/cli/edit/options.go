@@ -3,12 +3,16 @@ package edit
 import (
 	"io"
 	"os"
+
+	"github.com/michaeldcanady/go-onedrive/internal/fs"
 )
 
 // Options defines the configuration for the drive edit operation.
 type Options struct {
 	// Path is the path to the item to edit.
 	Path string
+	// URI is the parsed and resolved filesystem location.
+	URI *fs.URI
 	// Force indicates whether to overwrite the item if it already exists.
 	Force bool
 	// Stdout is the writer for standard output.
