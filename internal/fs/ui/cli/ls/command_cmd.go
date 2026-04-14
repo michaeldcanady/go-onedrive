@@ -65,11 +65,11 @@ func (h *Handler) Handle(ctx context.Context, opts Options) error {
 	log.Debug("preparing sorter")
 	sortFactory := sorting.NewSorterFactory()
 	sortOpts := []sorting.SortingOption{}
-	if opts.SortField != "" {
-		sortOpts = append(sortOpts, sorting.WithField(opts.SortField))
-	}
-	if opts.SortDescending {
-		sortOpts = append(sortOpts, sorting.WithDirection(sorting.DirectionDescending))
+	for _, field := range opts.SortFields {
+		sortOpts = append(sortOpts, sorting.WithField(field))
+		if opts.SortDescending {
+			sortOpts = append(sortOpts, sorting.WithDirection(sorting.DirectionDescending))
+		}
 	}
 	sorter, err := sortFactory.Create(sortOpts...)
 	if err != nil {

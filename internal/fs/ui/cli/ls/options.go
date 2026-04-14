@@ -17,8 +17,8 @@ type Options struct {
 	Recursive bool
 	// Format is the output format (e.g., "short", "long", "json", "tree").
 	Format formatting.Format
-	// SortField is the field to sort by (e.g., "name", "size", "modified").
-	SortField string
+	// SortFields is the list of fields to sort by (e.g., "name", "size", "modified").
+	SortFields []string
 	// SortDescending determines whether to sort in descending order.
 	SortDescending bool
 	// All determines whether to include hidden files.
@@ -29,11 +29,13 @@ type Options struct {
 
 // Validate ensures that the provided options are consistent and valid.
 func (o *Options) Validate() error {
-	// Validate SortField
+	// Validate SortFields
 	validSortFields := []string{"name", "size", "modified"}
-	if !slices.Contains(validSortFields, o.SortField) {
-		return fmt.Errorf("invalid sorting field '%s'; please use one of the following valid fields: %s",
-			o.SortField, strings.Join(validSortFields, ", "))
+	for _, field := range o.SortFields {
+		if !slices.Contains(validSortFields, strings.ToLower(field)) {
+			return fmt.Errorf("invalid sorting field '%s'; please use one of the following valid fields: %s",
+				field, strings.Join(validSortFields, ", "))
+		}
 	}
 
 	// Validate Format
