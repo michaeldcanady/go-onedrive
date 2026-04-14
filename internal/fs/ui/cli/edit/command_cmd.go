@@ -30,22 +30,22 @@ func NewHandler(fs registry.Service, editor editor.Service, l logger.Logger) *Ha
 
 // Handle retrieves a file, opens it in an editor, and uploads changes.
 func (h *Handler) Handle(ctx context.Context, opts Options) error {
-	log := h.log.WithContext(ctx).With(logger.String("path", opts.Path))
+	log := h.log.WithContext(ctx).With(logger.String("path", opts.URI.String()))
 
 	log.Info("editing file")
 
 	log.Debug("fetching metadata")
-	item, err := h.fs.Get(ctx, opts.Path)
+	item, err := h.fs.Get(ctx, opts.URI)
 	if err != nil {
 		log.Error("failed to get metadata", logger.Error(err))
-		return fmt.Errorf("failed to get item metadata at %s: %w", opts.Path, err)
+		return fmt.Errorf("failed to get item metadata at %s: %w", opts.URI.String(), err)
 	}
 
 	log.Debug("reading file for editing")
-	r, err := h.fs.ReadFile(ctx, opts.Path, registry.ReadOptions{})
+	r, err := h.fs.ReadFile(ctx, opts.URI, registry.ReadOptions{})
 	if err != nil {
 		log.Error("failed to read file", logger.Error(err))
-		return fmt.Errorf("failed to read file at %s: %w", opts.Path, err)
+		return fmt.Errorf("failed to read file at %s: %w", opts.URI.String(), err)
 	}
 	defer r.Close()
 
@@ -53,7 +53,7 @@ func (h *Handler) Handle(ctx context.Context, opts Options) error {
 	newData, _, err := h.editor.LaunchTempFile("odc-edit", ".txt", r)
 	if err != nil {
 		log.Error("editor launch failed", logger.Error(err))
-		return fmt.Errorf("failed to edit file at %s: %w", opts.Path, err)
+		return fmt.Errorf("failed to edit file at %s: %w", opts.URI.String(), err)
 	}
 
 	if newData == nil {
@@ -71,17 +71,17 @@ func (h *Handler) Handle(ctx context.Context, opts Options) error {
 		writeOpts.IfMatch = item.ETag
 	}
 
-	_, err = h.fs.WriteFile(ctx, opts.Path, bytes.NewReader(newData), writeOpts)
+	_, err = h.fs.WriteFile(ctx, opts.URI, bytes.NewReader(newData), writeOpts)
 	if err != nil {
 		if errors.Is(err, featerrors.ErrPrecondition) {
 			log.Warn("conflict detected, upload aborted")
 			return fmt.Errorf("conflict detected during upload: %w. Use --force to overwrite", err)
 		}
 		log.Error("failed to upload changes", logger.Error(err))
-		return fmt.Errorf("failed to upload edited changes to %s: %w", opts.Path, err)
+		return fmt.Errorf("failed to upload edited changes to %s: %w", opts.URI.String(), err)
 	}
 
 	log.Info("edit completed successfully")
-	_, _ = fmt.Fprintf(opts.Stdout, "successfully updated file \"%s\"\n", opts.Path)
+	_, _ = fmt.Fprintf(opts.Stdout, "successfully updated file \"%s\"\n", opts.URI.String())
 	return nil
 }

@@ -15,14 +15,20 @@ func CreateMkdirCmd(container di.Container) *cobra.Command {
 		Short:             "Create a new directory",
 		Args:              cobra.ExactArgs(1),
 		ValidArgsFunction: cli.ProviderPathCompletion(container),
-		RunE: func(cmd *cobra.Command, args []string) error {
+		PreRunE: func(cmd *cobra.Command, args []string) error {
 			opts.Path = args[0]
 			opts.Stdout = cmd.OutOrStdout()
 
-			if err := opts.Validate(); err != nil {
+			// Resolve URI using the factory
+			uri, err := container.URIFactory().FromString(opts.Path)
+			if err != nil {
 				return err
 			}
+			opts.URI = uri
 
+			return opts.Validate()
+		},
+		RunE: func(cmd *cobra.Command, args []string) error {
 			l, _ := container.Logger().CreateLogger("drive-mkdir")
 			handler := NewHandler(container.FS(), l)
 

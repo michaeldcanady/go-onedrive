@@ -1,11 +1,11 @@
 package ls
-
 import (
 	"fmt"
 	"io"
 	"slices"
 	"strings"
 
+	"github.com/michaeldcanady/go-onedrive/internal/fs"
 	"github.com/michaeldcanady/go-onedrive/internal/fs/formatting"
 )
 
@@ -13,8 +13,12 @@ import (
 type Options struct {
 	// Path is the filesystem path to list.
 	Path string
+	// URI is the parsed and resolved filesystem location.
+	URI *fs.URI
 	// Recursive determines whether to list subdirectories.
 	Recursive bool
+...
+
 	// Format is the output format (e.g., "short", "long", "json", "tree").
 	Format formatting.Format
 	// SortFields is the list of fields to sort by (e.g., "name", "size", "modified").

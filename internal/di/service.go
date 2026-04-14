@@ -46,6 +46,9 @@ type DefaultContainer struct {
 	// alias is the drive alias management service.
 	alias alias.Service
 
+	// uriFactory is the service for creating and resolving URIs.
+	uriFactory *registry.URIFactory
+
 	registry interface {
 		RegisteredNames() ([]string, error)
 	}
@@ -105,6 +108,8 @@ func NewDefaultContainer() (*DefaultContainer, error) {
 
 	configSvc := config.NewYAMLService(profileSvc, stateSvc, cliLog)
 
+	uriFactory := registry.NewURIFactory(fsReg, aliasSvc)
+
 	return &DefaultContainer{
 		logger:      logSvc,
 		config:      configSvc,
@@ -117,6 +122,7 @@ func NewDefaultContainer() (*DefaultContainer, error) {
 		editor:      editorSvc,
 		alias:       aliasSvc,
 		drive:       driveSvc,
+		uriFactory:  uriFactory,
 	}, nil
 }
 
@@ -155,4 +161,9 @@ func (c *DefaultContainer) Drive() drive.Service { return c.drive }
 
 func (c *DefaultContainer) Alias() alias.Service {
 	return c.alias
+}
+
+// URIFactory returns the URI factory service.
+func (c *DefaultContainer) URIFactory() *registry.URIFactory {
+	return c.uriFactory
 }

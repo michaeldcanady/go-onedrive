@@ -39,4 +39,6 @@ type Container interface {
 	Drive() drive.Service
 	// Alias returns the drive alias management service.
 	Alias() alias.Service
+	// URIFactory returns the URI factory service.
+	URIFactory() *registry.URIFactory
 }

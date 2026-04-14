@@ -15,6 +15,27 @@ func CreateMvCmd(container di.Container) *cobra.Command {
 		Short:             "Move files and directories",
 		Args:              cobra.ExactArgs(2),
 		ValidArgsFunction: cli.ProviderPathCompletion(container),
+		PreRunE: func(cmd *cobra.Command, args []string) error {
+			opts.Source = args[0]
+			opts.Stdout = cmd.OutOrStdout()
+
+			// Resolve URI using the factory
+			sourceURI, err := container.URIFactory().FromString(opts.Source)
+			if err != nil {
+				return err
+			}
+			opts.SourceURI = sourceURI
+
+			opts.Destination = args[1]
+			// Resolve URI using the factory
+			destinationURI, err := container.URIFactory().FromString(opts.Destination)
+			if err != nil {
+				return err
+			}
+			opts.DestinationURI = destinationURI
+
+			return opts.Validate()
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			opts.Source = args[0]
 			opts.Destination = args[1]

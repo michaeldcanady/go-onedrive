@@ -25,15 +25,15 @@ func NewHandler(fs registry.Service, l logger.Logger) *Handler {
 
 // Handle retrieves and writes the content of a file to stdout.
 func (h *Handler) Handle(ctx context.Context, opts Options) error {
-	log := h.log.WithContext(ctx).With(logger.String("path", opts.Path))
+	log := h.log.WithContext(ctx).With(logger.String("path", opts.URI.String()))
 
 	log.Info("reading file content")
 
 	log.Debug("fetching file reader")
-	reader, err := h.fs.ReadFile(ctx, opts.Path, registry.ReadOptions{})
+	reader, err := h.fs.ReadFile(ctx, opts.URI, registry.ReadOptions{})
 	if err != nil {
 		log.Error("failed to read file", logger.Error(err))
-		return fmt.Errorf("failed to read file at %s: %w", opts.Path, err)
+		return fmt.Errorf("failed to read file at %s: %w", opts.URI.String(), err)
 	}
 	defer reader.Close()
 

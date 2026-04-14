@@ -1,11 +1,7 @@
 package download
 
 import (
-	"fmt"
-	"slices"
-
 	"github.com/michaeldcanady/go-onedrive/internal/di"
-	"github.com/michaeldcanady/go-onedrive/internal/fs"
 	"github.com/michaeldcanady/go-onedrive/internal/fs/ui/cli"
 	"github.com/spf13/cobra"
 )
@@ -21,40 +17,22 @@ func CreateDownloadCmd(container di.Container) *cobra.Command {
 		ValidArgsFunction: cli.ProviderPathCompletion(container),
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			opts.Source = args[0]
-			opts.Destination = args[1]
 			opts.Stdout = cmd.OutOrStdout()
 
-			// 1. Syntactic check for source path
-			if err := fs.ValidatePathSyntax(opts.Source); err != nil {
-				return fmt.Errorf("invalid source path syntax: %w", err)
+			// Resolve URI using the factory
+			sourceURI, err := container.URIFactory().FromString(opts.Source)
+			if err != nil {
+				return err
 			}
-			// 2. Provider check for source path (only if a provider prefix is explicitly given)
-			provider, _, found := fs.SplitProviderPath(opts.Source)
-			if found {
-				names, err := container.ProviderRegistry().RegisteredNames()
-				if err != nil {
-					return fmt.Errorf("failed to check registered providers: %w", err)
-				}
-				if !slices.Contains(names, provider) {
-					return fmt.Errorf("unknown provider '%s'; valid providers are: %v", provider, names)
-				}
-			}
+			opts.SourceURI = sourceURI
 
-			// 3. Syntactic check for destination path
-			if err := fs.ValidatePathSyntax(opts.Destination); err != nil {
-				return fmt.Errorf("invalid destination path syntax: %w", err)
+			opts.Destination = args[1]
+			// Resolve URI using the factory
+			destinationURI, err := container.URIFactory().FromString(opts.Destination)
+			if err != nil {
+				return err
 			}
-			// 4. Provider check for destination path (only if a provider prefix is explicitly given)
-			destProvider, _, destFound := fs.SplitProviderPath(opts.Destination)
-			if destFound {
-				names, err := container.ProviderRegistry().RegisteredNames()
-				if err != nil {
-					return fmt.Errorf("failed to check registered providers: %w", err)
-				}
-				if !slices.Contains(names, destProvider) {
-					return fmt.Errorf("unknown provider '%s'; valid providers are: %v", destProvider, names)
-				}
-			}
+			opts.DestinationURI = destinationURI
 
 			return opts.Validate()
 		},

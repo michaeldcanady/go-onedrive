@@ -1,9 +1,7 @@
 package fs
 
 import (
-	"context"
 	"fmt"
-	"strings"
 	"sync"
 
 	"github.com/michaeldcanady/go-onedrive/internal/drive/alias"
@@ -51,40 +49,6 @@ func (r *Registry) Get(provider string) (Service, error) {
 		return nil, fmt.Errorf("filesystem provider %s not found in registry", provider)
 	}
 	return svc, nil
-}
-
-// Resolve identifies the provider for a path based on its prefix (e.g., "onedrive:path").
-// If no prefix is present, it defaults to "onedrive".
-func (r *Registry) Resolve(ctx context.Context, path string) (Service, string, error) {
-	prefix, rest, found := strings.Cut(path, ":")
-	if !found {
-		// No prefix, default to onedrive
-		p, err := r.Get(DefaultProviderPrefix)
-		if err != nil {
-			return nil, "", err
-		}
-		return p, path, nil
-	}
-
-	// Check if prefix is a registered provider
-	p, err := r.Get(prefix)
-	if err != nil {
-		// Check if prefix is an alias
-		driveID, err := r.alias.GetDriveIDByAlias(prefix)
-		if err != nil {
-			return nil, "", fmt.Errorf("unknown provider or alias: %s", prefix)
-		}
-		// If it's an alias, use the default provider (onedrive) and prepend the drive ID
-		defaultProvider, err := r.Get(DefaultProviderPrefix)
-		if err != nil {
-			return nil, "", err
-		}
-		// Construct path with drive ID for the default provider
-		rest = fmt.Sprintf("%s:%s", driveID, rest)
-		return defaultProvider, rest, nil
-	}
-	// If it's a registered provider, use it directly
-	return p, rest, nil
 }
 
 func (r *Registry) RegisteredNames() ([]string, error) {
