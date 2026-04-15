@@ -32,7 +32,7 @@ VSA addresses this by:
 - **Organization by Feature:** Code is grouped by what the system does (e.g., 
   "Login," "List Files") rather than its technical role.
 - **Self-Contained Slices:** Each slice contains the entry point (Cobra 
-  command), the business logic (Handler), and the specific options.
+  command), the business logic (Command), and the specific options.
 - **Shared Core:** Cross-cutting concerns like logging, configuration, 
   identity, and filesystem abstractions are kept in the `internal/` 
   directory as shared services.

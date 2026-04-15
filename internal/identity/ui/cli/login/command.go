@@ -9,23 +9,29 @@ import (
 func CreateLoginCmd(container di.Container) *cobra.Command {
 	var opts Options
 
+	l, _ := container.Logger().CreateLogger("auth-login")
+	handler := NewCommand(
+		container.Config(),
+		container.Identity(),
+		l,
+	)
+
 	cmd := &cobra.Command{
 		Use:   "login",
 		Short: "Authenticate with OneDrive",
 		Long: `Authenticate with OneDrive using various methods (Interactive, Device Code, Service Principal).
 You can specify the method via flags or in your profile configuration.`,
-		RunE: func(cmd *cobra.Command, args []string) error {
+		PreRunE: func(cmd *cobra.Command, args []string) error {
 			opts.Stdout = cmd.OutOrStdout()
 			opts.Stderr = cmd.ErrOrStderr()
 
-			l, _ := container.Logger().CreateLogger("auth-login")
-			handler := NewHandler(
-				container.Config(),
-				container.Identity(),
-				l,
-			)
-
-			return handler.Handle(cmd.Context(), opts)
+			return handler.Validate(cmd.Context(), &opts)
+		},
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return handler.Execute(cmd.Context(), opts)
+		},
+		PostRunE: func(cmd *cobra.Command, args []string) error {
+			return handler.Finalize(cmd.Context(), opts)
 		},
 	}
 

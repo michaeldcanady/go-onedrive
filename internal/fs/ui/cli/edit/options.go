@@ -15,6 +15,8 @@ type Options struct {
 	URI *fs.URI
 	// Force indicates whether to overwrite the item if it already exists.
 	Force bool
+	// Editor is the editor to use for editing the file.
+	Editor string
 	// Stdout is the writer for standard output.
 	Stdout io.Writer
 	// Stderr is the writer for error output.
@@ -29,7 +31,8 @@ func NewOptions() Options {
 	}
 }
 
-func (o Options) Validate() error {
+// Validate ensures that the provided options are consistent and valid.
+func (o *Options) Validate() error {
 	// No additional validation needed for edit options at this time
 	return nil
 }

@@ -1,9 +1,22 @@
 package {{.PackageName}}
 
-import "io"
+import (
+	"errors"
+	"io"
+)
 
 // Options defines the configuration for the {{.CommandName}} operation.
 type Options struct {
 	// Stdout is the destination for the operation's output messages.
 	Stdout io.Writer
+	// Stderr is the destination for the operation's error messages.
+	Stderr io.Writer
+}
+
+// Validate ensures that the provided options are consistent and valid.
+func (o *Options) Validate() error {
+	if o.Stdout == nil {
+		return errors.New("stdout is required")
+	}
+	return nil
 }

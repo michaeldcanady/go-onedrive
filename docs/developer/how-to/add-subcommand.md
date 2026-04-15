@@ -11,7 +11,7 @@ A typical subcommand slice resides in
 
 1.  **`command.go`:** Defines the Cobra command, its flags, and validation 
     logic.
-2.  **`command_cmd.go`:** Contains the `Handler` which implements the 
+2.  **`command_cmd.go`:** Contains the `Command` which implements the 
     business logic for the command.
 3.  **`options.go`:** Defines the options struct for the command and its 
     validation.
@@ -49,9 +49,9 @@ func (o Options) Validate() error {
 }
 ```
 
-### 3. Create the Handler
+### 3. Create the Command
 
-In `command_cmd.go`, implement the `Handler` and its `Handle` method.
+In `command_cmd.go`, implement the `Command` and its `Handle` method.
 
 ```go
 package search
@@ -62,16 +62,16 @@ import (
     "github.com/michaeldcanady/go-onedrive/internal/logger"
 )
 
-type Handler struct {
+type Command struct {
     fs     fs.Service
     logger logger.Logger
 }
 
-func NewHandler(fs fs.Service, logger logger.Logger) *Handler {
-    return &Handler{fs: fs, logger: logger}
+func NewCommand(fs fs.Service, logger logger.Logger) *Command {
+    return &Command{fs: fs, logger: logger}
 }
 
-func (h *Handler) Handle(ctx context.Context, opts Options) error {
+func (c *Command) Handle(ctx context.Context, opts Options) error {
     // Implement your command's logic here
     return nil
 }
@@ -97,7 +97,7 @@ func CreateSearchCmd(container di.Container) *cobra.Command {
         Short: "Search for items",
         RunE: func(cmd *cobra.Command, args []string) error {
             l, _ := container.Logger().CreateLogger("search")
-            handler := NewHandler(container.FS(), l)
+            handler := NewCommand(container.FS(), l)
             return handler.Handle(cmd.Context(), opts)
         },
     }

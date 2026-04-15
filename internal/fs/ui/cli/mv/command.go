@@ -10,6 +10,9 @@ import (
 func CreateMvCmd(container di.Container) *cobra.Command {
 	var opts Options
 
+	l, _ := container.Logger().CreateLogger("drive-mv")
+	handler := NewCommand(container.FS(), container.URIFactory(), l)
+
 	cmd := &cobra.Command{
 		Use:               "mv <source> <destination>",
 		Short:             "Move files and directories",
@@ -17,38 +20,16 @@ func CreateMvCmd(container di.Container) *cobra.Command {
 		ValidArgsFunction: cli.ProviderPathCompletion(container),
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			opts.Source = args[0]
+			opts.Destination = args[1]
 			opts.Stdout = cmd.OutOrStdout()
 
-			// Resolve URI using the factory
-			sourceURI, err := container.URIFactory().FromString(opts.Source)
-			if err != nil {
-				return err
-			}
-			opts.SourceURI = sourceURI
-
-			opts.Destination = args[1]
-			// Resolve URI using the factory
-			destinationURI, err := container.URIFactory().FromString(opts.Destination)
-			if err != nil {
-				return err
-			}
-			opts.DestinationURI = destinationURI
-
-			return opts.Validate()
+			return handler.Validate(cmd.Context(), &opts)
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			opts.Source = args[0]
-			opts.Destination = args[1]
-			opts.Stdout = cmd.OutOrStdout()
-
-			if err := opts.Validate(); err != nil {
-				return err
-			}
-
-			l, _ := container.Logger().CreateLogger("drive-mv")
-			handler := NewHandler(container.FS(), l)
-
-			return handler.Handle(cmd.Context(), opts)
+			return handler.Execute(cmd.Context(), opts)
+		},
+		PostRunE: func(cmd *cobra.Command, args []string) error {
+			return handler.Finalize(cmd.Context(), opts)
 		},
 	}
 

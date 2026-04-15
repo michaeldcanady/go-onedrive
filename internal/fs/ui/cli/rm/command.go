@@ -10,32 +10,27 @@ import (
 func CreateRmCmd(container di.Container) *cobra.Command {
 	var opts Options
 
+	l, _ := container.Logger().CreateLogger("drive-rm")
+	handler := NewCommand(container.FS(), container.URIFactory(), l)
+
 	cmd := &cobra.Command{
 		Use:               "rm <path>",
-		Short:             "Remove an item",
+		Short:             "Remove a file or directory",
 		Args:              cobra.ExactArgs(1),
 		ValidArgsFunction: cli.ProviderPathCompletion(container),
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			opts.Path = args[0]
 			opts.Stdout = cmd.OutOrStdout()
 
-			// Resolve URI using the factory
-			uri, err := container.URIFactory().FromString(opts.Path)
-			if err != nil {
-				return err
-			}
-			opts.URI = uri
-
-			return opts.Validate()
+			return handler.Validate(cmd.Context(), &opts)
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			l, _ := container.Logger().CreateLogger("drive-rm")
-			handler := NewHandler(container.FS(), l)
-
-			return handler.Handle(cmd.Context(), opts)
+			return handler.Execute(cmd.Context(), opts)
+		},
+		PostRunE: func(cmd *cobra.Command, args []string) error {
+			return handler.Finalize(cmd.Context(), opts)
 		},
 	}
 
 	return cmd
 }
-

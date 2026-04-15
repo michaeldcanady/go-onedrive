@@ -9,27 +9,29 @@ import (
 func CreateSetCmd(container di.Container) *cobra.Command {
 	var opts Options
 
+	l, _ := container.Logger().CreateLogger("config-set")
+	handler := NewCommand(
+		container.Config(),
+		l,
+	)
+
 	cmd := &cobra.Command{
 		Use:   "set <key> <value>",
-		Short: "Update configuration settings",
+		Short: "Update a configuration setting",
 		Long:  `Update a specific configuration setting for the active profile.`,
 		Args:  cobra.ExactArgs(2),
-		RunE: func(cmd *cobra.Command, args []string) error {
+		PreRunE: func(cmd *cobra.Command, args []string) error {
 			opts.Key = args[0]
 			opts.Value = args[1]
 			opts.Stdout = cmd.OutOrStdout()
 
-			if err := opts.Validate(); err != nil {
-				return err
-			}
-
-			handler := NewHandler(
-				container.Config(),
-				container.Profile(),
-				container.Logger(),
-			)
-
-			return handler.Handle(cmd.Context(), opts)
+			return handler.Validate(cmd.Context(), &opts)
+		},
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return handler.Execute(cmd.Context(), opts)
+		},
+		PostRunE: func(cmd *cobra.Command, args []string) error {
+			return handler.Finalize(cmd.Context(), opts)
 		},
 	}
 

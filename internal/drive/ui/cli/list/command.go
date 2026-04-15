@@ -7,24 +7,30 @@ import (
 
 // CreateListCmd constructs and returns the cobra.Command for the drive list operation.
 func CreateListCmd(container di.Container) *cobra.Command {
-	return &cobra.Command{
+	var opts Options
+
+	l, _ := container.Logger().CreateLogger("drive-list")
+	handler := NewCommand(container.Drive(), container.Alias(), l)
+
+	cmd := &cobra.Command{
 		Use:   "list",
 		Short: "List all available OneDrive drives",
 		Long: `Retrieve all OneDrive drives associated with your account,
 marking the currently active drive and showing any defined aliases.`,
-		Args: cobra.ExactArgs(0),
-		RunE: func(cmd *cobra.Command, args []string) error {
-			opts := NewOptions()
+		Args: cobra.NoArgs,
+		PreRunE: func(cmd *cobra.Command, args []string) error {
 			opts.Stdout = cmd.OutOrStdout()
 			opts.Stderr = cmd.ErrOrStderr()
 
-			log, err := container.Logger().CreateLogger("drive-list")
-			if err != nil {
-				return err
-			}
-
-			handler := NewHandler(container.Drive(), container.Alias(), log)
-			return handler.Handle(cmd.Context(), opts)
+			return handler.Validate(cmd.Context(), &opts)
+		},
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return handler.Execute(cmd.Context(), opts)
+		},
+		PostRunE: func(cmd *cobra.Command, args []string) error {
+			return handler.Finalize(cmd.Context(), opts)
 		},
 	}
+
+	return cmd
 }

@@ -5,20 +5,28 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// CreateListCmd constructs and returns the cobra.Command for listing profiles.
+// CreateListCmd constructs and returns the cobra.Command for the profile list operation.
 func CreateListCmd(container di.Container) *cobra.Command {
 	var opts Options
 
+	l, _ := container.Logger().CreateLogger("profile-list")
+	handler := NewCommand(container.Profile(), l)
+
 	cmd := &cobra.Command{
 		Use:   "list",
-		Short: "List all configuration profiles",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		Short: "List all profiles",
+		Long:  "Display a list of all defined profiles, marking the active one with an asterisk.",
+		Args:  cobra.NoArgs,
+		PreRunE: func(cmd *cobra.Command, args []string) error {
 			opts.Stdout = cmd.OutOrStdout()
 
-			l, _ := container.Logger().CreateLogger("profile-list")
-			handler := NewHandler(container.Profile(), l)
-
-			return handler.Handle(cmd.Context(), opts)
+			return handler.Validate(cmd.Context(), &opts)
+		},
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return handler.Execute(cmd.Context(), opts)
+		},
+		PostRunE: func(cmd *cobra.Command, args []string) error {
+			return handler.Finalize(cmd.Context(), opts)
 		},
 	}
 
