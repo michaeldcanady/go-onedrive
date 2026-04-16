@@ -1,7 +1,6 @@
 package use
 
 import (
-	"context"
 	"fmt"
 
 	"github.com/michaeldcanady/go-onedrive/internal/drive"
@@ -27,38 +26,38 @@ func NewCommand(d drive.Service, a alias.Service, l logger.Logger) *Command {
 }
 
 // Validate prepares and validates the options for the drive use operation.
-func (c *Command) Validate(ctx context.Context, opts *Options) error {
-	return opts.Validate()
+func (c *Command) Validate(ctx *CommandContext) error {
+	return ctx.Options.Validate()
 }
 
 // Execute sets the active OneDrive drive.
-func (c *Command) Execute(ctx context.Context, opts Options) error {
-	log := c.log.WithContext(ctx).With(
-		logger.String("drive_ref", opts.DriveRef),
+func (c *Command) Execute(ctx *CommandContext) error {
+	log := c.log.WithContext(ctx.Ctx).With(
+		logger.String("drive_ref", ctx.Options.DriveRef),
 	)
 
 	log.Info("switching active drive")
 
 	log.Debug("checking if drive reference is an alias")
-	id, err := c.alias.GetDriveIDByAlias(opts.DriveRef)
+	id, err := c.alias.GetDriveIDByAlias(ctx.Options.DriveRef)
 	if err != nil {
 		log.Debug("drive reference is not an alias, using as ID")
-		id = opts.DriveRef
+		id = ctx.Options.DriveRef
 	}
 
 	log.Debug("setting active drive", logger.String("id", id))
-	if err := c.drive.SetActive(ctx, id, state.ScopeGlobal); err != nil {
+	if err := c.drive.SetActive(ctx.Ctx, id, state.ScopeGlobal); err != nil {
 		log.Error("failed to switch drive", logger.Error(err))
-		return fmt.Errorf("failed to switch to drive %s: %w", opts.DriveRef, err)
+		return fmt.Errorf("failed to switch to drive %s: %w", ctx.Options.DriveRef, err)
 	}
 
 	log.Info("active drive switched successfully")
-	fmt.Fprintf(opts.Stdout, "Switched to drive: %s\n", opts.DriveRef)
+	fmt.Fprintf(ctx.Options.Stdout, "Switched to drive: %s\n", ctx.Options.DriveRef)
 
 	return nil
 }
 
 // Finalize performs any necessary cleanup after the drive use operation.
-func (c *Command) Finalize(ctx context.Context, opts Options) error {
+func (c *Command) Finalize(ctx *CommandContext) error {
 	return nil
 }

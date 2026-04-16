@@ -1,7 +1,6 @@
 package list
 
 import (
-	"context"
 	"fmt"
 	"sort"
 
@@ -24,13 +23,13 @@ func NewCommand(a alias.Service, l logger.Logger) *Command {
 }
 
 // Validate prepares and validates the options for the drive alias list operation.
-func (c *Command) Validate(ctx context.Context, opts *Options) error {
-	return opts.Validate()
+func (c *Command) Validate(ctx *CommandContext) error {
+	return ctx.Options.Validate()
 }
 
 // Execute retrieves and displays all configured drive aliases.
-func (c *Command) Execute(ctx context.Context, opts Options) error {
-	log := c.log.WithContext(ctx)
+func (c *Command) Execute(ctx *CommandContext) error {
+	log := c.log.WithContext(ctx.Ctx)
 
 	log.Debug("fetching all aliases")
 	aliases, err := c.alias.ListAliases()
@@ -41,7 +40,7 @@ func (c *Command) Execute(ctx context.Context, opts Options) error {
 
 	if len(aliases) == 0 {
 		log.Info("no aliases found")
-		fmt.Fprintln(opts.Stdout, "No drive aliases configured.")
+		fmt.Fprintln(ctx.Options.Stdout, "No drive aliases configured.")
 		return nil
 	}
 
@@ -54,13 +53,13 @@ func (c *Command) Execute(ctx context.Context, opts Options) error {
 	}
 	sort.Strings(names)
 
-	fmt.Fprintln(opts.Stdout, "Configured drive aliases:")
+	fmt.Fprintln(ctx.Options.Stdout, "Configured drive aliases:")
 	for _, name := range names {
 		// ListAliases returns map[driveID]aliasName
 		// We need to find the driveID for this name
 		for id, n := range aliases {
 			if n == name {
-				fmt.Fprintf(opts.Stdout, "  %s -> %s\n", name, id)
+				fmt.Fprintf(ctx.Options.Stdout, "  %s -> %s\n", name, id)
 				break
 			}
 		}
@@ -70,6 +69,6 @@ func (c *Command) Execute(ctx context.Context, opts Options) error {
 }
 
 // Finalize performs any necessary cleanup after the drive alias list operation.
-func (c *Command) Finalize(ctx context.Context, opts Options) error {
+func (c *Command) Finalize(ctx *CommandContext) error {
 	return nil
 }

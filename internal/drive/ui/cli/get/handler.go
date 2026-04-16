@@ -1,7 +1,6 @@
 package get
 
 import (
-	"context"
 	"fmt"
 
 	"github.com/michaeldcanady/go-onedrive/internal/drive"
@@ -26,16 +25,16 @@ func NewCommand(d drive.Service, a alias.Service, l logger.Logger) *Command {
 }
 
 // Validate prepares and validates the options for the drive get operation.
-func (c *Command) Validate(ctx context.Context, opts *Options) error {
-	return opts.Validate()
+func (c *Command) Validate(ctx *CommandContext) error {
+	return ctx.Options.Validate()
 }
 
 // Execute retrieves and displays the active drive.
-func (c *Command) Execute(ctx context.Context, opts Options) error {
-	log := c.log.WithContext(ctx)
+func (c *Command) Execute(ctx *CommandContext) error {
+	log := c.log.WithContext(ctx.Ctx)
 
 	log.Debug("fetching active drive")
-	d, err := c.drive.GetActive(ctx)
+	d, err := c.drive.GetActive(ctx.Ctx)
 	if err != nil {
 		log.Error("failed to get active drive", logger.Error(err))
 		return fmt.Errorf("failed to get active drive: %w", err)
@@ -55,15 +54,15 @@ func (c *Command) Execute(ctx context.Context, opts Options) error {
 	}
 
 	log.Info("active drive retrieved successfully", logger.String("id", d.ID))
-	fmt.Fprintf(opts.Stdout, "Active drive: %s (%s)\n", d.Name, d.ID)
+	fmt.Fprintf(ctx.Options.Stdout, "Active drive: %s (%s)\n", d.Name, d.ID)
 	if len(activeAliases) > 0 {
-		fmt.Fprintf(opts.Stdout, "Aliases: %s\n", fmt.Sprint(activeAliases))
+		fmt.Fprintf(ctx.Options.Stdout, "Aliases: %s\n", fmt.Sprint(activeAliases))
 	}
 
 	return nil
 }
 
 // Finalize performs any necessary cleanup after the drive get operation.
-func (c *Command) Finalize(ctx context.Context, opts Options) error {
+func (c *Command) Finalize(ctx *CommandContext) error {
 	return nil
 }

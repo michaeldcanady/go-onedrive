@@ -9,6 +9,7 @@ import (
 // CreateSetCmd constructs and returns the cobra.Command for the 'drive alias set' operation.
 func CreateSetCmd(container di.Container) *cobra.Command {
 	var opts Options
+	var c *CommandContext
 
 	l, _ := container.Logger().CreateLogger("drive-alias-set")
 	handler := NewCommand(container.Alias(), l)
@@ -24,13 +25,18 @@ func CreateSetCmd(container di.Container) *cobra.Command {
 			opts.DriveID = args[1]
 			opts.Stdout = cmd.OutOrStdout()
 
-			return handler.Validate(cmd.Context(), &opts)
+			c = &CommandContext{
+				Ctx:     cmd.Context(),
+				Options: opts,
+			}
+
+			return handler.Validate(c)
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return handler.Execute(cmd.Context(), opts)
-		},
-		PostRunE: func(cmd *cobra.Command, args []string) error {
-			return handler.Finalize(cmd.Context(), opts)
+			if err := handler.Execute(c); err != nil {
+				return err
+			}
+			return handler.Finalize(c)
 		},
 	}
 
