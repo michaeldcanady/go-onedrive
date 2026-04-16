@@ -9,20 +9,26 @@ import (
 func Create{{.StructName}}Cmd(container di.Container) *cobra.Command {
 	var opts Options
 
+	l, _ := container.Logger().CreateLogger("{{.CommandName}}")
+	handler := NewCommand(container, l)
+
 	cmd := &cobra.Command{
 		Use:   "{{.CommandName}} [args]",
 		Short: "Short description of {{.CommandName}}",
 		Long:  "Detailed description of {{.CommandName}}.",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		PreRunE: func(cmd *cobra.Command, args []string) error {
 			opts.Stdout = cmd.OutOrStdout()
+			opts.Stderr = cmd.ErrOrStderr()
 			
-			l, _ := container.Logger().CreateLogger("{{.CommandName}}")
-			handler := NewHandler(container, l)
-			return handler.Handle(cmd.Context(), opts)
+			return handler.Validate(cmd.Context(), &opts)
+		},
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return handler.Execute(cmd.Context(), opts)
+		},
+		PostRunE: func(cmd *cobra.Command, args []string) error {
+			return handler.Finalize(cmd.Context(), opts)
 		},
 	}
-
-	// cmd.Flags().BoolVarP(&opts.Recursive, "recursive", "r", false, "Flag description")
 
 	return cmd
 }

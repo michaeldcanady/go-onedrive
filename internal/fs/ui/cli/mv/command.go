@@ -9,6 +9,10 @@ import (
 // CreateMvCmd constructs and returns the cobra.Command for the drive mv operation.
 func CreateMvCmd(container di.Container) *cobra.Command {
 	var opts Options
+	var c *CommandContext
+
+	l, _ := container.Logger().CreateLogger("drive-mv")
+	handler := NewCommand(container.FS(), container.URIFactory(), l)
 
 	cmd := &cobra.Command{
 		Use:               "mv <source> <destination>",
@@ -17,38 +21,21 @@ func CreateMvCmd(container di.Container) *cobra.Command {
 		ValidArgsFunction: cli.ProviderPathCompletion(container),
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			opts.Source = args[0]
+			opts.Destination = args[1]
 			opts.Stdout = cmd.OutOrStdout()
 
-			// Resolve URI using the factory
-			sourceURI, err := container.URIFactory().FromString(opts.Source)
-			if err != nil {
-				return err
+			c = &CommandContext{
+				Ctx:     cmd.Context(),
+				Options: opts,
 			}
-			opts.SourceURI = sourceURI
 
-			opts.Destination = args[1]
-			// Resolve URI using the factory
-			destinationURI, err := container.URIFactory().FromString(opts.Destination)
-			if err != nil {
-				return err
-			}
-			opts.DestinationURI = destinationURI
-
-			return opts.Validate()
+			return handler.Validate(c)
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			opts.Source = args[0]
-			opts.Destination = args[1]
-			opts.Stdout = cmd.OutOrStdout()
-
-			if err := opts.Validate(); err != nil {
+			if err := handler.Execute(c); err != nil {
 				return err
 			}
-
-			l, _ := container.Logger().CreateLogger("drive-mv")
-			handler := NewHandler(container.FS(), l)
-
-			return handler.Handle(cmd.Context(), opts)
+			return handler.Finalize(c)
 		},
 	}
 

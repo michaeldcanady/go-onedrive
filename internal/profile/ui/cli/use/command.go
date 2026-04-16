@@ -2,31 +2,39 @@ package use
 
 import (
 	"github.com/michaeldcanady/go-onedrive/internal/di"
-	"github.com/michaeldcanady/go-onedrive/internal/profile/ui/cli/shared"
 	"github.com/spf13/cobra"
 )
 
-// CreateUseCmd constructs and returns the cobra.Command for the profile switch operation.
+// CreateUseCmd constructs and returns the cobra.Command for the profile use operation.
 func CreateUseCmd(container di.Container) *cobra.Command {
 	var opts Options
+	var c *CommandContext
+
+	l, _ := container.Logger().CreateLogger("profile-use")
+	handler := NewCommand(container.Profile(), l)
 
 	cmd := &cobra.Command{
-		Use:               "use [name]",
-		Short:             "Switch the active configuration profile",
-		Args:              cobra.ExactArgs(1),
-		ValidArgsFunction: shared.ProviderPathCompletion(container),
-		RunE: func(cmd *cobra.Command, args []string) error {
+		Use:   "use <name>",
+		Short: "Set the active profile",
+		Long:  "Specify a profile name to be used for subsequent commands.",
+		Args:  cobra.ExactArgs(1),
+		PreRunE: func(cmd *cobra.Command, args []string) error {
 			opts.Name = args[0]
 			opts.Stdout = cmd.OutOrStdout()
 
-			if err := opts.Validate(); err != nil {
+			c = &CommandContext{
+				Ctx:     cmd.Context(),
+				Options: opts,
+			}
+
+			return handler.Validate(c)
+		},
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if err := handler.Execute(c); err != nil {
 				return err
 			}
 
-			l, _ := container.Logger().CreateLogger("profile-use")
-			handler := NewHandler(container.Profile(), l)
-
-			return handler.Handle(cmd.Context(), opts)
+			return handler.Finalize(c)
 		},
 	}
 

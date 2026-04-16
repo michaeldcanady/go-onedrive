@@ -8,47 +8,38 @@ import (
 
 // CreateEditCmd constructs and returns the cobra.Command for the edit operation.
 func CreateEditCmd(container di.Container) *cobra.Command {
-	opts := NewOptions()
+	var opts Options
+	var c *CommandContext
+
+	l, _ := container.Logger().CreateLogger("edit")
+	handler := NewCommand(container.FS(), container.URIFactory(), container.Editor(), l)
 
 	cmd := &cobra.Command{
-		Use:   "edit <path>",
-		Short: "Edit a file in an external editor",
-		Long: `Download a file to a temporary location, open it in your preferred
-editor ($VISUAL, $EDITOR, or system defaults), and upload the changes back
-to OneDrive.`,
-		Example: `  # Edit a file in your OneDrive root
-  odc drive edit document.txt
-
-  # Force overwrite even if changes exist on server
-  odc drive edit -f document.txt`,
+		Use:               "edit <path>",
+		Short:             "Edit a file",
+		Long:              "Open a file in your default editor. Changes are synced back when the editor closes.",
 		Args:              cobra.ExactArgs(1),
 		ValidArgsFunction: cli.ProviderPathCompletion(container),
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			opts.Path = args[0]
 			opts.Stdout = cmd.OutOrStdout()
-			opts.Stderr = cmd.ErrOrStderr()
 
-			// Resolve URI using the factory
-			uri, err := container.URIFactory().FromString(opts.Path)
-			if err != nil {
-				return err
+			c = &CommandContext{
+				Ctx:     cmd.Context(),
+				Options: opts,
 			}
-			opts.URI = uri
 
-			return opts.Validate()
+			return handler.Validate(c)
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			log, err := container.Logger().CreateLogger("edit")
-			if err != nil {
+			if err := handler.Execute(c); err != nil {
 				return err
 			}
-
-			handler := NewHandler(container.FS(), container.Editor(), log)
-			return handler.Handle(cmd.Context(), opts)
+			return handler.Finalize(c)
 		},
 	}
 
-	cmd.Flags().BoolVarP(&opts.Force, "force", "f", false, "Overwrite even if conflicts are detected")
+	cmd.Flags().StringVar(&opts.Editor, "editor", "", "Editor to use (overrides config and environment)")
 
 	return cmd
 }

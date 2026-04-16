@@ -1,8 +1,6 @@
 package remove
 
 import (
-	"fmt"
-
 	"github.com/michaeldcanady/go-onedrive/internal/di"
 	"github.com/michaeldcanady/go-onedrive/internal/drive/alias/ui/cli/shared"
 	"github.com/spf13/cobra"
@@ -10,30 +8,36 @@ import (
 
 // CreateRemoveCmd constructs and returns the cobra.Command for the 'drive alias remove' operation.
 func CreateRemoveCmd(container di.Container) *cobra.Command {
-	return &cobra.Command{
-		Use:               "remove <alias>",
+	var opts Options
+	var c *CommandContext
+
+	l, _ := container.Logger().CreateLogger("drive-alias-remove")
+	handler := NewCommand(container.Alias(), l)
+
+	cmd := &cobra.Command{
+		Use:               "remove <name>",
 		Short:             "Remove a drive alias",
+		Long:              "Delete a previously defined drive alias.",
 		Args:              cobra.ExactArgs(1),
 		ValidArgsFunction: shared.ProviderPathCompletion(container),
 		PreRunE: func(cmd *cobra.Command, args []string) error {
-			// Validate that the alias exists before attempting to remove it
-			alias := args[0]
-			driveID, err := container.Alias().GetDriveIDByAlias(alias)
-			if err != nil {
-				return err
+			opts.Alias = args[0]
+			opts.Stdout = cmd.OutOrStdout()
+
+			c = &CommandContext{
+				Ctx:     cmd.Context(),
+				Options: opts,
 			}
-			if driveID == "" {
-				return fmt.Errorf("alias '%s' not found", alias)
-			}
-			return nil
+
+			return handler.Validate(c)
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			opts := Options{
-				Alias:  args[0],
-				Stdout: cmd.OutOrStdout(),
+			if err := handler.Execute(c); err != nil {
+				return err
 			}
-			log, _ := container.Logger().CreateLogger("alias-remove")
-			return NewHandler(container.Alias(), log).Handle(cmd.Context(), opts)
+			return handler.Finalize(c)
 		},
 	}
+
+	return cmd
 }

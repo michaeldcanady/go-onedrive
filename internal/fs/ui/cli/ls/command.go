@@ -1,11 +1,7 @@
 package ls
 
 import (
-	"fmt"
-	"slices"
-
 	"github.com/michaeldcanady/go-onedrive/internal/di"
-	"github.com/michaeldcanady/go-onedrive/internal/fs"
 	"github.com/michaeldcanady/go-onedrive/internal/fs/formatting"
 	"github.com/michaeldcanady/go-onedrive/internal/fs/ui/cli"
 	"github.com/spf13/cobra"
@@ -15,6 +11,10 @@ import (
 func CreateLsCmd(container di.Container) *cobra.Command {
 	var opts Options
 	var format string
+	var c *CommandContext
+
+	l, _ := container.Logger().CreateLogger("ls")
+	handler := NewCommand(container.FS(), container.URIFactory(), formatting.NewFormatterFactory(), l)
 
 	cmd := &cobra.Command{
 		Use:               "ls <path>",
@@ -26,23 +26,21 @@ func CreateLsCmd(container di.Container) *cobra.Command {
 			if len(args) > 0 {
 				opts.Path = args[0]
 			}
-
 			opts.Stdout = cmd.OutOrStdout()
 			opts.Format = formatting.NewFormat(format)
 
-			// Resolve URI using the factory
-			uri, err := container.URIFactory().FromString(opts.Path)
-			if err != nil {
-				return err
+			c = &CommandContext{
+				Ctx:     cmd.Context(),
+				Options: opts,
 			}
-			opts.URI = uri
 
-			return opts.Validate()
+			return handler.Validate(c)
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			l, _ := container.Logger().CreateLogger("ls")
-			handler := NewHandler(container.FS(), l)
-			return handler.Handle(cmd.Context(), opts)
+			if err := handler.Execute(c); err != nil {
+				return err
+			}
+			return handler.Finalize(c)
 		},
 	}
 

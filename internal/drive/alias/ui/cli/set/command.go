@@ -1,50 +1,44 @@
 package set
 
 import (
-	"errors"
-	"fmt"
-
 	"github.com/michaeldcanady/go-onedrive/internal/di"
-	aliaspkg "github.com/michaeldcanady/go-onedrive/internal/drive/alias"
-	"github.com/michaeldcanady/go-onedrive/internal/drive/ui/cli/shared"
+	"github.com/michaeldcanady/go-onedrive/internal/drive/alias/ui/cli/shared"
 	"github.com/spf13/cobra"
 )
 
 // CreateSetCmd constructs and returns the cobra.Command for the 'drive alias set' operation.
 func CreateSetCmd(container di.Container) *cobra.Command {
-	return &cobra.Command{
-		Use:               "set <drive-id> <alias>",
-		Short:             "Create or update a drive alias",
+	var opts Options
+	var c *CommandContext
+
+	l, _ := container.Logger().CreateLogger("drive-alias-set")
+	handler := NewCommand(container.Alias(), l)
+
+	cmd := &cobra.Command{
+		Use:               "set <name> <id>",
+		Short:             "Set a drive alias",
+		Long:              "Assign a human-readable name to a OneDrive drive ID for easier reference.",
 		Args:              cobra.ExactArgs(2),
-		ValidArgsFunction: shared.ProviderPathCompletion(container, false),
+		ValidArgsFunction: shared.ProviderPathCompletion(container),
 		PreRunE: func(cmd *cobra.Command, args []string) error {
-			// Validate that the drive ID exists before attempting to set the alias
-			driveID := args[0]
-			//_, err := container.Drive().ResolveDrive(cmd.Context(), driveID)
-			//if err != nil {
-			//	return err
-			//}
+			opts.Alias = args[0]
+			opts.DriveID = args[1]
+			opts.Stdout = cmd.OutOrStdout()
 
-			// validate that alias is not already in use for a different drive
-			alias := args[1]
-			existingDriveID, err := container.Alias().GetDriveIDByAlias(alias)
-			if err != nil && !errors.Is(err, aliaspkg.ErrDriveIDNotFound) {
-				return err
-			}
-			if existingDriveID != "" && existingDriveID != driveID {
-				return fmt.Errorf("alias '%s' is already in use for a different drive", alias)
+			c = &CommandContext{
+				Ctx:     cmd.Context(),
+				Options: opts,
 			}
 
-			return nil
+			return handler.Validate(c)
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			opts := Options{
-				Alias:   args[1],
-				DriveID: args[0],
-				Stdout:  cmd.OutOrStdout(),
+			if err := handler.Execute(c); err != nil {
+				return err
 			}
-			log, _ := container.Logger().CreateLogger("alias-set")
-			return NewHandler(container.Alias(), log).Handle(cmd.Context(), opts)
+			return handler.Finalize(c)
 		},
 	}
+
+	return cmd
 }

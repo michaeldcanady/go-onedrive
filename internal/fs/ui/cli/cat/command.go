@@ -9,6 +9,10 @@ import (
 // CreateCatCmd constructs and returns the cobra.Command for the drive cat operation.
 func CreateCatCmd(container di.Container) *cobra.Command {
 	var opts Options
+	var c *CommandContext
+
+	l, _ := container.Logger().CreateLogger("drive-cat")
+	handler := NewCommand(container.FS(), container.URIFactory(), l)
 
 	cmd := &cobra.Command{
 		Use:               "cat <path>",
@@ -19,20 +23,18 @@ func CreateCatCmd(container di.Container) *cobra.Command {
 			opts.Path = args[0]
 			opts.Stdout = cmd.OutOrStdout()
 
-			// Resolve URI using the factory
-			uri, err := container.URIFactory().FromString(opts.Path)
-			if err != nil {
-				return err
+			c = &CommandContext{
+				Ctx:     cmd.Context(),
+				Options: opts,
 			}
-			opts.URI = uri
 
-			return opts.Validate()
+			return handler.Validate(c)
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			l, _ := container.Logger().CreateLogger("drive-cat")
-			handler := NewHandler(container.FS(), l)
-
-			return handler.Handle(cmd.Context(), opts)
+			if err := handler.Execute(c); err != nil {
+				return err
+			}
+			return handler.Finalize(c)
 		},
 	}
 

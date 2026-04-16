@@ -8,19 +8,36 @@ import (
 
 // CreateUseCmd constructs and returns the cobra.Command for the 'drive use' operation.
 func CreateUseCmd(container di.Container) *cobra.Command {
-	return &cobra.Command{
+	var opts Options
+	var c *CommandContext
+
+	l, _ := container.Logger().CreateLogger("drive-use")
+	handler := NewCommand(container.Drive(), container.Alias(), l)
+
+	cmd := &cobra.Command{
 		Use:               "use <drive-ref>",
 		Short:             "Set the active OneDrive drive",
 		Long:              "Specify a drive ID, name, or alias to be used for subsequent commands.",
 		Args:              cobra.ExactArgs(1),
 		ValidArgsFunction: shared.ProviderPathCompletion(container, true),
-		RunE: func(cmd *cobra.Command, args []string) error {
-			opts := Options{
-				DriveRef: args[0],
-				Stdout:   cmd.OutOrStdout(),
+		PreRunE: func(cmd *cobra.Command, args []string) error {
+			opts.DriveRef = args[0]
+			opts.Stdout = cmd.OutOrStdout()
+
+			c = &CommandContext{
+				Ctx:     cmd.Context(),
+				Options: opts,
 			}
-			log, _ := container.Logger().CreateLogger("drive-use")
-			return NewHandler(container.Drive(), container.Alias(), log).Handle(cmd.Context(), opts)
+
+			return handler.Validate(c)
+		},
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if err := handler.Execute(c); err != nil {
+				return err
+			}
+			return handler.Finalize(c)
 		},
 	}
+
+	return cmd
 }

@@ -1,4 +1,5 @@
 package ls
+
 import (
 	"fmt"
 	"io"
@@ -17,7 +18,6 @@ type Options struct {
 	URI *fs.URI
 	// Recursive determines whether to list subdirectories.
 	Recursive bool
-...
 
 	// Format is the output format (e.g., "short", "long", "json", "tree").
 	Format formatting.Format

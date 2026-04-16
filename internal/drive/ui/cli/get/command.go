@@ -2,29 +2,39 @@ package get
 
 import (
 	"github.com/michaeldcanady/go-onedrive/internal/di"
-	"github.com/michaeldcanady/go-onedrive/internal/drive/ui/cli/shared"
 	"github.com/spf13/cobra"
 )
 
-// CreateGetCmd constructs and returns the cobra.Command for the 'drive get' operation.
+// CreateGetCmd constructs and returns the cobra.Command for the drive get operation.
 func CreateGetCmd(container di.Container) *cobra.Command {
-	return &cobra.Command{
-		Use:               "get [drive-ref]",
-		Short:             "Display details for a specific drive",
-		Long:              "Provide a drive ID, name, or alias. If omitted, the currently active drive is shown.",
-		Args:              cobra.MaximumNArgs(1),
-		ValidArgsFunction: shared.ProviderPathCompletion(container, true),
+	var opts Options
+	var c *CommandContext
+
+	l, _ := container.Logger().CreateLogger("drive-get")
+	handler := NewCommand(container.Drive(), container.Alias(), l)
+
+	cmd := &cobra.Command{
+		Use:   "get",
+		Short: "Show the active drive",
+		Long:  "Display information about the currently active OneDrive drive.",
+		Args:  cobra.NoArgs,
+		PreRunE: func(cmd *cobra.Command, args []string) error {
+			opts.Stdout = cmd.OutOrStdout()
+
+			c = &CommandContext{
+				Ctx:     cmd.Context(),
+				Options: opts,
+			}
+
+			return handler.Validate(c)
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			driveRef := ""
-			if len(args) > 0 {
-				driveRef = args[0]
+			if err := handler.Execute(c); err != nil {
+				return err
 			}
-			opts := Options{
-				DriveRef: driveRef,
-				Stdout:   cmd.OutOrStdout(),
-			}
-			log, _ := container.Logger().CreateLogger("drive-get")
-			return NewHandler(container.Drive(), container.Alias(), log).Handle(cmd.Context(), opts)
+			return handler.Finalize(c)
 		},
 	}
+
+	return cmd
 }

@@ -9,28 +9,29 @@ import (
 func CreateLogoutCmd(container di.Container) *cobra.Command {
 	var opts Options
 
+	l, _ := container.Logger().CreateLogger("auth-logout")
+	handler := NewCommand(
+		container.Config(),
+		container.Identity(),
+		l,
+	)
+
 	cmd := &cobra.Command{
 		Use:   "logout",
-		Short: "Sign out from your OneDrive profile",
-		Long: `This command clears the authentication state for your active profile.
-Any cached tokens will be invalidated, and subsequent operations will require
-re-authentication.`,
-		RunE: func(cmd *cobra.Command, args []string) error {
+		Short: "Sign out from OneDrive",
+		Long:  `Sign out from OneDrive for the active profile by clearing the cached authentication tokens.`,
+		PreRunE: func(cmd *cobra.Command, args []string) error {
 			opts.Stdout = cmd.OutOrStdout()
-			opts.Stderr = cmd.ErrOrStderr()
 
-			l, _ := container.Logger().CreateLogger("auth-logout")
-			handler := NewHandler(
-				container.Config(),
-				container.Identity(),
-				l,
-			)
-
-			return handler.Handle(cmd.Context(), opts)
+			return handler.Validate(cmd.Context(), &opts)
+		},
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return handler.Execute(cmd.Context(), opts)
+		},
+		PostRunE: func(cmd *cobra.Command, args []string) error {
+			return handler.Finalize(cmd.Context(), opts)
 		},
 	}
-
-	cmd.Flags().BoolVarP(&opts.Force, "force", "f", false, "Force clear all cached credentials")
 
 	return cmd
 }
