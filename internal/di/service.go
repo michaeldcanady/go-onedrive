@@ -1,6 +1,7 @@
 package di
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 
@@ -8,17 +9,19 @@ import (
 	"github.com/michaeldcanady/go-onedrive/internal/config"
 	"github.com/michaeldcanady/go-onedrive/internal/drive"
 	"github.com/michaeldcanady/go-onedrive/internal/drive/alias"
+	graphgateway "github.com/michaeldcanady/go-onedrive/internal/drive/gateway/graph"
 	"github.com/michaeldcanady/go-onedrive/internal/environment"
 	registry "github.com/michaeldcanady/go-onedrive/internal/fs"
 	"github.com/michaeldcanady/go-onedrive/internal/fs/editor"
-	"github.com/michaeldcanady/go-onedrive/internal/fs/providers/local"
-	"github.com/michaeldcanady/go-onedrive/internal/fs/providers/onedrive"
+	"github.com/michaeldcanady/go-onedrive/internal/fs/providers"
+	_ "github.com/michaeldcanady/go-onedrive/internal/fs/providers/all"
 	"github.com/michaeldcanady/go-onedrive/internal/identity/providers/microsoft"
 	idregistry "github.com/michaeldcanady/go-onedrive/internal/identity/registry"
 	idshared "github.com/michaeldcanady/go-onedrive/internal/identity/shared"
 	"github.com/michaeldcanady/go-onedrive/internal/logger"
 	"github.com/michaeldcanady/go-onedrive/internal/profile"
 	"github.com/michaeldcanady/go-onedrive/internal/state"
+	"github.com/michaeldcanady/go-onedrive/pkg/logger/zap"
 )
 
 // DefaultContainer provides a concrete implementation of the Container interface.
@@ -62,7 +65,7 @@ func NewDefaultContainer() (*DefaultContainer, error) {
 		return nil, fmt.Errorf("failed to ensure environment directories: %w", err)
 	}
 
-	logSvc := logger.NewZapService(envSvc)
+	logSvc := zap.NewZapService(envSvc)
 	cliLog, _ := logSvc.CreateLogger("cli")
 
 	stateSvc, err := state.NewBoltService(envSvc)
@@ -93,7 +96,7 @@ func NewDefaultContainer() (*DefaultContainer, error) {
 
 	graphProvider := microsoft.NewGraphProvider(msAuth.Credential(), cliLog)
 
-	driveGateway := onedrive.NewGraphDriveGateway(graphProvider, cliLog)
+	driveGateway := graphgateway.NewGraphDriveGateway(graphProvider, cliLog)
 	driveSvc := drive.NewDefaultService(driveGateway, stateSvc, cliLog)
 	aliasSvc, err := alias.NewBoltService(envSvc, cliLog)
 	if err != nil {
@@ -101,8 +104,23 @@ func NewDefaultContainer() (*DefaultContainer, error) {
 	}
 
 	fsReg := registry.NewRegistry(stateSvc, aliasSvc, cliLog)
-	fsReg.Register("local", local.NewProvider(cliLog))
-	fsReg.Register("onedrive", onedrive.NewProvider(graphProvider, stateSvc, driveSvc, cliLog))
+
+	deps := &providerDeps{
+		logger: cliLog,
+		values: map[string]any{
+			"platform":       graphProvider,
+			"drive_resolver": &driveResolver{state: stateSvc},
+		},
+	}
+
+	for _, name := range providers.RegisteredNames() {
+		desc, _ := providers.Get(name)
+		svc, err := desc.Factory(deps)
+		if err != nil {
+			return nil, fmt.Errorf("failed to initialize provider %s: %w", name, err)
+		}
+		fsReg.Register(name, svc)
+	}
 
 	editorSvc := editor.NewDefaultService(envSvc, cliLog)
 
@@ -124,6 +142,29 @@ func NewDefaultContainer() (*DefaultContainer, error) {
 		drive:       driveSvc,
 		uriFactory:  uriFactory,
 	}, nil
+}
+
+// driveResolver implements fs.DriveResolver using the internal state service.
+type driveResolver struct {
+	state state.Service
+}
+
+func (r *driveResolver) GetActiveDriveID(ctx context.Context) (string, error) {
+	return r.state.Get(state.KeyDrive)
+}
+
+type providerDeps struct {
+	logger logger.Logger
+	values map[string]any
+}
+
+func (d *providerDeps) Logger() logger.Logger {
+	return d.logger
+}
+
+func (d *providerDeps) Get(key string) (any, bool) {
+	val, ok := d.values[key]
+	return val, ok
 }
 
 // Logger returns the global logging service.

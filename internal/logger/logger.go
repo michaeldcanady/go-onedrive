@@ -1,24 +1,33 @@
 package logger
 
-import (
-	"context"
+import "github.com/michaeldcanady/go-onedrive/pkg/logger"
+
+type Logger = logger.Logger
+type Field = logger.Field
+type FieldType = logger.FieldType
+type Level = logger.Level
+
+const (
+	LevelDebug   = logger.LevelDebug
+	LevelInfo    = logger.LevelInfo
+	LevelWarn    = logger.LevelWarn
+	LevelError   = logger.LevelError
+	LevelUnknown = logger.LevelUnknown
 )
 
-// Logger is an interface for logging messages with various severity levels.
-// It provides a consistent logging API across the application.
-type Logger interface {
-	// Info logs a message at Info level.
-	Info(msg string, kv ...Field)
-	// Warn logs a message at Warning level.
-	Warn(msg string, kv ...Field)
-	// Error logs a message at Error level.
-	Error(msg string, kv ...Field)
-	// Debug logs a message at Debug level.
-	Debug(msg string, kv ...Field)
-	// SetLevel dynamically changes the logging level for this logger instance.
-	SetLevel(level Level)
-	// With returns a new logger with the provided fields pre-populated.
-	With(fields ...Field) Logger
-	// WithContext returns a new logger that is aware of the provided context.
-	WithContext(ctx context.Context) Logger
+type _int interface {
+	int | int32 | int64
 }
+
+func Int[T _int](key string, val T) Field {
+	return logger.Int(key, val)
+}
+
+var (
+	ParseLevel = logger.ParseLevel
+	String     = logger.String
+	Time       = logger.Time
+	Duration   = logger.Duration
+	Error      = logger.Error
+	Bool       = logger.Bool
+)

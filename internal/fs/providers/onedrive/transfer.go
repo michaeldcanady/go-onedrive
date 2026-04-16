@@ -8,13 +8,13 @@ import (
 	"path"
 	"strings"
 
-	shared "github.com/michaeldcanady/go-onedrive/internal/fs"
-	"github.com/michaeldcanady/go-onedrive/internal/logger"
+	"github.com/michaeldcanady/go-onedrive/pkg/fs"
+	"github.com/michaeldcanady/go-onedrive/pkg/logger"
 	"github.com/microsoftgraph/msgraph-sdk-go/drives"
 	"github.com/microsoftgraph/msgraph-sdk-go/models"
 )
 
-func writeLargeFile(ctx context.Context, p *Provider, driveID, itemPath string, r io.Reader, opts shared.WriteOptions) (shared.Item, error) {
+func writeLargeFile(ctx context.Context, p *Provider, driveID, itemPath string, r io.Reader, opts fs.WriteOptions) (fs.Item, error) {
 	log := p.log.WithContext(ctx).With(
 		logger.String("method", "writeLargeFile"),
 		logger.String("path", itemPath),
@@ -23,7 +23,7 @@ func writeLargeFile(ctx context.Context, p *Provider, driveID, itemPath string, 
 	url := expandURI("", rootRelativeCreateSessionURITemplate, driveID, itemPath)
 	adapter, err := p.platform.Adapter(ctx)
 	if err != nil {
-		return shared.Item{}, mapError(err, itemPath)
+		return fs.Item{}, mapError(err, itemPath)
 	}
 
 	// 1. Create Upload Session
@@ -36,7 +36,7 @@ func writeLargeFile(ctx context.Context, p *Provider, driveID, itemPath string, 
 	builder := drives.NewItemItemsItemCreateUploadSessionRequestBuilder(url, adapter)
 	session, err := builder.Post(ctx, sessionReq, nil)
 	if err != nil {
-		return shared.Item{}, mapError(err, itemPath)
+		return fs.Item{}, mapError(err, itemPath)
 	}
 
 	uploadURL := *session.GetUploadUrl()
@@ -53,7 +53,7 @@ func writeLargeFile(ctx context.Context, p *Provider, driveID, itemPath string, 
 			chunk := buffer[:n]
 			req, err := http.NewRequestWithContext(ctx, "PUT", uploadURL, strings.NewReader(string(chunk)))
 			if err != nil {
-				return shared.Item{}, mapError(err, itemPath)
+				return fs.Item{}, mapError(err, itemPath)
 			}
 
 			contentRange := fmt.Sprintf("bytes %d-%d/", uploaded, uploaded+int64(n)-1)
@@ -67,12 +67,12 @@ func writeLargeFile(ctx context.Context, p *Provider, driveID, itemPath string, 
 
 			resp, err := http.DefaultClient.Do(req)
 			if err != nil {
-				return shared.Item{}, mapError(err, itemPath)
+				return fs.Item{}, mapError(err, itemPath)
 			}
 			defer resp.Body.Close()
 
 			if resp.StatusCode >= 400 {
-				return shared.Item{}, mapError(fmt.Errorf("chunk upload failed with status %d", resp.StatusCode), itemPath)
+				return fs.Item{}, mapError(fmt.Errorf("chunk upload failed with status %d", resp.StatusCode), itemPath)
 			}
 
 			uploaded += int64(n)
@@ -80,7 +80,7 @@ func writeLargeFile(ctx context.Context, p *Provider, driveID, itemPath string, 
 			if resp.StatusCode == 201 || resp.StatusCode == 200 {
 				// Final chunk uploaded, response contains the DriveItem (potentially)
 				// For simplicity, we Stat the item to get the final metadata.
-				uri := &shared.URI{Provider: providerName, DriveID: driveID, Path: itemPath}
+				uri := &fs.URI{Provider: providerName, DriveID: driveID, Path: itemPath}
 				return p.Get(ctx, uri)
 			}
 		}
@@ -89,11 +89,11 @@ func writeLargeFile(ctx context.Context, p *Provider, driveID, itemPath string, 
 			break
 		}
 		if err != nil {
-			return shared.Item{}, mapError(err, itemPath)
+			return fs.Item{}, mapError(err, itemPath)
 		}
 	}
 
 	// If we got here, we might have finished without a 200/201 (e.g. totalSize was unknown)
-	uri := &shared.URI{Provider: providerName, DriveID: driveID, Path: itemPath}
+	uri := &fs.URI{Provider: providerName, DriveID: driveID, Path: itemPath}
 	return p.Get(ctx, uri)
 }

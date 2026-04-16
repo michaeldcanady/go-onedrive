@@ -1,4 +1,4 @@
-package logger
+package zap
 
 import (
 	"fmt"
@@ -8,6 +8,7 @@ import (
 	"sync"
 
 	"github.com/michaeldcanady/go-onedrive/internal/environment"
+	"github.com/michaeldcanady/go-onedrive/pkg/logger"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
@@ -49,7 +50,7 @@ func NewZapService(env environment.Service) *ZapService {
 }
 
 // Reconfigure updates the logger configuration and recreates the root logger.
-func (s *ZapService) Reconfigure(level Level, output string, format string) error {
+func (s *ZapService) Reconfigure(level logger.Level, output string, format string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -58,7 +59,7 @@ func (s *ZapService) Reconfigure(level Level, output string, format string) erro
 		_ = s.root.Sync()
 	}
 
-	if level != LevelUnknown {
+	if level != logger.LevelUnknown {
 		l, err := zapcore.ParseLevel(level.String())
 		if err != nil {
 			return fmt.Errorf("invalid level: %w", err)
@@ -136,13 +137,13 @@ func (s *ZapService) Reconfigure(level Level, output string, format string) erro
 func (s *ZapService) initRoot() error {
 	var err error
 	s.once.Do(func() {
-		err = s.Reconfigure(LevelUnknown, "", "")
+		err = s.Reconfigure(logger.LevelUnknown, "", "")
 	})
 	return err
 }
 
 // CreateLogger creates or returns an existing Logger for the given identifier.
-func (s *ZapService) CreateLogger(id string) (Logger, error) {
+func (s *ZapService) CreateLogger(id string) (logger.Logger, error) {
 	if err := s.initRoot(); err != nil {
 		return nil, fmt.Errorf("failed to initialize root logger: %w", err)
 	}
@@ -164,7 +165,7 @@ func (s *ZapService) CreateLogger(id string) (Logger, error) {
 }
 
 // SetAllLevel updates the severity level for all registered loggers.
-func (s *ZapService) SetAllLevel(level Level) {
+func (s *ZapService) SetAllLevel(level logger.Level) {
 	l, err := zapcore.ParseLevel(level.String())
 	if err != nil {
 		return

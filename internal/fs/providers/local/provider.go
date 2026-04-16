@@ -7,10 +7,19 @@ import (
 	"path/filepath"
 	"time"
 
-	coreerrors "github.com/michaeldcanady/go-onedrive/internal/errors"
-	shared "github.com/michaeldcanady/go-onedrive/internal/fs"
-	"github.com/michaeldcanady/go-onedrive/internal/logger"
+	"github.com/michaeldcanady/go-onedrive/internal/fs/providers"
+	"github.com/michaeldcanady/go-onedrive/pkg/fs"
+	"github.com/michaeldcanady/go-onedrive/pkg/logger"
 )
+
+func init() {
+	providers.Register(providers.Descriptor{
+		Name: providerName,
+		Factory: func(deps providers.Dependencies) (fs.Service, error) {
+			return NewProvider(deps.Logger()), nil
+		},
+	})
+}
 
 const (
 	providerName = "local"
@@ -38,16 +47,16 @@ func (p *Provider) mapError(err error, path string) error {
 		return nil
 	}
 
-	kind := coreerrors.ErrInternal
+	kind := fs.ErrInternal
 	if os.IsNotExist(err) {
-		kind = coreerrors.ErrNotFound
+		kind = fs.ErrNotFound
 	} else if os.IsPermission(err) {
-		kind = coreerrors.ErrForbidden
+		kind = fs.ErrForbidden
 	} else if os.IsExist(err) {
-		kind = coreerrors.ErrConflict
+		kind = fs.ErrConflict
 	}
 
-	return &coreerrors.DomainError{
+	return &fs.Error{
 		Kind: kind,
 		Err:  err,
 		Path: path,
@@ -55,18 +64,18 @@ func (p *Provider) mapError(err error, path string) error {
 }
 
 // Get retrieves metadata for a single item by its local path.
-func (p *Provider) Get(ctx context.Context, uri *shared.URI) (shared.Item, error) {
+func (p *Provider) Get(ctx context.Context, uri *fs.URI) (fs.Item, error) {
 	p.log.Debug("local.Get", logger.String("path", uri.Path))
 
 	info, err := os.Stat(uri.Path)
 	if err != nil {
-		return shared.Item{}, p.mapError(err, uri.Path)
+		return fs.Item{}, p.mapError(err, uri.Path)
 	}
 	return p.mapInfoToItem(uri.Path, info), nil
 }
 
 // List enumerates the contents of a directory on the local filesystem.
-func (p *Provider) List(ctx context.Context, uri *shared.URI, opts shared.ListOptions) ([]shared.Item, error) {
+func (p *Provider) List(ctx context.Context, uri *fs.URI, opts fs.ListOptions) ([]fs.Item, error) {
 	p.log.Debug("local.List", logger.String("path", uri.Path), logger.Bool("recursive", opts.Recursive))
 
 	entries, err := os.ReadDir(uri.Path)
@@ -74,7 +83,7 @@ func (p *Provider) List(ctx context.Context, uri *shared.URI, opts shared.ListOp
 		return nil, p.mapError(err, uri.Path)
 	}
 
-	var items []shared.Item
+	var items []fs.Item
 	for _, entry := range entries {
 		info, err := entry.Info()
 		if err != nil {
@@ -97,7 +106,7 @@ func (p *Provider) List(ctx context.Context, uri *shared.URI, opts shared.ListOp
 }
 
 // ReadFile opens a read stream for a file's content on the local filesystem.
-func (p *Provider) ReadFile(ctx context.Context, uri *shared.URI, opts shared.ReadOptions) (io.ReadCloser, error) {
+func (p *Provider) ReadFile(ctx context.Context, uri *fs.URI, opts fs.ReadOptions) (io.ReadCloser, error) {
 	p.log.Debug("local.ReadFile", logger.String("path", uri.Path))
 
 	f, err := os.Open(uri.Path)
@@ -108,12 +117,12 @@ func (p *Provider) ReadFile(ctx context.Context, uri *shared.URI, opts shared.Re
 }
 
 // Stat returns metadata for a local file or directory.
-func (p *Provider) Stat(ctx context.Context, uri *shared.URI) (shared.Item, error) {
+func (p *Provider) Stat(ctx context.Context, uri *fs.URI) (fs.Item, error) {
 	return p.Get(ctx, uri)
 }
 
 // WriteFile creates or updates a file on the local filesystem with the content from the reader.
-func (p *Provider) WriteFile(ctx context.Context, uri *shared.URI, r io.Reader, opts shared.WriteOptions) (shared.Item, error) {
+func (p *Provider) WriteFile(ctx context.Context, uri *fs.URI, r io.Reader, opts fs.WriteOptions) (fs.Item, error) {
 	p.log.Debug("local.WriteFile", logger.String("path", uri.Path), logger.Bool("overwrite", opts.Overwrite))
 
 	flags := os.O_WRONLY | os.O_CREATE
@@ -125,20 +134,20 @@ func (p *Provider) WriteFile(ctx context.Context, uri *shared.URI, r io.Reader, 
 
 	f, err := os.OpenFile(uri.Path, flags, 0644)
 	if err != nil {
-		return shared.Item{}, p.mapError(err, uri.Path)
+		return fs.Item{}, p.mapError(err, uri.Path)
 	}
 	defer f.Close()
 
 	_, err = io.Copy(f, r)
 	if err != nil {
-		return shared.Item{}, p.mapError(err, uri.Path)
+		return fs.Item{}, p.mapError(err, uri.Path)
 	}
 
 	return p.Get(ctx, uri)
 }
 
 // Mkdir creates a new folder on the local filesystem at the given path.
-func (p *Provider) Mkdir(ctx context.Context, uri *shared.URI) error {
+func (p *Provider) Mkdir(ctx context.Context, uri *fs.URI) error {
 	p.log.Debug("local.Mkdir", logger.String("path", uri.Path))
 
 	err := os.MkdirAll(uri.Path, 0755)
@@ -146,7 +155,7 @@ func (p *Provider) Mkdir(ctx context.Context, uri *shared.URI) error {
 }
 
 // Remove deletes an item from the local filesystem.
-func (p *Provider) Remove(ctx context.Context, uri *shared.URI) error {
+func (p *Provider) Remove(ctx context.Context, uri *fs.URI) error {
 	p.log.Debug("local.Remove", logger.String("path", uri.Path))
 
 	err := os.RemoveAll(uri.Path)
@@ -154,21 +163,21 @@ func (p *Provider) Remove(ctx context.Context, uri *shared.URI) error {
 }
 
 // Copy duplicates a file or folder on the local filesystem.
-func (p *Provider) Copy(ctx context.Context, src, dst *shared.URI, opts shared.CopyOptions) error {
+func (p *Provider) Copy(ctx context.Context, src, dst *fs.URI, opts fs.CopyOptions) error {
 	p.log.Debug("local.Copy", logger.String("src", src.Path), logger.String("dst", dst.Path))
 
-	r, err := p.ReadFile(ctx, src, shared.ReadOptions{})
+	r, err := p.ReadFile(ctx, src, fs.ReadOptions{})
 	if err != nil {
 		return err
 	}
 	defer r.Close()
 
-	_, err = p.WriteFile(ctx, dst, r, shared.WriteOptions{Overwrite: opts.Overwrite})
+	_, err = p.WriteFile(ctx, dst, r, fs.WriteOptions{Overwrite: opts.Overwrite})
 	return err
 }
 
 // Move relocates or renames a file or folder within the local filesystem.
-func (p *Provider) Move(ctx context.Context, src, dst *shared.URI) error {
+func (p *Provider) Move(ctx context.Context, src, dst *fs.URI) error {
 	p.log.Debug("local.Move", logger.String("src", src.Path), logger.String("dst", dst.Path))
 
 	err := os.Rename(src.Path, dst.Path)
@@ -176,30 +185,30 @@ func (p *Provider) Move(ctx context.Context, src, dst *shared.URI) error {
 }
 
 // Touch creates an empty file or updates the timestamp of an existing one.
-func (p *Provider) Touch(ctx context.Context, uri *shared.URI) (shared.Item, error) {
+func (p *Provider) Touch(ctx context.Context, uri *fs.URI) (fs.Item, error) {
 	p.log.Debug("local.Touch", logger.String("path", uri.Path))
 
 	f, err := os.OpenFile(uri.Path, os.O_RDONLY|os.O_CREATE, 0644)
 	if err != nil {
-		return shared.Item{}, p.mapError(err, uri.Path)
+		return fs.Item{}, p.mapError(err, uri.Path)
 	}
 	f.Close()
 
 	now := time.Now()
 	if err := os.Chtimes(uri.Path, now, now); err != nil {
-		return shared.Item{}, p.mapError(err, uri.Path)
+		return fs.Item{}, p.mapError(err, uri.Path)
 	}
 
 	return p.Get(ctx, uri)
 }
 
-func (p *Provider) mapInfoToItem(path string, info os.FileInfo) shared.Item {
-	itemType := shared.TypeFile
+func (p *Provider) mapInfoToItem(path string, info os.FileInfo) fs.Item {
+	itemType := fs.TypeFile
 	if info.IsDir() {
-		itemType = shared.TypeFolder
+		itemType = fs.TypeFolder
 	}
 
-	return shared.Item{
+	return fs.Item{
 		Path:       path,
 		Name:       info.Name(),
 		Size:       info.Size(),

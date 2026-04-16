@@ -3,13 +3,13 @@ package onedrive
 import (
 	"time"
 
-	shared "github.com/michaeldcanady/go-onedrive/internal/fs"
+	"github.com/michaeldcanady/go-onedrive/pkg/fs"
 	"github.com/microsoftgraph/msgraph-sdk-go/models"
 )
 
-func mapItemToSharedItem(it models.DriveItemable, itemPath string) shared.Item {
+func mapItemToSharedItem(it models.DriveItemable, itemPath string) fs.Item {
 	if it == nil {
-		return shared.Item{}
+		return fs.Item{}
 	}
 
 	id := ""
@@ -27,9 +27,9 @@ func mapItemToSharedItem(it models.DriveItemable, itemPath string) shared.Item {
 		size = *it.GetSize()
 	}
 
-	itemType := shared.TypeFolder
+	itemType := fs.TypeFolder
 	if it.GetFile() != nil {
-		itemType = shared.TypeFile
+		itemType = fs.TypeFile
 	}
 
 	modifiedAt := it.GetLastModifiedDateTime()
@@ -43,7 +43,7 @@ func mapItemToSharedItem(it models.DriveItemable, itemPath string) shared.Item {
 		mTime = *modifiedAt
 	}
 
-	return shared.Item{
+	return fs.Item{
 		ID:         id,
 		Name:       name,
 		Path:       itemPath,
