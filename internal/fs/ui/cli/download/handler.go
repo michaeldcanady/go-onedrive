@@ -1,7 +1,6 @@
 package download
 
 import (
-	"context"
 	"fmt"
 
 	"github.com/michaeldcanady/go-onedrive/internal/fs"
@@ -25,51 +24,51 @@ func NewCommand(m fs.Service, f *fs.URIFactory, l logger.Logger) *Command {
 }
 
 // Validate prepares and validates the options for the download operation.
-func (c *Command) Validate(ctx context.Context, opts *Options) error {
+func (c *Command) Validate(ctx *CommandContext) error {
 	// Resolve URIs using the factory
-	sourceURI, err := c.uriFactory.FromString(opts.Source)
+	sourceURI, err := c.uriFactory.FromString(ctx.Options.Source)
 	if err != nil {
 		return fmt.Errorf("invalid source path: %w", err)
 	}
-	opts.SourceURI = sourceURI
+	ctx.Options.SourceURI = sourceURI
 
-	destinationURI, err := c.uriFactory.FromString(opts.Destination)
+	destinationURI, err := c.uriFactory.FromString(ctx.Options.Destination)
 	if err != nil {
 		return fmt.Errorf("invalid destination path: %w", err)
 	}
-	opts.DestinationURI = destinationURI
+	ctx.Options.DestinationURI = destinationURI
 
-	return opts.Validate()
+	return ctx.Options.Validate()
 }
 
 // Execute downloads files and directories from OneDrive to the local filesystem.
-func (c *Command) Execute(ctx context.Context, opts Options) error {
-	log := c.log.WithContext(ctx).With(
-		logger.String("source", opts.SourceURI.String()),
-		logger.String("destination", opts.DestinationURI.String()),
-		logger.Bool("recursive", opts.Recursive),
+func (c *Command) Execute(ctx *CommandContext) error {
+	log := c.log.WithContext(ctx.Ctx).With(
+		logger.String("source", ctx.Options.SourceURI.String()),
+		logger.String("destination", ctx.Options.DestinationURI.String()),
+		logger.Bool("recursive", ctx.Options.Recursive),
 	)
 
 	log.Info("starting download operation")
 
 	// Download is essentially a Copy from remote to local.
 	cpOpts := fs.CopyOptions{
-		Recursive: opts.Recursive,
+		Recursive: ctx.Options.Recursive,
 		Overwrite: true,
 	}
 
 	log.Debug("delegating to filesystem manager for download (copy)")
-	if err := c.manager.Copy(ctx, opts.SourceURI, opts.DestinationURI, cpOpts); err != nil {
+	if err := c.manager.Copy(ctx.Ctx, ctx.Options.SourceURI, ctx.Options.DestinationURI, cpOpts); err != nil {
 		log.Error("download failed", logger.Error(err))
-		return fmt.Errorf("failed to download %s to %s: %w", opts.SourceURI, opts.DestinationURI, err)
+		return fmt.Errorf("failed to download %s to %s: %w", ctx.Options.SourceURI, ctx.Options.DestinationURI, err)
 	}
 
 	log.Info("download completed successfully")
-	fmt.Fprintf(opts.Stdout, "Downloaded %s to %s\n", opts.SourceURI, opts.DestinationURI)
 	return nil
 }
 
 // Finalize performs any necessary cleanup after the download operation.
-func (c *Command) Finalize(ctx context.Context, opts Options) error {
+func (c *Command) Finalize(ctx *CommandContext) error {
+	fmt.Fprintf(ctx.Options.Stdout, "Downloaded %s to %s\n", ctx.Options.SourceURI, ctx.Options.DestinationURI)
 	return nil
 }

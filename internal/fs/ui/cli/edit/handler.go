@@ -2,7 +2,6 @@ package edit
 
 import (
 	"bytes"
-	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -31,38 +30,38 @@ func NewCommand(m fs.Service, f *fs.URIFactory, e editor.Service, l logger.Logge
 }
 
 // Validate prepares and validates the options for the edit operation.
-func (c *Command) Validate(ctx context.Context, opts *Options) error {
+func (c *Command) Validate(ctx *CommandContext) error {
 	// Resolve URI using the factory
-	uri, err := c.uriFactory.FromString(opts.Path)
+	uri, err := c.uriFactory.FromString(ctx.Options.Path)
 	if err != nil {
 		return fmt.Errorf("invalid path: %w", err)
 	}
-	opts.URI = uri
+	ctx.Options.URI = uri
 
-	return opts.Validate()
+	return ctx.Options.Validate()
 }
 
 // Execute opens a file in the user's preferred editor for modification.
-func (c *Command) Execute(ctx context.Context, opts Options) error {
-	log := c.log.WithContext(ctx).With(
-		logger.String("path", opts.URI.String()),
+func (c *Command) Execute(ctx *CommandContext) error {
+	log := c.log.WithContext(ctx.Ctx).With(
+		logger.String("path", ctx.Options.URI.String()),
 	)
 
 	log.Info("starting edit operation")
 
 	svc := c.editor
-	if opts.Editor != "" {
-		svc = svc.WithIO(os.Stdin, opts.Stdout, os.Stderr)
+	if ctx.Options.Editor != "" {
+		svc = svc.WithIO(os.Stdin, ctx.Options.Stdout, os.Stderr)
 	}
 
-	reader, err := c.manager.ReadFile(ctx, opts.URI, fs.ReadOptions{})
+	reader, err := c.manager.ReadFile(ctx.Ctx, ctx.Options.URI, fs.ReadOptions{})
 	if err != nil {
 		log.Error("failed to read file", logger.Error(err))
 		return fmt.Errorf("failed to read file: %w", err)
 	}
 
 	prefix := "odc-edit-"
-	suffix := filepath.Ext(opts.URI.Path)
+	suffix := filepath.Ext(ctx.Options.URI.Path)
 
 	newData, _, err := svc.LaunchTempFile(prefix, suffix, reader)
 	if err != nil {
@@ -72,7 +71,7 @@ func (c *Command) Execute(ctx context.Context, opts Options) error {
 
 	if newData != nil {
 		log.Info("file modified, writing changes")
-		if _, err := c.manager.WriteFile(ctx, opts.URI, bytes.NewReader(newData), fs.WriteOptions{Overwrite: true}); err != nil {
+		if _, err := c.manager.WriteFile(ctx.Ctx, ctx.Options.URI, bytes.NewReader(newData), fs.WriteOptions{Overwrite: true}); err != nil {
 			log.Error("failed to write changes", logger.Error(err))
 			return fmt.Errorf("failed to write changes: %w", err)
 		}
@@ -84,6 +83,6 @@ func (c *Command) Execute(ctx context.Context, opts Options) error {
 }
 
 // Finalize performs any necessary cleanup after the edit operation.
-func (c *Command) Finalize(ctx context.Context, opts Options) error {
+func (c *Command) Finalize(ctx *CommandContext) error {
 	return nil
 }

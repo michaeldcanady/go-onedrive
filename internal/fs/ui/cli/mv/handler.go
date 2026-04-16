@@ -1,7 +1,6 @@
 package mv
 
 import (
-	"context"
 	"fmt"
 
 	"github.com/michaeldcanady/go-onedrive/internal/fs"
@@ -25,44 +24,44 @@ func NewCommand(m fs.Service, f *fs.URIFactory, l logger.Logger) *Command {
 }
 
 // Validate prepares and validates the options for the move operation.
-func (c *Command) Validate(ctx context.Context, opts *Options) error {
+func (c *Command) Validate(ctx *CommandContext) error {
 	// Resolve URIs using the factory
-	sourceURI, err := c.uriFactory.FromString(opts.Source)
+	sourceURI, err := c.uriFactory.FromString(ctx.Options.Source)
 	if err != nil {
 		return fmt.Errorf("invalid source path: %w", err)
 	}
-	opts.SourceURI = sourceURI
+	ctx.Options.SourceURI = sourceURI
 
-	destinationURI, err := c.uriFactory.FromString(opts.Destination)
+	destinationURI, err := c.uriFactory.FromString(ctx.Options.Destination)
 	if err != nil {
 		return fmt.Errorf("invalid destination path: %w", err)
 	}
-	opts.DestinationURI = destinationURI
+	ctx.Options.DestinationURI = destinationURI
 
-	return opts.Validate()
+	return ctx.Options.Validate()
 }
 
 // Execute moves an item from the source to the destination.
-func (c *Command) Execute(ctx context.Context, opts Options) error {
-	log := c.log.WithContext(ctx).With(
-		logger.String("source", opts.SourceURI.String()),
-		logger.String("destination", opts.DestinationURI.String()),
+func (c *Command) Execute(ctx *CommandContext) error {
+	log := c.log.WithContext(ctx.Ctx).With(
+		logger.String("source", ctx.Options.SourceURI.String()),
+		logger.String("destination", ctx.Options.DestinationURI.String()),
 	)
 
 	log.Info("starting move operation")
 
 	log.Debug("delegating to filesystem manager for move")
-	if err := c.manager.Move(ctx, opts.SourceURI, opts.DestinationURI); err != nil {
+	if err := c.manager.Move(ctx.Ctx, ctx.Options.SourceURI, ctx.Options.DestinationURI); err != nil {
 		log.Error("move failed", logger.Error(err))
-		return fmt.Errorf("failed to move %s to %s: %w", opts.SourceURI, opts.DestinationURI, err)
+		return fmt.Errorf("failed to move %s to %s: %w", ctx.Options.SourceURI, ctx.Options.DestinationURI, err)
 	}
 
 	log.Info("move completed successfully")
-	fmt.Fprintf(opts.Stdout, "Moved %s to %s\n", opts.SourceURI, opts.DestinationURI)
 	return nil
 }
 
 // Finalize performs any necessary cleanup after the move operation.
-func (c *Command) Finalize(ctx context.Context, opts Options) error {
+func (c *Command) Finalize(ctx *CommandContext) error {
+	fmt.Fprintf(ctx.Options.Stdout, "Moved %s to %s\n", ctx.Options.SourceURI, ctx.Options.DestinationURI)
 	return nil
 }

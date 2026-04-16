@@ -1,8 +1,6 @@
 package ls
 
 import (
-	"context"
-
 	"github.com/michaeldcanady/go-onedrive/internal/fs"
 	"github.com/michaeldcanady/go-onedrive/internal/fs/formatting"
 	"github.com/michaeldcanady/go-onedrive/internal/logger"
@@ -27,38 +25,38 @@ func NewCommand(m fs.Service, f *fs.URIFactory, ff *formatting.FormatterFactory,
 }
 
 // Validate prepares and validates the options for the ls operation.
-func (c *Command) Validate(ctx context.Context, opts *Options) error {
+func (c *Command) Validate(ctx *CommandContext) error {
 	// Resolve URI using the factory
-	uri, err := c.uriFactory.FromString(opts.Path)
+	uri, err := c.uriFactory.FromString(ctx.Options.Path)
 	if err != nil {
 		return err
 	}
-	opts.URI = uri
+	ctx.Options.URI = uri
 
-	return opts.Validate()
+	return ctx.Options.Validate()
 }
 
 // Execute lists items in a directory.
-func (c *Command) Execute(ctx context.Context, opts Options) error {
-	log := c.log.WithContext(ctx).With(
-		logger.String("path", opts.URI.String()),
-		logger.Bool("recursive", opts.Recursive),
+func (c *Command) Execute(ctx *CommandContext) error {
+	log := c.log.WithContext(ctx.Ctx).With(
+		logger.String("path", ctx.Options.URI.String()),
+		logger.Bool("recursive", ctx.Options.Recursive),
 	)
 
 	log.Info("starting ls operation")
 
 	lsOpts := fs.ListOptions{
-		Recursive: opts.Recursive,
+		Recursive: ctx.Options.Recursive,
 	}
 
-	items, err := c.manager.List(ctx, opts.URI, lsOpts)
+	items, err := c.manager.List(ctx.Ctx, ctx.Options.URI, lsOpts)
 	if err != nil {
 		log.Error("list failed", logger.Error(err))
 		return err
 	}
 
 	log.Debug("formatting output")
-	formatter, err := c.formatterFactory.Create(opts.Format)
+	formatter, err := c.formatterFactory.Create(ctx.Options.Format)
 	if err != nil {
 		log.Error("failed to create formatter", logger.Error(err))
 		return err
@@ -69,7 +67,7 @@ func (c *Command) Execute(ctx context.Context, opts Options) error {
 		itemsAny[i] = item
 	}
 
-	if err := formatter.Format(opts.Stdout, itemsAny); err != nil {
+	if err := formatter.Format(ctx.Options.Stdout, itemsAny); err != nil {
 		log.Error("format failed", logger.Error(err))
 		return err
 	}
@@ -79,6 +77,6 @@ func (c *Command) Execute(ctx context.Context, opts Options) error {
 }
 
 // Finalize performs any necessary cleanup after the ls operation.
-func (c *Command) Finalize(ctx context.Context, opts Options) error {
+func (c *Command) Finalize(ctx *CommandContext) error {
 	return nil
 }

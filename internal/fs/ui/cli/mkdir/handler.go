@@ -1,7 +1,6 @@
 package mkdir
 
 import (
-	"context"
 	"fmt"
 
 	"github.com/michaeldcanady/go-onedrive/internal/fs"
@@ -25,35 +24,35 @@ func NewCommand(m fs.Service, f *fs.URIFactory, l logger.Logger) *Command {
 }
 
 // Validate prepares and validates the options for the mkdir operation.
-func (c *Command) Validate(ctx context.Context, opts *Options) error {
+func (c *Command) Validate(ctx *CommandContext) error {
 	// Resolve URI using the factory
-	uri, err := c.uriFactory.FromString(opts.Path)
+	uri, err := c.uriFactory.FromString(ctx.Options.Path)
 	if err != nil {
 		return fmt.Errorf("invalid path: %w", err)
 	}
-	opts.URI = uri
+	ctx.Options.URI = uri
 
-	return opts.Validate()
+	return ctx.Options.Validate()
 }
 
 // Execute creates a new directory at the specified path.
-func (c *Command) Execute(ctx context.Context, opts Options) error {
-	log := c.log.WithContext(ctx)
+func (c *Command) Execute(ctx *CommandContext) error {
+	log := c.log.WithContext(ctx.Ctx)
 
-	log.Info("starting mkdir operation", logger.String("path", opts.URI.String()))
+	log.Info("starting mkdir operation", logger.String("path", ctx.Options.URI.String()))
 
 	log.Debug("delegating to filesystem manager for mkdir")
-	if err := c.manager.Mkdir(ctx, opts.URI); err != nil {
+	if err := c.manager.Mkdir(ctx.Ctx, ctx.Options.URI); err != nil {
 		log.Error("mkdir failed", logger.Error(err))
-		return fmt.Errorf("failed to create directory %s: %w", opts.URI, err)
+		return fmt.Errorf("failed to create directory %s: %w", ctx.Options.URI, err)
 	}
 
 	log.Info("mkdir completed successfully")
-	fmt.Fprintf(opts.Stdout, "Created directory %s\n", opts.URI)
 	return nil
 }
 
 // Finalize performs any necessary cleanup after the mkdir operation.
-func (c *Command) Finalize(ctx context.Context, opts Options) error {
+func (c *Command) Finalize(ctx *CommandContext) error {
+	fmt.Fprintf(ctx.Options.Stdout, "Created directory %s\n", ctx.Options.URI)
 	return nil
 }

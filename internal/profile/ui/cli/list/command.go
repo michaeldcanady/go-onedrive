@@ -8,25 +8,33 @@ import (
 // CreateListCmd constructs and returns the cobra.Command for the profile list operation.
 func CreateListCmd(container di.Container) *cobra.Command {
 	var opts Options
+	var c *CommandContext
 
 	l, _ := container.Logger().CreateLogger("profile-list")
-	handler := NewCommand(container.Profile(), l)
+	handler := NewHandler(container.Profile(), l)
 
 	cmd := &cobra.Command{
 		Use:   "list",
 		Short: "List all profiles",
-		Long:  "Display a list of all defined profiles, marking the active one with an asterisk.",
 		Args:  cobra.NoArgs,
+
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			opts.Stdout = cmd.OutOrStdout()
 
-			return handler.Validate(cmd.Context(), &opts)
+			c = &CommandContext{
+				Ctx:     cmd.Context(),
+				Options: opts,
+			}
+
+			return handler.Validate(c)
 		},
+
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return handler.Execute(cmd.Context(), opts)
+			return handler.Execute(c)
 		},
+
 		PostRunE: func(cmd *cobra.Command, args []string) error {
-			return handler.Finalize(cmd.Context(), opts)
+			return handler.Finalize(c)
 		},
 	}
 

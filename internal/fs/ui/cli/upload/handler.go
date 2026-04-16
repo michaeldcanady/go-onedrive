@@ -1,7 +1,6 @@
 package upload
 
 import (
-	"context"
 	"fmt"
 
 	"github.com/michaeldcanady/go-onedrive/internal/fs"
@@ -25,53 +24,53 @@ func NewCommand(m fs.Service, f *fs.URIFactory, l logger.Logger) *Command {
 }
 
 // Validate prepares and validates the options for the upload operation.
-func (c *Command) Validate(ctx context.Context, opts *Options) error {
-	log := c.log.WithContext(ctx)
+func (c *Command) Validate(ctx *CommandContext) error {
+	log := c.log.WithContext(ctx.Ctx)
 
 	// Resolve URIs using the factory
-	sourceURI, err := c.uriFactory.FromString(opts.Source)
+	sourceURI, err := c.uriFactory.FromString(ctx.Options.Source)
 	if err != nil {
-		log.Error("invalid source uri", logger.String("uri", opts.Source), logger.Error(err))
+		log.Error("invalid source uri", logger.String("uri", ctx.Options.Source), logger.Error(err))
 		return fmt.Errorf("invalid source path: %w", err)
 	}
-	opts.SourceURI = sourceURI
+	ctx.Options.SourceURI = sourceURI
 
-	destinationURI, err := c.uriFactory.FromString(opts.Destination)
+	destinationURI, err := c.uriFactory.FromString(ctx.Options.Destination)
 	if err != nil {
-		log.Error("invalid destination uri", logger.String("uri", opts.Destination), logger.Error(err))
+		log.Error("invalid destination uri", logger.String("uri", ctx.Options.Destination), logger.Error(err))
 		return fmt.Errorf("invalid destination path: %w", err)
 	}
-	opts.DestinationURI = destinationURI
+	ctx.Options.DestinationURI = destinationURI
 
-	return opts.Validate()
+	return nil
 }
 
 // Execute uploads files and directories from the local filesystem to OneDrive.
-func (c *Command) Execute(ctx context.Context, opts Options) error {
-	log := c.log.WithContext(ctx)
+func (c *Command) Execute(ctx *CommandContext) error {
+	log := c.log.WithContext(ctx.Ctx)
 
-	log.Info("starting upload operation", logger.String("source", opts.SourceURI.String()),
-		logger.String("destination", opts.DestinationURI.String()),
-		logger.Bool("recursive", opts.Recursive))
+	log.Info("starting upload operation", logger.String("source", ctx.Options.SourceURI.String()),
+		logger.String("destination", ctx.Options.DestinationURI.String()),
+		logger.Bool("recursive", ctx.Options.Recursive))
 
 	// Upload is essentially a Copy from local to remote.
 	cpOpts := fs.CopyOptions{
-		Recursive: opts.Recursive,
+		Recursive: ctx.Options.Recursive,
 		Overwrite: true,
 	}
 
 	log.Debug("delegating to filesystem manager for upload (copy)")
-	if err := c.manager.Copy(ctx, opts.SourceURI, opts.DestinationURI, cpOpts); err != nil {
+	if err := c.manager.Copy(ctx.Ctx, ctx.Options.SourceURI, ctx.Options.DestinationURI, cpOpts); err != nil {
 		log.Error("upload failed", logger.Error(err))
-		return fmt.Errorf("failed to upload %s to %s: %w", opts.SourceURI, opts.DestinationURI, err)
+		return fmt.Errorf("failed to upload %s to %s: %w", ctx.Options.SourceURI, ctx.Options.DestinationURI, err)
 	}
 
 	log.Info("upload completed successfully")
-	fmt.Fprintf(opts.Stdout, "Uploaded %s to %s\n", opts.SourceURI, opts.DestinationURI)
 	return nil
 }
 
 // Finalize performs any necessary cleanup after the upload operation.
-func (c *Command) Finalize(ctx context.Context, opts Options) error {
+func (c *Command) Finalize(ctx *CommandContext) error {
+	_, _ = fmt.Fprintf(ctx.Options.Stdout, "Uploaded %s to %s\n", ctx.Options.SourceURI, ctx.Options.DestinationURI)
 	return nil
 }

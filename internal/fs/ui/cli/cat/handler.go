@@ -1,7 +1,6 @@
 package cat
 
 import (
-	"context"
 	"fmt"
 	"io"
 
@@ -26,36 +25,36 @@ func NewCommand(m fs.Service, f *fs.URIFactory, l logger.Logger) *Command {
 }
 
 // Validate prepares and validates the options for the cat operation.
-func (c *Command) Validate(ctx context.Context, opts *Options) error {
+func (c *Command) Validate(ctx *CommandContext) error {
 	// Resolve URI using the factory
-	uri, err := c.uriFactory.FromString(opts.Path)
+	uri, err := c.uriFactory.FromString(ctx.Options.Path)
 	if err != nil {
 		return fmt.Errorf("invalid path: %w", err)
 	}
-	opts.URI = uri
+	ctx.Options.URI = uri
 
-	return opts.Validate()
+	return ctx.Options.Validate()
 }
 
 // Execute displays the content of a file.
-func (c *Command) Execute(ctx context.Context, opts Options) error {
-	log := c.log.WithContext(ctx).With(
-		logger.String("path", opts.URI.String()),
+func (c *Command) Execute(ctx *CommandContext) error {
+	log := c.log.WithContext(ctx.Ctx).With(
+		logger.String("path", ctx.Options.URI.String()),
 	)
 
 	log.Info("starting cat operation")
 
 	log.Debug("delegating to filesystem manager for cat")
-	reader, err := c.manager.ReadFile(ctx, opts.URI, fs.ReadOptions{})
+	reader, err := c.manager.ReadFile(ctx.Ctx, ctx.Options.URI, fs.ReadOptions{})
 	if err != nil {
 		log.Error("cat failed", logger.Error(err))
-		return fmt.Errorf("failed to open file %s: %w", opts.URI, err)
+		return fmt.Errorf("failed to open file %s: %w", ctx.Options.URI, err)
 	}
 	defer reader.Close()
 
-	if _, err := io.Copy(opts.Stdout, reader); err != nil {
+	if _, err := io.Copy(ctx.Options.Stdout, reader); err != nil {
 		log.Error("copying content failed", logger.Error(err))
-		return fmt.Errorf("failed to read file %s: %w", opts.URI, err)
+		return fmt.Errorf("failed to read file %s: %w", ctx.Options.URI, err)
 	}
 
 	log.Info("cat completed successfully")
@@ -63,6 +62,6 @@ func (c *Command) Execute(ctx context.Context, opts Options) error {
 }
 
 // Finalize performs any necessary cleanup after the cat operation.
-func (c *Command) Finalize(ctx context.Context, opts Options) error {
+func (c *Command) Finalize(ctx *CommandContext) error {
 	return nil
 }

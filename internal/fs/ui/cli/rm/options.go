@@ -1,7 +1,6 @@
 package rm
 
 import (
-	"errors"
 	"io"
 
 	"github.com/michaeldcanady/go-onedrive/internal/fs"
@@ -15,12 +14,4 @@ type Options struct {
 	URI *fs.URI
 	// Stdout is the destination for standard output messages.
 	Stdout io.Writer
-}
-
-// Validate ensures that the provided options are consistent and valid.
-func (o *Options) Validate() error {
-	if o.Path == "" {
-		return errors.New("path is required")
-	}
-	return nil
 }

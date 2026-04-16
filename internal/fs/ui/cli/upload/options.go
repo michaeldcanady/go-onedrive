@@ -1,7 +1,6 @@
 package upload
 
 import (
-	"errors"
 	"io"
 
 	"github.com/michaeldcanady/go-onedrive/internal/fs"
@@ -26,15 +25,4 @@ type Options struct {
 
 	// Stdout is the destination for standard output messages.
 	Stdout io.Writer
-}
-
-// Validate ensures that the provided options are consistent and valid.
-func (o *Options) Validate() error {
-	if o.Source == "" {
-		return errors.New("source path is required")
-	}
-	if o.Destination == "" {
-		return errors.New("destination path is required")
-	}
-	return nil
 }

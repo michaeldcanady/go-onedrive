@@ -8,6 +8,7 @@ import (
 // CreateCurrentCmd constructs and returns the cobra.Command for the profile current operation.
 func CreateCurrentCmd(container di.Container) *cobra.Command {
 	var opts Options
+	var c *CommandContext
 
 	l, _ := container.Logger().CreateLogger("profile-current")
 	handler := NewCommand(container.Profile(), l)
@@ -20,13 +21,19 @@ func CreateCurrentCmd(container di.Container) *cobra.Command {
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			opts.Stdout = cmd.OutOrStdout()
 
-			return handler.Validate(cmd.Context(), &opts)
+			c = &CommandContext{
+				Ctx:     cmd.Context(),
+				Options: opts,
+			}
+
+			return handler.Validate(c)
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return handler.Execute(cmd.Context(), opts)
-		},
-		PostRunE: func(cmd *cobra.Command, args []string) error {
-			return handler.Finalize(cmd.Context(), opts)
+			if err := handler.Execute(c); err != nil {
+				return err
+			}
+
+			return handler.Finalize(c)
 		},
 	}
 

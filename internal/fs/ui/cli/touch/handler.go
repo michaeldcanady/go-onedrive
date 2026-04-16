@@ -1,7 +1,6 @@
 package touch
 
 import (
-	"context"
 	"fmt"
 
 	"github.com/michaeldcanady/go-onedrive/internal/fs"
@@ -25,38 +24,38 @@ func NewCommand(m fs.Service, f *fs.URIFactory, l logger.Logger) *Command {
 }
 
 // Validate prepares and validates the options for the touch operation.
-func (c *Command) Validate(ctx context.Context, opts *Options) error {
-	log := c.log.WithContext(ctx)
+func (c *Command) Validate(ctx *CommandContext) error {
+	log := c.log.WithContext(ctx.Ctx)
 
 	// Resolve URI using the factory
-	uri, err := c.uriFactory.FromString(opts.Path)
+	uri, err := c.uriFactory.FromString(ctx.Options.Path)
 	if err != nil {
 		log.Error("invalid path uri", logger.String("path", uri.String()), logger.Error(err))
 		return fmt.Errorf("invalid path: %w", err)
 	}
-	opts.URI = uri
+	ctx.Options.URI = uri
 
-	return opts.Validate()
+	return nil
 }
 
 // Execute creates a new empty file or updates the timestamp of an existing file.
-func (c *Command) Execute(ctx context.Context, opts Options) error {
-	log := c.log.WithContext(ctx)
+func (c *Command) Execute(ctx *CommandContext) error {
+	log := c.log.WithContext(ctx.Ctx)
 
-	log.Info("starting touch operation", logger.String("path", opts.URI.String()))
+	log.Info("starting touch operation", logger.String("path", ctx.Options.URI.String()))
 
 	log.Debug("delegating to filesystem manager for touch")
-	if _, err := c.manager.Touch(ctx, opts.URI); err != nil {
+	if _, err := c.manager.Touch(ctx.Ctx, ctx.Options.URI); err != nil {
 		log.Error("touch failed", logger.Error(err))
-		return fmt.Errorf("failed to touch %s: %w", opts.URI, err)
+		return fmt.Errorf("failed to touch %s: %w", ctx.Options.URI, err)
 	}
 
 	log.Info("touch completed successfully")
-	fmt.Fprintf(opts.Stdout, "Touched %s\n", opts.URI)
 	return nil
 }
 
 // Finalize performs any necessary cleanup after the touch operation.
-func (c *Command) Finalize(ctx context.Context, opts Options) error {
+func (c *Command) Finalize(ctx *CommandContext) error {
+	fmt.Fprintf(ctx.Options.Stdout, "Touched %s\n", ctx.Options.URI)
 	return nil
 }

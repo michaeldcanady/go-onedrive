@@ -1,7 +1,6 @@
 package current
 
 import (
-	"context"
 	"fmt"
 
 	"github.com/michaeldcanady/go-onedrive/internal/logger"
@@ -23,27 +22,32 @@ func NewCommand(p profile.Service, l logger.Logger) *Command {
 }
 
 // Validate prepares and validates the options for the profile current operation.
-func (c *Command) Validate(ctx context.Context, opts *Options) error {
-	return opts.Validate()
+func (c *Command) Validate(ctx *CommandContext) error {
+	if ctx.Options.Stdout == nil {
+		return fmt.Errorf("stdout must not be nil")
+	}
+
+	return nil
 }
 
 // Execute retrieves and displays the active profile.
-func (c *Command) Execute(ctx context.Context, opts Options) error {
-	log := c.log.WithContext(ctx)
+func (c *Command) Execute(ctx *CommandContext) error {
+	log := c.log.WithContext(ctx.Ctx)
 
 	log.Debug("fetching active profile")
-	p, err := c.profile.GetActive(ctx)
+	p, err := c.profile.GetActive(ctx.Ctx)
 	if err != nil {
 		log.Error("failed to get active profile", logger.Error(err))
 		return fmt.Errorf("failed to get active profile: %w", err)
 	}
 
 	log.Info("active profile retrieved successfully", logger.String("name", p.Name))
-	fmt.Fprintf(opts.Stdout, "Active profile: %s\n", p.Name)
+
 	return nil
 }
 
 // Finalize performs any necessary cleanup after the profile current operation.
-func (c *Command) Finalize(ctx context.Context, opts Options) error {
+func (c *Command) Finalize(ctx *CommandContext) error {
+	fmt.Fprintf(ctx.Options.Stdout, "Active profile: %s\n", ctx.Profile.Name)
 	return nil
 }

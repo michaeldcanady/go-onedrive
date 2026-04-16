@@ -8,6 +8,7 @@ import (
 // CreateDeleteCmd constructs and returns the cobra.Command for the profile delete operation.
 func CreateDeleteCmd(container di.Container) *cobra.Command {
 	var opts Options
+	var c *CommandContext
 
 	l, _ := container.Logger().CreateLogger("profile-delete")
 	handler := NewCommand(container.Profile(), l)
@@ -21,13 +22,19 @@ func CreateDeleteCmd(container di.Container) *cobra.Command {
 			opts.Name = args[0]
 			opts.Stdout = cmd.OutOrStdout()
 
-			return handler.Validate(cmd.Context(), &opts)
+			c = &CommandContext{
+				Ctx:     cmd.Context(),
+				Options: opts,
+			}
+
+			return handler.Validate(c)
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return handler.Execute(cmd.Context(), opts)
-		},
-		PostRunE: func(cmd *cobra.Command, args []string) error {
-			return handler.Finalize(cmd.Context(), opts)
+			if err := handler.Execute(c); err != nil {
+				return err
+			}
+
+			return handler.Finalize(c)
 		},
 	}
 

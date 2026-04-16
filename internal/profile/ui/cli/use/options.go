@@ -1,9 +1,7 @@
 package use
 
 import (
-	"errors"
 	"io"
-	"strings"
 )
 
 // Options provides the settings for the profile use command.
@@ -13,13 +11,4 @@ type Options struct {
 
 	// Stdout is the destination for standard output messages.
 	Stdout io.Writer
-}
-
-// Validate ensures that the provided options are consistent and valid.
-func (o *Options) Validate() error {
-	o.Name = strings.TrimSpace(o.Name)
-	if o.Name == "" {
-		return errors.New("profile name is required")
-	}
-	return nil
 }

@@ -11,6 +11,7 @@ import (
 func CreateLsCmd(container di.Container) *cobra.Command {
 	var opts Options
 	var format string
+	var c *CommandContext
 
 	l, _ := container.Logger().CreateLogger("ls")
 	handler := NewCommand(container.FS(), container.URIFactory(), formatting.NewFormatterFactory(), l)
@@ -28,13 +29,18 @@ func CreateLsCmd(container di.Container) *cobra.Command {
 			opts.Stdout = cmd.OutOrStdout()
 			opts.Format = formatting.NewFormat(format)
 
-			return handler.Validate(cmd.Context(), &opts)
+			c = &CommandContext{
+				Ctx:     cmd.Context(),
+				Options: opts,
+			}
+
+			return handler.Validate(c)
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return handler.Execute(cmd.Context(), opts)
-		},
-		PostRunE: func(cmd *cobra.Command, args []string) error {
-			return handler.Finalize(cmd.Context(), opts)
+			if err := handler.Execute(c); err != nil {
+				return err
+			}
+			return handler.Finalize(c)
 		},
 	}
 
