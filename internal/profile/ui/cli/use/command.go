@@ -2,6 +2,7 @@ package use
 
 import (
 	"github.com/michaeldcanady/go-onedrive/internal/di"
+	"github.com/michaeldcanady/go-onedrive/pkg/args"
 	"github.com/spf13/cobra"
 )
 
@@ -18,8 +19,10 @@ func CreateUseCmd(container di.Container) *cobra.Command {
 		Short: "Set the active profile",
 		Long:  "Specify a profile name to be used for subsequent commands.",
 		Args:  cobra.ExactArgs(1),
-		PreRunE: func(cmd *cobra.Command, args []string) error {
-			opts.Name = args[0]
+		PreRunE: func(cmd *cobra.Command, argsSlice []string) error {
+			if err := args.Bind(argsSlice, &opts); err != nil {
+				return err
+			}
 			opts.Stdout = cmd.OutOrStdout()
 
 			c = &CommandContext{

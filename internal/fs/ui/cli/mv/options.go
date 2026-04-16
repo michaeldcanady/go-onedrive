@@ -10,13 +10,13 @@ import (
 // Options provides the settings for the drive mv command.
 type Options struct {
 	// Source is the filesystem path of the item to move.
-	Source string
+	Source string `arg:"1"`
 
 	// SourceURI is the filesystem path of the item to move.
 	SourceURI *fs.URI
 
 	// Destination is the filesystem path where the item should be moved.
-	Destination string
+	Destination string `arg:"2"`
 
 	// DestinationURI is the filesystem path where the item should be moved.
 	DestinationURI *fs.URI

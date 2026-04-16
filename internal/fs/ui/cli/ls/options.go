@@ -13,20 +13,22 @@ import (
 // Options provides the user-facing settings for the drive ls command.
 type Options struct {
 	// Path is the filesystem path to list.
-	Path string
+	Path string `arg:"1"`
 	// URI is the parsed and resolved filesystem location.
 	URI *fs.URI
 	// Recursive determines whether to list subdirectories.
-	Recursive bool
+	Recursive bool `flag:"recursive,short=r,desc='List items recursively',default=false"`
 
-	// Format is the output format (e.g., "short", "long", "json", "tree").
+	// FormatStr is the output format string (e.g., "short", "long", "json", "tree").
+	FormatStr string `flag:"format,short=o,desc='Output format (short, long, json, yaml, tree, table)',default=short"`
+	// Format is the parsed output format.
 	Format formatting.Format
 	// SortFields is the list of fields to sort by (e.g., "name", "size", "modified").
-	SortFields []string
+	SortFields []string `flag:"sort,desc='Sort items by field (name, size, modified)',default=name"`
 	// SortDescending determines whether to sort in descending order.
-	SortDescending bool
+	SortDescending bool `flag:"desc,desc='Sort in descending order',default=false"`
 	// All determines whether to include hidden files.
-	All bool
+	All bool `flag:"all,short=a,desc='Show hidden items',default=false"`
 	// Stdout is the destination for standard output messages.
 	Stdout io.Writer
 }

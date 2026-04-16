@@ -2,6 +2,7 @@ package current
 
 import (
 	"github.com/michaeldcanady/go-onedrive/internal/di"
+	"github.com/michaeldcanady/go-onedrive/pkg/args"
 	"github.com/spf13/cobra"
 )
 
@@ -18,7 +19,11 @@ func CreateCurrentCmd(container di.Container) *cobra.Command {
 		Short: "Show the active profile",
 		Long:  "Display the name of the currently active profile.",
 		Args:  cobra.NoArgs,
-		PreRunE: func(cmd *cobra.Command, args []string) error {
+		PreRunE: func(cmd *cobra.Command, argsSlice []string) error {
+			if err := args.Bind(argsSlice, &opts); err != nil {
+				return err
+			}
+
 			opts.Stdout = cmd.OutOrStdout()
 
 			c = &CommandContext{

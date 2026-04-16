@@ -4,13 +4,14 @@ import (
 	"github.com/michaeldcanady/go-onedrive/internal/di"
 	"github.com/michaeldcanady/go-onedrive/internal/fs/formatting"
 	"github.com/michaeldcanady/go-onedrive/internal/fs/ui/cli"
+	"github.com/michaeldcanady/go-onedrive/pkg/args"
+	"github.com/michaeldcanady/go-onedrive/pkg/flags"
 	"github.com/spf13/cobra"
 )
 
 // CreateLsCmd constructs and returns the cobra.Command for the ls operation.
 func CreateLsCmd(container di.Container) *cobra.Command {
 	var opts Options
-	var format string
 	var c *CommandContext
 
 	l, _ := container.Logger().CreateLogger("ls")
@@ -20,14 +21,14 @@ func CreateLsCmd(container di.Container) *cobra.Command {
 		Use:               "ls <path>",
 		Short:             "List items in a directory",
 		Long:              "List the items in a specified directory in OneDrive or the local filesystem.",
-		Args:              cobra.MaximumNArgs(1),
+		Args:              args.MaximumNArgs(&opts),
 		ValidArgsFunction: cli.ProviderPathCompletion(container),
-		PreRunE: func(cmd *cobra.Command, args []string) error {
-			if len(args) > 0 {
-				opts.Path = args[0]
+		PreRunE: func(cmd *cobra.Command, argsSlice []string) error {
+			if err := args.Bind(argsSlice, &opts); err != nil {
+				return err
 			}
 			opts.Stdout = cmd.OutOrStdout()
-			opts.Format = formatting.NewFormat(format)
+			opts.Format = formatting.NewFormat(opts.FormatStr)
 
 			c = &CommandContext{
 				Ctx:     cmd.Context(),
@@ -44,11 +45,9 @@ func CreateLsCmd(container di.Container) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVarP(&format, "format", "o", "short", "Output format (short, long, json, yaml, tree)")
-	cmd.Flags().BoolVarP(&opts.Recursive, "recursive", "r", false, "List items recursively")
-	cmd.Flags().BoolVarP(&opts.All, "all", "a", false, "Show hidden items")
-	cmd.Flags().StringSliceVar(&opts.SortFields, "sort", []string{"name"}, "Sort items by field (name, size, modified)")
-	cmd.Flags().BoolVar(&opts.SortDescending, "desc", false, "Sort in descending order")
+	if err := flags.RegisterFlags(cmd, &opts); err != nil {
+		panic(err) // Registration should not fail if struct is correct
+	}
 
 	return cmd
 }

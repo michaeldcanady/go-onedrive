@@ -10,19 +10,19 @@ import (
 // Options provides the settings for the drive download command.
 type Options struct {
 	// Source is the remote filesystem path of the item to download.
-	Source string
+	Source string `arg:"1"`
 
 	// SourceURI is the remote filesystem path of the item to download.
 	SourceURI *fs.URI
 
 	// Destination is the local filesystem path where the item should be downloaded.
-	Destination string
+	Destination string `arg:"2"`
 
 	// DestinationURI is the local filesystem path where the item should be downloaded.
 	DestinationURI *fs.URI
 
 	// Recursive determines whether to download directories and their contents.
-	Recursive bool
+	Recursive bool `flag:"recursive,short=r,desc='download directories recursively',default=false"`
 
 	// Stdout is the destination for standard output messages.
 	Stdout io.Writer

@@ -3,6 +3,8 @@ package mkdir
 import (
 	"github.com/michaeldcanady/go-onedrive/internal/di"
 	"github.com/michaeldcanady/go-onedrive/internal/fs/ui/cli"
+	"github.com/michaeldcanady/go-onedrive/pkg/args"
+	"github.com/michaeldcanady/go-onedrive/pkg/flags"
 	"github.com/spf13/cobra"
 )
 
@@ -19,8 +21,10 @@ func CreateMkdirCmd(container di.Container) *cobra.Command {
 		Short:             "Create a new directory",
 		Args:              cobra.ExactArgs(1),
 		ValidArgsFunction: cli.ProviderPathCompletion(container),
-		PreRunE: func(cmd *cobra.Command, args []string) error {
-			opts.Path = args[0]
+		PreRunE: func(cmd *cobra.Command, argsSlice []string) error {
+			if err := args.Bind(argsSlice, &opts); err != nil {
+				return err
+			}
 			opts.Stdout = cmd.OutOrStdout()
 
 			c = &CommandContext{
@@ -36,6 +40,10 @@ func CreateMkdirCmd(container di.Container) *cobra.Command {
 			}
 			return handler.Finalize(c)
 		},
+	}
+
+	if err := flags.RegisterFlags(cmd, &opts); err != nil {
+		panic(err)
 	}
 
 	return cmd

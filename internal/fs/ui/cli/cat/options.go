@@ -10,7 +10,7 @@ import (
 // Options provides the settings for the drive cat command.
 type Options struct {
 	// Path is the filesystem path of the file to read.
-	Path string
+	Path string `arg:"1"`
 	// URI is the parsed and resolved filesystem location.
 	URI *fs.URI
 	// Stdout is the destination for the file's content.

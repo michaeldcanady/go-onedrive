@@ -3,6 +3,8 @@ package download
 import (
 	"github.com/michaeldcanady/go-onedrive/internal/di"
 	"github.com/michaeldcanady/go-onedrive/internal/fs/ui/cli"
+	"github.com/michaeldcanady/go-onedrive/pkg/args"
+	"github.com/michaeldcanady/go-onedrive/pkg/flags"
 	"github.com/spf13/cobra"
 )
 
@@ -17,11 +19,12 @@ func CreateDownloadCmd(container di.Container) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:               "download <remote_path> <local_path>",
 		Short:             "Download files and directories from OneDrive",
-		Args:              cobra.ExactArgs(2),
+		Args:              args.ExactArgs(&opts),
 		ValidArgsFunction: cli.ProviderPathCompletion(container),
-		PreRunE: func(cmd *cobra.Command, args []string) error {
-			opts.Source = args[0]
-			opts.Destination = args[1]
+		PreRunE: func(cmd *cobra.Command, argsSlice []string) error {
+			if err := args.Bind(argsSlice, &opts); err != nil {
+				return err
+			}
 			opts.Stdout = cmd.OutOrStdout()
 
 			c = &CommandContext{
@@ -39,7 +42,9 @@ func CreateDownloadCmd(container di.Container) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().BoolVarP(&opts.Recursive, "recursive", "r", false, "download directories recursively")
+	if err := flags.RegisterFlags(cmd, &opts); err != nil {
+		panic(err)
+	}
 
 	return cmd
 }
