@@ -12,15 +12,16 @@ import (
 	graphgateway "github.com/michaeldcanady/go-onedrive/internal/drive/gateway/graph"
 	"github.com/michaeldcanady/go-onedrive/internal/environment"
 	registry "github.com/michaeldcanady/go-onedrive/internal/fs"
+	"github.com/michaeldcanady/go-onedrive/internal/fs/backend/local"
+	"github.com/michaeldcanady/go-onedrive/internal/fs/backend/onedrive"
 	"github.com/michaeldcanady/go-onedrive/internal/fs/editor"
-	"github.com/michaeldcanady/go-onedrive/internal/fs/providers"
-	_ "github.com/michaeldcanady/go-onedrive/internal/fs/providers/all"
 	"github.com/michaeldcanady/go-onedrive/internal/identity/providers/microsoft"
 	idregistry "github.com/michaeldcanady/go-onedrive/internal/identity/registry"
 	idshared "github.com/michaeldcanady/go-onedrive/internal/identity/shared"
 	"github.com/michaeldcanady/go-onedrive/internal/logger"
 	"github.com/michaeldcanady/go-onedrive/internal/profile"
 	"github.com/michaeldcanady/go-onedrive/internal/state"
+	pkgfs "github.com/michaeldcanady/go-onedrive/pkg/fs"
 	"github.com/michaeldcanady/go-onedrive/pkg/logger/zap"
 )
 
@@ -51,14 +52,11 @@ type DefaultContainer struct {
 
 	// uriFactory is the service for creating and resolving URIs.
 	uriFactory *registry.URIFactory
-
-	registry interface {
-		RegisteredNames() ([]string, error)
-	}
 }
 
 // NewDefaultContainer initializes a new instance of the DefaultContainer with all core services wired.
 func NewDefaultContainer() (*DefaultContainer, error) {
+	ctx := context.Background()
 	envSvc := environment.NewDefaultService("odc")
 
 	if err := envSvc.EnsureAll(); err != nil {
@@ -78,23 +76,28 @@ func NewDefaultContainer() (*DefaultContainer, error) {
 		return nil, fmt.Errorf("failed to initialize profile service: %w", err)
 	}
 
-	// Try to load cached token
-	var cachedCred azcore.TokenCredential
+	msAuth := microsoft.NewAuthenticator(stateSvc, cliLog)
+	idReg := idregistry.NewRegistry()
+	idReg.Register("microsoft", msAuth)
+
+	// Try to load cached token for the default "active" identity
 	tokenData, err := stateSvc.Get(state.KeyAccessToken)
 	if err == nil && tokenData != "" {
 		var token idshared.AccessToken
 		if err := json.Unmarshal([]byte(tokenData), &token); err == nil {
-			cachedCred = microsoft.NewStaticTokenCredential(token)
-		} else {
-			cliLog.Warn("failed to unmarshal cached token", logger.Error(err))
+			// Pre-populate the authenticator's cache with the legacy token if needed.
+			// However, GetCredential already tries to load from state.
 		}
 	}
 
-	msAuth := microsoft.NewAuthenticator(cachedCred, stateSvc, cliLog)
-	idReg := idregistry.NewRegistry()
-	idReg.Register("microsoft", msAuth)
+	// For legacy support, we'll try to get the "default" credential if available.
+	// In the new architecture, we should probably pass the identityID from the mount config.
+	var cachedCred azcore.TokenCredential
+	if cred, err := msAuth.GetCredential(ctx, ""); err == nil {
+		cachedCred = cred.(azcore.TokenCredential)
+	}
 
-	graphProvider := microsoft.NewGraphProvider(msAuth.Credential(), cliLog)
+	graphProvider := microsoft.NewGraphProvider(cachedCred, cliLog)
 
 	driveGateway := graphgateway.NewGraphDriveGateway(graphProvider, cliLog)
 	driveSvc := drive.NewDefaultService(driveGateway, stateSvc, cliLog)
@@ -103,30 +106,55 @@ func NewDefaultContainer() (*DefaultContainer, error) {
 		return nil, fmt.Errorf("failed to initialize drive alias service: %w", err)
 	}
 
-	fsReg := registry.NewRegistry(stateSvc, aliasSvc, cliLog)
-
-	deps := &providerDeps{
-		logger: cliLog,
-		values: map[string]any{
-			"platform":       graphProvider,
-			"drive_resolver": &driveResolver{state: stateSvc},
-		},
-	}
-
-	for _, name := range providers.RegisteredNames() {
-		desc, _ := providers.Get(name)
-		svc, err := desc.Factory(deps)
-		if err != nil {
-			return nil, fmt.Errorf("failed to initialize provider %s: %w", name, err)
-		}
-		fsReg.Register(name, svc)
-	}
-
 	editorSvc := editor.NewDefaultService(envSvc, cliLog)
 
 	configSvc := config.NewYAMLService(profileSvc, stateSvc, cliLog)
 
-	uriFactory := registry.NewURIFactory(fsReg, aliasSvc)
+	vfs := registry.NewVFS()
+	appConfig, _ := configSvc.GetConfig(ctx)
+
+	// Default mounts if none configured
+	if len(appConfig.Mounts) == 0 {
+		localBackend := local.NewBackend("/", cliLog)
+		onedriveBackend := onedrive.NewBackend(graphProvider, "", &driveResolver{state: stateSvc}, cliLog)
+
+		vfs.Mount("/", localBackend)
+		vfs.Mount("/local", localBackend)
+		vfs.Mount("/onedrive", onedriveBackend)
+	} else {
+		for _, m := range appConfig.Mounts {
+			var backend pkgfs.Backend
+			switch m.Type {
+			case "local":
+				root := m.Options["root"]
+				if root == "" {
+					root = "/"
+				}
+				backend = local.NewBackend(root, cliLog)
+			case "onedrive":
+				driveID := m.Options["drive_id"]
+
+				// Identity-aware OneDrive backend
+				p := graphProvider
+				if m.IdentityID != "" {
+					if cred, err := msAuth.GetCredential(ctx, m.IdentityID); err == nil {
+						p = microsoft.NewGraphProvider(cred.(azcore.TokenCredential), cliLog)
+					}
+				}
+
+				backend = onedrive.NewBackend(p, driveID, &driveResolver{state: stateSvc}, cliLog)
+			default:
+				cliLog.Warn("unknown backend type in config", logger.String("type", m.Type), logger.String("path", m.Path))
+				continue
+			}
+
+			if backend != nil {
+				vfs.Mount(m.Path, backend)
+			}
+		}
+	}
+
+	uriFactory := registry.NewURIFactory(vfs, aliasSvc)
 
 	return &DefaultContainer{
 		logger:      logSvc,
@@ -134,8 +162,7 @@ func NewDefaultContainer() (*DefaultContainer, error) {
 		state:       stateSvc,
 		identity:    idReg,
 		profile:     profileSvc,
-		registry:    fsReg,
-		manager:     registry.NewFileSystemManager(fsReg),
+		manager:     vfs,
 		environment: envSvc,
 		editor:      editorSvc,
 		alias:       aliasSvc,
@@ -185,7 +212,7 @@ func (c *DefaultContainer) Profile() profile.Service { return c.profile }
 func (c *DefaultContainer) ProviderRegistry() interface {
 	RegisteredNames() ([]string, error)
 } {
-	return c.registry
+	return nil // Obsolete
 }
 
 // FS returns the orchestrated filesystem.

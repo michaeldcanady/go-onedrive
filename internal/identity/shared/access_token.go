@@ -4,6 +4,8 @@ import "time"
 
 // AccessToken represents an authentication token and its associated metadata.
 type AccessToken struct {
+	// IdentityID is the unique identifier for the user or account (e.g., "user@outlook.com").
+	IdentityID string `json:"identity_id" yaml:"identity_id"`
 	// Token is the raw access token string.
 	Token string `json:"token" yaml:"token"`
 	// RefreshToken is the token used to obtain a new access token.

@@ -16,11 +16,8 @@ var (
 	globalBucketName = []byte("global")
 	// sessionBucketName is used for temporary state that should not persist across application restarts.
 	sessionBucketName = []byte("session")
-	// driveAliasesBucketName is used to store user-defined drive aliases.
-	driveAliasesBucketName = []byte("drive_aliases")
 )
 
-// TODO: consolidate DefaultProfileName somewhere
 const (
 	// stateDBFileName is the name of the BoltDB file used for storing state data.
 	stateDBFileName = "state.db"
@@ -87,66 +84,93 @@ func (bs *BoltService) ensureBuckets() error {
 
 // Get retrieves a state value by its key, checking session scope first, then global.
 func (bs *BoltService) Get(key Key) (string, error) {
+	return bs.GetScoped("", key.String())
+}
+
+// Set assigns a value to a key within the specified scope.
+func (bs *BoltService) Set(key Key, value string, scope Scope) error {
+	return bs.SetScoped("", key.String(), value, scope)
+}
+
+// Clear removes a state value for the given key from all scopes.
+func (bs *BoltService) Clear(key Key) error {
+	return bs.ClearScoped("", key.String())
+}
+
+// GetScoped retrieves a value from a named sub-bucket.
+func (bs *BoltService) GetScoped(bucket, key string) (string, error) {
 	var value string
 	err := bs.db.View(func(tx *bolt.Tx) error {
-		keyStr := key.String()
-
 		for _, scopeKey := range [][]byte{sessionBucketName, globalBucketName} {
-			b := tx.Bucket(scopeKey)
-			if b == nil {
-				return ErrBucketNotFound
+			root := tx.Bucket(scopeKey)
+			if root == nil {
+				continue
 			}
 
-			v := b.Get([]byte(keyStr))
-			if v == nil {
-				continue // Key not found in this scope, try the next one.
+			b := root
+			if bucket != "" {
+				b = root.Bucket([]byte(bucket))
+				if b == nil {
+					continue
+				}
 			}
-			if value = string(v); value != "" {
-				return nil // Return immediately if a non-empty value is found
+
+			v := b.Get([]byte(key))
+			if v != nil {
+				value = string(v)
+				return nil
 			}
 		}
 		return ErrKeyNotFound
 	})
 
-	if err != nil {
-		return "", err
-	}
-	return value, nil
+	return value, err
 }
 
-// Set assigns a value to a key within the specified scope.
-func (bs *BoltService) Set(key Key, value string, scope Scope) error {
+// SetScoped assigns a value to a key within a named sub-bucket.
+func (bs *BoltService) SetScoped(bucket, key, value string, scope Scope) error {
 	return bs.db.Update(func(tx *bolt.Tx) error {
-		keyStr := key.String()
-		bucketName := globalBucketName
+		rootName := globalBucketName
 		if scope == ScopeSession {
-			bucketName = sessionBucketName
+			rootName = sessionBucketName
 		}
 
-		b, err := tx.CreateBucketIfNotExists(bucketName)
+		root, err := tx.CreateBucketIfNotExists(rootName)
 		if err != nil {
-			return fmt.Errorf("failed to get or create bucket %s: %w", string(bucketName), err)
+			return err
 		}
 
-		if err := b.Put([]byte(keyStr), []byte(value)); err != nil {
-			return fmt.Errorf("failed to put state key %s: %w", keyStr, err)
+		b := root
+		if bucket != "" {
+			b, err = root.CreateBucketIfNotExists([]byte(bucket))
+			if err != nil {
+				return err
+			}
 		}
-		return nil
+
+		return b.Put([]byte(key), []byte(value))
 	})
 }
 
-// Clear removes a state value for the given key from all scopes.
-func (bs *BoltService) Clear(key Key) error {
+// ClearScoped removes a value from a named sub-bucket.
+func (bs *BoltService) ClearScoped(bucket, key string) error {
 	return bs.db.Update(func(tx *bolt.Tx) error {
-		keyStr := key.String()
-
-		for _, bucketName := range [][]byte{sessionBucketName, globalBucketName} {
-			b := tx.Bucket(bucketName)
-			if b == nil {
-				return fmt.Errorf("bucket %s not found", string(bucketName))
+		for _, rootName := range [][]byte{sessionBucketName, globalBucketName} {
+			root := tx.Bucket(rootName)
+			if root == nil {
+				continue
 			}
-			if err := b.Delete([]byte(keyStr)); err != nil {
-				return fmt.Errorf("failed to delete state key %s from bucket %s: %w", keyStr, string(bucketName), err)
+
+			b := root
+			if bucket != "" {
+				b = root.Bucket([]byte(bucket))
+				if b == nil {
+					continue
+				}
+			}
+
+			if err := b.Delete([]byte(key)); err != nil {
+				return err
 			}
 		}
 		return nil

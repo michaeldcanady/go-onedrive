@@ -12,6 +12,8 @@ type Authenticator interface {
 	Authenticate(ctx context.Context, opts LoginOptions) (AccessToken, error)
 	// SaveToken persists the provided access token.
 	SaveToken(ctx context.Context, token AccessToken) error
-	// Logout removes any cached authentication state for this provider.
-	Logout(ctx context.Context) error
+	// Logout removes any cached authentication state for a specific identity.
+	Logout(ctx context.Context, identityID string) error
+	// GetCredential returns a provider-specific credential object (e.g., azcore.TokenCredential).
+	GetCredential(ctx context.Context, identityID string) (any, error)
 }

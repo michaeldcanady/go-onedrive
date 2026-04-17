@@ -14,14 +14,19 @@ import (
 	"github.com/microsoftgraph/msgraph-sdk-go/models"
 )
 
-func writeLargeFile(ctx context.Context, p *Provider, driveID, itemPath string, r io.Reader, opts fs.WriteOptions) (fs.Item, error) {
-	log := p.log.WithContext(ctx).With(
+const (
+	// uploadChunkSize is the size of each chunk in a resumable upload (must be multiple of 320 KiB).
+	uploadChunkSize = 320 * 1024 * 10 // 3.2 MiB
+)
+
+func writeLargeFile(ctx context.Context, b *Backend, driveID, itemPath string, r io.Reader, opts fs.WriteOptions) (fs.Item, error) {
+	log := b.log.WithContext(ctx).With(
 		logger.String("method", "writeLargeFile"),
 		logger.String("path", itemPath),
 	)
 
 	url := expandURI("", rootRelativeCreateSessionURITemplate, driveID, itemPath)
-	adapter, err := p.platform.Adapter(ctx)
+	adapter, err := b.platform.Adapter(ctx)
 	if err != nil {
 		return fs.Item{}, mapError(err, itemPath)
 	}
@@ -80,8 +85,7 @@ func writeLargeFile(ctx context.Context, p *Provider, driveID, itemPath string, 
 			if resp.StatusCode == 201 || resp.StatusCode == 200 {
 				// Final chunk uploaded, response contains the DriveItem (potentially)
 				// For simplicity, we Stat the item to get the final metadata.
-				uri := &fs.URI{Provider: providerName, DriveID: driveID, Path: itemPath}
-				return p.Get(ctx, uri)
+				return b.Stat(ctx, itemPath)
 			}
 		}
 
@@ -94,6 +98,5 @@ func writeLargeFile(ctx context.Context, p *Provider, driveID, itemPath string, 
 	}
 
 	// If we got here, we might have finished without a 200/201 (e.g. totalSize was unknown)
-	uri := &fs.URI{Provider: providerName, DriveID: driveID, Path: itemPath}
-	return p.Get(ctx, uri)
+	return b.Stat(ctx, itemPath)
 }

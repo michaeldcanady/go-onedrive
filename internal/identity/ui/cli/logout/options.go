@@ -4,6 +4,8 @@ import "io"
 
 // Options provides the user-facing settings for the auth logout command.
 type Options struct {
+	// IdentityID is the specific account to logout (optional).
+	IdentityID string
 	// Force specifies whether to clear all cached credentials for the profile.
 	Force bool
 	// Stdout is the destination for standard output messages.

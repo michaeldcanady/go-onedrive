@@ -60,25 +60,31 @@ type mockStateService struct {
 }
 
 func (m *mockStateService) Get(key state.Key) (string, error) {
-	return m.data["config_override"], nil
+	return m.data[key.String()], nil
 }
 
 func (m *mockStateService) Set(key state.Key, value string, scope state.Scope) error {
-	m.data["config_override"] = value
+	m.data[key.String()] = value
 	return nil
 }
 
-func (m *mockStateService) Clear(key state.Key) error { return nil }
-
-func (m *mockStateService) GetDriveAlias(alias string) (string, error) { return "", nil }
-func (m *mockStateService) SetDriveAlias(alias, driveID string) error  { return nil }
-func (m *mockStateService) RemoveDriveAlias(alias string) error        { return nil }
-func (m *mockStateService) ListDriveAliases() (map[string]string, error) {
-	return make(map[string]string), nil
+func (m *mockStateService) Clear(key state.Key) error {
+	delete(m.data, key.String())
+	return nil
 }
 
-func (m *mockStateService) GetDriveAliasByDriveID(driveID string) (string, error) {
-	return "", nil
+func (m *mockStateService) GetScoped(bucket, key string) (string, error) {
+	return m.data[bucket+"/"+key], nil
+}
+
+func (m *mockStateService) SetScoped(bucket, key, value string, scope state.Scope) error {
+	m.data[bucket+"/"+key] = value
+	return nil
+}
+
+func (m *mockStateService) ClearScoped(bucket, key string) error {
+	delete(m.data, bucket+"/"+key)
+	return nil
 }
 
 type mockLogger struct{}
