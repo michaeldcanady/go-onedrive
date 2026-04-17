@@ -8,6 +8,7 @@ import (
 // Create{{.StructName}}Cmd constructs and returns the cobra.Command for the {{.CommandName}} operation.
 func Create{{.StructName}}Cmd(container di.Container) *cobra.Command {
 	var opts Options
+	var c *CommandContext
 
 	l, _ := container.Logger().CreateLogger("{{.CommandName}}")
 	handler := NewCommand(container, l)
@@ -19,8 +20,13 @@ func Create{{.StructName}}Cmd(container di.Container) *cobra.Command {
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			opts.Stdout = cmd.OutOrStdout()
 			opts.Stderr = cmd.ErrOrStderr()
-			
-			return handler.Validate(cmd.Context(), &opts)
+
+			c = &CommandContext{
+				Ctx: cmd.Context()
+				Options: opts
+			}
+
+			return handler.Validate(c)
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return handler.Execute(cmd.Context(), opts)
