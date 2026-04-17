@@ -3,10 +3,10 @@ package fs
 import "errors"
 
 var (
-	ErrNotFound      = errors.New("not found")
-	ErrForbidden     = errors.New("forbidden")
-	ErrConflict      = errors.New("conflict")
-	ErrInternal      = errors.New("internal error")
+	ErrNotFound       = errors.New("not found")
+	ErrForbidden      = errors.New("forbidden")
+	ErrConflict       = errors.New("conflict")
+	ErrInternal       = errors.New("internal error")
 	ErrInvalidRequest = errors.New("invalid request")
 )
 

@@ -1,6 +1,8 @@
 package registry
 
 import (
+	"context"
+
 	"github.com/michaeldcanady/go-onedrive/internal/identity/shared"
 )
 
@@ -10,4 +12,6 @@ type Service interface {
 	Register(provider string, auth shared.Authenticator)
 	// Get retrieves the authenticator for a given provider name.
 	Get(provider string) (shared.Authenticator, error)
+	// ListIdentities returns all identity IDs for a specific provider.
+	ListIdentities(ctx context.Context, provider string) ([]string, error)
 }

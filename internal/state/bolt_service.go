@@ -176,3 +176,47 @@ func (bs *BoltService) ClearScoped(bucket, key string) error {
 		return nil
 	})
 }
+
+// ListScoped returns all keys within a named sub-bucket across all scopes.
+func (bs *BoltService) ListScoped(bucket string) ([]string, error) {
+	keySet := make(map[string]struct{})
+	err := bs.db.View(func(tx *bolt.Tx) error {
+		for _, rootName := range [][]byte{sessionBucketName, globalBucketName} {
+			root := tx.Bucket(rootName)
+			if root == nil {
+				continue
+			}
+
+			b := root
+			if bucket != "" {
+				b = root.Bucket([]byte(bucket))
+				if b == nil {
+					continue
+				}
+			}
+
+			err := b.ForEach(func(k, v []byte) error {
+				// If v is nil, it's a sub-bucket, which we ignore for now as we only want keys in the current bucket level.
+				if v != nil {
+					keySet[string(k)] = struct{}{}
+				}
+				return nil
+			})
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	keys := make([]string, 0, len(keySet))
+	for k := range keySet {
+		keys = append(keys, k)
+	}
+
+	return keys, nil
+}

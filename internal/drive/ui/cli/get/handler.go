@@ -33,8 +33,8 @@ func (c *Command) Validate(ctx *CommandContext) error {
 func (c *Command) Execute(ctx *CommandContext) error {
 	log := c.log.WithContext(ctx.Ctx)
 
-	log.Debug("fetching active drive")
-	d, err := c.drive.GetActive(ctx.Ctx)
+	log.Debug("fetching active drive", logger.String("identity", ctx.Options.IdentityID))
+	d, err := c.drive.GetActive(ctx.Ctx, ctx.Options.IdentityID)
 	if err != nil {
 		log.Error("failed to get active drive", logger.Error(err))
 		return fmt.Errorf("failed to get active drive: %w", err)

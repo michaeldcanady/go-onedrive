@@ -15,4 +15,6 @@ type Service interface {
 	SetScoped(bucket, key, value string, scope Scope) error
 	// ClearScoped removes a value from a named sub-bucket.
 	ClearScoped(bucket, key string) error
+	// ListScoped returns all keys within a named sub-bucket across all scopes.
+	ListScoped(bucket string) ([]string, error)
 }

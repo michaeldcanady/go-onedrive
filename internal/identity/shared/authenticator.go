@@ -16,4 +16,6 @@ type Authenticator interface {
 	Logout(ctx context.Context, identityID string) error
 	// GetCredential returns a provider-specific credential object (e.g., azcore.TokenCredential).
 	GetCredential(ctx context.Context, identityID string) (any, error)
+	// ListIdentities returns a list of all identity IDs currently known to this provider.
+	ListIdentities(ctx context.Context) ([]string, error)
 }

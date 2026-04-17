@@ -26,7 +26,7 @@ func ProviderPathCompletion(container di.Container, supportAlias bool) func(cmd 
 			stateSvc = container.Alias()
 		}
 
-		drives, err := container.Drive().ListDrives(cmd.Context())
+		drives, err := container.Drive().ListDrives(cmd.Context(), "")
 		if err != nil {
 			return nil, cobra.ShellCompDirectiveError | cobra.ShellCompDirectiveNoFileComp
 		}

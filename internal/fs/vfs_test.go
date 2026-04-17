@@ -26,7 +26,7 @@ func (m *mockBackend) Create(ctx context.Context, path string, r io.Reader) (fs.
 }
 func (m *mockBackend) Mkdir(ctx context.Context, path string) error  { return nil }
 func (m *mockBackend) Remove(ctx context.Context, path string) error { return nil }
-func (m *mockBackend) Capabilities() fs.Capabilities               { return fs.Capabilities{} }
+func (m *mockBackend) Capabilities() fs.Capabilities                 { return fs.Capabilities{} }
 
 func TestVFS_Resolve(t *testing.T) {
 	vfs := NewVFS()

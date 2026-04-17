@@ -1,6 +1,7 @@
 package registry
 
 import (
+	"context"
 	"fmt"
 	"sync"
 
@@ -38,4 +39,13 @@ func (r *Registry) Get(provider string) (shared.Authenticator, error) {
 		return nil, fmt.Errorf("identity provider %s not found in registry", provider)
 	}
 	return auth, nil
+}
+
+// ListIdentities returns all identity IDs for a specific provider.
+func (r *Registry) ListIdentities(ctx context.Context, provider string) ([]string, error) {
+	auth, err := r.Get(provider)
+	if err != nil {
+		return nil, err
+	}
+	return auth.ListIdentities(ctx)
 }

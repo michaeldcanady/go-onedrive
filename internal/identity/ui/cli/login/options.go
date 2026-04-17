@@ -6,6 +6,8 @@ import "io"
 type Options struct {
 	// IdentityID is the specific account to login (optional).
 	IdentityID string
+	// Alias is an optional human-friendly name for the identity.
+	Alias string
 	// ShowToken determines whether the acquired access token is printed to stdout.
 	ShowToken bool
 	// Force specifies whether to re-authenticate regardless of existing credentials.

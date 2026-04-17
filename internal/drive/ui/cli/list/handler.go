@@ -34,15 +34,15 @@ func (c *Command) Validate(ctx *CommandContext) error {
 func (c *Command) Execute(ctx *CommandContext) error {
 	log := c.log.WithContext(ctx.Ctx)
 
-	log.Debug("fetching all drives")
-	drives, err := c.drive.ListDrives(ctx.Ctx)
+	log.Debug("fetching all drives", logger.String("identity", ctx.Options.IdentityID))
+	drives, err := c.drive.ListDrives(ctx.Ctx, ctx.Options.IdentityID)
 	if err != nil {
 		log.Error("failed to list drives", logger.Error(err))
 		return fmt.Errorf("failed to list drives: %w", err)
 	}
 
 	log.Debug("fetching active drive for marking")
-	current, _ := c.drive.GetActive(ctx.Ctx)
+	current, _ := c.drive.GetActive(ctx.Ctx, ctx.Options.IdentityID)
 
 	log.Debug("fetching aliases")
 	aliases, _ := c.alias.ListAliases()

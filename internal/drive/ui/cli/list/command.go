@@ -38,5 +38,7 @@ marking the currently active drive and showing any defined aliases.`,
 		},
 	}
 
+	cmd.Flags().StringVar(&opts.IdentityID, "id", "", "The specific identity (email or alias) to list drives for")
+
 	return cmd
 }

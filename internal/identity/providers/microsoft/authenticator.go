@@ -191,3 +191,8 @@ func (a *Authenticator) GetCredential(ctx context.Context, identityID string) (a
 
 	return cred, nil
 }
+
+// ListIdentities returns all cached Microsoft identity IDs.
+func (a *Authenticator) ListIdentities(ctx context.Context) ([]string, error) {
+	return a.state.ListScoped(tokenBucket)
+}

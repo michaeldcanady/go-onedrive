@@ -87,6 +87,17 @@ func (m *mockStateService) ClearScoped(bucket, key string) error {
 	return nil
 }
 
+func (m *mockStateService) ListScoped(bucket string) ([]string, error) {
+	var keys []string
+	prefix := bucket + "/"
+	for k := range m.data {
+		if len(k) > len(prefix) && k[:len(prefix)] == prefix {
+			keys = append(keys, k[len(prefix):])
+		}
+	}
+	return keys, nil
+}
+
 type mockLogger struct{}
 
 func (m *mockLogger) Info(msg string, kv ...logger.Field)           {}

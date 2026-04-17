@@ -71,8 +71,14 @@ func (c *Command) Execute(ctx context.Context, opts Options) error {
 		log.Debug("auth method set via configuration", logger.String("method", method.String()))
 	}
 
+	// Identity ID preference: Alias > IdentityID
+	identityID := opts.IdentityID
+	if opts.Alias != "" {
+		identityID = opts.Alias
+	}
+
 	loginOpts := shared.LoginOptions{
-		IdentityID:  opts.IdentityID,
+		IdentityID:  identityID,
 		Force:       true, // Login command always forces a fresh flow
 		Interactive: true,
 		Method:      method,

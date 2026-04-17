@@ -124,6 +124,52 @@ func (s *YAMLService) SaveConfig(ctx context.Context, cfg Config) error {
 	return nil
 }
 
+// AddMount adds or updates a mount point in the configuration.
+func (s *YAMLService) AddMount(ctx context.Context, m MountConfig) error {
+	cfg, err := s.GetConfig(ctx)
+	if err != nil {
+		return err
+	}
+
+	// Update existing or add new
+	found := false
+	for i, existing := range cfg.Mounts {
+		if existing.Path == m.Path {
+			cfg.Mounts[i] = m
+			found = true
+			break
+		}
+	}
+
+	if !found {
+		cfg.Mounts = append(cfg.Mounts, m)
+	}
+
+	return s.SaveConfig(ctx, cfg)
+}
+
+// RemoveMount removes a mount point from the configuration.
+func (s *YAMLService) RemoveMount(ctx context.Context, path string) error {
+	cfg, err := s.GetConfig(ctx)
+	if err != nil {
+		return err
+	}
+
+	newMounts := make([]MountConfig, 0, len(cfg.Mounts))
+	for _, m := range cfg.Mounts {
+		if m.Path != path {
+			newMounts = append(newMounts, m)
+		}
+	}
+
+	if len(newMounts) == len(cfg.Mounts) {
+		return fmt.Errorf("mount point %s not found", path)
+	}
+
+	cfg.Mounts = newMounts
+	return s.SaveConfig(ctx, cfg)
+}
+
 // defaultConfig returns the fallback configuration used when no file is found.
 func (s *YAMLService) defaultConfig() Config {
 	return Config{

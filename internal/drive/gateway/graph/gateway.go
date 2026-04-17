@@ -2,9 +2,12 @@ package graph
 
 import (
 	"context"
+	"fmt"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/michaeldcanady/go-onedrive/internal/drive"
-	platform "github.com/michaeldcanady/go-onedrive/internal/identity/providers/shared"
+	"github.com/michaeldcanady/go-onedrive/internal/identity/providers/microsoft"
+	idshared "github.com/michaeldcanady/go-onedrive/internal/identity/shared"
 	"github.com/michaeldcanady/go-onedrive/internal/logger"
 	msgraphsdkcore "github.com/microsoftgraph/msgraph-sdk-go-core"
 	"github.com/microsoftgraph/msgraph-sdk-go/models"
@@ -13,21 +16,26 @@ import (
 
 // GraphDriveGateway implements the drive.Gateway interface using Microsoft Graph.
 type GraphDriveGateway struct {
-	platform platform.PlatformProvider
-	log      logger.Logger
+	auth idshared.Authenticator
+	log  logger.Logger
 }
 
 // NewGraphDriveGateway initializes a new instance of the GraphDriveGateway.
-func NewGraphDriveGateway(p platform.PlatformProvider, log logger.Logger) *GraphDriveGateway {
+func NewGraphDriveGateway(auth idshared.Authenticator, log logger.Logger) *GraphDriveGateway {
 	return &GraphDriveGateway{
-		platform: p,
-		log:      log,
+		auth: auth,
+		log:  log,
 	}
 }
 
-// ListDrives retrieves all OneDrive drives for the authenticated user.
-func (g *GraphDriveGateway) ListDrives(ctx context.Context) ([]drive.Drive, error) {
-	adapter, err := g.platform.Adapter(ctx)
+func (g *GraphDriveGateway) ListDrives(ctx context.Context, identityID string) ([]drive.Drive, error) {
+	cred, err := g.auth.GetCredential(ctx, identityID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get credential for identity %s: %w", identityID, err)
+	}
+
+	p := microsoft.NewGraphProvider(cred.(azcore.TokenCredential), g.log)
+	adapter, err := p.Adapter(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -57,8 +65,14 @@ func (g *GraphDriveGateway) ListDrives(ctx context.Context) ([]drive.Drive, erro
 }
 
 // GetPersonalDrive retrieves the user's default personal drive.
-func (g *GraphDriveGateway) GetPersonalDrive(ctx context.Context) (drive.Drive, error) {
-	adapter, err := g.platform.Adapter(ctx)
+func (g *GraphDriveGateway) GetPersonalDrive(ctx context.Context, identityID string) (drive.Drive, error) {
+	cred, err := g.auth.GetCredential(ctx, identityID)
+	if err != nil {
+		return drive.Drive{}, fmt.Errorf("failed to get credential for identity %s: %w", identityID, err)
+	}
+
+	p := microsoft.NewGraphProvider(cred.(azcore.TokenCredential), g.log)
+	adapter, err := p.Adapter(ctx)
 	if err != nil {
 		return drive.Drive{}, err
 	}

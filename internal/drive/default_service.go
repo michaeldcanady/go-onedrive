@@ -26,10 +26,10 @@ func NewDefaultService(gateway Gateway, state state.Service, l logger.Logger) *D
 }
 
 // ListDrives retrieves all accessible OneDrive drives.
-func (s *DefaultService) ListDrives(ctx context.Context) ([]Drive, error) {
-	s.log.Debug("listing drives")
+func (s *DefaultService) ListDrives(ctx context.Context, identityID string) ([]Drive, error) {
+	s.log.Debug("listing drives", logger.String("identity", identityID))
 
-	drives, err := s.gateway.ListDrives(ctx)
+	drives, err := s.gateway.ListDrives(ctx, identityID)
 	if err != nil {
 		s.log.Error("failed to list drives", logger.Error(err))
 		return nil, fmt.Errorf("failed to list drives: %w", err)
@@ -39,10 +39,10 @@ func (s *DefaultService) ListDrives(ctx context.Context) ([]Drive, error) {
 }
 
 // ResolveDrive identifies a drive by its ID or name.
-func (s *DefaultService) ResolveDrive(ctx context.Context, driveRef string) (Drive, error) {
-	s.log.Debug("resolving drive", logger.String("ref", driveRef))
+func (s *DefaultService) ResolveDrive(ctx context.Context, driveRef string, identityID string) (Drive, error) {
+	s.log.Debug("resolving drive", logger.String("ref", driveRef), logger.String("identity", identityID))
 
-	drives, err := s.ListDrives(ctx)
+	drives, err := s.ListDrives(ctx, identityID)
 	if err != nil {
 		return Drive{}, err
 	}
@@ -57,10 +57,10 @@ func (s *DefaultService) ResolveDrive(ctx context.Context, driveRef string) (Dri
 }
 
 // ResolvePersonalDrive retrieves the user's primary personal drive.
-func (s *DefaultService) ResolvePersonalDrive(ctx context.Context) (Drive, error) {
-	s.log.Debug("resolving personal drive")
+func (s *DefaultService) ResolvePersonalDrive(ctx context.Context, identityID string) (Drive, error) {
+	s.log.Debug("resolving personal drive", logger.String("identity", identityID))
 
-	d, err := s.gateway.GetPersonalDrive(ctx)
+	d, err := s.gateway.GetPersonalDrive(ctx, identityID)
 	if err != nil {
 		s.log.Error("failed to get personal drive", logger.Error(err))
 		return Drive{}, fmt.Errorf("failed to get personal drive: %w", err)
@@ -70,17 +70,29 @@ func (s *DefaultService) ResolvePersonalDrive(ctx context.Context) (Drive, error
 }
 
 // GetActive retrieves the currently active drive.
-func (s *DefaultService) GetActive(ctx context.Context) (Drive, error) {
-	id, err := s.state.Get(state.KeyDrive)
+func (s *DefaultService) GetActive(ctx context.Context, identityID string) (Drive, error) {
+	var id string
+	var err error
+
+	if identityID != "" {
+		id, err = s.state.GetScoped("tokens/microsoft", identityID+"/active_drive")
+	} else {
+		id, err = s.state.Get(state.KeyDrive)
+	}
+
 	if err != nil {
-		return Drive{}, fmt.Errorf("failed to get active drive ID: %w", err)
+		if err != state.ErrKeyNotFound {
+			return Drive{}, fmt.Errorf("failed to get active drive ID: %w", err)
+		}
+		// If not found, fall back to personal drive
+		id = ""
 	}
 
 	if id == "" {
-		return s.ResolvePersonalDrive(ctx)
+		return s.ResolvePersonalDrive(ctx, identityID)
 	}
 
-	return s.ResolveDrive(ctx, id)
+	return s.ResolveDrive(ctx, id, identityID)
 }
 
 // SetActive marks a specific drive as the active one with the given scope.

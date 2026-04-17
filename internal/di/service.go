@@ -99,7 +99,7 @@ func NewDefaultContainer() (*DefaultContainer, error) {
 
 	graphProvider := microsoft.NewGraphProvider(cachedCred, cliLog)
 
-	driveGateway := graphgateway.NewGraphDriveGateway(graphProvider, cliLog)
+	driveGateway := graphgateway.NewGraphDriveGateway(msAuth, cliLog)
 	driveSvc := drive.NewDefaultService(driveGateway, stateSvc, cliLog)
 	aliasSvc, err := alias.NewBoltService(envSvc, cliLog)
 	if err != nil {

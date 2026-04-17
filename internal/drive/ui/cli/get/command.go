@@ -36,5 +36,7 @@ func CreateGetCmd(container di.Container) *cobra.Command {
 		},
 	}
 
+	cmd.Flags().StringVar(&opts.IdentityID, "id", "", "The specific identity (email or alias) to query the active drive for")
+
 	return cmd
 }
