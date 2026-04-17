@@ -6,6 +6,8 @@ import "io"
 type Options struct {
 	// DriveRef identifies the target drive by ID, name, or alias.
 	DriveRef string
+	// IdentityID is the specific account to scope this drive selection to (optional).
+	IdentityID string
 	// Stdout is the destination for the operation's output messages.
 	Stdout io.Writer
 }

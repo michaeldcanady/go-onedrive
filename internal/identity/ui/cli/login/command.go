@@ -35,6 +35,7 @@ You can specify the method via flags or in your profile configuration.`,
 		},
 	}
 
+	cmd.Flags().StringVar(&opts.IdentityID, "id", "", "The specific identity (email or alias) to authenticate")
 	cmd.Flags().BoolVar(&opts.ShowToken, "show-token", false, "Display the access token after login")
 	cmd.Flags().BoolVarP(&opts.Force, "force", "f", false, "Force re-authentication even if a valid profile exists")
 	cmd.Flags().StringVar(&opts.Method, "method", "", "Authentication method (interactive, device-code, client-secret, environment)")

@@ -84,6 +84,9 @@ func (s *DefaultService) GetActive(ctx context.Context) (Drive, error) {
 }
 
 // SetActive marks a specific drive as the active one with the given scope.
-func (s *DefaultService) SetActive(ctx context.Context, driveID string, scope state.Scope) error {
+func (s *DefaultService) SetActive(ctx context.Context, driveID string, identityID string, scope state.Scope) error {
+	if identityID != "" {
+		return s.state.SetScoped("tokens/microsoft", identityID+"/active_drive", driveID, scope)
+	}
 	return s.state.Set(state.KeyDrive, driveID, scope)
 }

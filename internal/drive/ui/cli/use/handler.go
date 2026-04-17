@@ -45,8 +45,8 @@ func (c *Command) Execute(ctx *CommandContext) error {
 		id = ctx.Options.DriveRef
 	}
 
-	log.Debug("setting active drive", logger.String("id", id))
-	if err := c.drive.SetActive(ctx.Ctx, id, state.ScopeGlobal); err != nil {
+	log.Debug("setting active drive", logger.String("id", id), logger.String("identity", ctx.Options.IdentityID))
+	if err := c.drive.SetActive(ctx.Ctx, id, ctx.Options.IdentityID, state.ScopeGlobal); err != nil {
 		log.Error("failed to switch drive", logger.Error(err))
 		return fmt.Errorf("failed to switch to drive %s: %w", ctx.Options.DriveRef, err)
 	}

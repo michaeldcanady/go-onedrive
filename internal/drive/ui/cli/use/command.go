@@ -39,5 +39,7 @@ func CreateUseCmd(container di.Container) *cobra.Command {
 		},
 	}
 
+	cmd.Flags().StringVar(&opts.IdentityID, "id", "", "The specific identity (email or alias) to scope this drive selection to")
+
 	return cmd
 }

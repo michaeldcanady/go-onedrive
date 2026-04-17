@@ -4,6 +4,8 @@ import "io"
 
 // Options provides the user-facing settings for the auth login command.
 type Options struct {
+	// IdentityID is the specific account to login (optional).
+	IdentityID string
 	// ShowToken determines whether the acquired access token is printed to stdout.
 	ShowToken bool
 	// Force specifies whether to re-authenticate regardless of existing credentials.

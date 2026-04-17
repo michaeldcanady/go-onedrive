@@ -116,7 +116,7 @@ func NewDefaultContainer() (*DefaultContainer, error) {
 	// Default mounts if none configured
 	if len(appConfig.Mounts) == 0 {
 		localBackend := local.NewBackend("/", cliLog)
-		onedriveBackend := onedrive.NewBackend(graphProvider, "", &driveResolver{state: stateSvc}, cliLog)
+		onedriveBackend := onedrive.NewBackend(graphProvider, "", &driveResolver{state: stateSvc, identityID: ""}, cliLog)
 
 		vfs.Mount("/", localBackend)
 		vfs.Mount("/local", localBackend)
@@ -136,13 +136,14 @@ func NewDefaultContainer() (*DefaultContainer, error) {
 
 				// Identity-aware OneDrive backend
 				p := graphProvider
-				if m.IdentityID != "" {
-					if cred, err := msAuth.GetCredential(ctx, m.IdentityID); err == nil {
+				identityID := m.IdentityID
+				if identityID != "" {
+					if cred, err := msAuth.GetCredential(ctx, identityID); err == nil {
 						p = microsoft.NewGraphProvider(cred.(azcore.TokenCredential), cliLog)
 					}
 				}
 
-				backend = onedrive.NewBackend(p, driveID, &driveResolver{state: stateSvc}, cliLog)
+				backend = onedrive.NewBackend(p, driveID, &driveResolver{state: stateSvc, identityID: identityID}, cliLog)
 			default:
 				cliLog.Warn("unknown backend type in config", logger.String("type", m.Type), logger.String("path", m.Path))
 				continue
@@ -173,10 +174,14 @@ func NewDefaultContainer() (*DefaultContainer, error) {
 
 // driveResolver implements fs.DriveResolver using the internal state service.
 type driveResolver struct {
-	state state.Service
+	state      state.Service
+	identityID string
 }
 
 func (r *driveResolver) GetActiveDriveID(ctx context.Context) (string, error) {
+	if r.identityID != "" {
+		return r.state.GetScoped("tokens/microsoft", r.identityID+"/active_drive")
+	}
 	return r.state.Get(state.KeyDrive)
 }
 

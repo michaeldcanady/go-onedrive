@@ -17,5 +17,6 @@ type Service interface {
 	// GetActive retrieves the currently active drive.
 	GetActive(ctx context.Context) (Drive, error)
 	// SetActive marks a specific drive as the active one with the given scope.
-	SetActive(ctx context.Context, driveID string, scope state.Scope) error
+	// identityID is optional and scopes the drive selection to a specific account.
+	SetActive(ctx context.Context, driveID string, identityID string, scope state.Scope) error
 }

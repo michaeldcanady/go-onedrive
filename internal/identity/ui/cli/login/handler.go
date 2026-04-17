@@ -72,6 +72,7 @@ func (c *Command) Execute(ctx context.Context, opts Options) error {
 	}
 
 	loginOpts := shared.LoginOptions{
+		IdentityID:  opts.IdentityID,
 		Force:       true, // Login command always forces a fresh flow
 		Interactive: true,
 		Method:      method,
