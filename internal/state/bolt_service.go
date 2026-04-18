@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/michaeldcanady/go-onedrive/internal/environment"
-	"github.com/michaeldcanady/go-onedrive/internal/shared"
 
 	bolt "go.etcd.io/bbolt"
 )
@@ -49,16 +48,6 @@ func NewBoltService(env environment.Service) (*BoltService, error) {
 	if err := bs.ensureBuckets(); err != nil {
 		bs.db.Close() // Close DB if initialization fails
 		return nil, err
-	}
-
-	// Set default profile if not set
-	if _, err := bs.Get(KeyProfile); err != nil {
-		if err != ErrKeyNotFound {
-			return nil, fmt.Errorf("failed to check for default profile: %w", err)
-		}
-		if err := bs.Set(KeyProfile, shared.DefaultProfileName, ScopeGlobal); err != nil {
-			return nil, fmt.Errorf("failed to set default profile: %w", err)
-		}
 	}
 
 	return bs, nil

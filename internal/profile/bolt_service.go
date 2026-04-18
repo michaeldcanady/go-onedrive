@@ -14,14 +14,14 @@ import (
 
 // DefaultService is an implementation of the profile.Service.
 type DefaultService struct {
-	repo  Repository
-	env   environment.Service
-	state state.Service
-	db    *bolt.DB // Kept for cleanup and migration
+	profileRepo  ProfileRepository
+	settingsRepo SettingsRepository
+	env          environment.Service
+	db           *bolt.DB // Kept for cleanup
 }
 
 // NewDefaultService initializes a new instance of the DefaultService.
-func NewDefaultService(env environment.Service, state state.Service) (*DefaultService, error) {
+func NewDefaultService(env environment.Service) (*DefaultService, error) {
 	configDir, err := env.ConfigDir()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get config directory: %w", err)
@@ -33,10 +33,13 @@ func NewDefaultService(env environment.Service, state state.Service) (*DefaultSe
 		return nil, fmt.Errorf("failed to open BoltDB: %w", err)
 	}
 
-	// Ensure profiles bucket is created
+	// Ensure buckets are created
 	err = db.Update(func(tx *bolt.Tx) error {
 		if _, err := tx.CreateBucketIfNotExists([]byte("profiles")); err != nil {
 			return fmt.Errorf("failed to create profiles bucket: %w", err)
+		}
+		if _, err := tx.CreateBucketIfNotExists([]byte("settings")); err != nil {
+			return fmt.Errorf("failed to create settings bucket: %w", err)
 		}
 		return nil
 	})
@@ -47,16 +50,17 @@ func NewDefaultService(env environment.Service, state state.Service) (*DefaultSe
 
 	repo := NewBoltRepository(db)
 	s := &DefaultService{
-		repo:  repo,
-		env:   env,
-		state: state,
-		db:    db,
+		profileRepo:  repo,
+		settingsRepo: repo,
+		env:          env,
+		db:           db,
 	}
 
 	// Ensure default profile exists
 	exists, _ := repo.Exists(context.Background(), shared.DefaultProfileName)
 	if !exists {
 		_, _ = s.Create(context.Background(), shared.DefaultProfileName)
+		_ = repo.SetSetting(context.Background(), "active_profile", shared.DefaultProfileName)
 	}
 
 	return s, nil
@@ -64,7 +68,7 @@ func NewDefaultService(env environment.Service, state state.Service) (*DefaultSe
 
 // ResolvePath returns the configuration file path for the specified profile name.
 func (s *DefaultService) ResolvePath(ctx context.Context, profileName string) (string, error) {
-	p, err := s.repo.Get(ctx, profileName)
+	p, err := s.profileRepo.Get(ctx, profileName)
 	if err != nil {
 		return "", err
 	}
@@ -78,12 +82,12 @@ func (s *DefaultService) Close() error {
 
 // Get returns the profile with the specified name.
 func (s *DefaultService) Get(ctx context.Context, name string) (Profile, error) {
-	return s.repo.Get(ctx, name)
+	return s.profileRepo.Get(ctx, name)
 }
 
 // List returns a list of all profiles.
 func (s *DefaultService) List(ctx context.Context) ([]Profile, error) {
-	return s.repo.List(ctx)
+	return s.profileRepo.List(ctx)
 }
 
 // Create generates a new profile with the specified name.
@@ -96,7 +100,7 @@ func (s *DefaultService) Create(ctx context.Context, name string) (Profile, erro
 		UpdatedAt:  time.Now(),
 	}
 
-	if err := s.repo.Create(ctx, p); err != nil {
+	if err := s.profileRepo.Create(ctx, p); err != nil {
 		return Profile{}, err
 	}
 	return p, nil
@@ -104,37 +108,39 @@ func (s *DefaultService) Create(ctx context.Context, name string) (Profile, erro
 
 // Delete removes the profile with the specified name.
 func (s *DefaultService) Delete(ctx context.Context, name string) error {
-	return s.repo.Delete(ctx, name)
+	return s.profileRepo.Delete(ctx, name)
 }
 
 // Exists checks if a profile with the specified name exists.
 func (s *DefaultService) Exists(ctx context.Context, name string) (bool, error) {
-	return s.repo.Exists(ctx, name)
+	return s.profileRepo.Exists(ctx, name)
 }
 
 // Update saves the specified profile.
 func (s *DefaultService) Update(ctx context.Context, p Profile) error {
 	p.UpdatedAt = time.Now()
-	return s.repo.Update(ctx, p)
+	return s.profileRepo.Update(ctx, p)
 }
 
 // GetActive retrieves the currently active profile.
 func (s *DefaultService) GetActive(ctx context.Context) (Profile, error) {
-	name, err := s.state.Get(state.KeyProfile)
+	name, err := s.settingsRepo.GetSetting(ctx, "active_profile")
 	if err != nil {
-		return Profile{}, err
+		// Default to shared.DefaultProfileName if not set
+		name = shared.DefaultProfileName
 	}
 	return s.Get(ctx, name)
 }
 
 // SetActive marks a specific profile as the active one.
 func (s *DefaultService) SetActive(ctx context.Context, name string, scope state.Scope) error {
-	exists, err := s.repo.Exists(ctx, name)
+	exists, err := s.profileRepo.Exists(ctx, name)
 	if err != nil {
 		return err
 	}
 	if !exists {
 		return ErrProfileNotFound
 	}
-	return s.state.Set(state.KeyProfile, name, scope)
+
+	return s.settingsRepo.SetSetting(ctx, "active_profile", name)
 }

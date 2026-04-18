@@ -4,8 +4,8 @@ import (
 	"context"
 )
 
-// Repository defines the persistence interface for user profiles.
-type Repository interface {
+// ProfileRepository defines the persistence interface for user profiles.
+type ProfileRepository interface {
 	// Get retrieves a profile by name.
 	Get(ctx context.Context, name string) (Profile, error)
 	// Create persists a new profile.
@@ -18,4 +18,12 @@ type Repository interface {
 	List(ctx context.Context) ([]Profile, error)
 	// Exists checks if a profile exists by name.
 	Exists(ctx context.Context, name string) (bool, error)
+}
+
+// SettingsRepository defines the persistence interface for global application settings.
+type SettingsRepository interface {
+	// GetSetting retrieves a setting value by key.
+	GetSetting(ctx context.Context, key string) (string, error)
+	// SetSetting persists a setting value.
+	SetSetting(ctx context.Context, key, value string) error
 }

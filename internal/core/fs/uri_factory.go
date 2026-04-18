@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"github.com/michaeldcanady/go-onedrive/internal/alias"
-	st "github.com/michaeldcanady/go-onedrive/internal/storage"
 )
 
 // URIFactory provides a structured way to create and validate URI objects.
@@ -47,7 +46,7 @@ func (f *URIFactory) FromString(input string) (*URI, error) {
 				rest = "/" + rest
 			}
 			return &URI{
-				Provider: st.DefaultProviderPrefix,
+				Provider: DefaultProviderPrefix,
 				DriveID:  driveID,
 				Path:     rest,
 			}, nil
@@ -61,7 +60,7 @@ func (f *URIFactory) FromString(input string) (*URI, error) {
 	}
 
 	return &URI{
-		Provider: st.DefaultProviderPrefix,
+		Provider: DefaultProviderPrefix,
 		Path:     path,
 	}, nil
 }
@@ -89,7 +88,7 @@ func (f *URIFactory) FromAlias(name, subpath string) (*URI, error) {
 	}
 
 	return &URI{
-		Provider: st.DefaultProviderPrefix,
+		Provider: DefaultProviderPrefix,
 		DriveID:  driveID,
 		Path:     subpath,
 	}, nil

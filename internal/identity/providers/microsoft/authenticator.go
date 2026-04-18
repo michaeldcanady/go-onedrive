@@ -2,7 +2,6 @@ package microsoft
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"sync"
@@ -10,28 +9,24 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
+	"github.com/michaeldcanady/go-onedrive/internal/identity"
 	"github.com/michaeldcanady/go-onedrive/internal/identity/shared"
 	"github.com/michaeldcanady/go-onedrive/internal/logger"
-	"github.com/michaeldcanady/go-onedrive/internal/state"
-)
-
-const (
-	tokenBucket = "tokens/microsoft"
 )
 
 // Authenticator implements the identity.shared.Authenticator interface for Microsoft.
 type Authenticator struct {
 	creds map[string]azcore.TokenCredential
 	mu    sync.RWMutex
-	state state.Service
+	repo  identity.TokenRepository
 	log   logger.Logger
 }
 
 // NewAuthenticator initializes a new Microsoft authenticator.
-func NewAuthenticator(state state.Service, log logger.Logger) *Authenticator {
+func NewAuthenticator(repo identity.TokenRepository, log logger.Logger) *Authenticator {
 	return &Authenticator{
 		creds: make(map[string]azcore.TokenCredential),
-		state: state,
+		repo:  repo,
 		log:   log,
 	}
 }
@@ -82,12 +77,7 @@ func (a *Authenticator) Authenticate(ctx context.Context, opts shared.LoginOptio
 func (a *Authenticator) SaveToken(ctx context.Context, token shared.AccessToken) error {
 	a.log.Debug("caching access token", logger.String("identity", token.IdentityID))
 
-	tokenData, err := json.Marshal(token)
-	if err != nil {
-		return fmt.Errorf("failed to serialize token for caching: %w", err)
-	}
-
-	if err := a.state.SetScoped(tokenBucket, token.IdentityID, string(tokenData), state.ScopeGlobal); err != nil {
+	if err := a.repo.Save(ctx, a.ProviderName(), token); err != nil {
 		return fmt.Errorf("failed to cache access token: %w", err)
 	}
 
@@ -157,7 +147,7 @@ func (a *Authenticator) Logout(ctx context.Context, identityID string) error {
 	a.mu.Lock()
 	delete(a.creds, identityID)
 	a.mu.Unlock()
-	return a.state.ClearScoped(tokenBucket, identityID)
+	return a.repo.Delete(ctx, a.ProviderName(), identityID)
 }
 
 // GetCredential returns the underlying Azure token credential for a specific identity.
@@ -170,15 +160,10 @@ func (a *Authenticator) GetCredential(ctx context.Context, identityID string) (a
 		return cred, nil
 	}
 
-	// Try to load from state
-	tokenData, err := a.state.GetScoped(tokenBucket, identityID)
+	// Try to load from repo
+	token, err := a.repo.Get(ctx, a.ProviderName(), identityID)
 	if err != nil {
 		return nil, fmt.Errorf("no credential found for identity %s: %w", identityID, err)
-	}
-
-	var token shared.AccessToken
-	if err := json.Unmarshal([]byte(tokenData), &token); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal cached token: %w", err)
 	}
 
 	// For now, return a static token credential.
@@ -194,5 +179,5 @@ func (a *Authenticator) GetCredential(ctx context.Context, identityID string) (a
 
 // ListIdentities returns all cached Microsoft identity IDs.
 func (a *Authenticator) ListIdentities(ctx context.Context) ([]string, error) {
-	return a.state.ListScoped(tokenBucket)
+	return a.repo.List(ctx, a.ProviderName())
 }

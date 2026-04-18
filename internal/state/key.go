@@ -1,15 +1,12 @@
 package state
 
-// Key identifies a piece of application state (e.g., active profile or drive).
+// Key identifies a piece of application state.
+// State keys are used for transient, session-scoped data.
 type Key int
 
 const (
-	// KeyProfile represents the currently active profile.
+	// KeyProfile represents the currently active profile (transient override).
 	KeyProfile Key = iota
-	// KeyDrive represents the currently active drive.
-	KeyDrive
-	// KeyAccessToken represents the cached authentication token.
-	KeyAccessToken
 	// KeyConfigOverride represents a transient configuration path override.
 	KeyConfigOverride
 )
@@ -19,10 +16,6 @@ func (k Key) String() string {
 	switch k {
 	case KeyProfile:
 		return "profile"
-	case KeyDrive:
-		return "drive"
-	case KeyAccessToken:
-		return "access_token"
 	case KeyConfigOverride:
 		return "config_override"
 	default:

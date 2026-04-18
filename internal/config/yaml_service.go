@@ -10,7 +10,6 @@ import (
 
 // ConfigService is an implementation of the Service interface that uses a Repository for persistence.
 type ConfigService struct {
-	repo     Repository
 	resolver profile.PathResolver
 	state    state.Service
 	log      logger.Logger

@@ -6,22 +6,23 @@ import (
 	"strings"
 
 	"github.com/michaeldcanady/go-onedrive/internal/logger"
+	"github.com/michaeldcanady/go-onedrive/internal/profile"
 	"github.com/michaeldcanady/go-onedrive/internal/state"
 )
 
 // DefaultService provides the default implementation of the drive service.
 type DefaultService struct {
-	gateway Gateway
-	state   state.Service
-	log     logger.Logger
+	gateway    Gateway
+	profileSvc profile.Service
+	log        logger.Logger
 }
 
 // NewDefaultService initializes a new instance of the DefaultService.
-func NewDefaultService(gateway Gateway, state state.Service, l logger.Logger) *DefaultService {
+func NewDefaultService(gateway Gateway, profileSvc profile.Service, l logger.Logger) *DefaultService {
 	return &DefaultService{
-		gateway: gateway,
-		state:   state,
-		log:     l,
+		gateway:    gateway,
+		profileSvc: profileSvc,
+		log:        l,
 	}
 }
 
@@ -71,22 +72,12 @@ func (s *DefaultService) ResolvePersonalDrive(ctx context.Context, identityID st
 
 // GetActive retrieves the currently active drive.
 func (s *DefaultService) GetActive(ctx context.Context, identityID string) (Drive, error) {
-	var id string
-	var err error
-
-	if identityID != "" {
-		id, err = s.state.GetScoped("tokens/microsoft", identityID+"/active_drive")
-	} else {
-		id, err = s.state.Get(state.KeyDrive)
-	}
-
+	p, err := s.profileSvc.GetActive(ctx)
 	if err != nil {
-		if err != state.ErrKeyNotFound {
-			return Drive{}, fmt.Errorf("failed to get active drive ID: %w", err)
-		}
-		// If not found, fall back to personal drive
-		id = ""
+		return Drive{}, err
 	}
+
+	id := p.ActiveDriveID
 
 	if id == "" {
 		return s.ResolvePersonalDrive(ctx, identityID)
@@ -97,8 +88,11 @@ func (s *DefaultService) GetActive(ctx context.Context, identityID string) (Driv
 
 // SetActive marks a specific drive as the active one with the given scope.
 func (s *DefaultService) SetActive(ctx context.Context, driveID string, identityID string, scope state.Scope) error {
-	if identityID != "" {
-		return s.state.SetScoped("tokens/microsoft", identityID+"/active_drive", driveID, scope)
+	p, err := s.profileSvc.GetActive(ctx)
+	if err != nil {
+		return err
 	}
-	return s.state.Set(state.KeyDrive, driveID, scope)
+
+	p.ActiveDriveID = driveID
+	return s.profileSvc.Update(ctx, p)
 }

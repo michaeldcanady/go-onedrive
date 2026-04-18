@@ -2,8 +2,9 @@ package di
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
+	"path/filepath"
+	"time"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/michaeldcanady/go-onedrive/internal/config"
@@ -15,15 +16,16 @@ import (
 	"github.com/michaeldcanady/go-onedrive/internal/storage/backend/local"
 	"github.com/michaeldcanady/go-onedrive/internal/storage/backend/onedrive"
 	"github.com/michaeldcanady/go-onedrive/internal/editor"
+	"github.com/michaeldcanady/go-onedrive/internal/identity"
 	"github.com/michaeldcanady/go-onedrive/internal/identity/providers/microsoft"
 	idregistry "github.com/michaeldcanady/go-onedrive/internal/identity/registry"
-	idshared "github.com/michaeldcanady/go-onedrive/internal/identity/shared"
 	"github.com/michaeldcanady/go-onedrive/internal/logger"
 	"github.com/michaeldcanady/go-onedrive/internal/mount"
 	"github.com/michaeldcanady/go-onedrive/internal/profile"
 	"github.com/michaeldcanady/go-onedrive/internal/state"
 	pkgfs "github.com/michaeldcanady/go-onedrive/pkg/fs"
 	"github.com/michaeldcanady/go-onedrive/pkg/logger/zap"
+	bolt "go.etcd.io/bbolt"
 )
 
 // DefaultContainer provides a concrete implementation of the Container interface.
@@ -93,7 +95,7 @@ func (c *DefaultContainer) initBaseServices() error {
 	}
 	c.state = stateSvc
 
-	profileSvc, err := profile.NewDefaultService(c.environment, c.state)
+	profileSvc, err := profile.NewDefaultService(c.environment)
 	if err != nil {
 		return fmt.Errorf("failed to initialize profile service: %w", err)
 	}
@@ -107,17 +109,22 @@ func (c *DefaultContainer) initBaseServices() error {
 
 func (c *DefaultContainer) initIdentityServices(ctx context.Context) error {
 	cliLog, _ := c.logger.CreateLogger("cli")
-	msAuth := microsoft.NewAuthenticator(c.state, cliLog)
+
+	stateDir, err := c.environment.StateDir()
+	if err != nil {
+		return fmt.Errorf("failed to get state directory: %w", err)
+	}
+	dbPath := filepath.Join(stateDir, "identity.db")
+	db, err := bolt.Open(dbPath, 0600, &bolt.Options{Timeout: 1 * time.Second})
+	if err != nil {
+		return fmt.Errorf("failed to open identity database: %w", err)
+	}
+
+	tokenRepo := identity.NewBoltRepository(db)
+	msAuth := microsoft.NewAuthenticator(tokenRepo, cliLog)
 
 	c.identity = idregistry.NewRegistry()
 	c.identity.Register("microsoft", msAuth)
-
-	// Legacy token support
-	tokenData, err := c.state.Get(state.KeyAccessToken)
-	if err == nil && tokenData != "" {
-		var token idshared.AccessToken
-		_ = json.Unmarshal([]byte(tokenData), &token)
-	}
 
 	return nil
 }
@@ -127,7 +134,7 @@ func (c *DefaultContainer) initDriveServices(ctx context.Context) error {
 	msAuth, _ := c.identity.Get("microsoft")
 
 	driveGateway := graphgateway.NewGraphDriveGateway(msAuth, cliLog)
-	c.drive = drive.NewDefaultService(driveGateway, c.state, cliLog)
+	c.drive = drive.NewDefaultService(driveGateway, c.profile, cliLog)
 
 	aliasSvc, err := alias.NewDefaultService(c.environment, cliLog)
 	if err != nil {
@@ -156,7 +163,7 @@ func (c *DefaultContainer) initVFSServices(ctx context.Context) error {
 			cachedCred = cred.(azcore.TokenCredential)
 		}
 		p := microsoft.NewGraphProvider(cachedCred, cliLog)
-		dr := drive.NewDefaultResolver(c.state, identityID)
+		dr := drive.NewDefaultResolver(c.profile, identityID)
 		return onedrive.NewBackend(p, driveID, dr, cliLog)
 	}
 

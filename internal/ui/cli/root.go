@@ -1,5 +1,4 @@
-// Package root provides the entry point for the odc application.
-package root
+package cli
 
 import (
 	"fmt"
