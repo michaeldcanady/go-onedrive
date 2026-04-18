@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"github.com/michaeldcanady/go-onedrive/internal/drive"
-	"github.com/michaeldcanady/go-onedrive/internal/drive/alias"
+	"github.com/michaeldcanady/go-onedrive/internal/alias"
 	"github.com/michaeldcanady/go-onedrive/internal/logger"
 )
 
@@ -45,7 +45,7 @@ func (c *Command) Execute(ctx *CommandContext) error {
 	current, _ := c.drive.GetActive(ctx.Ctx, ctx.Options.IdentityID)
 
 	log.Debug("fetching aliases")
-	aliases, _ := c.alias.ListAliases()
+	aliases, _ := c.alias.ListAliases(ctx.Ctx)
 
 	log.Info("drives retrieved successfully", logger.Int("count", len(drives)))
 	fmt.Fprintln(ctx.Options.Stdout, "Available OneDrive drives:")

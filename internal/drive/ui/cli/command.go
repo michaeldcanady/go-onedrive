@@ -3,7 +3,7 @@ package cli
 
 import (
 	"github.com/michaeldcanady/go-onedrive/internal/di"
-	"github.com/michaeldcanady/go-onedrive/internal/drive/alias/ui/cli"
+	"github.com/michaeldcanady/go-onedrive/internal/alias/ui/cli"
 	"github.com/michaeldcanady/go-onedrive/internal/drive/ui/cli/get"
 	"github.com/michaeldcanady/go-onedrive/internal/drive/ui/cli/list"
 	"github.com/michaeldcanady/go-onedrive/internal/drive/ui/cli/use"

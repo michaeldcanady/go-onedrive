@@ -8,17 +8,18 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/michaeldcanady/go-onedrive/internal/config"
 	"github.com/michaeldcanady/go-onedrive/internal/drive"
-	"github.com/michaeldcanady/go-onedrive/internal/drive/alias"
+	"github.com/michaeldcanady/go-onedrive/internal/alias"
 	graphgateway "github.com/michaeldcanady/go-onedrive/internal/drive/gateway/graph"
 	"github.com/michaeldcanady/go-onedrive/internal/environment"
-	registry "github.com/michaeldcanady/go-onedrive/internal/fs"
-	"github.com/michaeldcanady/go-onedrive/internal/fs/backend/local"
-	"github.com/michaeldcanady/go-onedrive/internal/fs/backend/onedrive"
-	"github.com/michaeldcanady/go-onedrive/internal/fs/editor"
+	registry "github.com/michaeldcanady/go-onedrive/internal/core/fs"
+	"github.com/michaeldcanady/go-onedrive/internal/storage/backend/local"
+	"github.com/michaeldcanady/go-onedrive/internal/storage/backend/onedrive"
+	"github.com/michaeldcanady/go-onedrive/internal/editor"
 	"github.com/michaeldcanady/go-onedrive/internal/identity/providers/microsoft"
 	idregistry "github.com/michaeldcanady/go-onedrive/internal/identity/registry"
 	idshared "github.com/michaeldcanady/go-onedrive/internal/identity/shared"
 	"github.com/michaeldcanady/go-onedrive/internal/logger"
+	"github.com/michaeldcanady/go-onedrive/internal/mount"
 	"github.com/michaeldcanady/go-onedrive/internal/profile"
 	"github.com/michaeldcanady/go-onedrive/internal/state"
 	pkgfs "github.com/michaeldcanady/go-onedrive/pkg/fs"
@@ -32,6 +33,8 @@ type DefaultContainer struct {
 	logger logger.Service
 	// config is the service for managing application settings.
 	config config.Service
+	// mounts is the service for managing VFS mount points.
+	mounts mount.Service
 	// state is the service for tracking session and persistent state.
 	state state.Service
 	// identity is the registry for managing multiple identity providers.
@@ -46,10 +49,8 @@ type DefaultContainer struct {
 	editor editor.Service
 	// drive is the OneDrive drive management service.
 	drive drive.Service
-
 	// alias is the drive alias management service.
 	alias alias.Service
-
 	// uriFactory is the service for creating and resolving URIs.
 	uriFactory *registry.URIFactory
 }
@@ -57,66 +58,111 @@ type DefaultContainer struct {
 // NewDefaultContainer initializes a new instance of the DefaultContainer with all core services wired.
 func NewDefaultContainer() (*DefaultContainer, error) {
 	ctx := context.Background()
-	envSvc := environment.NewDefaultService("odc")
+	c := &DefaultContainer{}
 
-	if err := envSvc.EnsureAll(); err != nil {
-		return nil, fmt.Errorf("failed to ensure environment directories: %w", err)
+	if err := c.initBaseServices(); err != nil {
+		return nil, err
 	}
 
-	logSvc := zap.NewZapService(envSvc)
-	cliLog, _ := logSvc.CreateLogger("cli")
+	if err := c.initIdentityServices(ctx); err != nil {
+		return nil, err
+	}
 
-	stateSvc, err := state.NewBoltService(envSvc)
+	if err := c.initDriveServices(ctx); err != nil {
+		return nil, err
+	}
+
+	if err := c.initVFSServices(ctx); err != nil {
+		return nil, err
+	}
+
+	return c, nil
+}
+
+func (c *DefaultContainer) initBaseServices() error {
+	c.environment = environment.NewDefaultService("odc")
+	if err := c.environment.EnsureAll(); err != nil {
+		return fmt.Errorf("failed to ensure environment directories: %w", err)
+	}
+
+	c.logger = zap.NewZapService(c.environment)
+
+	stateSvc, err := state.NewBoltService(c.environment)
 	if err != nil {
-		return nil, fmt.Errorf("failed to initialize state service: %w", err)
+		return fmt.Errorf("failed to initialize state service: %w", err)
 	}
+	c.state = stateSvc
 
-	profileSvc, err := profile.NewBoltService(envSvc, stateSvc)
+	profileSvc, err := profile.NewDefaultService(c.environment, c.state)
 	if err != nil {
-		return nil, fmt.Errorf("failed to initialize profile service: %w", err)
+		return fmt.Errorf("failed to initialize profile service: %w", err)
 	}
+	c.profile = profileSvc
 
-	msAuth := microsoft.NewAuthenticator(stateSvc, cliLog)
-	idReg := idregistry.NewRegistry()
-	idReg.Register("microsoft", msAuth)
+	cliLog, _ := c.logger.CreateLogger("cli")
+	c.editor = editor.NewDefaultService(c.environment, cliLog)
 
-	// Try to load cached token for the default "active" identity
-	tokenData, err := stateSvc.Get(state.KeyAccessToken)
+	return nil
+}
+
+func (c *DefaultContainer) initIdentityServices(ctx context.Context) error {
+	cliLog, _ := c.logger.CreateLogger("cli")
+	msAuth := microsoft.NewAuthenticator(c.state, cliLog)
+
+	c.identity = idregistry.NewRegistry()
+	c.identity.Register("microsoft", msAuth)
+
+	// Legacy token support
+	tokenData, err := c.state.Get(state.KeyAccessToken)
 	if err == nil && tokenData != "" {
 		var token idshared.AccessToken
-		if err := json.Unmarshal([]byte(tokenData), &token); err == nil {
-			// Pre-populate the authenticator's cache with the legacy token if needed.
-			// However, GetCredential already tries to load from state.
-		}
+		_ = json.Unmarshal([]byte(tokenData), &token)
 	}
 
-	// For legacy support, we'll try to get the "default" credential if available.
-	// In the new architecture, we should probably pass the identityID from the mount config.
-	var cachedCred azcore.TokenCredential
-	if cred, err := msAuth.GetCredential(ctx, ""); err == nil {
-		cachedCred = cred.(azcore.TokenCredential)
-	}
+	return nil
+}
 
-	graphProvider := microsoft.NewGraphProvider(cachedCred, cliLog)
+func (c *DefaultContainer) initDriveServices(ctx context.Context) error {
+	cliLog, _ := c.logger.CreateLogger("cli")
+	msAuth, _ := c.identity.Get("microsoft")
 
 	driveGateway := graphgateway.NewGraphDriveGateway(msAuth, cliLog)
-	driveSvc := drive.NewDefaultService(driveGateway, stateSvc, cliLog)
-	aliasSvc, err := alias.NewBoltService(envSvc, cliLog)
+	c.drive = drive.NewDefaultService(driveGateway, c.state, cliLog)
+
+	aliasSvc, err := alias.NewDefaultService(c.environment, cliLog)
 	if err != nil {
-		return nil, fmt.Errorf("failed to initialize drive alias service: %w", err)
+		return fmt.Errorf("failed to initialize drive alias service: %w", err)
 	}
+	c.alias = aliasSvc
 
-	editorSvc := editor.NewDefaultService(envSvc, cliLog)
+	return nil
+}
 
-	configSvc := config.NewYAMLService(profileSvc, stateSvc, cliLog)
+func (c *DefaultContainer) initVFSServices(ctx context.Context) error {
+	cliLog, _ := c.logger.CreateLogger("cli")
+	yamlSvc := config.NewConfigService(c.profile, c.state, cliLog)
+	c.config = yamlSvc
+	c.mounts = mount.NewMountService(c.config)
 
 	vfs := registry.NewVFS()
-	appConfig, _ := configSvc.GetConfig(ctx)
+	appConfig, _ := c.config.GetConfig(ctx)
 
-	// Default mounts if none configured
+	msAuth, _ := c.identity.Get("microsoft")
+
+	// Helper to create onedrive backend
+	createOneDriveBackend := func(identityID, driveID string) pkgfs.Backend {
+		var cachedCred azcore.TokenCredential
+		if cred, err := msAuth.GetCredential(ctx, identityID); err == nil {
+			cachedCred = cred.(azcore.TokenCredential)
+		}
+		p := microsoft.NewGraphProvider(cachedCred, cliLog)
+		dr := drive.NewDefaultResolver(c.state, identityID)
+		return onedrive.NewBackend(p, driveID, dr, cliLog)
+	}
+
 	if len(appConfig.Mounts) == 0 {
 		localBackend := local.NewBackend("/", cliLog)
-		onedriveBackend := onedrive.NewBackend(graphProvider, "", &driveResolver{state: stateSvc, identityID: ""}, cliLog)
+		onedriveBackend := createOneDriveBackend("", "")
 
 		vfs.Mount("/", localBackend)
 		vfs.Mount("/local", localBackend)
@@ -132,71 +178,21 @@ func NewDefaultContainer() (*DefaultContainer, error) {
 				}
 				backend = local.NewBackend(root, cliLog)
 			case "onedrive":
-				driveID := m.Options["drive_id"]
-
-				// Identity-aware OneDrive backend
-				p := graphProvider
-				identityID := m.IdentityID
-				if identityID != "" {
-					if cred, err := msAuth.GetCredential(ctx, identityID); err == nil {
-						p = microsoft.NewGraphProvider(cred.(azcore.TokenCredential), cliLog)
-					}
-				}
-
-				backend = onedrive.NewBackend(p, driveID, &driveResolver{state: stateSvc, identityID: identityID}, cliLog)
+				backend = createOneDriveBackend(m.IdentityID, m.Options["drive_id"])
 			default:
 				cliLog.Warn("unknown backend type in config", logger.String("type", m.Type), logger.String("path", m.Path))
 				continue
 			}
-
 			if backend != nil {
 				vfs.Mount(m.Path, backend)
 			}
 		}
 	}
 
-	uriFactory := registry.NewURIFactory(vfs, aliasSvc)
+	c.manager = vfs
+	c.uriFactory = registry.NewURIFactory(vfs, c.alias)
 
-	return &DefaultContainer{
-		logger:      logSvc,
-		config:      configSvc,
-		state:       stateSvc,
-		identity:    idReg,
-		profile:     profileSvc,
-		manager:     vfs,
-		environment: envSvc,
-		editor:      editorSvc,
-		alias:       aliasSvc,
-		drive:       driveSvc,
-		uriFactory:  uriFactory,
-	}, nil
-}
-
-// driveResolver implements fs.DriveResolver using the internal state service.
-type driveResolver struct {
-	state      state.Service
-	identityID string
-}
-
-func (r *driveResolver) GetActiveDriveID(ctx context.Context) (string, error) {
-	if r.identityID != "" {
-		return r.state.GetScoped("tokens/microsoft", r.identityID+"/active_drive")
-	}
-	return r.state.Get(state.KeyDrive)
-}
-
-type providerDeps struct {
-	logger logger.Logger
-	values map[string]any
-}
-
-func (d *providerDeps) Logger() logger.Logger {
-	return d.logger
-}
-
-func (d *providerDeps) Get(key string) (any, bool) {
-	val, ok := d.values[key]
-	return val, ok
+	return nil
 }
 
 // Logger returns the global logging service.
@@ -204,6 +200,9 @@ func (c *DefaultContainer) Logger() logger.Service { return c.logger }
 
 // Config returns the configuration management service.
 func (c *DefaultContainer) Config() config.Service { return c.config }
+
+// Mounts returns the VFS mount management service.
+func (c *DefaultContainer) Mounts() mount.Service { return c.mounts }
 
 // State returns the application state tracking service.
 func (c *DefaultContainer) State() state.Service { return c.state }

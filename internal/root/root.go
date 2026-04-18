@@ -6,25 +6,27 @@ import (
 	"os"
 	"strings"
 
-	configcmd "github.com/michaeldcanady/go-onedrive/internal/config/ui/cli"
 	"github.com/michaeldcanady/go-onedrive/internal/di"
 	drive "github.com/michaeldcanady/go-onedrive/internal/drive/ui/cli"
-	"github.com/michaeldcanady/go-onedrive/internal/fs/ui/cli/cat"
-	"github.com/michaeldcanady/go-onedrive/internal/fs/ui/cli/cp"
-	"github.com/michaeldcanady/go-onedrive/internal/fs/ui/cli/download"
-	"github.com/michaeldcanady/go-onedrive/internal/fs/ui/cli/edit"
-	"github.com/michaeldcanady/go-onedrive/internal/fs/ui/cli/ls"
-	"github.com/michaeldcanady/go-onedrive/internal/fs/ui/cli/mkdir"
-	"github.com/michaeldcanady/go-onedrive/internal/fs/ui/cli/mv"
-	"github.com/michaeldcanady/go-onedrive/internal/fs/ui/cli/rm"
-	"github.com/michaeldcanady/go-onedrive/internal/fs/ui/cli/touch"
-	"github.com/michaeldcanady/go-onedrive/internal/fs/ui/cli/upload"
 	auth "github.com/michaeldcanady/go-onedrive/internal/identity/ui/cli"
 	"github.com/michaeldcanady/go-onedrive/internal/logger"
 	"github.com/michaeldcanady/go-onedrive/internal/middleware"
-	profile "github.com/michaeldcanady/go-onedrive/internal/profile/ui/cli"
+
 	"github.com/michaeldcanady/go-onedrive/internal/shared"
 	"github.com/michaeldcanady/go-onedrive/internal/state"
+	"github.com/michaeldcanady/go-onedrive/internal/ui/cli/config"
+	"github.com/michaeldcanady/go-onedrive/internal/ui/cli/fs/cat"
+	"github.com/michaeldcanady/go-onedrive/internal/ui/cli/fs/cp"
+	"github.com/michaeldcanady/go-onedrive/internal/ui/cli/fs/download"
+	"github.com/michaeldcanady/go-onedrive/internal/ui/cli/fs/edit"
+	"github.com/michaeldcanady/go-onedrive/internal/ui/cli/fs/ls"
+	"github.com/michaeldcanady/go-onedrive/internal/ui/cli/fs/mkdir"
+	"github.com/michaeldcanady/go-onedrive/internal/ui/cli/fs/mv"
+	"github.com/michaeldcanady/go-onedrive/internal/ui/cli/fs/rm"
+	"github.com/michaeldcanady/go-onedrive/internal/ui/cli/fs/touch"
+	"github.com/michaeldcanady/go-onedrive/internal/ui/cli/fs/upload"
+	"github.com/michaeldcanady/go-onedrive/internal/ui/cli/mount"
+	"github.com/michaeldcanady/go-onedrive/internal/ui/cli/profile"
 	"github.com/michaeldcanady/go-onedrive/internal/version"
 	"github.com/spf13/cobra"
 	"github.com/spf13/cobra/doc"
@@ -191,7 +193,8 @@ Zsh:
 		auth.CreateAuthCmd(container),
 		profile.CreateProfileCmd(container),
 		drive.CreateDriveCmd(container),
-		configcmd.CreateConfigCmd(container),
+		config.CreateConfigCmd(container),
+		mount.CreateMountCmd(container),
 		ls.CreateLsCmd(container),
 		cat.CreateCatCmd(container),
 		mkdir.CreateMkdirCmd(container),

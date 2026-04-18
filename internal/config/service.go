@@ -12,9 +12,4 @@ type Service interface {
 	GetPath(ctx context.Context) (string, bool)
 	// SaveConfig saves the Configuration for the active profile.
 	SaveConfig(ctx context.Context, cfg Config) error
-
-	// AddMount adds a new mount point to the configuration.
-	AddMount(ctx context.Context, m MountConfig) error
-	// RemoveMount removes a mount point from the configuration.
-	RemoveMount(ctx context.Context, path string) error
 }

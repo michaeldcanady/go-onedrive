@@ -3,12 +3,13 @@ package di
 import (
 	"github.com/michaeldcanady/go-onedrive/internal/config"
 	"github.com/michaeldcanady/go-onedrive/internal/drive"
-	"github.com/michaeldcanady/go-onedrive/internal/drive/alias"
+	"github.com/michaeldcanady/go-onedrive/internal/alias"
 	"github.com/michaeldcanady/go-onedrive/internal/environment"
-	registry "github.com/michaeldcanady/go-onedrive/internal/fs"
-	"github.com/michaeldcanady/go-onedrive/internal/fs/editor"
+	registry "github.com/michaeldcanady/go-onedrive/internal/core/fs"
+	"github.com/michaeldcanady/go-onedrive/internal/editor"
 	idregistry "github.com/michaeldcanady/go-onedrive/internal/identity/registry"
 	"github.com/michaeldcanady/go-onedrive/internal/logger"
+	"github.com/michaeldcanady/go-onedrive/internal/mount"
 	"github.com/michaeldcanady/go-onedrive/internal/profile"
 	"github.com/michaeldcanady/go-onedrive/internal/state"
 )
@@ -19,6 +20,8 @@ type Container interface {
 	Logger() logger.Service
 	// Config returns the configuration service.
 	Config() config.Service
+	// Mounts returns the VFS mount management service.
+	Mounts() mount.Service
 	// State returns the application state service.
 	State() state.Service
 	// Identity returns the identity provider registry.

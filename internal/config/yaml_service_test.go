@@ -18,7 +18,7 @@ func TestYAMLService_SaveAndGet(t *testing.T) {
 
 	l := &mockLogger{}
 	st := &mockStateService{data: make(map[string]string)}
-	svc := NewYAMLService(nil, st, l)
+	svc := NewConfigService(nil, st, l)
 	ctx := context.Background()
 
 	configPath := filepath.Join(tmpDir, "config.yaml")

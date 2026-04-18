@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/michaeldcanady/go-onedrive/internal/drive"
-	"github.com/michaeldcanady/go-onedrive/internal/drive/alias"
+	"github.com/michaeldcanady/go-onedrive/internal/alias"
 	"github.com/michaeldcanady/go-onedrive/internal/logger"
 )
 
@@ -41,7 +41,7 @@ func (c *Command) Execute(ctx *CommandContext) error {
 	}
 
 	log.Debug("fetching aliases for active drive")
-	aliases, err := c.alias.ListAliases()
+	aliases, err := c.alias.ListAliases(ctx.Ctx)
 	if err != nil {
 		log.Warn("failed to list aliases", logger.Error(err))
 	}

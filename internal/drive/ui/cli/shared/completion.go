@@ -1,6 +1,7 @@
 package shared
 
 import (
+	"context"
 	"strings"
 
 	"github.com/michaeldcanady/go-onedrive/internal/di"
@@ -13,14 +14,14 @@ func newNoOpStateService() *noOpStateService {
 	return &noOpStateService{}
 }
 
-func (s *noOpStateService) GetAliasByDriveID(driveID string) (string, error) {
+func (s *noOpStateService) GetAliasByDriveID(ctx context.Context, driveID string) (string, error) {
 	return "", nil
 }
 
 func ProviderPathCompletion(container di.Container, supportAlias bool) func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 	return func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 		var stateSvc interface {
-			GetAliasByDriveID(driveID string) (string, error)
+			GetAliasByDriveID(ctx context.Context, driveID string) (string, error)
 		} = newNoOpStateService()
 		if supportAlias {
 			stateSvc = container.Alias()
@@ -34,7 +35,7 @@ func ProviderPathCompletion(container di.Container, supportAlias bool) func(cmd 
 		var results []string
 		for _, drive := range drives {
 			displayName := drive.Name
-			alias, err := stateSvc.GetAliasByDriveID(drive.Name)
+			alias, err := stateSvc.GetAliasByDriveID(cmd.Context(), drive.Name)
 			if err == nil && alias != "" {
 				displayName = alias
 			}

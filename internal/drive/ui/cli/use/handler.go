@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/michaeldcanady/go-onedrive/internal/drive"
-	"github.com/michaeldcanady/go-onedrive/internal/drive/alias"
+	"github.com/michaeldcanady/go-onedrive/internal/alias"
 	"github.com/michaeldcanady/go-onedrive/internal/logger"
 	"github.com/michaeldcanady/go-onedrive/internal/state"
 )
@@ -39,7 +39,7 @@ func (c *Command) Execute(ctx *CommandContext) error {
 	log.Info("switching active drive")
 
 	log.Debug("checking if drive reference is an alias")
-	id, err := c.alias.GetDriveIDByAlias(ctx.Options.DriveRef)
+	id, err := c.alias.GetDriveIDByAlias(ctx.Ctx, ctx.Options.DriveRef)
 	if err != nil {
 		log.Debug("drive reference is not an alias, using as ID")
 		id = ctx.Options.DriveRef
