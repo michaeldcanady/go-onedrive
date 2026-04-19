@@ -22,7 +22,6 @@ import (
 	"github.com/michaeldcanady/go-onedrive/internal/logger"
 	"github.com/michaeldcanady/go-onedrive/internal/mount"
 	"github.com/michaeldcanady/go-onedrive/internal/profile"
-	"github.com/michaeldcanady/go-onedrive/internal/state"
 	pkgfs "github.com/michaeldcanady/go-onedrive/pkg/fs"
 	"github.com/michaeldcanady/go-onedrive/pkg/logger/zap"
 	bolt "go.etcd.io/bbolt"
@@ -37,8 +36,6 @@ type DefaultContainer struct {
 	config config.Service
 	// mounts is the service for managing VFS mount points.
 	mounts mount.Service
-	// state is the service for tracking session and persistent state.
-	state state.Service
 	// identity is the registry for managing multiple identity providers.
 	identity idregistry.Service
 	// profile is the service for managing user configuration profiles.
@@ -88,12 +85,6 @@ func (c *DefaultContainer) initBaseServices() error {
 	}
 
 	c.logger = zap.NewZapService(c.environment)
-
-	stateSvc, err := state.NewBoltService(c.environment)
-	if err != nil {
-		return fmt.Errorf("failed to initialize state service: %w", err)
-	}
-	c.state = stateSvc
 
 	profileSvc, err := profile.NewDefaultService(c.environment)
 	if err != nil {
@@ -147,7 +138,7 @@ func (c *DefaultContainer) initDriveServices(ctx context.Context) error {
 
 func (c *DefaultContainer) initVFSServices(ctx context.Context) error {
 	cliLog, _ := c.logger.CreateLogger("cli")
-	yamlSvc := config.NewConfigService(c.profile, c.state, cliLog)
+	yamlSvc := config.NewConfigService(c.profile, cliLog)
 	c.config = yamlSvc
 	c.mounts = mount.NewMountService(c.config)
 
@@ -210,9 +201,6 @@ func (c *DefaultContainer) Config() config.Service { return c.config }
 
 // Mounts returns the VFS mount management service.
 func (c *DefaultContainer) Mounts() mount.Service { return c.mounts }
-
-// State returns the application state tracking service.
-func (c *DefaultContainer) State() state.Service { return c.state }
 
 // Identity returns the identity provider registry.
 func (c *DefaultContainer) Identity() idregistry.Service { return c.identity }

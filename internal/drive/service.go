@@ -3,7 +3,7 @@ package drive
 import (
 	"context"
 
-	"github.com/michaeldcanady/go-onedrive/internal/state"
+	"github.com/michaeldcanady/go-onedrive/internal/shared"
 )
 
 // Service defines the interface for drive-related operations.
@@ -22,5 +22,5 @@ type Service interface {
 	GetActive(ctx context.Context, identityID string) (Drive, error)
 	// SetActive marks a specific drive as the active one with the given scope.
 	// identityID is optional and scopes the drive selection to a specific account.
-	SetActive(ctx context.Context, driveID string, identityID string, scope state.Scope) error
+	SetActive(ctx context.Context, driveID string, identityID string, scope shared.Scope) error
 }

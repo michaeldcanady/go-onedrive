@@ -7,12 +7,11 @@ import (
 
 	"github.com/michaeldcanady/go-onedrive/internal/di"
 	drive "github.com/michaeldcanady/go-onedrive/internal/drive/ui/cli"
-	auth "github.com/michaeldcanady/go-onedrive/internal/identity/ui/cli"
 	"github.com/michaeldcanady/go-onedrive/internal/logger"
 	"github.com/michaeldcanady/go-onedrive/internal/middleware"
+	auth "github.com/michaeldcanady/go-onedrive/internal/ui/cli/identity"
 
 	"github.com/michaeldcanady/go-onedrive/internal/shared"
-	"github.com/michaeldcanady/go-onedrive/internal/state"
 	"github.com/michaeldcanady/go-onedrive/internal/ui/cli/config"
 	"github.com/michaeldcanady/go-onedrive/internal/ui/cli/fs/cat"
 	"github.com/michaeldcanady/go-onedrive/internal/ui/cli/fs/cp"
@@ -59,13 +58,13 @@ func CreateRootCmd(container di.Container) (*cobra.Command, error) {
 			}
 
 			if strings.TrimSpace(profileFlag) != "" {
-				if err := container.State().Set(state.KeyProfile, profileFlag, state.ScopeSession); err != nil {
+				if err := container.Profile().SetActive(cmd.Context(), profileFlag, shared.ScopeSession); err != nil {
 					return fmt.Errorf("failed to set session profile: %w", err)
 				}
 			}
 
 			if strings.TrimSpace(configFlag) != "" {
-				if err := container.State().Set(state.KeyConfigOverride, configFlag, state.ScopeSession); err != nil {
+				if err := container.Config().SetOverride(cmd.Context(), configFlag); err != nil {
 					return fmt.Errorf("failed to set config override: %w", err)
 				}
 			}

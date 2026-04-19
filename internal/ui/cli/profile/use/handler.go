@@ -7,7 +7,7 @@ import (
 
 	"github.com/michaeldcanady/go-onedrive/internal/logger"
 	"github.com/michaeldcanady/go-onedrive/internal/profile"
-	"github.com/michaeldcanady/go-onedrive/internal/state"
+	"github.com/michaeldcanady/go-onedrive/internal/shared"
 )
 
 // Command executes the profile use operation.
@@ -43,7 +43,7 @@ func (c *Command) Execute(ctx *CommandContext) error {
 	log := c.log.WithContext(ctx.Ctx)
 
 	log.Info("switching active profile", logger.String("name", ctx.Options.Name))
-	if err := c.profile.SetActive(ctx.Ctx, ctx.Options.Name, state.ScopeGlobal); err != nil {
+	if err := c.profile.SetActive(ctx.Ctx, ctx.Options.Name, shared.ScopeGlobal); err != nil {
 		log.Error("failed to switch profile", logger.String("name", ctx.Options.Name), logger.Error(err))
 		return fmt.Errorf("failed to switch to profile %s: %w", ctx.Options.Name, err)
 	}

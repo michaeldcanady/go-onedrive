@@ -12,4 +12,6 @@ type Service interface {
 	GetPath(ctx context.Context) (string, bool)
 	// SaveConfig saves the Configuration for the active profile.
 	SaveConfig(ctx context.Context, cfg Config) error
+	// SetOverride sets a transient configuration path override.
+	SetOverride(ctx context.Context, path string) error
 }

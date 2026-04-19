@@ -4,11 +4,11 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
+	"sync"
 	"time"
 
 	"github.com/michaeldcanady/go-onedrive/internal/environment"
 	"github.com/michaeldcanady/go-onedrive/internal/shared"
-	"github.com/michaeldcanady/go-onedrive/internal/state"
 	bolt "go.etcd.io/bbolt"
 )
 
@@ -18,6 +18,9 @@ type DefaultService struct {
 	settingsRepo SettingsRepository
 	env          environment.Service
 	db           *bolt.DB // Kept for cleanup
+
+	mu             sync.RWMutex
+	sessionProfile string
 }
 
 // NewDefaultService initializes a new instance of the DefaultService.
@@ -124,22 +127,38 @@ func (s *DefaultService) Update(ctx context.Context, p Profile) error {
 
 // GetActive retrieves the currently active profile.
 func (s *DefaultService) GetActive(ctx context.Context) (Profile, error) {
-	name, err := s.settingsRepo.GetSetting(ctx, "active_profile")
-	if err != nil {
-		// Default to shared.DefaultProfileName if not set
-		name = shared.DefaultProfileName
+	s.mu.RLock()
+	name := s.sessionProfile
+	s.mu.RUnlock()
+
+	var err error
+	// Fallback to settings repository if no session override
+	if name == "" {
+		name, err = s.settingsRepo.GetSetting(ctx, "active_profile")
+		if err != nil {
+			// Default to shared.DefaultProfileName if not set
+			name = shared.DefaultProfileName
+		}
 	}
+
 	return s.Get(ctx, name)
 }
 
 // SetActive marks a specific profile as the active one.
-func (s *DefaultService) SetActive(ctx context.Context, name string, scope state.Scope) error {
+func (s *DefaultService) SetActive(ctx context.Context, name string, scope shared.Scope) error {
 	exists, err := s.profileRepo.Exists(ctx, name)
 	if err != nil {
 		return err
 	}
 	if !exists {
 		return ErrProfileNotFound
+	}
+
+	if scope == shared.ScopeSession {
+		s.mu.Lock()
+		s.sessionProfile = name
+		s.mu.Unlock()
+		return nil
 	}
 
 	return s.settingsRepo.SetSetting(ctx, "active_profile", name)

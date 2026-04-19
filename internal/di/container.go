@@ -11,7 +11,6 @@ import (
 	"github.com/michaeldcanady/go-onedrive/internal/logger"
 	"github.com/michaeldcanady/go-onedrive/internal/mount"
 	"github.com/michaeldcanady/go-onedrive/internal/profile"
-	"github.com/michaeldcanady/go-onedrive/internal/state"
 )
 
 // Container defines the interface for retrieving and managing core application services.
@@ -22,8 +21,6 @@ type Container interface {
 	Config() config.Service
 	// Mounts returns the VFS mount management service.
 	Mounts() mount.Service
-	// State returns the application state service.
-	State() state.Service
 	// Identity returns the identity provider registry.
 	Identity() idregistry.Service
 	// Profile returns the configuration profile service.

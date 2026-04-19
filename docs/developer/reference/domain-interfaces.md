@@ -78,9 +78,9 @@ The Drive Service manages OneDrive drive-specific operations.
   Identifies a drive by its ID, name, or alias.
 - **`ResolvePersonalDrive(ctx context.Context) (Drive, error)`**: Retrieves 
   the user's primary personal OneDrive drive.
-- **`GetActive(ctx context.Context) (Drive, error)`**: Retrieves the 
+- **`GetActive(ctx context.Context, identityID string) (Drive, error)`**: Retrieves the 
   currently active drive.
-- **`SetActive(ctx context.Context, driveID string, scope state.Scope) error`**:
+- **`SetActive(ctx context.Context, driveID string, identityID string, scope shared.Scope) error`**:
   Marks a specific drive as the active one with the given scope.
 
 ---
@@ -90,6 +90,4 @@ The Drive Service manages OneDrive drive-specific operations.
 - **`identity.Authenticator`**: Manages user authentication and token retrieval.
 - **`profile.Service`**: Handles user profiles and their associated configurations.
 - **`config.Service`**: Manages application-level configuration.
-- **`state.Service`**: Provides a mechanism for persisting application state 
-  (e.g., active drive, current profile).
 - **`logger.Service`**: Defines the structured logging interface.

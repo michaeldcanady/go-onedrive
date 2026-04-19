@@ -2,25 +2,26 @@ package config
 
 import (
 	"context"
+	"sync"
 
 	"github.com/michaeldcanady/go-onedrive/internal/logger"
 	"github.com/michaeldcanady/go-onedrive/internal/profile"
-	"github.com/michaeldcanady/go-onedrive/internal/state"
 )
 
 // ConfigService is an implementation of the Service interface that uses a Repository for persistence.
 type ConfigService struct {
-	resolver profile.PathResolver
-	state    state.Service
-	log      logger.Logger
+	profileSvc profile.Service
+	log        logger.Logger
+
+	mu             sync.RWMutex
+	configOverride string
 }
 
 // NewConfigService creates a new instance of ConfigService.
-func NewConfigService(resolver profile.PathResolver, state state.Service, log logger.Logger) *ConfigService {
+func NewConfigService(profileSvc profile.Service, log logger.Logger) *ConfigService {
 	return &ConfigService{
-		resolver: resolver,
-		state:    state,
-		log:      log,
+		profileSvc: profileSvc,
+		log:        log,
 	}
 }
 
@@ -45,19 +46,21 @@ func (s *ConfigService) GetConfig(ctx context.Context) (Config, error) {
 
 // GetPath retrieves the registered file path.
 func (s *ConfigService) GetPath(ctx context.Context) (string, bool) {
-	if path, err := s.state.Get(state.KeyConfigOverride); err == nil && path != "" {
-		return path, true
+	s.mu.RLock()
+	override := s.configOverride
+	s.mu.RUnlock()
+
+	if override != "" {
+		return override, true
 	}
 
-	profileName, err := s.state.Get(state.KeyProfile)
-	if err != nil {
-		return "", false
-	}
-
-	if s.resolver != nil {
-		path, err := s.resolver.ResolvePath(ctx, profileName)
-		if err == nil && path != "" {
-			return path, true
+	if s.profileSvc != nil {
+		p, err := s.profileSvc.GetActive(ctx)
+		if err == nil {
+			path, err := s.profileSvc.ResolvePath(ctx, p.Name)
+			if err == nil && path != "" {
+				return path, true
+			}
 		}
 	}
 
@@ -73,4 +76,10 @@ func (s *ConfigService) SaveConfig(ctx context.Context, cfg Config) error {
 	return repo.Save(ctx, &cfg)
 }
 
-
+// SetOverride sets a transient configuration path override.
+func (s *ConfigService) SetOverride(ctx context.Context, path string) error {
+	s.mu.Lock()
+	s.configOverride = path
+	s.mu.Unlock()
+	return nil
+}

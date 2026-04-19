@@ -6,7 +6,7 @@ import (
 	"github.com/michaeldcanady/go-onedrive/internal/drive"
 	"github.com/michaeldcanady/go-onedrive/internal/alias"
 	"github.com/michaeldcanady/go-onedrive/internal/logger"
-	"github.com/michaeldcanady/go-onedrive/internal/state"
+	"github.com/michaeldcanady/go-onedrive/internal/shared"
 )
 
 // Command executes the drive use operation.
@@ -46,7 +46,7 @@ func (c *Command) Execute(ctx *CommandContext) error {
 	}
 
 	log.Debug("setting active drive", logger.String("id", id), logger.String("identity", ctx.Options.IdentityID))
-	if err := c.drive.SetActive(ctx.Ctx, id, ctx.Options.IdentityID, state.ScopeGlobal); err != nil {
+	if err := c.drive.SetActive(ctx.Ctx, id, ctx.Options.IdentityID, shared.ScopeGlobal); err != nil {
 		log.Error("failed to switch drive", logger.Error(err))
 		return fmt.Errorf("failed to switch to drive %s: %w", ctx.Options.DriveRef, err)
 	}

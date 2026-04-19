@@ -1,10 +1,9 @@
-// Package auth provides the authentication-related CLI commands.
-package auth
+package identity
 
 import (
 	"github.com/michaeldcanady/go-onedrive/internal/di"
-	"github.com/michaeldcanady/go-onedrive/internal/identity/ui/cli/login"
-	"github.com/michaeldcanady/go-onedrive/internal/identity/ui/cli/logout"
+	"github.com/michaeldcanady/go-onedrive/internal/ui/cli/identity/login"
+	"github.com/michaeldcanady/go-onedrive/internal/ui/cli/identity/logout"
 	"github.com/spf13/cobra"
 )
 

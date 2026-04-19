@@ -3,7 +3,7 @@ package profile
 import (
 	"context"
 
-	"github.com/michaeldcanady/go-onedrive/internal/state"
+	"github.com/michaeldcanady/go-onedrive/internal/shared"
 )
 
 // Service provides operations for managing user configuration profiles.
@@ -23,7 +23,7 @@ type Service interface {
 	// GetActive retrieves the currently active profile.
 	GetActive(ctx context.Context) (Profile, error)
 	// SetActive marks a specific profile as the active one with the given scope.
-	SetActive(ctx context.Context, name string, scope state.Scope) error
+	SetActive(ctx context.Context, name string, scope shared.Scope) error
 	// ResolvePath returns the configuration file path for the specified profile name.
 	ResolvePath(ctx context.Context, profileName string) (string, error)
 }

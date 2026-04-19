@@ -8,23 +8,23 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type noOpStateService struct{}
+type noOpAliasService struct{}
 
-func newNoOpStateService() *noOpStateService {
-	return &noOpStateService{}
+func newNoOpAliasService() *noOpAliasService {
+	return &noOpAliasService{}
 }
 
-func (s *noOpStateService) GetAliasByDriveID(ctx context.Context, driveID string) (string, error) {
+func (s *noOpAliasService) GetAliasByDriveID(ctx context.Context, driveID string) (string, error) {
 	return "", nil
 }
 
 func ProviderPathCompletion(container di.Container, supportAlias bool) func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 	return func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-		var stateSvc interface {
+		var aliasSvc interface {
 			GetAliasByDriveID(ctx context.Context, driveID string) (string, error)
-		} = newNoOpStateService()
+		} = newNoOpAliasService()
 		if supportAlias {
-			stateSvc = container.Alias()
+			aliasSvc = container.Alias()
 		}
 
 		drives, err := container.Drive().ListDrives(cmd.Context(), "")
@@ -35,7 +35,7 @@ func ProviderPathCompletion(container di.Container, supportAlias bool) func(cmd 
 		var results []string
 		for _, drive := range drives {
 			displayName := drive.Name
-			alias, err := stateSvc.GetAliasByDriveID(cmd.Context(), drive.Name)
+			alias, err := aliasSvc.GetAliasByDriveID(cmd.Context(), drive.Name)
 			if err == nil && alias != "" {
 				displayName = alias
 			}
