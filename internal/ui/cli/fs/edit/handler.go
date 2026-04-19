@@ -51,9 +51,12 @@ func (c *Command) Execute(ctx *CommandContext) error {
 	log.Info("starting edit operation")
 
 	svc := c.editor
+	var opts []editor.Option
 	if ctx.Options.Editor != "" {
-		svc = svc.WithIO(os.Stdin, ctx.Options.Stdout, os.Stderr)
+		opts = append(opts, editor.WithEditor(ctx.Options.Editor))
 	}
+	opts = append(opts, editor.WithIO(os.Stdin, ctx.Options.Stdout, os.Stderr))
+	svc = svc.WithOptions(opts...)
 
 	reader, err := c.manager.ReadFile(ctx.Ctx, ctx.Options.URI, pkgfs.ReadOptions{})
 	if err != nil {
@@ -64,7 +67,7 @@ func (c *Command) Execute(ctx *CommandContext) error {
 	prefix := "odc-edit-"
 	suffix := filepath.Ext(ctx.Options.URI.Path)
 
-	newData, _, err := svc.LaunchTempFile(prefix, suffix, reader)
+	newData, err := svc.LaunchTempFile(ctx.Ctx, prefix, suffix, reader)
 	if err != nil {
 		log.Error("editor session failed", logger.Error(err))
 		return fmt.Errorf("editor session failed: %w", err)
