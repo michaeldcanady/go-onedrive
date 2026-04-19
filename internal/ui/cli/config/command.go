@@ -3,8 +3,8 @@ package config
 
 import (
 	"github.com/michaeldcanady/go-onedrive/internal/di"
-	"github.com/michaeldcanady/go-onedrive/internal/alias/ui/cli/set"
-	"github.com/michaeldcanady/go-onedrive/internal/drive/ui/cli/get"
+	"github.com/michaeldcanady/go-onedrive/internal/ui/cli/config/get"
+	"github.com/michaeldcanady/go-onedrive/internal/ui/cli/config/set"
 	"github.com/spf13/cobra"
 )
 

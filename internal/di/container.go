@@ -3,7 +3,6 @@ package di
 import (
 	"github.com/michaeldcanady/go-onedrive/internal/config"
 	"github.com/michaeldcanady/go-onedrive/internal/drive"
-	"github.com/michaeldcanady/go-onedrive/internal/alias"
 	"github.com/michaeldcanady/go-onedrive/internal/environment"
 	registry "github.com/michaeldcanady/go-onedrive/internal/core/fs"
 	"github.com/michaeldcanady/go-onedrive/internal/editor"
@@ -28,17 +27,12 @@ type Container interface {
 	// FS returns the orchestrated filesystem.
 	FS() registry.Service
 
-	ProviderRegistry() interface {
-		RegisteredNames() ([]string, error)
-	}
 	// Environment returns the environment service.
 	Environment() environment.Service
 	// Editor returns the editor service.
 	Editor() editor.Service
 	// Drive returns the drive-related service.
 	Drive() drive.Service
-	// Alias returns the drive alias management service.
-	Alias() alias.Service
 	// URIFactory returns the URI factory service.
 	URIFactory() *registry.URIFactory
 }

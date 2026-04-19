@@ -6,9 +6,9 @@ import (
 	"strings"
 
 	"github.com/michaeldcanady/go-onedrive/internal/di"
-	drive "github.com/michaeldcanady/go-onedrive/internal/drive/ui/cli"
 	"github.com/michaeldcanady/go-onedrive/internal/logger"
 	"github.com/michaeldcanady/go-onedrive/internal/middleware"
+	drive "github.com/michaeldcanady/go-onedrive/internal/ui/cli/drive"
 	auth "github.com/michaeldcanady/go-onedrive/internal/ui/cli/identity"
 
 	"github.com/michaeldcanady/go-onedrive/internal/shared"

@@ -2,92 +2,83 @@
 
 In `odc`, a drive represents a specific storage location within your account.
 This can be your personal OneDrive, a shared library, or a SharePoint site.
-`odc` makes it easy to manage multiple drives, switch between them, and create
-aliases for faster access.
+`odc` makes it easy to discover available drives and mount them to your
+virtual filesystem for easy access.
 
-## List Available Drives
+## Discover Available Drives
 
-To see all the drives that your account has access to, use the `drive list`
-command. This is often the first step when you're looking for a shared folder
-or a SharePoint library.
-
-```bash
-odc drive list
-```
-
-The output includes each drive's name, ID, and its type (e.g., `personal`,
-`business`).
-
-## Get Drive Details
-
-To view detailed information about a specific drive, including its storage
-limits and ownership, use the `drive get` command followed by the drive's ID
-or an alias.
+To see all the drives that your account has access to, use the
+`backend-discovery list` command. This is often the first step when you're
+looking for a shared folder or a SharePoint library.
 
 ```bash
-odc drive get [DRIVE_ID]
+odc backend-discovery list
 ```
 
-This returns metadata such as the total storage quota, available space, and
-owner information, which is useful for monitoring your storage usage.
+The output includes each drive's name and ID. Your primary personal drive is
+marked with an asterisk (*).
 
-## Set the Active Drive
+> **Note:** `drive` is an alias for `backend-discovery`, so you can also use
+> `odc drive list`.
 
-By default, `odc` uses your primary OneDrive. If you frequently work with a
-different drive (like a team SharePoint site), you can set it as the default
-for your current session using the `drive use` command.
+## Get Personal Drive Details
+
+To view information about your primary personal OneDrive drive, use the
+`backend-discovery get` command.
 
 ```bash
-# Set the active drive using its ID
-odc drive use [DRIVE_ID]
+odc backend-discovery get
 ```
 
-This command updates your current profile's configuration. Subsequent commands
-like `ls` or `upload` will target this drive unless you switch back or use an
-explicit flag.
+This returns the name and ID of your personal drive.
 
-## Create Drive Aliases
+## Manage Mount Points
 
-Drive IDs are long, complex, and difficult to remember. Aliases let you assign
-a friendly, memorable name to a drive ID for faster access in your commands.
+Mount points allow you to map a specific OneDrive drive or local directory to
+a path in your virtual filesystem. This provides a consistent way to access
+different storage locations.
 
-### Set an alias
-To create or update an alias, use the `drive alias set` command.
+### List mount points
+To view all your current mount points, use the `mount list` command.
 
 ```bash
-odc drive alias set work-share [DRIVE_ID]
+odc mount list
 ```
 
-Now you can use `work-share` anywhere you would normally use the long
-`DRIVE_ID`.
+By default, `odc` mounts your local filesystem at `/local` and your personal
+OneDrive at `/onedrive`.
 
-### List aliases
-To view all your current drive aliases and the IDs they point to, use the
-`drive alias list` command.
+### Add a mount point
+To add a new mount point, use the `mount add` command. You can mount another
+OneDrive drive by specifying its drive ID.
 
 ```bash
-odc drive alias list
+odc mount add /work --type onedrive --drive-id [DRIVE_ID]
 ```
 
-### Using Aliases in Paths
-Once you've set an alias, you can use it as a prefix in any command that
-accepts a path. This allows you to target a specific drive without switching
-the active drive for your profile.
+Now you can access this drive using the `/work` path or the `work:` prefix.
+
+### Using Mount Points in Paths
+Once you've added a mount point, you can use it as a prefix or an absolute
+path in any command.
 
 ```bash
-# List files in the 'work-share' drive directly
-odc ls work-share:/Projects
+# List files in the 'work' mount point using absolute path
+odc ls /work/Projects
 
-# Copy a file from your personal drive to 'work-share'
-odc cp /Reports/quarterly.pdf work-share:/Archive/
+# List files using the mount prefix
+odc ls work:/Projects
+
+# Copy a file from your personal drive to 'work'
+odc cp /onedrive/Reports/quarterly.pdf /work/Archive/
 ```
 
-### Remove an alias
-To delete an alias that you no longer need, use the `drive alias remove`
+### Remove a mount point
+To remove a mount point that you no longer need, use the `mount remove`
 command.
 
 ```bash
-odc drive alias remove work-share
+odc mount remove /work
 ```
 
 ## Next steps

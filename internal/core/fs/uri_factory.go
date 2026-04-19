@@ -1,11 +1,8 @@
 package fs
 
 import (
-	"context"
 	"fmt"
 	"strings"
-
-	"github.com/michaeldcanady/go-onedrive/internal/alias"
 )
 
 // URIFactory provides a structured way to create and validate URI objects.
@@ -13,16 +10,14 @@ type URIFactory struct {
 	vfs interface {
 		Resolve(absPath string) (string, string, error)
 	}
-	aliasSvc alias.Service
 }
 
 // NewURIFactory initializes a new instance of the URIFactory.
 func NewURIFactory(vfs interface {
 	Resolve(absPath string) (string, string, error)
-}, aliasSvc alias.Service) *URIFactory {
+}) *URIFactory {
 	return &URIFactory{
-		vfs:      vfs,
-		aliasSvc: aliasSvc,
+		vfs: vfs,
 	}
 }
 
@@ -40,18 +35,21 @@ func (f *URIFactory) FromString(input string) (*URI, error) {
 
 	prefix, rest, found := strings.Cut(input, ":")
 	if found {
-		driveID, err := f.aliasSvc.GetDriveIDByAlias(context.Background(), prefix)
+		mountPrefix := prefix
+		if !strings.HasPrefix(mountPrefix, "/") {
+			mountPrefix = "/" + mountPrefix
+		}
+		_, _, err := f.vfs.Resolve(mountPrefix)
 		if err == nil {
 			if !strings.HasPrefix(rest, "/") {
 				rest = "/" + rest
 			}
 			return &URI{
-				Provider: DefaultProviderPrefix,
-				DriveID:  driveID,
+				Provider: mountPrefix,
 				Path:     rest,
 			}, nil
 		}
-		return nil, fmt.Errorf("unknown mount point or alias: %s", prefix)
+		return nil, fmt.Errorf("unknown mount point: %s", prefix)
 	}
 
 	path := input
@@ -76,11 +74,15 @@ func (f *URIFactory) FromLocalPath(path string) (*URI, error) {
 	}, nil
 }
 
-// FromAlias creates a URI based on a drive alias and a subpath.
-func (f *URIFactory) FromAlias(name, subpath string) (*URI, error) {
-	driveID, err := f.aliasSvc.GetDriveIDByAlias(context.Background(), name)
+// FromMount creates a URI based on a mount prefix and a subpath.
+func (f *URIFactory) FromMount(prefix, subpath string) (*URI, error) {
+	if !strings.HasPrefix(prefix, "/") {
+		prefix = "/" + prefix
+	}
+
+	_, _, err := f.vfs.Resolve(prefix)
 	if err != nil {
-		return nil, fmt.Errorf("alias not found: %s", name)
+		return nil, fmt.Errorf("mount point not found: %s", prefix)
 	}
 
 	if !strings.HasPrefix(subpath, "/") {
@@ -88,8 +90,7 @@ func (f *URIFactory) FromAlias(name, subpath string) (*URI, error) {
 	}
 
 	return &URI{
-		Provider: DefaultProviderPrefix,
-		DriveID:  driveID,
+		Provider: prefix,
 		Path:     subpath,
 	}, nil
 }

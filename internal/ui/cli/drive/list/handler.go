@@ -2,25 +2,21 @@ package list
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/michaeldcanady/go-onedrive/internal/drive"
-	"github.com/michaeldcanady/go-onedrive/internal/alias"
 	"github.com/michaeldcanady/go-onedrive/internal/logger"
 )
 
 // Command executes the drive list operation.
 type Command struct {
 	drive drive.Service
-	alias alias.Service
 	log   logger.Logger
 }
 
 // NewCommand initializes a new instance of the drive list Command.
-func NewCommand(d drive.Service, a alias.Service, l logger.Logger) *Command {
+func NewCommand(d drive.Service, l logger.Logger) *Command {
 	return &Command{
 		drive: d,
-		alias: a,
 		log:   l,
 	}
 }
@@ -41,33 +37,19 @@ func (c *Command) Execute(ctx *CommandContext) error {
 		return fmt.Errorf("failed to list drives: %w", err)
 	}
 
-	log.Debug("fetching active drive for marking")
-	current, _ := c.drive.GetActive(ctx.Ctx, ctx.Options.IdentityID)
-
-	log.Debug("fetching aliases")
-	aliases, _ := c.alias.ListAliases(ctx.Ctx)
+	personal, _ := c.drive.ResolvePersonalDrive(ctx.Ctx, ctx.Options.IdentityID)
 
 	log.Info("drives retrieved successfully", logger.Int("count", len(drives)))
 	fmt.Fprintln(ctx.Options.Stdout, "Available OneDrive drives:")
 	for _, d := range drives {
 		prefix := "  "
-		if d.ID == current.ID {
+		suffix := ""
+		if d.ID == personal.ID {
 			prefix = "* "
+			suffix = " (personal)"
 		}
 
-		var driveAliases []string
-		for id, name := range aliases {
-			if id == d.ID {
-				driveAliases = append(driveAliases, name)
-			}
-		}
-
-		aliasStr := ""
-		if len(driveAliases) > 0 {
-			aliasStr = fmt.Sprintf(" [Aliases: %s]", strings.Join(driveAliases, ", "))
-		}
-
-		fmt.Fprintf(ctx.Options.Stdout, "%s%s (%s)%s\n", prefix, d.Name, d.ID, aliasStr)
+		fmt.Fprintf(ctx.Options.Stdout, "%s%s (%s)%s\n", prefix, d.Name, d.ID, suffix)
 	}
 
 	return nil

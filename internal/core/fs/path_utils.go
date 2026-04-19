@@ -7,7 +7,7 @@ import (
 
 // SplitProviderPath splits a path into its provider prefix and the remaining path.
 // For example, "local:/etc/hosts" returns "local", "/etc/hosts", true.
-// "my-alias:/some/path" returns "my-alias", "/some/path", true.
+// "my-mount:/some/path" returns "my-mount", "/some/path", true.
 // "/plain/path" returns "", "/plain/path", false.
 func SplitProviderPath(path string) (string, string, bool) {
 	prefix, rest, found := strings.Cut(path, ":")
@@ -25,7 +25,7 @@ func ValidatePathSyntax(p string) error {
 	}
 
 	// Disallow illegal characters (e.g., '#', '?', '*', '[', ']', '\') - Windows illegal chars
-	// Note: We exclude ':' here because it's handled as a provider/alias separator by SplitProviderPath.
+	// Note: We exclude ':' here because it's handled as a provider/mount separator by SplitProviderPath.
 	// However, if the path *after* the provider still contains ':', it might be invalid depending on the provider.
 	illegalChars := []string{"#", "?", "*", "[", "]", "\\"}
 	for _, char := range illegalChars {

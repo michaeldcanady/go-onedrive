@@ -11,14 +11,13 @@ func CreateListCmd(container di.Container) *cobra.Command {
 	var c *CommandContext
 
 	l, _ := container.Logger().CreateLogger("drive-list")
-	handler := NewCommand(container.Drive(), container.Alias(), l)
+	handler := NewCommand(container.Drive(), l)
 
 	cmd := &cobra.Command{
 		Use:   "list",
 		Short: "List all available OneDrive drives",
-		Long: `Retrieve all OneDrive drives associated with your account,
-marking the currently active drive and showing any defined aliases.`,
-		Args: cobra.NoArgs,
+		Long:  `Retrieve all OneDrive drives associated with your account, marking the personal drive with an asterisk.`,
+		Args:  cobra.NoArgs,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			opts.Stdout = cmd.OutOrStdout()
 			opts.Stderr = cmd.ErrOrStderr()

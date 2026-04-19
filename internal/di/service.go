@@ -9,7 +9,6 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/michaeldcanady/go-onedrive/internal/config"
 	"github.com/michaeldcanady/go-onedrive/internal/drive"
-	"github.com/michaeldcanady/go-onedrive/internal/alias"
 	graphgateway "github.com/michaeldcanady/go-onedrive/internal/drive/gateway/graph"
 	"github.com/michaeldcanady/go-onedrive/internal/environment"
 	registry "github.com/michaeldcanady/go-onedrive/internal/core/fs"
@@ -48,8 +47,6 @@ type DefaultContainer struct {
 	editor editor.Service
 	// drive is the OneDrive drive management service.
 	drive drive.Service
-	// alias is the drive alias management service.
-	alias alias.Service
 	// uriFactory is the service for creating and resolving URIs.
 	uriFactory *registry.URIFactory
 }
@@ -125,13 +122,7 @@ func (c *DefaultContainer) initDriveServices(ctx context.Context) error {
 	msAuth, _ := c.identity.Get("microsoft")
 
 	driveGateway := graphgateway.NewGraphDriveGateway(msAuth, cliLog)
-	c.drive = drive.NewDefaultService(driveGateway, c.profile, cliLog)
-
-	aliasSvc, err := alias.NewDefaultService(c.environment, cliLog)
-	if err != nil {
-		return fmt.Errorf("failed to initialize drive alias service: %w", err)
-	}
-	c.alias = aliasSvc
+	c.drive = drive.NewDefaultService(driveGateway, cliLog)
 
 	return nil
 }
@@ -154,7 +145,7 @@ func (c *DefaultContainer) initVFSServices(ctx context.Context) error {
 			cachedCred = cred.(azcore.TokenCredential)
 		}
 		p := microsoft.NewGraphProvider(cachedCred, cliLog)
-		dr := drive.NewDefaultResolver(c.profile, identityID)
+		dr := drive.NewDefaultResolver(c.drive, identityID)
 		return onedrive.NewBackend(p, driveID, dr, cliLog)
 	}
 
@@ -188,7 +179,7 @@ func (c *DefaultContainer) initVFSServices(ctx context.Context) error {
 	}
 
 	c.manager = vfs
-	c.uriFactory = registry.NewURIFactory(vfs, c.alias)
+	c.uriFactory = registry.NewURIFactory(vfs)
 
 	return nil
 }
@@ -208,12 +199,6 @@ func (c *DefaultContainer) Identity() idregistry.Service { return c.identity }
 // Profile returns the configuration profile service.
 func (c *DefaultContainer) Profile() profile.Service { return c.profile }
 
-func (c *DefaultContainer) ProviderRegistry() interface {
-	RegisteredNames() ([]string, error)
-} {
-	return nil // Obsolete
-}
-
 // FS returns the orchestrated filesystem.
 func (c *DefaultContainer) FS() registry.Service { return c.manager }
 
@@ -225,10 +210,6 @@ func (c *DefaultContainer) Editor() editor.Service { return c.editor }
 
 // Drive returns the OneDrive drive management service.
 func (c *DefaultContainer) Drive() drive.Service { return c.drive }
-
-func (c *DefaultContainer) Alias() alias.Service {
-	return c.alias
-}
 
 // URIFactory returns the URI factory service.
 func (c *DefaultContainer) URIFactory() *registry.URIFactory {

@@ -5,18 +5,18 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// CreateGetCmd constructs and returns the cobra.Command for the drive get operation.
+// CreateGetCmd constructs and returns the cobra.Command for the 'drive get' operation.
 func CreateGetCmd(container di.Container) *cobra.Command {
 	var opts Options
 	var c *CommandContext
 
 	l, _ := container.Logger().CreateLogger("drive-get")
-	handler := NewCommand(container.Drive(), container.Alias(), l)
+	handler := NewCommand(container.Drive(), l)
 
 	cmd := &cobra.Command{
 		Use:   "get",
-		Short: "Show the active drive",
-		Long:  "Display information about the currently active OneDrive drive.",
+		Short: "Display the primary personal OneDrive drive",
+		Long:  "Retrieve and show the name and ID of your primary personal OneDrive drive.",
 		Args:  cobra.NoArgs,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			opts.Stdout = cmd.OutOrStdout()
@@ -36,7 +36,7 @@ func CreateGetCmd(container di.Container) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&opts.IdentityID, "id", "", "The specific identity (email or alias) to query the active drive for")
+	cmd.Flags().StringVar(&opts.IdentityID, "id", "", "The specific identity (email or alias) to get the personal drive for")
 
 	return cmd
 }

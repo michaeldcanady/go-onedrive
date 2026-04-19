@@ -28,9 +28,13 @@ func ProviderPathCompletion(container di.Container) func(cmd *cobra.Command, arg
 		found := strings.Contains(currentToComplete, ":")
 
 		if err != nil && !strings.HasPrefix(currentToComplete, "/") && !strings.Contains(currentToComplete, "/") {
-			names, _ := container.ProviderRegistry().RegisteredNames()
+			mounts, _ := container.Mounts().ListMounts(cmd.Context())
 			var results []string
-			for _, name := range names {
+			for _, m := range mounts {
+				name := strings.TrimPrefix(m.Path, "/")
+				if name == "" {
+					continue
+				}
 				if strings.HasPrefix(name, currentToComplete) {
 					results = append(results, name+":")
 				}

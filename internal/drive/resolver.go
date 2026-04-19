@@ -3,29 +3,29 @@ package drive
 import (
 	"context"
 
-	"github.com/michaeldcanady/go-onedrive/internal/profile"
 	pkgfs "github.com/michaeldcanady/go-onedrive/pkg/fs"
 )
 
-// DefaultResolver implements pkgfs.DriveResolver using the profile service.
+// DefaultResolver implements pkgfs.DriveResolver using the drive service.
 type DefaultResolver struct {
-	profileSvc profile.Service
+	driveSvc   Service
 	identityID string
 }
 
 // NewDefaultResolver initializes a new instance of the DefaultResolver.
-func NewDefaultResolver(profileSvc profile.Service, identityID string) pkgfs.DriveResolver {
+func NewDefaultResolver(driveSvc Service, identityID string) pkgfs.DriveResolver {
 	return &DefaultResolver{
-		profileSvc: profileSvc,
+		driveSvc:   driveSvc,
 		identityID: identityID,
 	}
 }
 
-// GetActiveDriveID retrieves the active drive ID for the current profile.
+// GetActiveDriveID retrieves the active drive ID.
+// It defaults to the personal drive since explicit active drive selection was removed.
 func (r *DefaultResolver) GetActiveDriveID(ctx context.Context) (string, error) {
-	p, err := r.profileSvc.GetActive(ctx)
+	d, err := r.driveSvc.ResolvePersonalDrive(ctx, r.identityID)
 	if err != nil {
 		return "", err
 	}
-	return p.ActiveDriveID, nil
+	return d.ID, nil
 }

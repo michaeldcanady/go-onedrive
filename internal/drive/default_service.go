@@ -4,29 +4,21 @@ import (
 	"context"
 	"fmt"
 	"strings"
-	"sync"
 
 	"github.com/michaeldcanady/go-onedrive/internal/logger"
-	"github.com/michaeldcanady/go-onedrive/internal/profile"
-	"github.com/michaeldcanady/go-onedrive/internal/shared"
 )
 
 // DefaultService provides the default implementation of the drive service.
 type DefaultService struct {
-	gateway    Gateway
-	profileSvc profile.Service
-	log        logger.Logger
-
-	mu           sync.RWMutex
-	sessionDrive string
+	gateway Gateway
+	log     logger.Logger
 }
 
 // NewDefaultService initializes a new instance of the DefaultService.
-func NewDefaultService(gateway Gateway, profileSvc profile.Service, l logger.Logger) *DefaultService {
+func NewDefaultService(gateway Gateway, l logger.Logger) *DefaultService {
 	return &DefaultService{
-		gateway:    gateway,
-		profileSvc: profileSvc,
-		log:        l,
+		gateway: gateway,
+		log:     l,
 	}
 }
 
@@ -72,47 +64,4 @@ func (s *DefaultService) ResolvePersonalDrive(ctx context.Context, identityID st
 	}
 
 	return d, nil
-}
-
-// GetActive retrieves the currently active drive.
-func (s *DefaultService) GetActive(ctx context.Context, identityID string) (Drive, error) {
-	// Check session state first
-	s.mu.RLock()
-	id := s.sessionDrive
-	s.mu.RUnlock()
-
-	if id != "" {
-		return s.ResolveDrive(ctx, id, identityID)
-	}
-
-	p, err := s.profileSvc.GetActive(ctx)
-	if err != nil {
-		return Drive{}, err
-	}
-
-	id = p.ActiveDriveID
-
-	if id == "" {
-		return s.ResolvePersonalDrive(ctx, identityID)
-	}
-
-	return s.ResolveDrive(ctx, id, identityID)
-}
-
-// SetActive marks a specific drive as the active one with the given scope.
-func (s *DefaultService) SetActive(ctx context.Context, driveID string, identityID string, scope shared.Scope) error {
-	if scope == shared.ScopeSession {
-		s.mu.Lock()
-		s.sessionDrive = driveID
-		s.mu.Unlock()
-		return nil
-	}
-
-	p, err := s.profileSvc.GetActive(ctx)
-	if err != nil {
-		return err
-	}
-
-	p.ActiveDriveID = driveID
-	return s.profileSvc.Update(ctx, p)
 }
