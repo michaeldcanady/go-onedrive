@@ -6,7 +6,7 @@ import (
 	"github.com/michaeldcanady/go-onedrive/internal/drive"
 	"github.com/michaeldcanady/go-onedrive/internal/editor"
 	"github.com/michaeldcanady/go-onedrive/internal/environment"
-	idregistry "github.com/michaeldcanady/go-onedrive/internal/identity/registry"
+	"github.com/michaeldcanady/go-onedrive/internal/identity"
 	"github.com/michaeldcanady/go-onedrive/internal/logger"
 	"github.com/michaeldcanady/go-onedrive/internal/mount"
 	"github.com/michaeldcanady/go-onedrive/internal/profile"
@@ -21,7 +21,7 @@ type Container interface {
 	// Mounts returns the VFS mount management service.
 	Mounts() mount.Service
 	// Identity returns the identity provider registry.
-	Identity() idregistry.Service
+	Identity() identity.Service
 	// Profile returns the configuration profile service.
 	Profile() profile.Service
 	// FS returns the orchestrated filesystem.

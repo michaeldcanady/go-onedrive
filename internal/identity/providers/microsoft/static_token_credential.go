@@ -7,17 +7,17 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
-	"github.com/michaeldcanady/go-onedrive/internal/identity/shared"
+	"github.com/michaeldcanady/go-onedrive/internal/identity"
 )
 
 // StaticTokenCredential implements azcore.TokenCredential using a static access token.
 // It returns an error if the token is expired.
 type StaticTokenCredential struct {
-	token shared.AccessToken
+	token identity.AccessToken
 }
 
 // NewStaticTokenCredential creates a new StaticTokenCredential.
-func NewStaticTokenCredential(token shared.AccessToken) *StaticTokenCredential {
+func NewStaticTokenCredential(token identity.AccessToken) *StaticTokenCredential {
 	return &StaticTokenCredential{
 		token: token,
 	}

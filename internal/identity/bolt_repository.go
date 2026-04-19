@@ -6,7 +6,6 @@ import (
 	"fmt"
 
 	"github.com/michaeldcanady/go-onedrive/internal/errors"
-	"github.com/michaeldcanady/go-onedrive/internal/identity/shared"
 	bolt "go.etcd.io/bbolt"
 )
 
@@ -26,8 +25,8 @@ func (r *BoltRepository) getBucket(tx *bolt.Tx, provider string) (*bolt.Bucket, 
 	return root.CreateBucketIfNotExists([]byte(provider))
 }
 
-func (r *BoltRepository) Get(ctx context.Context, provider, identityID string) (shared.AccessToken, error) {
-	var token shared.AccessToken
+func (r *BoltRepository) Get(ctx context.Context, provider, identityID string) (AccessToken, error) {
+	var token AccessToken
 	err := r.db.View(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte("tokens"))
 		if b == nil {
@@ -46,7 +45,7 @@ func (r *BoltRepository) Get(ctx context.Context, provider, identityID string) (
 	return token, err
 }
 
-func (r *BoltRepository) Save(ctx context.Context, provider string, token shared.AccessToken) error {
+func (r *BoltRepository) Save(ctx context.Context, provider string, token AccessToken) error {
 	return r.db.Update(func(tx *bolt.Tx) error {
 		pb, err := r.getBucket(tx, provider)
 		if err != nil {
@@ -56,11 +55,11 @@ func (r *BoltRepository) Save(ctx context.Context, provider string, token shared
 		if err != nil {
 			return err
 		}
-		return pb.Put([]byte(token.IdentityID), data)
+		return pb.Put([]byte(token.AccountID), data)
 	})
 }
 
-func (r *BoltRepository) Delete(ctx context.Context, provider, identityID string) error {
+func (r *BoltRepository) Delete(ctx context.Context, provider, AccountID string) error {
 	return r.db.Update(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte("tokens"))
 		if b == nil {
@@ -70,7 +69,7 @@ func (r *BoltRepository) Delete(ctx context.Context, provider, identityID string
 		if pb == nil {
 			return nil
 		}
-		return pb.Delete([]byte(identityID))
+		return pb.Delete([]byte(AccountID))
 	})
 }
 

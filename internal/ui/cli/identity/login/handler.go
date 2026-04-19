@@ -5,22 +5,21 @@ import (
 	"fmt"
 
 	"github.com/michaeldcanady/go-onedrive/internal/config"
-	"github.com/michaeldcanady/go-onedrive/internal/identity/registry"
-	"github.com/michaeldcanady/go-onedrive/internal/identity/shared"
+	"github.com/michaeldcanady/go-onedrive/internal/identity"
 	"github.com/michaeldcanady/go-onedrive/internal/logger"
 )
 
 // Command orchestrates the authentication flow for a specific request.
 type Command struct {
 	config   config.Service
-	identity registry.Service
+	identity identity.Service
 	log      logger.Logger
 }
 
 // NewCommand initializes a new instance of the login Command.
 func NewCommand(
 	cfg config.Service,
-	id registry.Service,
+	id identity.Service,
 	l logger.Logger,
 ) *Command {
 	return &Command{
@@ -62,12 +61,12 @@ func (c *Command) Execute(ctx context.Context, opts Options) error {
 	}
 
 	// Determine method: CLI flag takes precedence, then config
-	method := shared.AuthMethodUnknown
+	method := identity.AuthMethodUnknown
 	if opts.Method != "" {
-		method = shared.ParseAuthMethod(opts.Method)
+		method = identity.ParseAuthMethod(opts.Method)
 		log.Debug("auth method set via CLI flag", logger.String("method", method.String()))
 	} else if cfg.Auth.Method != "" {
-		method = shared.ParseAuthMethod(cfg.Auth.Method)
+		method = identity.ParseAuthMethod(cfg.Auth.Method)
 		log.Debug("auth method set via configuration", logger.String("method", method.String()))
 	}
 
@@ -77,8 +76,8 @@ func (c *Command) Execute(ctx context.Context, opts Options) error {
 		identityID = opts.Alias
 	}
 
-	loginOpts := shared.LoginOptions{
-		IdentityID:  identityID,
+	loginOpts := identity.LoginOptions{
+		AccountID:   identityID,
 		Force:       opts.Force,
 		Interactive: true,
 		Method:      method,
@@ -101,18 +100,21 @@ func (c *Command) Execute(ctx context.Context, opts Options) error {
 	}
 
 	log.Info("authenticating", logger.String("provider", provider), logger.String("method", method.String()))
-	token, err := auth.Authenticate(ctx, loginOpts)
+	token, identity, err := auth.Authenticate(ctx, loginOpts)
 	if err != nil {
 		log.Error("authentication failed", logger.Error(err))
 		return fmt.Errorf("authentication failed: %w", err)
 	}
 
-	if err := auth.SaveToken(ctx, token); err != nil {
+	if err := auth.SaveAccessToken(ctx, token); err != nil {
 		log.Error("failed to cache token", logger.Error(err))
 		return fmt.Errorf("failed to cache access token: %w", err)
 	}
 
-	log.Info("authentication successful and token cached")
+	log.Info("authentication successful and token cached",
+		logger.String("identity", identity.ID),
+		logger.String("display_name", identity.DisplayName),
+		logger.String("email", identity.Email))
 
 	if opts.ShowToken {
 		fmt.Fprintf(opts.Stdout, "Access Token: %s\n", token.Token)

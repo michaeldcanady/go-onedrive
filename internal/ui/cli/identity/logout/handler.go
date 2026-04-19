@@ -5,21 +5,21 @@ import (
 	"fmt"
 
 	"github.com/michaeldcanady/go-onedrive/internal/config"
-	"github.com/michaeldcanady/go-onedrive/internal/identity/registry"
+	"github.com/michaeldcanady/go-onedrive/internal/identity"
 	"github.com/michaeldcanady/go-onedrive/internal/logger"
 )
 
 // Command orchestrates the logout flow for the active profile.
 type Command struct {
 	config   config.Service
-	identity registry.Service
+	identity identity.Service
 	log      logger.Logger
 }
 
 // NewCommand initializes a new instance of the logout Command.
 func NewCommand(
 	cfg config.Service,
-	id registry.Service,
+	id identity.Service,
 	l logger.Logger,
 ) *Command {
 	return &Command{

@@ -1,4 +1,4 @@
-package shared
+package identity
 
 // LoginResult represents the outcome of a successful login operation.
 type LoginResult struct {

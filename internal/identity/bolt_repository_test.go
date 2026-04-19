@@ -6,7 +6,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/michaeldcanady/go-onedrive/internal/identity/shared"
 	"github.com/stretchr/testify/assert"
 	bolt "go.etcd.io/bbolt"
 )
@@ -21,10 +20,10 @@ func TestBoltRepository(t *testing.T) {
 	repo := NewBoltRepository(db)
 	ctx := context.Background()
 	provider := "microsoft"
-	token := shared.AccessToken{
-		IdentityID: "user@test.com",
-		Token:      "secret-token",
-		ExpiresAt:  time.Now().Add(time.Hour),
+	token := AccessToken{
+		AccountID: "user@test.com",
+		Token:     "secret-token",
+		ExpiresAt: time.Now().Add(time.Hour),
 	}
 
 	// Test Save
@@ -32,19 +31,19 @@ func TestBoltRepository(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Test Get
-	retrieved, err := repo.Get(ctx, provider, token.IdentityID)
+	retrieved, err := repo.Get(ctx, provider, token.AccountID)
 	assert.NoError(t, err)
 	assert.Equal(t, token.Token, retrieved.Token)
 
 	// Test List
 	ids, err := repo.List(ctx, provider)
 	assert.NoError(t, err)
-	assert.Contains(t, ids, token.IdentityID)
+	assert.Contains(t, ids, token.AccountID)
 
 	// Test Delete
-	err = repo.Delete(ctx, provider, token.IdentityID)
+	err = repo.Delete(ctx, provider, token.AccountID)
 	assert.NoError(t, err)
 
-	_, err = repo.Get(ctx, provider, token.IdentityID)
+	_, err = repo.Get(ctx, provider, token.AccountID)
 	assert.Error(t, err)
 }
