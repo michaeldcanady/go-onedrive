@@ -138,6 +138,17 @@
         ],
         "additionalProperties": false
       }
+    },
+    "editor": {
+      "type": "object",
+      "description": "External editor configuration settings.",
+      "properties": {
+        "command": {
+          "type": "string",
+          "description": "The explicit editor command to use (e.g., 'vim', 'code --wait')."
+        }
+      },
+      "additionalProperties": false
     }
   },
   "additionalProperties": false

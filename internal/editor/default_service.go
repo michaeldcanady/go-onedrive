@@ -8,9 +8,14 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/google/shlex"
+	"github.com/google/uuid"
+	"github.com/michaeldcanady/go-onedrive/internal/config"
+	fs "github.com/michaeldcanady/go-onedrive/internal/core/fs"
 	"github.com/michaeldcanady/go-onedrive/internal/environment"
 	"github.com/michaeldcanady/go-onedrive/internal/logger"
 )
@@ -34,24 +39,34 @@ func WithEditor(cmd string) Option {
 	}
 }
 
+// WithConfig sets the configuration service for the editor.
+func WithConfig(cfgSvc config.Service) Option {
+	return func(s *DefaultService) {
+		s.configSvc = cfgSvc
+	}
+}
+
 // DefaultService provides the default implementation of the editor service.
 type DefaultService struct {
-	envSvc    environment.Service
-	log       logger.Logger
-	stdin     io.Reader
-	stdout    io.Writer
-	stderr    io.Writer
-	editorCmd string
+	envSvc     environment.Service
+	configSvc  config.Service
+	uriFactory *fs.URIFactory
+	log        logger.Logger
+	stdin      io.Reader
+	stdout     io.Writer
+	stderr     io.Writer
+	editorCmd  string
 }
 
 // NewDefaultService initializes a new instance of the DefaultService.
-func NewDefaultService(envSvc environment.Service, l logger.Logger, opts ...Option) *DefaultService {
+func NewDefaultService(envSvc environment.Service, uriFactory *fs.URIFactory, l logger.Logger, opts ...Option) *DefaultService {
 	s := &DefaultService{
-		envSvc: envSvc,
-		log:    l,
-		stdin:  os.Stdin,
-		stdout: os.Stdout,
-		stderr: os.Stderr,
+		envSvc:     envSvc,
+		uriFactory: uriFactory,
+		log:        l,
+		stdin:      os.Stdin,
+		stdout:     os.Stdout,
+		stderr:     os.Stderr,
 	}
 
 	for _, opt := range opts {
@@ -64,12 +79,14 @@ func NewDefaultService(envSvc environment.Service, l logger.Logger, opts ...Opti
 // WithOptions returns a new Service instance with the specified options applied.
 func (s *DefaultService) WithOptions(opts ...Option) Service {
 	newS := &DefaultService{
-		envSvc:    s.envSvc,
-		log:       s.log,
-		stdin:     s.stdin,
-		stdout:    s.stdout,
-		stderr:    s.stderr,
-		editorCmd: s.editorCmd,
+		envSvc:     s.envSvc,
+		configSvc:  s.configSvc,
+		uriFactory: s.uriFactory,
+		log:        s.log,
+		stdin:      s.stdin,
+		stdout:     s.stdout,
+		stderr:     s.stderr,
+		editorCmd:  s.editorCmd,
 	}
 
 	for _, opt := range opts {
@@ -79,65 +96,100 @@ func (s *DefaultService) WithOptions(opts ...Option) Service {
 	return newS
 }
 
-// Launch launches an external editor with the specified path.
-func (s *DefaultService) Launch(ctx context.Context, path string) error {
-	editorParts, err := s.getEditorParts()
+// CreateSession initializes a new editing session.
+func (s *DefaultService) CreateSession(ctx context.Context, remoteURI *fs.URI, r io.Reader) (*Session, error) {
+	tempDir, err := s.envSvc.TempDir()
 	if err != nil {
-		return err
+		return nil, fmt.Errorf("failed to get temp directory: %w", err)
 	}
 
-	args := append(editorParts, path)
-	cmd := exec.CommandContext(ctx, args[0], args[1:]...)
-	cmd.Stdin = s.stdin
-	cmd.Stdout = s.stdout
-	cmd.Stderr = s.stderr
-
-	return cmd.Run()
-}
-
-// LaunchTempFile creates a temporary file, writes content, launches editor, and returns modified content.
-func (s *DefaultService) LaunchTempFile(ctx context.Context, prefix, suffix string, r io.Reader) ([]byte, error) {
-	data, err := io.ReadAll(r)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read data: %w", err)
-	}
-
-	tempDir, _ := s.envSvc.TempDir()
-	tmpFile, err := os.CreateTemp(tempDir, prefix+"-*"+suffix)
+	ext := filepath.Ext(remoteURI.Path)
+	tmpFile, err := os.CreateTemp(tempDir, "odc-edit-*"+ext)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create temp file: %w", err)
 	}
-	tmpPath := tmpFile.Name()
-	defer func() {
-		_ = os.Remove(tmpPath)
-	}()
+	defer tmpFile.Close()
 
-	if _, err := tmpFile.Write(data); err != nil {
-		_ = tmpFile.Close()
-		return nil, fmt.Errorf("failed to write to temp file: %w", err)
-	}
-	if err := tmpFile.Close(); err != nil {
-		return nil, fmt.Errorf("failed to close temp file: %w", err)
-	}
-
-	initialHash := sha256.Sum256(data)
-
-	if err := s.Launch(ctx, tmpPath); err != nil {
-		return nil, fmt.Errorf("failed to launch editor: %w", err)
-	}
-
-	newData, err := os.ReadFile(tmpPath)
+	localPath := tmpFile.Name()
+	localURI, err := s.uriFactory.FromLocalPath(localPath)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read modified file: %w", err)
+		_ = os.Remove(localPath)
+		return nil, fmt.Errorf("failed to create local URI: %w", err)
 	}
 
-	newHash := sha256.Sum256(newData)
+	// Stream and Hash
+	hash := sha256.New()
+	mw := io.MultiWriter(tmpFile, hash)
 
-	if bytes.Equal(initialHash[:], newHash[:]) {
-		return nil, nil
+	if _, err := io.Copy(mw, r); err != nil {
+		_ = os.Remove(localPath)
+		return nil, fmt.Errorf("failed to stage content to local file: %w", err)
 	}
 
-	return newData, nil
+	session := &Session{
+		ID:          uuid.New().String(),
+		RemoteURI:   remoteURI,
+		LocalURI:    localURI,
+		InitialHash: hash.Sum(nil),
+		state:       StateCreated,
+	}
+
+	return session, nil
+}
+
+func (s *DefaultService) getEditorCmd() (string, error) {
+	// 1. Explicitly set command
+	if strings.TrimSpace(s.editorCmd) != "" {
+		return s.editorCmd, nil
+	}
+
+	// 2. Try configuration
+	if s.configSvc != nil {
+		if cfg, err := s.configSvc.GetConfig(context.Background()); err == nil {
+			if strings.TrimSpace(cfg.Editor.Command) != "" {
+				return cfg.Editor.Command, nil
+			}
+		}
+	}
+
+	// 3. Try VISUAL
+	if visual, err := s.envSvc.Visual(); err == nil && strings.TrimSpace(visual) != "" {
+		return visual, nil
+	}
+
+	// 4. Try EDITOR
+	if editor, err := s.envSvc.Editor(); err == nil && strings.TrimSpace(editor) != "" {
+		return editor, nil
+	}
+
+	// 5. System-specific primary defaults
+	if s.envSvc.IsWindows() {
+		return "notepad.exe", nil
+	}
+
+	// 6. Common Terminal Editors
+	if s.envSvc.IsLinux() || s.envSvc.IsMac() {
+		fallbacks := []string{"vim", "vi", "nano"}
+		for _, f := range fallbacks {
+			if path, err := exec.LookPath(f); err == nil {
+				return path, nil
+			}
+		}
+	}
+
+	// 7. OS Opener Defaults
+	if s.envSvc.IsMac() {
+		if path, err := exec.LookPath("open"); err == nil {
+			return path + " -W -t", nil
+		}
+	}
+	if s.envSvc.IsLinux() {
+		if path, err := exec.LookPath("xdg-open"); err == nil {
+			return path, nil
+		}
+	}
+
+	return "", fmt.Errorf("could not detect a suitable editor")
 }
 
 func (s *DefaultService) getEditorParts() ([]string, error) {
@@ -158,48 +210,80 @@ func (s *DefaultService) getEditorParts() ([]string, error) {
 	return parts, nil
 }
 
-func (s *DefaultService) getEditorCmd() (string, error) {
-	// 1. Explicitly set command
-	if strings.TrimSpace(s.editorCmd) != "" {
-		return s.editorCmd, nil
+// Open launches the configured editor for the given session and waits for it to exit.
+func (s *DefaultService) Open(ctx context.Context, session *Session) error {
+	return session.Handle(ctx, s, EventOpen)
+}
+
+// runEditor is the internal implementation that actually launches the editor.
+func (s *DefaultService) runEditor(ctx context.Context, session *Session) error {
+	editorParts, err := s.getEditorParts()
+	if err != nil {
+		return err
 	}
 
-	// 2. Try VISUAL
-	if visual, err := s.envSvc.Visual(); err == nil && strings.TrimSpace(visual) != "" {
-		return visual, nil
+	args := append(editorParts, session.LocalURI.Path)
+	cmd := exec.CommandContext(ctx, args[0], args[1:]...)
+	cmd.Stdin = s.stdin
+	cmd.Stdout = s.stdout
+	cmd.Stderr = s.stderr
+
+	start := time.Now()
+	err = cmd.Run()
+	duration := time.Since(start)
+
+	if err != nil {
+		return fmt.Errorf("editor failed: %w", err)
 	}
 
-	// 3. Try EDITOR
-	if editor, err := s.envSvc.Editor(); err == nil && strings.TrimSpace(editor) != "" {
-		return editor, nil
+	// If the editor returned very quickly (less than 1 second), it likely backgrounded.
+	if duration < 1*time.Second {
+		s.log.Warn("editor returned very quickly; if it opened in the background, ensure it was saved before continuing",
+			logger.Duration("duration", duration))
 	}
 
-	// 4. System-specific primary defaults
-	if s.envSvc.IsWindows() {
-		return "notepad.exe", nil
+	return nil
+}
+
+// Modified checks if the local file in the session has changed.
+func (s *DefaultService) Modified(session *Session) (bool, error) {
+	if state := session.State(); state != StateCompleted {
+		return false, fmt.Errorf("cannot check modifications for session in state %s", state)
 	}
 
-	// 5. Common Terminal Editors
-	if s.envSvc.IsLinux() || s.envSvc.IsMac() {
-		fallbacks := []string{"vim", "vi", "nano"}
-		for _, f := range fallbacks {
-			if path, err := exec.LookPath(f); err == nil {
-				return path, nil
-			}
-		}
+	f, err := os.Open(session.LocalURI.Path)
+	if err != nil {
+		return false, fmt.Errorf("failed to open local file for modification check: %w", err)
+	}
+	defer f.Close()
+
+	hash := sha256.New()
+	if _, err := io.Copy(hash, f); err != nil {
+		return false, fmt.Errorf("failed to hash local file: %w", err)
 	}
 
-	// 6. OS Opener Defaults
-	if s.envSvc.IsMac() {
-		if path, err := exec.LookPath("open"); err == nil {
-			return path + " -W -t", nil
-		}
-	}
-	if s.envSvc.IsLinux() {
-		if path, err := exec.LookPath("xdg-open"); err == nil {
-			return path, nil
-		}
+	return !bytes.Equal(session.InitialHash, hash.Sum(nil)), nil
+}
+
+// NewContent returns a reader for the modified content in the session.
+func (s *DefaultService) NewContent(session *Session) (io.ReadCloser, error) {
+	if state := session.State(); state != StateCompleted {
+		return nil, fmt.Errorf("cannot get content for session in state %s", state)
 	}
 
-	return "", fmt.Errorf("could not detect a suitable editor")
+	f, err := os.Open(session.LocalURI.Path)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open local file: %w", err)
+	}
+	return f, nil
+}
+
+// Cleanup removes the temporary local file and releases session resources.
+func (s *DefaultService) Cleanup(ctx context.Context, session *Session) error {
+	return session.Handle(ctx, s, EventClose)
+}
+
+// removeFile is the internal implementation that actually deletes the local file.
+func (s *DefaultService) removeFile(session *Session) error {
+	return os.Remove(session.LocalURI.Path)
 }

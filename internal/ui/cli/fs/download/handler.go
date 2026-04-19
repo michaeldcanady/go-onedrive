@@ -3,8 +3,8 @@ package download
 import (
 	"fmt"
 
-	"github.com/michaeldcanady/go-onedrive/internal/logger"
 	fs "github.com/michaeldcanady/go-onedrive/internal/core/fs"
+	"github.com/michaeldcanady/go-onedrive/internal/logger"
 	pkgfs "github.com/michaeldcanady/go-onedrive/pkg/fs"
 )
 

@@ -8,19 +8,19 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/michaeldcanady/go-onedrive/internal/config"
+	registry "github.com/michaeldcanady/go-onedrive/internal/core/fs"
 	"github.com/michaeldcanady/go-onedrive/internal/drive"
 	graphgateway "github.com/michaeldcanady/go-onedrive/internal/drive/gateway/graph"
-	"github.com/michaeldcanady/go-onedrive/internal/environment"
-	registry "github.com/michaeldcanady/go-onedrive/internal/core/fs"
-	"github.com/michaeldcanady/go-onedrive/internal/storage/backend/local"
-	"github.com/michaeldcanady/go-onedrive/internal/storage/backend/onedrive"
 	"github.com/michaeldcanady/go-onedrive/internal/editor"
+	"github.com/michaeldcanady/go-onedrive/internal/environment"
 	"github.com/michaeldcanady/go-onedrive/internal/identity"
 	"github.com/michaeldcanady/go-onedrive/internal/identity/providers/microsoft"
 	idregistry "github.com/michaeldcanady/go-onedrive/internal/identity/registry"
 	"github.com/michaeldcanady/go-onedrive/internal/logger"
 	"github.com/michaeldcanady/go-onedrive/internal/mount"
 	"github.com/michaeldcanady/go-onedrive/internal/profile"
+	"github.com/michaeldcanady/go-onedrive/internal/storage/backend/local"
+	"github.com/michaeldcanady/go-onedrive/internal/storage/backend/onedrive"
 	pkgfs "github.com/michaeldcanady/go-onedrive/pkg/fs"
 	"github.com/michaeldcanady/go-onedrive/pkg/logger/zap"
 	bolt "go.etcd.io/bbolt"
@@ -88,9 +88,6 @@ func (c *DefaultContainer) initBaseServices() error {
 		return fmt.Errorf("failed to initialize profile service: %w", err)
 	}
 	c.profile = profileSvc
-
-	cliLog, _ := c.logger.CreateLogger("cli")
-	c.editor = editor.NewDefaultService(c.environment, cliLog)
 
 	return nil
 }
@@ -180,6 +177,9 @@ func (c *DefaultContainer) initVFSServices(ctx context.Context) error {
 
 	c.manager = vfs
 	c.uriFactory = registry.NewURIFactory(vfs)
+
+	cliLog, _ = c.logger.CreateLogger("cli")
+	c.editor = editor.NewDefaultService(c.environment, c.uriFactory, cliLog, editor.WithConfig(c.config))
 
 	return nil
 }

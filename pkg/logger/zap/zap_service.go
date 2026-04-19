@@ -117,7 +117,7 @@ func (s *ZapService) Reconfigure(level logger.Level, output string, format strin
 		cfg.EncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
 	}
 
-	root, err := cfg.Build()
+	root, err := cfg.Build(zap.AddCallerSkip(1))
 	if err != nil {
 		return fmt.Errorf("failed to build logger: %w", err)
 	}

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/michaeldcanady/go-onedrive/internal/errors"
 	"github.com/michaeldcanady/go-onedrive/internal/identity/shared"
 	bolt "go.etcd.io/bbolt"
 )
@@ -30,15 +31,15 @@ func (r *BoltRepository) Get(ctx context.Context, provider, identityID string) (
 	err := r.db.View(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte("tokens"))
 		if b == nil {
-			return fmt.Errorf("tokens bucket not found")
+			return fmt.Errorf("%w for identity %s: tokens bucket missing", errors.ErrNotFound, identityID)
 		}
 		pb := b.Bucket([]byte(provider))
 		if pb == nil {
-			return fmt.Errorf("provider bucket %s not found", provider)
+			return fmt.Errorf("%w for identity %s: provider bucket %s missing", errors.ErrNotFound, identityID, provider)
 		}
 		data := pb.Get([]byte(identityID))
 		if data == nil {
-			return fmt.Errorf("token not found for identity %s", identityID)
+			return fmt.Errorf("%w for identity %s", errors.ErrNotFound, identityID)
 		}
 		return json.Unmarshal(data, &token)
 	})

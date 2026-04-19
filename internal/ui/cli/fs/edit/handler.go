@@ -1,15 +1,13 @@
 package edit
 
 import (
-	"bytes"
 	"fmt"
 	"os"
-	"path/filepath"
 
-	"github.com/michaeldcanady/go-onedrive/internal/logger"
 	fs "github.com/michaeldcanady/go-onedrive/internal/core/fs"
-	pkgfs "github.com/michaeldcanady/go-onedrive/pkg/fs"
 	"github.com/michaeldcanady/go-onedrive/internal/editor"
+	"github.com/michaeldcanady/go-onedrive/internal/logger"
+	pkgfs "github.com/michaeldcanady/go-onedrive/pkg/fs"
 )
 
 // Command executes the edit operation.
@@ -63,19 +61,40 @@ func (c *Command) Execute(ctx *CommandContext) error {
 		log.Error("failed to read file", logger.Error(err))
 		return fmt.Errorf("failed to read file: %w", err)
 	}
+	defer reader.Close()
 
-	prefix := "odc-edit-"
-	suffix := filepath.Ext(ctx.Options.URI.Path)
-
-	newData, err := svc.LaunchTempFile(ctx.Ctx, prefix, suffix, reader)
+	session, err := svc.CreateSession(ctx.Ctx, ctx.Options.URI, reader)
 	if err != nil {
+		log.Error("failed to create editor session", logger.Error(err))
+		return fmt.Errorf("failed to create editor session: %w", err)
+	}
+	defer svc.Cleanup(ctx.Ctx, session)
+
+	log.Debug("editor session created",
+		logger.String("id", session.ID),
+		logger.String("local_uri", session.LocalURI.String()))
+
+	if err := svc.Open(ctx.Ctx, session); err != nil {
 		log.Error("editor session failed", logger.Error(err))
 		return fmt.Errorf("editor session failed: %w", err)
 	}
 
-	if newData != nil {
+	modified, err := svc.Modified(session)
+	if err != nil {
+		log.Error("failed to check for modifications", logger.Error(err))
+		return fmt.Errorf("failed to check for modifications: %w", err)
+	}
+
+	if modified {
 		log.Info("file modified, writing changes")
-		if _, err := c.manager.WriteFile(ctx.Ctx, ctx.Options.URI, bytes.NewReader(newData), pkgfs.WriteOptions{Overwrite: true}); err != nil {
+		newContent, err := svc.NewContent(session)
+		if err != nil {
+			log.Error("failed to open modified content", logger.Error(err))
+			return fmt.Errorf("failed to open modified content: %w", err)
+		}
+		defer newContent.Close()
+
+		if _, err := c.manager.WriteFile(ctx.Ctx, ctx.Options.URI, newContent, pkgfs.WriteOptions{Overwrite: true}); err != nil {
 			log.Error("failed to write changes", logger.Error(err))
 			return fmt.Errorf("failed to write changes: %w", err)
 		}

@@ -1,10 +1,10 @@
 package ls
 
 import (
-	"github.com/michaeldcanady/go-onedrive/internal/logger"
 	fs "github.com/michaeldcanady/go-onedrive/internal/core/fs"
-	pkgfs "github.com/michaeldcanady/go-onedrive/pkg/fs"
+	"github.com/michaeldcanady/go-onedrive/internal/logger"
 	formatting "github.com/michaeldcanady/go-onedrive/pkg/format"
+	pkgfs "github.com/michaeldcanady/go-onedrive/pkg/fs"
 )
 
 // Command executes the ls operation.

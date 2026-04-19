@@ -79,7 +79,7 @@ func (c *Command) Execute(ctx context.Context, opts Options) error {
 
 	loginOpts := shared.LoginOptions{
 		IdentityID:  identityID,
-		Force:       true, // Login command always forces a fresh flow
+		Force:       opts.Force,
 		Interactive: true,
 		Method:      method,
 		ProviderSpecific: map[string]string{
