@@ -10,7 +10,7 @@ func main() {
 	// Initialize the OneDrive backend.
 	// PlatformProvider and other config would typically be injected or read from env.
 	// For now, we instantiate the stateless backend.
-	backend := onedrive.NewBackend()
+	backend := onedrive.NewBackend(make(map[string]string))
 	server := onedrive.NewServer(backend)
 
 	plugin.Serve(&plugin.ServeConfig{

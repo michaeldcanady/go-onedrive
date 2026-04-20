@@ -5,20 +5,21 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/michaeldcanady/go-onedrive/internal/core/fs"
 	"github.com/michaeldcanady/go-onedrive/internal/logger"
 )
 
 // DefaultService provides the default implementation of the drive service.
 type DefaultService struct {
-	gateway Gateway
-	log     logger.Logger
+	vfs *fs.VFS
+	log logger.Logger
 }
 
 // NewDefaultService initializes a new instance of the DefaultService.
-func NewDefaultService(gateway Gateway, l logger.Logger) *DefaultService {
+func NewDefaultService(vfs *fs.VFS, l logger.Logger) *DefaultService {
 	return &DefaultService{
-		gateway: gateway,
-		log:     l,
+		vfs: vfs,
+		log: l,
 	}
 }
 
@@ -26,13 +27,24 @@ func NewDefaultService(gateway Gateway, l logger.Logger) *DefaultService {
 func (s *DefaultService) ListDrives(ctx context.Context, identityID string) ([]Drive, error) {
 	s.log.Debug("listing drives", logger.String("identity", identityID))
 
-	drives, err := s.gateway.ListDrives(ctx, identityID)
+	// Assuming '/personal' is the mount path for now.
+	drives, err := s.vfs.ListDrives(ctx, "/personal")
 	if err != nil {
 		s.log.Error("failed to list drives", logger.Error(err))
 		return nil, fmt.Errorf("failed to list drives: %w", err)
 	}
 
-	return drives, nil
+	var out []Drive
+	for _, d := range drives {
+		out = append(out, Drive{
+			ID:       d.ID,
+			Name:     d.Name,
+			Type:     d.Type,
+			Owner:    d.Owner,
+			ReadOnly: d.ReadOnly,
+		})
+	}
+	return out, nil
 }
 
 // ResolveDrive identifies a drive by its ID or name.
@@ -57,11 +69,17 @@ func (s *DefaultService) ResolveDrive(ctx context.Context, driveRef string, iden
 func (s *DefaultService) ResolvePersonalDrive(ctx context.Context, identityID string) (Drive, error) {
 	s.log.Debug("resolving personal drive", logger.String("identity", identityID))
 
-	d, err := s.gateway.GetPersonalDrive(ctx, identityID)
+	d, err := s.vfs.GetPersonalDrive(ctx, "/personal")
 	if err != nil {
 		s.log.Error("failed to get personal drive", logger.Error(err))
 		return Drive{}, fmt.Errorf("failed to get personal drive: %w", err)
 	}
 
-	return d, nil
+	return Drive{
+		ID:       d.ID,
+		Name:     d.Name,
+		Type:     d.Type,
+		Owner:    d.Owner,
+		ReadOnly: d.ReadOnly,
+	}, nil
 }

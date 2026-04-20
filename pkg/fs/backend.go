@@ -50,3 +50,8 @@ type AdvancedBackend interface {
 	// Copy performs a native copy.
 	Copy(ctx context.Context, token, driveID, src, dst string) error
 }
+
+type DriveGateway interface {
+	ListDrives(ctx context.Context, token string) ([]Drive, error)
+	GetPersonalDrive(ctx context.Context, token string) (Drive, error)
+}

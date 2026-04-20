@@ -9,7 +9,6 @@ import (
 	"github.com/michaeldcanady/go-onedrive/internal/config"
 	registry "github.com/michaeldcanady/go-onedrive/internal/core/fs"
 	"github.com/michaeldcanady/go-onedrive/internal/drive"
-	graphgateway "github.com/michaeldcanady/go-onedrive/internal/drive/gateway/graph"
 	"github.com/michaeldcanady/go-onedrive/internal/editor"
 	"github.com/michaeldcanady/go-onedrive/internal/environment"
 	"github.com/michaeldcanady/go-onedrive/internal/identity"
@@ -62,11 +61,11 @@ func NewDefaultContainer() (*DefaultContainer, error) {
 		return nil, err
 	}
 
-	if err := c.initDriveServices(ctx); err != nil {
+	if err := c.initVFSServices(ctx); err != nil {
 		return nil, err
 	}
 
-	if err := c.initVFSServices(ctx); err != nil {
+	if err := c.initDriveServices(ctx); err != nil {
 		return nil, err
 	}
 
@@ -111,19 +110,8 @@ func (c *DefaultContainer) initIdentityServices(ctx context.Context) error {
 	authRegistry := identity.NewRegistry(tokenRepo, cliLog)
 	authRegistry.RegisterAuthenticator("microsoft", msAuth) // Register Authenticator
 
-	// TODO: this is only temporary, needs to be changed
-	identities, err := tokenRepo.List(ctx, "microsoft")
-	if err != nil {
-		return err
-	}
-
-	token, err := tokenRepo.Get(ctx, "microsoft", identities[0])
-	if err != nil {
-		return err
-	}
-
 	// Create and register the MicrosoftAuthorizer.
-	msAuthorizer := microsoft.NewMicrosoftAuthorizer(microsoft.NewStaticTokenCredential(token))
+	msAuthorizer := microsoft.NewMicrosoftAuthorizer(tokenRepo)
 	authRegistry.RegisterAuthorizer("microsoft", msAuthorizer)
 
 	c.identityService = authRegistry // Assigning the registry to identityService
@@ -134,9 +122,8 @@ func (c *DefaultContainer) initIdentityServices(ctx context.Context) error {
 func (c *DefaultContainer) initDriveServices(ctx context.Context) error {
 	cliLog, _ := c.logger.CreateLogger("cli")
 
-	// Pass the Service (Mediator) to the GraphDriveGateway.
-	driveGateway := graphgateway.NewGraphDriveGateway(c.identityService, cliLog)
-	c.drive = drive.NewDefaultService(driveGateway, cliLog)
+	// c.manager is the VFS.
+	c.drive = drive.NewDefaultService(c.manager.(*registry.VFS), cliLog)
 
 	return nil
 }

@@ -2,28 +2,62 @@ package list
 
 import (
 	"fmt"
+	"reflect"
+	"slices"
 
 	"github.com/michaeldcanady/go-onedrive/internal/drive"
 	"github.com/michaeldcanady/go-onedrive/internal/logger"
+	formatting "github.com/michaeldcanady/go-onedrive/pkg/format"
 )
+
+var supportedFormats = []formatting.Format{
+	formatting.FormatJSON,
+	formatting.FormatYAML,
+	formatting.FormatTable,
+}
 
 // Command executes the drive list operation.
 type Command struct {
-	drive drive.Service
-	log   logger.Logger
+	drive            drive.Service
+	formatterFactory *formatting.FormatterFactory
+	log              logger.Logger
 }
 
 // NewCommand initializes a new instance of the drive list Command.
-func NewCommand(d drive.Service, l logger.Logger) *Command {
+func NewCommand(d drive.Service, ff *formatting.FormatterFactory, l logger.Logger) *Command {
 	return &Command{
-		drive: d,
-		log:   l,
+		drive:            d,
+		formatterFactory: ff,
+		log:              l,
 	}
 }
 
 // Validate prepares and validates the options for the drive list operation.
 func (c *Command) Validate(ctx *CommandContext) error {
-	return ctx.Options.Validate()
+	if ctx.Format = formatting.NewFormat(ctx.Options.Format); ctx.Format == formatting.FormatUnknown {
+		return fmt.Errorf("unknown format: %s; expected %s", ctx.Options.Format, supportedFormats)
+	}
+
+	if !slices.Contains(supportedFormats, ctx.Format) {
+		return fmt.Errorf("unsupported format: %s; expected %s", ctx.Format, supportedFormats)
+	}
+
+	return nil
+}
+
+func init() {
+	formatting.GlobalRegistry.RegisterTable(reflect.TypeOf(drive.Drive{}), []formatting.Column{
+		formatting.NewColumn("Name", func(i any) string {
+			d := i.(drive.Drive)
+			return "  " + d.Name
+		}),
+		formatting.NewColumn("ID", func(i any) string {
+			return i.(drive.Drive).ID
+		}),
+		formatting.NewColumn("Type", func(i any) string {
+			return i.(drive.Drive).Type
+		}),
+	})
 }
 
 // Execute retrieves and displays all available OneDrive drives.
@@ -37,22 +71,20 @@ func (c *Command) Execute(ctx *CommandContext) error {
 		return fmt.Errorf("failed to list drives: %w", err)
 	}
 
-	personal, _ := c.drive.ResolvePersonalDrive(ctx.Ctx, ctx.Options.IdentityID)
-
-	log.Info("drives retrieved successfully", logger.Int("count", len(drives)))
-	fmt.Fprintln(ctx.Options.Stdout, "Available OneDrive drives:")
+	// Prepare data for formatting
+	var items []any
 	for _, d := range drives {
-		prefix := "  "
-		suffix := ""
-		if d.ID == personal.ID {
-			prefix = "* "
-			suffix = " (personal)"
-		}
-
-		fmt.Fprintf(ctx.Options.Stdout, "%s%s (%s)%s\n", prefix, d.Name, d.ID, suffix)
+		items = append(items, d)
 	}
 
-	return nil
+	// Resolve formatter
+	formatter, err := c.formatterFactory.Create(ctx.Format)
+	if err != nil {
+		return err
+	}
+
+	log.Info("drives retrieved successfully", logger.Int("count", len(drives)))
+	return formatter.Format(ctx.Options.Stdout, items)
 }
 
 // Finalize performs any necessary cleanup after the drive list operation.

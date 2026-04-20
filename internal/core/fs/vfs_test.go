@@ -14,22 +14,22 @@ type mockBackend struct {
 }
 
 func (m *mockBackend) Name() string { return m.name }
-func (m *mockBackend) Stat(ctx context.Context, path string) (fs.Item, error) {
+func (m *mockBackend) Stat(ctx context.Context, token, driveID, path string) (fs.Item, error) {
 	return fs.Item{Path: path, Name: m.name}, nil
 }
-func (m *mockBackend) List(ctx context.Context, path string) ([]fs.Item, error) { return nil, nil }
-func (m *mockBackend) Open(ctx context.Context, path string) (io.ReadCloser, error) {
+func (m *mockBackend) List(ctx context.Context, token, driveID, path string) ([]fs.Item, error) { return nil, nil }
+func (m *mockBackend) Open(ctx context.Context, token, driveID, path string) (io.ReadCloser, error) {
 	return nil, nil
 }
-func (m *mockBackend) Create(ctx context.Context, path string, r io.Reader) (fs.Item, error) {
+func (m *mockBackend) Create(ctx context.Context, token, driveID, path string, r io.Reader) (fs.Item, error) {
 	return fs.Item{}, nil
 }
-func (m *mockBackend) Mkdir(ctx context.Context, path string) error  { return nil }
-func (m *mockBackend) Remove(ctx context.Context, path string) error { return nil }
+func (m *mockBackend) Mkdir(ctx context.Context, token, driveID, path string) error  { return nil }
+func (m *mockBackend) Remove(ctx context.Context, token, driveID, path string) error { return nil }
 func (m *mockBackend) Capabilities() fs.Capabilities                 { return fs.Capabilities{} }
 
 func TestVFS_Resolve(t *testing.T) {
-	vfs := NewVFS()
+	vfs := NewVFS(nil)
 	local := &mockBackend{name: "local"}
 	work := &mockBackend{name: "work"}
 	personal := &mockBackend{name: "personal"}
@@ -61,7 +61,7 @@ func TestVFS_Resolve(t *testing.T) {
 }
 
 func TestVFS_SelectBackend(t *testing.T) {
-	vfs := NewVFS()
+	vfs := NewVFS(nil)
 	local := &mockBackend{name: "local"}
 	work := &mockBackend{name: "work"}
 

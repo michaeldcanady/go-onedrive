@@ -19,15 +19,17 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	BackendService_Stat_FullMethodName         = "/v1.BackendService/Stat"
-	BackendService_List_FullMethodName         = "/v1.BackendService/List"
-	BackendService_Open_FullMethodName         = "/v1.BackendService/Open"
-	BackendService_Create_FullMethodName       = "/v1.BackendService/Create"
-	BackendService_Mkdir_FullMethodName        = "/v1.BackendService/Mkdir"
-	BackendService_Remove_FullMethodName       = "/v1.BackendService/Remove"
-	BackendService_Capabilities_FullMethodName = "/v1.BackendService/Capabilities"
-	BackendService_Move_FullMethodName         = "/v1.BackendService/Move"
-	BackendService_Copy_FullMethodName         = "/v1.BackendService/Copy"
+	BackendService_Stat_FullMethodName             = "/v1.BackendService/Stat"
+	BackendService_List_FullMethodName             = "/v1.BackendService/List"
+	BackendService_Open_FullMethodName             = "/v1.BackendService/Open"
+	BackendService_Create_FullMethodName           = "/v1.BackendService/Create"
+	BackendService_Mkdir_FullMethodName            = "/v1.BackendService/Mkdir"
+	BackendService_Remove_FullMethodName           = "/v1.BackendService/Remove"
+	BackendService_Capabilities_FullMethodName     = "/v1.BackendService/Capabilities"
+	BackendService_Move_FullMethodName             = "/v1.BackendService/Move"
+	BackendService_Copy_FullMethodName             = "/v1.BackendService/Copy"
+	BackendService_ListDrives_FullMethodName       = "/v1.BackendService/ListDrives"
+	BackendService_GetPersonalDrive_FullMethodName = "/v1.BackendService/GetPersonalDrive"
 )
 
 // BackendServiceClient is the client API for BackendService service.
@@ -44,6 +46,9 @@ type BackendServiceClient interface {
 	// Advanced operations
 	Move(ctx context.Context, in *MoveRequest, opts ...grpc.CallOption) (*MoveResponse, error)
 	Copy(ctx context.Context, in *CopyRequest, opts ...grpc.CallOption) (*CopyResponse, error)
+	// Drive discovery
+	ListDrives(ctx context.Context, in *ListDrivesRequest, opts ...grpc.CallOption) (*ListDrivesResponse, error)
+	GetPersonalDrive(ctx context.Context, in *GetPersonalDriveRequest, opts ...grpc.CallOption) (*GetPersonalDriveResponse, error)
 }
 
 type backendServiceClient struct {
@@ -156,6 +161,26 @@ func (c *backendServiceClient) Copy(ctx context.Context, in *CopyRequest, opts .
 	return out, nil
 }
 
+func (c *backendServiceClient) ListDrives(ctx context.Context, in *ListDrivesRequest, opts ...grpc.CallOption) (*ListDrivesResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListDrivesResponse)
+	err := c.cc.Invoke(ctx, BackendService_ListDrives_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *backendServiceClient) GetPersonalDrive(ctx context.Context, in *GetPersonalDriveRequest, opts ...grpc.CallOption) (*GetPersonalDriveResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetPersonalDriveResponse)
+	err := c.cc.Invoke(ctx, BackendService_GetPersonalDrive_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // BackendServiceServer is the server API for BackendService service.
 // All implementations must embed UnimplementedBackendServiceServer
 // for forward compatibility.
@@ -170,6 +195,9 @@ type BackendServiceServer interface {
 	// Advanced operations
 	Move(context.Context, *MoveRequest) (*MoveResponse, error)
 	Copy(context.Context, *CopyRequest) (*CopyResponse, error)
+	// Drive discovery
+	ListDrives(context.Context, *ListDrivesRequest) (*ListDrivesResponse, error)
+	GetPersonalDrive(context.Context, *GetPersonalDriveRequest) (*GetPersonalDriveResponse, error)
 	mustEmbedUnimplementedBackendServiceServer()
 }
 
@@ -206,6 +234,12 @@ func (UnimplementedBackendServiceServer) Move(context.Context, *MoveRequest) (*M
 }
 func (UnimplementedBackendServiceServer) Copy(context.Context, *CopyRequest) (*CopyResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Copy not implemented")
+}
+func (UnimplementedBackendServiceServer) ListDrives(context.Context, *ListDrivesRequest) (*ListDrivesResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListDrives not implemented")
+}
+func (UnimplementedBackendServiceServer) GetPersonalDrive(context.Context, *GetPersonalDriveRequest) (*GetPersonalDriveResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetPersonalDrive not implemented")
 }
 func (UnimplementedBackendServiceServer) mustEmbedUnimplementedBackendServiceServer() {}
 func (UnimplementedBackendServiceServer) testEmbeddedByValue()                        {}
@@ -372,6 +406,42 @@ func _BackendService_Copy_Handler(srv interface{}, ctx context.Context, dec func
 	return interceptor(ctx, in, info, handler)
 }
 
+func _BackendService_ListDrives_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListDrivesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(BackendServiceServer).ListDrives(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: BackendService_ListDrives_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(BackendServiceServer).ListDrives(ctx, req.(*ListDrivesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _BackendService_GetPersonalDrive_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetPersonalDriveRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(BackendServiceServer).GetPersonalDrive(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: BackendService_GetPersonalDrive_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(BackendServiceServer).GetPersonalDrive(ctx, req.(*GetPersonalDriveRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // BackendService_ServiceDesc is the grpc.ServiceDesc for BackendService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -406,6 +476,14 @@ var BackendService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Copy",
 			Handler:    _BackendService_Copy_Handler,
+		},
+		{
+			MethodName: "ListDrives",
+			Handler:    _BackendService_ListDrives_Handler,
+		},
+		{
+			MethodName: "GetPersonalDrive",
+			Handler:    _BackendService_GetPersonalDrive_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

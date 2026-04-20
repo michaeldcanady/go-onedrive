@@ -14,6 +14,42 @@ type Server struct {
 	backend *Backend
 }
 
+func (s *Server) ListDrives(ctx context.Context, req *proto.ListDrivesRequest) (*proto.ListDrivesResponse, error) {
+	drives, err := s.backend.ListDrives(ctx, req.AccessToken)
+	if err != nil {
+		return nil, grpc.ToProtoError(err)
+	}
+
+	protoDrives := make([]*proto.Drive, len(drives))
+	for i, d := range drives {
+		protoDrives[i] = &proto.Drive{
+			Id:       d.ID,
+			Name:     d.Name,
+			Type:     d.Type,
+			Owner:    d.Owner,
+			ReadOnly: d.ReadOnly,
+		}
+	}
+	return &proto.ListDrivesResponse{Drives: protoDrives}, nil
+}
+
+func (s *Server) GetPersonalDrive(ctx context.Context, req *proto.GetPersonalDriveRequest) (*proto.GetPersonalDriveResponse, error) {
+	d, err := s.backend.GetPersonalDrive(ctx, req.AccessToken)
+	if err != nil {
+		return nil, grpc.ToProtoError(err)
+	}
+
+	return &proto.GetPersonalDriveResponse{
+		Drive: &proto.Drive{
+			Id:       d.ID,
+			Name:     d.Name,
+			Type:     d.Type,
+			Owner:    d.Owner,
+			ReadOnly: d.ReadOnly,
+		},
+	}, nil
+}
+
 // NewServer creates a new gRPC server wrapper for the OneDrive Backend.
 func NewServer(b *Backend) *Server {
 	return &Server{backend: b}

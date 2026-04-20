@@ -103,5 +103,5 @@ func ToProtoError(err error) error {
 		}
 	}
 
-	return status.Errorf(code, err.Error())
+	return status.Errorf(code, "%s", err.Error())
 }

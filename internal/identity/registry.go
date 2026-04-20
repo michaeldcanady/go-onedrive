@@ -80,6 +80,12 @@ func (r *Registry) Authenticate(ctx context.Context, provider string, req *proto
 
 func (r *Registry) Token(ctx context.Context, provider string, req *proto.GetTokenRequest) (*proto.GetTokenResponse, error) {
 	accountID := req.GetIdentityId()
+	if accountID == "" {
+		ids, err := r.store.List(ctx, provider)
+		if err == nil && len(ids) > 0 {
+			accountID = ids[0]
+		}
+	}
 
 	// 1. Check cache
 	if token, err := r.store.Get(ctx, provider, accountID); err == nil {
@@ -97,7 +103,13 @@ func (r *Registry) Token(ctx context.Context, provider string, req *proto.GetTok
 		return nil, fmt.Errorf("authorizer for provider %s not found", provider)
 	}
 
-	resp, err := authorizer.Token(ctx, req)
+	// Create a new request with the resolved accountID
+	newReq := &proto.GetTokenRequest{
+		IdentityId: accountID,
+		Scopes:     req.GetScopes(),
+	}
+
+	resp, err := authorizer.Token(ctx, newReq)
 	if err != nil {
 		r.logger.Error("Token retrieval failed", logger.String("provider", provider), logger.Error(err))
 		return nil, err

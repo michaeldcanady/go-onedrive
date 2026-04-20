@@ -30,6 +30,8 @@ func (f *FormatterFactory) Create(format Format) (OutputFormatter, error) {
 		return NewYAMLFormatter(), nil
 	case FormatTree:
 		return NewTreeFormatter(), nil
+	case FormatTable:
+		return NewTableFormatter(), nil
 	default:
 		return nil, fmt.Errorf("unsupported output format: %s", format)
 	}

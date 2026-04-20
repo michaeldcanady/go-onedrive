@@ -213,6 +213,86 @@ func (b *Backend) Move(ctx context.Context, token, driveID, src, dst string) err
 	return mapError(err, src)
 }
 
+func (b *Backend) ListDrives(ctx context.Context, token string) ([]fs.Drive, error) {
+	adapter, err := b.createAdapter(ctx, token)
+	if err != nil {
+		return nil, err
+	}
+
+	client := msgraphsdkgo.NewGraphServiceClient(adapter)
+	result, err := client.Me().Drives().Get(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var drives []fs.Drive
+	for _, d := range result.GetValue() {
+		id := ""
+		if d.GetId() != nil {
+			id = *d.GetId()
+		}
+		name := ""
+		if d.GetName() != nil {
+			name = *d.GetName()
+		}
+		driveType := ""
+		if d.GetDriveType() != nil {
+			driveType = *d.GetDriveType()
+		}
+		owner := ""
+		if d.GetOwner() != nil && d.GetOwner().GetUser() != nil && d.GetOwner().GetUser().GetDisplayName() != nil {
+			owner = *d.GetOwner().GetUser().GetDisplayName()
+		}
+
+		drives = append(drives, fs.Drive{
+			ID:       id,
+			Name:     name,
+			Type:     driveType,
+			Owner:    owner,
+			ReadOnly: false,
+		})
+	}
+	return drives, nil
+}
+
+func (b *Backend) GetPersonalDrive(ctx context.Context, token string) (fs.Drive, error) {
+	adapter, err := b.createAdapter(ctx, token)
+	if err != nil {
+		return fs.Drive{}, err
+	}
+
+	client := msgraphsdkgo.NewGraphServiceClient(adapter)
+	d, err := client.Me().Drive().Get(ctx, nil)
+	if err != nil {
+		return fs.Drive{}, err
+	}
+
+	id := ""
+	if d.GetId() != nil {
+		id = *d.GetId()
+	}
+	name := ""
+	if d.GetName() != nil {
+		name = *d.GetName()
+	}
+	driveType := ""
+	if d.GetDriveType() != nil {
+		driveType = *d.GetDriveType()
+	}
+	owner := ""
+	if d.GetOwner() != nil && d.GetOwner().GetUser() != nil && d.GetOwner().GetUser().GetDisplayName() != nil {
+		owner = *d.GetOwner().GetUser().GetDisplayName()
+	}
+
+	return fs.Drive{
+		ID:       id,
+		Name:     name,
+		Type:     driveType,
+		Owner:    owner,
+		ReadOnly: false,
+	}, nil
+}
+
 func (b *Backend) Copy(ctx context.Context, token, driveID, src, dst string) error {
 	return fmt.Errorf("copy not supported on OneDrive backend")
 }

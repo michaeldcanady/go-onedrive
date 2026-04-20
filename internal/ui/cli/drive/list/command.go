@@ -1,7 +1,10 @@
 package list
 
 import (
+	"fmt"
+
 	"github.com/michaeldcanady/go-onedrive/internal/di"
+	formatting "github.com/michaeldcanady/go-onedrive/pkg/format"
 	"github.com/spf13/cobra"
 )
 
@@ -11,7 +14,7 @@ func CreateListCmd(container di.Container) *cobra.Command {
 	var c *CommandContext
 
 	l, _ := container.Logger().CreateLogger("drive-list")
-	handler := NewCommand(container.Drive(), l)
+	handler := NewCommand(container.Drive(), formatting.NewFormatterFactory(), l)
 
 	cmd := &cobra.Command{
 		Use:   "list",
@@ -38,6 +41,7 @@ func CreateListCmd(container di.Container) *cobra.Command {
 	}
 
 	cmd.Flags().StringVar(&opts.IdentityID, "id", "", "The specific identity (email or alias) to list drives for")
+	cmd.Flags().StringVarP(&opts.Format, "format", "o", "table", fmt.Sprintf("Output format %s", supportedFormats))
 
 	return cmd
 }

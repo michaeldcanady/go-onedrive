@@ -3,6 +3,7 @@ package formatting
 import (
 	"fmt"
 	"io"
+	"reflect"
 	"strings"
 )
 
@@ -67,17 +68,28 @@ func (tf *TableFormatter) WithTruncate(truncate bool) *TableFormatter {
 
 // Format writes the items as an ASCII table to the provided writer, adjusting for terminal width.
 func (tf *TableFormatter) Format(w io.Writer, items []any) error {
-	if len(tf.Columns) == 0 {
+	cols := tf.Columns
+	if len(cols) == 0 && len(items) > 0 {
+		t := reflect.TypeOf(items[0])
+		if registered, ok := GlobalRegistry.GetTable(t); ok {
+			cols = registered
+		}
+	}
+
+	if len(cols) == 0 {
 		return fmt.Errorf("no columns defined for table formatter")
 	}
 
+	// Use temporary columns for calculation and rendering if dynamically resolved
+	currentCols := cols
+
 	termWidth := tf.terminal.Width(w)
 
-	widths := tf.computeColumnWidths(items)
+	widths := tf.computeColumnWidths(items, currentCols)
 	widths = tf.fitToTerminal(widths, termWidth)
 
 	tf.writeRow(w, widths, func(i int) (string, int) {
-		h := tf.Columns[i].Header
+		h := currentCols[i].Header
 		if tf.Truncate && len(h) > widths[i] {
 			h = tf.truncate(h, widths[i])
 		}
@@ -88,13 +100,13 @@ func (tf *TableFormatter) Format(w io.Writer, items []any) error {
 
 	for _, item := range items {
 		tf.writeRow(w, widths, func(i int) (string, int) {
-			val := tf.Columns[i].Value(item)
+			val := currentCols[i].Value(item)
 			if tf.Truncate && len(val) > widths[i] {
 				val = tf.truncate(val, widths[i])
 			}
 			visibleLen := len(val)
-			if tf.Columns[i].Render != nil {
-				return tf.Columns[i].Render(w, item), visibleLen
+			if currentCols[i].Render != nil {
+				return currentCols[i].Render(w, item), visibleLen
 			}
 			return val, visibleLen
 		})
@@ -103,13 +115,13 @@ func (tf *TableFormatter) Format(w io.Writer, items []any) error {
 	return nil
 }
 
-func (tf *TableFormatter) computeColumnWidths(items []any) []int {
-	widths := make([]int, len(tf.Columns))
-	for i, col := range tf.Columns {
+func (tf *TableFormatter) computeColumnWidths(items []any, cols []Column) []int {
+	widths := make([]int, len(cols))
+	for i, col := range cols {
 		widths[i] = len(col.Header)
 	}
 	for _, item := range items {
-		for i, col := range tf.Columns {
+		for i, col := range cols {
 			val := col.Value(item)
 			if len(val) > widths[i] {
 				widths[i] = len(val)
@@ -120,40 +132,36 @@ func (tf *TableFormatter) computeColumnWidths(items []any) []int {
 }
 
 func (tf *TableFormatter) fitToTerminal(widths []int, termWidth int) []int {
-	total := 0
+	totalNatural := 0
 	for _, w := range widths {
-		total += w
+		totalNatural += w
 	}
-	total += (len(widths) - 1) * 2
+	// Add padding between columns (2 spaces per separator)
+	total := totalNatural + (len(widths)-1)*2
 
 	if total <= termWidth {
 		return widths
 	}
 
-	remaining := termWidth - (len(widths)-1)*2
+	// Calculate how much space we actually have for the columns themselves
+	available := termWidth - (len(widths)-1)*2
+	if available < len(widths)*minColWidth {
+		available = len(widths) * minColWidth
+	}
+
 	newWidths := make([]int, len(widths))
-	minWidth := 5
-	for i := range widths {
-		newWidths[i] = minWidth
-		remaining -= minWidth
-	}
-
-	if remaining < 0 {
-		return newWidths
-	}
-
-	totalNatural := 0
-	for _, w := range widths {
-		totalNatural += w
-	}
-
-	for i := range widths {
-		extra := (widths[i] * remaining) / totalNatural
-		newWidths[i] += extra
+	// Distribute available space proportionally
+	for i, w := range widths {
+		newWidths[i] = (w * available) / totalNatural
+		if newWidths[i] < minColWidth {
+			newWidths[i] = minColWidth
+		}
 	}
 
 	return newWidths
 }
+
+const minColWidth = 5
 
 func (tf *TableFormatter) writeRow(w io.Writer, widths []int, get func(i int) (string, int)) {
 	for i := range widths {

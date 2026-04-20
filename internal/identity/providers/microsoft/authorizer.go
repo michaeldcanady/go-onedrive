@@ -4,21 +4,19 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
-	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
 	"github.com/michaeldcanady/go-onedrive/internal/identity"
 	proto "github.com/michaeldcanady/go-onedrive/internal/identity/proto"
 )
 
 // MicrosoftAuthorizer implements the identity.Authorizer interface for Microsoft.
 type MicrosoftAuthorizer struct {
-	cred azcore.TokenCredential
+	store identity.AccountStore
 }
 
 // NewMicrosoftAuthorizer initializes a new Microsoft authorizer.
-func NewMicrosoftAuthorizer(cred azcore.TokenCredential) *MicrosoftAuthorizer {
+func NewMicrosoftAuthorizer(store identity.AccountStore) *MicrosoftAuthorizer {
 	return &MicrosoftAuthorizer{
-		cred: cred,
+		store: store,
 	}
 }
 
@@ -26,27 +24,17 @@ func NewMicrosoftAuthorizer(cred azcore.TokenCredential) *MicrosoftAuthorizer {
 func (a *MicrosoftAuthorizer) Token(ctx context.Context, req *proto.GetTokenRequest) (*proto.GetTokenResponse, error) {
 	accountID := req.GetIdentityId()
 
-	// Get a new token from the credential
-	scopes := req.GetScopes()
-	if len(scopes) == 0 {
-		scopes = []string{"https://graph.microsoft.com/.default"}
+	// Get the stored access token (which is already a credential-like object in our architecture)
+	token, err := a.store.Get(ctx, "microsoft", accountID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get token from store: %w", err)
 	}
 
-	credToken, err := a.cred.GetToken(ctx, policy.TokenRequestOptions{Scopes: scopes})
-	if err != nil {
-		return nil, fmt.Errorf("failed to get token from credential: %w", err)
-	}
-	// Try to extract richer identity info from the token
-	_, err = extractFullIdentityFromToken(credToken.Token)
-	if err != nil {
-		// Fallback to a minimal identity if extraction fails
-		// Log/handle fallback as needed
-	}
 	accessToken := identity.AccessToken{
 		AccountID: accountID,
-		Token:     credToken.Token,
-		ExpiresAt: credToken.ExpiresOn,
-		Scopes:    scopes,
+		Token:     token.Token,
+		ExpiresAt: token.ExpiresAt,
+		Scopes:    token.Scopes,
 	}
 	return &proto.GetTokenResponse{
 		Token: identity.ToProtoAccessToken(accessToken),

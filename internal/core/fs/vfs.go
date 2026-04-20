@@ -237,7 +237,65 @@ func (v *VFS) Mounts() []string {
 	}
 	return prefixes
 }
+// ListDrives delegates the drive listing operation to the appropriate backend.
+func (v *VFS) ListDrives(ctx context.Context, provider string) ([]fs.Drive, error) {
+	// Try provider as is, then with slash prefix
+	mountKey := provider
+	if !strings.HasPrefix(mountKey, "/") {
+		mountKey = "/" + mountKey
+	}
 
+	backend, ok := v.mounts[mountKey]
+	if !ok {
+		// Try provider as is (if it was already slashed)
+		backend, ok = v.mounts[provider]
+		if !ok {
+			return nil, fmt.Errorf("backend not found for provider: %s (tried %s)", provider, mountKey)
+		}
+	}
+
+	gateway, ok := backend.(fs.DriveGateway)
+	if !ok {
+		return nil, fmt.Errorf("backend does not support drive discovery: %s", provider)
+	}
+
+	token, err := v.getToken(ctx, provider)
+	if err != nil {
+		return nil, err
+	}
+
+	return gateway.ListDrives(ctx, token)
+}
+
+// GetPersonalDrive delegates the personal drive retrieval to the appropriate backend.
+func (v *VFS) GetPersonalDrive(ctx context.Context, provider string) (fs.Drive, error) {
+	mountKey := provider
+	if !strings.HasPrefix(mountKey, "/") {
+		mountKey = "/" + mountKey
+	}
+
+	backend, ok := v.mounts[mountKey]
+	if !ok {
+		backend, ok = v.mounts[provider]
+		if !ok {
+			return fs.Drive{}, fmt.Errorf("backend not found for provider: %s (tried %s)", provider, mountKey)
+		}
+	}
+
+	gateway, ok := backend.(fs.DriveGateway)
+	if !ok {
+		return fs.Drive{}, fmt.Errorf("backend does not support drive discovery: %s", provider)
+	}
+
+	token, err := v.getToken(ctx, provider)
+	if err != nil {
+		return fs.Drive{}, err
+	}
+
+	return gateway.GetPersonalDrive(ctx, token)
+}
+
+// getToken resolves the identity token for a provider.
 func (v *VFS) getToken(ctx context.Context, provider string) (string, error) {
 	// TODO: mind way to resolve identity provider for a backend
 	provider = "microsoft"
@@ -259,3 +317,4 @@ func (v *VFS) getToken(ctx context.Context, provider string) (string, error) {
 
 	return string(rawToken), nil
 }
+

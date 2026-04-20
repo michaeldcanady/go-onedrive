@@ -16,6 +16,34 @@ service BackendService {
   // Advanced operations
   rpc Move(MoveRequest) returns (MoveResponse);
   rpc Copy(CopyRequest) returns (CopyResponse);
+
+  // Drive discovery
+  rpc ListDrives(ListDrivesRequest) returns (ListDrivesResponse);
+  rpc GetPersonalDrive(GetPersonalDriveRequest) returns (GetPersonalDriveResponse);
+}
+
+message Drive {
+  string id = 1;
+  string name = 2;
+  string type = 3;
+  string owner = 4;
+  bool read_only = 5;
+}
+
+message ListDrivesRequest {
+  string access_token = 1;
+}
+
+message ListDrivesResponse {
+  repeated Drive drives = 1;
+}
+
+message GetPersonalDriveRequest {
+  string access_token = 1;
+}
+
+message GetPersonalDriveResponse {
+  Drive drive = 1;
 }
 
 message Item {

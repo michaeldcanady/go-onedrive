@@ -7,7 +7,7 @@ type Drive struct {
 	// Name is the display name of the drive.
 	Name string
 	// Type specifies the category of the drive (personal, business, etc.).
-	Type DriveType
+	Type string
 	// Owner is the name or identifier of the drive's owner.
 	Owner string
 	// ReadOnly indicates if the drive is read-only for the current user.
