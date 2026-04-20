@@ -12,4 +12,6 @@ type Authenticator interface {
 	ProviderName() string
 	// Authenticate performs the authentication flow and returns the resulting token and identity metadata.
 	Authenticate(ctx context.Context, req *proto.AuthenticateRequest) (*proto.AuthenticateResponse, error)
+	// Logout invalidates the session for an identity.
+	Logout(ctx context.Context, identityID string) error
 }

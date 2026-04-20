@@ -2,24 +2,32 @@ package fs
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
-	"sort"
 	"strings"
 
+	"github.com/michaeldcanady/go-onedrive/internal/identity"
 	"github.com/michaeldcanady/go-onedrive/pkg/fs"
 )
 
 // VFS (Virtual FileSystem) orchestrates multiple backends via mount points.
 type VFS struct {
-	mounts map[string]fs.Backend
+	mounts   map[string]fs.Backend
+	identity identity.Service
 }
 
 // NewVFS initializes a new Virtual FileSystem.
-func NewVFS() *VFS {
+func NewVFS(idService identity.Service) *VFS {
 	return &VFS{
-		mounts: make(map[string]fs.Backend),
+		mounts:   make(map[string]fs.Backend),
+		identity: idService,
 	}
+}
+
+// Get implements the fs.Reader interface for the VFS.
+func (v *VFS) Get(ctx context.Context, uri *fs.URI) (fs.Item, error) {
+	return v.Stat(ctx, uri)
 }
 
 // Mount associates a path prefix with a backend.
@@ -36,15 +44,11 @@ func (v *VFS) Resolve(absPath string) (string, string, error) {
 		absPath = "/" + absPath
 	}
 
-	// Find the longest matching prefix
 	var bestPrefix string
 	for prefix := range v.mounts {
 		if strings.HasPrefix(absPath, prefix) {
-			// Ensure we match on directory boundaries
-			if len(prefix) > len(bestPrefix) {
-				// prefix "/" matches everything
-				// prefix "/local" should match "/local" or "/local/..." but not "/locality"
-				if prefix == "/" || len(absPath) == len(prefix) || absPath[len(prefix)] == '/' {
+			if prefix == "/" || len(absPath) == len(prefix) || absPath[len(prefix)] == '/' {
+				if len(prefix) > len(bestPrefix) {
 					bestPrefix = prefix
 				}
 			}
@@ -66,18 +70,14 @@ func (v *VFS) Resolve(absPath string) (string, string, error) {
 	return bestPrefix, relPath, nil
 }
 
-// resolve finds the appropriate backend and relative path for a given absolute path.
 func (v *VFS) resolve(absPath string) (fs.Backend, string, error) {
 	prefix, relPath, err := v.Resolve(absPath)
 	if err != nil {
 		return nil, "", err
 	}
-
-	backend := v.mounts[prefix]
-	return backend, relPath, nil
+	return v.mounts[prefix], relPath, nil
 }
 
-// selectBackend returns the backend and relative path for a given URI.
 func (v *VFS) selectBackend(uri *fs.URI) (fs.Backend, string, error) {
 	if uri.Provider != "" {
 		if backend, ok := v.mounts[uri.Provider]; ok {
@@ -87,142 +87,175 @@ func (v *VFS) selectBackend(uri *fs.URI) (fs.Backend, string, error) {
 	return v.resolve(uri.Path)
 }
 
-// Name returns the name of the VFS.
 func (v *VFS) Name() string {
 	return "vfs"
 }
 
-// Stat returns metadata for an item at the specified path.
 func (v *VFS) Stat(ctx context.Context, uri *fs.URI) (fs.Item, error) {
 	backend, relPath, err := v.selectBackend(uri)
 	if err != nil {
 		return fs.Item{}, err
 	}
-	return backend.Stat(ctx, relPath)
+	token, err := v.getToken(ctx, uri.Provider)
+	if err != nil {
+		return fs.Item{}, err
+	}
+	return backend.Stat(ctx, token, uri.DriveID, relPath)
 }
 
-// Get is an alias for Stat for backward compatibility.
-func (v *VFS) Get(ctx context.Context, uri *fs.URI) (fs.Item, error) {
-	return v.Stat(ctx, uri)
-}
-
-// List returns the children of a directory.
 func (v *VFS) List(ctx context.Context, uri *fs.URI, opts fs.ListOptions) ([]fs.Item, error) {
 	backend, relPath, err := v.selectBackend(uri)
 	if err != nil {
 		return nil, err
 	}
-	return backend.List(ctx, relPath)
+	token, err := v.getToken(ctx, backend.Name())
+	if err != nil {
+		return nil, err
+	}
+	return backend.List(ctx, token, uri.DriveID, relPath)
 }
 
-// ReadFile opens a read stream for a file's content.
 func (v *VFS) ReadFile(ctx context.Context, uri *fs.URI, opts fs.ReadOptions) (io.ReadCloser, error) {
 	backend, relPath, err := v.selectBackend(uri)
 	if err != nil {
 		return nil, err
 	}
-	return backend.Open(ctx, relPath)
+	token, err := v.getToken(ctx, uri.Provider)
+	if err != nil {
+		return nil, err
+	}
+	return backend.Open(ctx, token, uri.DriveID, relPath)
 }
 
-// WriteFile creates or updates a file.
 func (v *VFS) WriteFile(ctx context.Context, uri *fs.URI, r io.Reader, opts fs.WriteOptions) (fs.Item, error) {
 	backend, relPath, err := v.selectBackend(uri)
 	if err != nil {
 		return fs.Item{}, err
 	}
-	return backend.Create(ctx, relPath, r)
+	token, err := v.getToken(ctx, uri.Provider)
+	if err != nil {
+		return fs.Item{}, err
+	}
+	return backend.Create(ctx, token, uri.DriveID, relPath, r)
 }
 
-// Mkdir creates a new directory.
 func (v *VFS) Mkdir(ctx context.Context, uri *fs.URI) error {
 	backend, relPath, err := v.selectBackend(uri)
 	if err != nil {
 		return err
 	}
-	return backend.Mkdir(ctx, relPath)
+	token, err := v.getToken(ctx, uri.Provider)
+	if err != nil {
+		return err
+	}
+	return backend.Mkdir(ctx, token, uri.DriveID, relPath)
 }
 
-// Remove deletes an item.
 func (v *VFS) Remove(ctx context.Context, uri *fs.URI) error {
 	backend, relPath, err := v.selectBackend(uri)
 	if err != nil {
 		return err
 	}
-	return backend.Remove(ctx, relPath)
+	token, err := v.getToken(ctx, uri.Provider)
+	if err != nil {
+		return err
+	}
+	return backend.Remove(ctx, token, uri.DriveID, relPath)
 }
 
-// Touch creates an empty file.
 func (v *VFS) Touch(ctx context.Context, uri *fs.URI) (fs.Item, error) {
 	backend, relPath, err := v.selectBackend(uri)
 	if err != nil {
 		return fs.Item{}, err
 	}
-	// Simplified Touch using Create with empty reader
-	return backend.Create(ctx, relPath, strings.NewReader(""))
+	token, err := v.getToken(ctx, uri.Provider)
+	if err != nil {
+		return fs.Item{}, err
+	}
+	return backend.Create(ctx, token, uri.DriveID, relPath, strings.NewReader(""))
 }
 
-// Copy duplicates an item, supporting cross-backend copy via streaming.
 func (v *VFS) Copy(ctx context.Context, src, dst *fs.URI, opts fs.CopyOptions) error {
 	srcBackend, srcRel, err := v.selectBackend(src)
 	if err != nil {
 		return err
 	}
-
 	dstBackend, dstRel, err := v.selectBackend(dst)
 	if err != nil {
 		return err
 	}
 
-	// Native copy if same backend and supported
-	if srcBackend == dstBackend {
-		if adv, ok := srcBackend.(fs.AdvancedBackend); ok && srcBackend.Capabilities().CanCopy {
-			return adv.Copy(ctx, srcRel, dstRel)
-		}
+	token, err := v.getToken(ctx, src.Provider)
+	if err != nil {
+		return err
 	}
 
-	// Cross-backend copy: stream
-	r, err := srcBackend.Open(ctx, srcRel)
+	if srcBackend == dstBackend {
+		if adv, ok := srcBackend.(fs.AdvancedBackend); ok && srcBackend.Capabilities().CanCopy {
+			return adv.Copy(ctx, token, src.DriveID, srcRel, dstRel)
+		}
+	}
+	r, err := srcBackend.Open(ctx, token, src.DriveID, srcRel)
 	if err != nil {
 		return err
 	}
 	defer r.Close()
-
-	_, err = dstBackend.Create(ctx, dstRel, r)
+	_, err = dstBackend.Create(ctx, token, dst.DriveID, dstRel, r)
 	return err
 }
 
-// Move relocates an item.
 func (v *VFS) Move(ctx context.Context, src, dst *fs.URI) error {
 	srcBackend, srcRel, err := v.selectBackend(src)
 	if err != nil {
 		return err
 	}
-
 	dstBackend, dstRel, err := v.selectBackend(dst)
 	if err != nil {
 		return err
 	}
 
-	// Native move if same backend and supported
-	if srcBackend == dstBackend {
-		if adv, ok := srcBackend.(fs.AdvancedBackend); ok && srcBackend.Capabilities().CanMove {
-			return adv.Move(ctx, srcRel, dstRel)
-		}
+	token, err := v.getToken(ctx, src.Provider)
+	if err != nil {
+		return err
 	}
 
-	// Cross-backend move: Copy + Remove
+	if srcBackend == dstBackend {
+		if adv, ok := srcBackend.(fs.AdvancedBackend); ok && srcBackend.Capabilities().CanMove {
+			return adv.Move(ctx, token, src.DriveID, srcRel, dstRel)
+		}
+	}
 	if err := v.Copy(ctx, src, dst, fs.CopyOptions{Overwrite: true}); err != nil {
 		return err
 	}
-	return srcBackend.Remove(ctx, srcRel)
+	return srcBackend.Remove(ctx, token, src.DriveID, srcRel)
 }
 
-// Mounts returns a sorted list of mount points.
 func (v *VFS) Mounts() []string {
 	prefixes := make([]string, 0, len(v.mounts))
 	for p := range v.mounts {
 		prefixes = append(prefixes, p)
 	}
-	sort.Strings(prefixes)
 	return prefixes
+}
+
+func (v *VFS) getToken(ctx context.Context, provider string) (string, error) {
+	// TODO: mind way to resolve identity provider for a backend
+	provider = "microsoft"
+	ids, err := v.identity.GetStore().List(ctx, provider)
+	if err != nil || len(ids) == 0 {
+		return "", fmt.Errorf("no identity found for provider %s", provider)
+	}
+	identityID := ids[0]
+
+	accessToken, err := v.identity.GetStore().Get(ctx, provider, identityID)
+	if err != nil {
+		return "", err
+	}
+
+	rawToken, err := json.Marshal(accessToken)
+	if err != nil {
+		return "", err
+	}
+
+	return string(rawToken), nil
 }

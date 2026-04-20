@@ -1,8 +1,8 @@
 syntax = "proto3";
 
-package odc.fs.v1;
+package v1;
 
-option go_package = "github.com/michaeldcanady/go-onedrive/internal/fs/backend/grpc/proto;v1";
+option go_package = "github.com/michaeldcanady/go-onedrive/internal/storage/backend/grpc/proto";
 
 service BackendService {
   rpc Stat(StatRequest) returns (StatResponse);
@@ -42,6 +42,8 @@ message Capabilities {
 
 message StatRequest {
   string path = 1;
+  string drive_id = 2;
+  string access_token = 3;
 }
 
 message StatResponse {
@@ -50,6 +52,8 @@ message StatResponse {
 
 message ListRequest {
   string path = 1;
+  string drive_id = 2;
+  string access_token = 3;
 }
 
 message ListResponse {
@@ -58,6 +62,8 @@ message ListResponse {
 
 message OpenRequest {
   string path = 1;
+  string drive_id = 2;
+  string access_token = 3;
 }
 
 message OpenResponse {
@@ -66,8 +72,10 @@ message OpenResponse {
 
 message CreateRequest {
   oneof request {
-    string path = 1; // First message should contain path
-    bytes data = 2;  // Subsequent messages contain data
+    string path = 1; 
+    bytes data = 2;  
+    string drive_id = 3;
+    string access_token = 4;
   }
 }
 
@@ -77,12 +85,16 @@ message CreateResponse {
 
 message MkdirRequest {
   string path = 1;
+  string drive_id = 2;
+  string access_token = 3;
 }
 
 message MkdirResponse {}
 
 message RemoveRequest {
   string path = 1;
+  string drive_id = 2;
+  string access_token = 3;
 }
 
 message RemoveResponse {}
@@ -96,6 +108,8 @@ message CapabilitiesResponse {
 message MoveRequest {
   string src = 1;
   string dst = 2;
+  string drive_id = 3;
+  string access_token = 4;
 }
 
 message MoveResponse {}
@@ -103,6 +117,8 @@ message MoveResponse {}
 message CopyRequest {
   string src = 1;
   string dst = 2;
+  string drive_id = 3;
+  string access_token = 4;
 }
 
 message CopyResponse {}

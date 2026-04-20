@@ -12,6 +12,7 @@ func CreateAddCmd(container di.Container) *cobra.Command {
 		Short: "Add a mount point",
 		Args:  cobra.ExactArgs(3),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			//TODO: type needs to require options
 			return container.Mounts().AddMount(cmd.Context(), config.MountConfig{
 				Path:       args[0],
 				Type:       args[1],

@@ -8,21 +8,17 @@ import (
 	"strings"
 
 	"github.com/michaeldcanady/go-onedrive/pkg/fs"
-	"github.com/michaeldcanady/go-onedrive/pkg/logger"
 )
 
 // Backend implements the fs.Backend and fs.AdvancedBackend interfaces for the local filesystem.
 type Backend struct {
 	root string
-	log  logger.Logger
 }
 
 // NewBackend creates a new instance of the local filesystem backend.
-// The root parameter defines the base directory for all operations.
-func NewBackend(root string, log logger.Logger) *Backend {
+func NewBackend(root string) *Backend {
 	return &Backend{
 		root: root,
-		log:  log,
 	}
 }
 
@@ -30,7 +26,6 @@ func (b *Backend) Name() string {
 	return "local"
 }
 
-// fullPath joins the backend root with the provided relative path.
 func (b *Backend) fullPath(path string) string {
 	if !strings.HasPrefix(path, "/") {
 		path = "/" + path
@@ -59,8 +54,7 @@ func (b *Backend) mapError(err error, path string) error {
 	}
 }
 
-func (b *Backend) Stat(ctx context.Context, path string) (fs.Item, error) {
-	b.log.Debug("local.Stat", logger.String("path", path))
+func (b *Backend) Stat(ctx context.Context, token, driveID, path string) (fs.Item, error) {
 	info, err := os.Stat(b.fullPath(path))
 	if err != nil {
 		return fs.Item{}, b.mapError(err, path)
@@ -68,8 +62,7 @@ func (b *Backend) Stat(ctx context.Context, path string) (fs.Item, error) {
 	return b.mapInfoToItem(path, info), nil
 }
 
-func (b *Backend) List(ctx context.Context, path string) ([]fs.Item, error) {
-	b.log.Debug("local.List", logger.String("path", path))
+func (b *Backend) List(ctx context.Context, token, driveID, path string) ([]fs.Item, error) {
 	entries, err := os.ReadDir(b.fullPath(path))
 	if err != nil {
 		return nil, b.mapError(err, path)
@@ -86,8 +79,7 @@ func (b *Backend) List(ctx context.Context, path string) ([]fs.Item, error) {
 	return items, nil
 }
 
-func (b *Backend) Open(ctx context.Context, path string) (io.ReadCloser, error) {
-	b.log.Debug("local.Open", logger.String("path", path))
+func (b *Backend) Open(ctx context.Context, token, driveID, path string) (io.ReadCloser, error) {
 	f, err := os.Open(b.fullPath(path))
 	if err != nil {
 		return nil, b.mapError(err, path)
@@ -95,8 +87,7 @@ func (b *Backend) Open(ctx context.Context, path string) (io.ReadCloser, error) 
 	return f, nil
 }
 
-func (b *Backend) Create(ctx context.Context, path string, r io.Reader) (fs.Item, error) {
-	b.log.Debug("local.Create", logger.String("path", path))
+func (b *Backend) Create(ctx context.Context, token, driveID, path string, r io.Reader) (fs.Item, error) {
 	f, err := os.Create(b.fullPath(path))
 	if err != nil {
 		return fs.Item{}, b.mapError(err, path)
@@ -108,17 +99,15 @@ func (b *Backend) Create(ctx context.Context, path string, r io.Reader) (fs.Item
 		return fs.Item{}, b.mapError(err, path)
 	}
 
-	return b.Stat(ctx, path)
+	return b.Stat(ctx, token, driveID, path)
 }
 
-func (b *Backend) Mkdir(ctx context.Context, path string) error {
-	b.log.Debug("local.Mkdir", logger.String("path", path))
+func (b *Backend) Mkdir(ctx context.Context, token, driveID, path string) error {
 	err := os.MkdirAll(b.fullPath(path), 0755)
 	return b.mapError(err, path)
 }
 
-func (b *Backend) Remove(ctx context.Context, path string) error {
-	b.log.Debug("local.Remove", logger.String("path", path))
+func (b *Backend) Remove(ctx context.Context, token, driveID, path string) error {
 	err := os.RemoveAll(b.fullPath(path))
 	return b.mapError(err, path)
 }
@@ -127,26 +116,23 @@ func (b *Backend) Capabilities() fs.Capabilities {
 	return fs.Capabilities{
 		CanMove:      true,
 		CanCopy:      true,
-		CanRecursive: false, // VFS handles recursion for local for now
+		CanRecursive: false,
 	}
 }
 
-func (b *Backend) Move(ctx context.Context, src, dst string) error {
-	b.log.Debug("local.Move", logger.String("src", src), logger.String("dst", dst))
+func (b *Backend) Move(ctx context.Context, token, driveID, src, dst string) error {
 	err := os.Rename(b.fullPath(src), b.fullPath(dst))
 	return b.mapError(err, src)
 }
 
-func (b *Backend) Copy(ctx context.Context, src, dst string) error {
-	b.log.Debug("local.Copy", logger.String("src", src), logger.String("dst", dst))
-	// Simplified local copy via streaming for now, or could use os level if available
-	r, err := b.Open(ctx, src)
+func (b *Backend) Copy(ctx context.Context, token, driveID, src, dst string) error {
+	r, err := b.Open(ctx, token, driveID, src)
 	if err != nil {
 		return err
 	}
 	defer r.Close()
 
-	_, err = b.Create(ctx, dst, r)
+	_, err = b.Create(ctx, token, driveID, dst, r)
 	return err
 }
 

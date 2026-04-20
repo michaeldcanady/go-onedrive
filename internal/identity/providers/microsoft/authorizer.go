@@ -25,30 +25,30 @@ func NewMicrosoftAuthorizer(cred azcore.TokenCredential) *MicrosoftAuthorizer {
 // Token returns a valid access token for the given identity request.
 func (a *MicrosoftAuthorizer) Token(ctx context.Context, req *proto.GetTokenRequest) (*proto.GetTokenResponse, error) {
 	accountID := req.GetIdentityId()
-	
+
 	// Get a new token from the credential
 	scopes := req.GetScopes()
 	if len(scopes) == 0 {
 		scopes = []string{"https://graph.microsoft.com/.default"}
 	}
-	
+
 	credToken, err := a.cred.GetToken(ctx, policy.TokenRequestOptions{Scopes: scopes})
 	if err != nil {
 		return nil, fmt.Errorf("failed to get token from credential: %w", err)
 	}
-// Try to extract richer identity info from the token
-_, err = extractFullIdentityFromToken(credToken.Token)
-if err != nil {
-	// Fallback to a minimal identity if extraction fails
-	// Log/handle fallback as needed
-}
-accessToken := identity.AccessToken{
-	AccountID: accountID,
-	Token:     credToken.Token,
-	ExpiresAt: credToken.ExpiresOn,
-	Scopes:    scopes,
-}
-return &proto.GetTokenResponse{
-	Token: identity.ToProtoAccessToken(accessToken),
-}, nil
+	// Try to extract richer identity info from the token
+	_, err = extractFullIdentityFromToken(credToken.Token)
+	if err != nil {
+		// Fallback to a minimal identity if extraction fails
+		// Log/handle fallback as needed
+	}
+	accessToken := identity.AccessToken{
+		AccountID: accountID,
+		Token:     credToken.Token,
+		ExpiresAt: credToken.ExpiresOn,
+		Scopes:    scopes,
+	}
+	return &proto.GetTokenResponse{
+		Token: identity.ToProtoAccessToken(accessToken),
+	}, nil
 }

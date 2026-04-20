@@ -6,16 +6,28 @@ import (
 	"sync"
 	"time"
 
-	"github.com/michaeldcanady/go-onedrive/internal/logger"
 	proto "github.com/michaeldcanady/go-onedrive/internal/identity/proto"
+	"github.com/michaeldcanady/go-onedrive/internal/logger"
 )
 
 // Service defines the interface for managing identity providers.
 type Service interface {
 	RegisterAuthenticator(provider string, auth Authenticator)
 	RegisterAuthorizer(provider string, auth Authorizer)
+	GetAuthenticator(provider string) (Authenticator, error)
 	Authenticate(ctx context.Context, provider string, req *proto.AuthenticateRequest) (*proto.AuthenticateResponse, error)
 	Token(ctx context.Context, provider string, req *proto.GetTokenRequest) (*proto.GetTokenResponse, error)
+	GetStore() AccountStore
+}
+
+func (r *Registry) GetAuthenticator(provider string) (Authenticator, error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	auth, ok := r.authenticators[provider]
+	if !ok {
+		return nil, fmt.Errorf("authenticator for provider %s not found", provider)
+	}
+	return auth, nil
 }
 
 // Registry is a thread-safe implementation of the Service interface, acting as the mediator.
@@ -92,11 +104,15 @@ func (r *Registry) Token(ctx context.Context, provider string, req *proto.GetTok
 	}
 
 	// 3. Persist new token
-	token := FromProtoAccessToken(resp.GetToken())
+	token := FromProtoAccessToken(resp.GetToken(), accountID)
 	token.AccountID = accountID
 	if err := r.store.Save(ctx, provider, token); err != nil {
 		r.logger.Error("Failed to save new access token", logger.Error(err))
 	}
 
 	return resp, nil
+}
+
+func (r *Registry) GetStore() AccountStore {
+	return r.store
 }

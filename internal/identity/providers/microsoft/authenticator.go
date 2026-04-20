@@ -30,6 +30,14 @@ func (a *MicrosoftAuthenticator) ProviderName() string {
 	return "microsoft"
 }
 
+// Logout invalidates the session for an identity.
+func (a *MicrosoftAuthenticator) Logout(ctx context.Context, identityID string) error {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	delete(a.creds, identityID)
+	return nil
+}
+
 // Authenticate performs the Microsoft-specific login flow.
 func (a *MicrosoftAuthenticator) Authenticate(ctx context.Context, req *proto.AuthenticateRequest) (*proto.AuthenticateResponse, error) {
 	opts, err := identity.FromProtoAuthenticateRequest(req)
@@ -91,12 +99,24 @@ func (a *MicrosoftAuthenticator) Authenticate(ctx context.Context, req *proto.Au
 		acc.Provider = a.ProviderName()
 	}
 
+	// Fetch an initial token.
+	cred, err := a.getOrUpdateCredential(ctx, accountID, opts)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get credential for initial token: %w", err)
+	}
+
+	scopes := []string{"https://graph.microsoft.com/.default"}
+	credToken, err := cred.GetToken(ctx, policy.TokenRequestOptions{Scopes: scopes})
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch initial token: %w", err)
+	}
+
 	return &proto.AuthenticateResponse{
 		Token: &proto.AccessToken{
-			Token:        "",
+			Token:        credToken.Token,
 			RefreshToken: "",
-			ExpiresAt:    0,
-			Scopes:       nil,
+			ExpiresAt:    credToken.ExpiresOn.Unix(),
+			Scopes:       scopes,
 		},
 		Identity: identity.ToProtoIdentity(acc),
 	}, nil

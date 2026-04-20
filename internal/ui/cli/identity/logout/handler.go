@@ -54,7 +54,7 @@ func (c *Command) Execute(ctx context.Context, opts Options) error {
 	}
 
 	log.Debug("retrieving authenticator for provider", logger.String("provider", provider))
-	auth, err := c.identity.Get(provider)
+	auth, err := c.identity.GetAuthenticator(provider)
 	if err != nil {
 		log.Error("unsupported provider", logger.String("provider", provider), logger.Error(err))
 		return fmt.Errorf("provider %s not supported: %w", provider, err)

@@ -60,7 +60,7 @@ func FromProtoAuthenticateRequest(req *proto.AuthenticateRequest) (LoginOptions,
 		Force:            req.GetForce(),
 		ProviderSpecific: req.GetProviderSpecific(),
 		Method:           authMethod,
-		Interactive:      false,
+		Interactive:      true, // Explicitly set to true for CLI login flows
 	}, nil
 }
 
@@ -80,11 +80,12 @@ func FromProtoIdentity(identity *proto.Identity) Account {
 }
 
 // FromProtoAccessToken converts a proto.AccessToken message to an identity.AccessToken struct.
-func FromProtoAccessToken(token *proto.AccessToken) AccessToken {
+func FromProtoAccessToken(token *proto.AccessToken, accountID string) AccessToken {
 	if token == nil {
 		return AccessToken{}
 	}
 	return AccessToken{
+		AccountID:    accountID,
 		Token:        token.Token,
 		RefreshToken: token.RefreshToken,
 		ExpiresAt:    time.Unix(token.ExpiresAt, 0),

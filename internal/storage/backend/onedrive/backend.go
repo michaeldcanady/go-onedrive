@@ -2,47 +2,45 @@ package onedrive
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"path"
 	"strings"
 
-	platform "github.com/michaeldcanady/go-onedrive/internal/identity/providers/shared"
+	"github.com/michaeldcanady/go-onedrive/internal/identity"
+	"github.com/michaeldcanady/go-onedrive/internal/identity/providers/microsoft"
 	"github.com/michaeldcanady/go-onedrive/pkg/fs"
-	"github.com/michaeldcanady/go-onedrive/pkg/logger"
+	abstractions "github.com/microsoft/kiota-abstractions-go"
+	msgraphsdkgo "github.com/microsoftgraph/msgraph-sdk-go"
 	"github.com/microsoftgraph/msgraph-sdk-go/drives"
 	"github.com/microsoftgraph/msgraph-sdk-go/models"
 )
 
 const (
-	baseURL = "https://graph.microsoft.com/v1.0"
-	// URI Templates
+	baseURL                              = "https://graph.microsoft.com/v1.0"
 	rootURITemplate                      = "{+baseurl}/drives/{drive_id}/root"
 	rootRelativeURITemplate              = "{+baseurl}/drives/{drive_id}/root:{path}:"
 	rootChildrenURITemplate              = "{+baseurl}/drives/{drive_id}/root/children"
 	rootRelativeChildrenURITemplate      = "{+baseurl}/drives/{drive_id}/root:{path}:/children"
 	rootRelativeContentURITemplate       = "{+baseurl}/drives/{drive_id}/root:{path}:/content"
 	rootRelativeCreateSessionURITemplate = "{+baseurl}/drives/{drive_id}/root:{path}:/createUploadSession"
-	// uploadThreshold is the file size at which we switch to resumable uploads (4MB).
-	uploadThreshold = 4 * 1024 * 1024
+	uploadThreshold                      = 4 * 1024 * 1024
 )
 
-// Backend implements the fs.Backend and fs.AdvancedBackend interfaces for Microsoft OneDrive.
+const (
+	driveIDOptionKey = "drive_id"
+)
+
 type Backend struct {
-	platform      platform.PlatformProvider
-	driveID       string
-	driveResolver fs.DriveResolver
-	log           logger.Logger
+	driveID string
 }
 
-// NewBackend creates a new instance of the OneDrive filesystem backend.
-// If driveID is empty, it uses the driveResolver to find the active drive at runtime.
-func NewBackend(p platform.PlatformProvider, driveID string, dr fs.DriveResolver, log logger.Logger) *Backend {
+func NewBackend(opts map[string]string) *Backend {
+	driveID := opts[driveIDOptionKey]
+
 	return &Backend{
-		platform:      p,
-		driveID:       driveID,
-		driveResolver: dr,
-		log:           log,
+		driveID: driveID,
 	}
 }
 
@@ -50,24 +48,30 @@ func (b *Backend) Name() string {
 	return "onedrive"
 }
 
-func (b *Backend) getDriveID(ctx context.Context) (string, error) {
-	if b.driveID != "" {
-		return b.driveID, nil
+func (b *Backend) createAdapter(ctx context.Context, rawToken string) (abstractions.RequestAdapter, error) {
+	var token identity.AccessToken
+
+	if err := json.Unmarshal([]byte(rawToken), &token); err != nil {
+		return nil, err
 	}
-	if b.driveResolver == nil {
-		return "", fmt.Errorf("no drive ID or resolver provided")
+
+	cred := microsoft.NewStaticTokenCredential(token)
+
+	client, err := msgraphsdkgo.NewGraphServiceClientWithCredentials(cred, []string{
+		"Files.ReadWrite.All",
+		"User.Read",
+		"offline_access",
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to create authentication provider: %w", err)
 	}
-	return b.driveResolver.GetActiveDriveID(ctx)
+
+	return client.RequestAdapter, nil
 }
 
-func (b *Backend) Stat(ctx context.Context, path string) (fs.Item, error) {
-	driveID, err := b.getDriveID(ctx)
-	if err != nil {
-		return fs.Item{}, mapError(err, path)
-	}
-
+func (b *Backend) Stat(ctx context.Context, token, driveID, path string) (fs.Item, error) {
 	url := expandURI(rootURITemplate, rootRelativeURITemplate, driveID, path)
-	adapter, err := b.platform.Adapter(ctx)
+	adapter, err := b.createAdapter(ctx, token)
 	if err != nil {
 		return fs.Item{}, mapError(err, path)
 	}
@@ -81,14 +85,9 @@ func (b *Backend) Stat(ctx context.Context, path string) (fs.Item, error) {
 	return mapItemToSharedItem(it, path), nil
 }
 
-func (b *Backend) List(ctx context.Context, path string) ([]fs.Item, error) {
-	driveID, err := b.getDriveID(ctx)
-	if err != nil {
-		return nil, mapError(err, path)
-	}
-
-	url := expandURI(rootChildrenURITemplate, rootRelativeChildrenURITemplate, driveID, path)
-	adapter, err := b.platform.Adapter(ctx)
+func (b *Backend) List(ctx context.Context, token, driveID, path string) ([]fs.Item, error) {
+	url := expandURI(rootChildrenURITemplate, rootRelativeChildrenURITemplate, b.driveID, path)
+	adapter, err := b.createAdapter(ctx, token)
 	if err != nil {
 		return nil, mapError(err, path)
 	}
@@ -105,21 +104,18 @@ func (b *Backend) List(ctx context.Context, path string) ([]fs.Item, error) {
 		if it.GetName() != nil {
 			name = *it.GetName()
 		}
-		childPath := joinPath(path, name)
-		items = append(items, mapItemToSharedItem(it, childPath))
+		items = append(items, mapItemToSharedItem(it, joinPath(path, name)))
 	}
-
 	return items, nil
 }
 
-func (b *Backend) Open(ctx context.Context, path string) (io.ReadCloser, error) {
-	driveID, err := b.getDriveID(ctx)
-	if err != nil {
-		return nil, mapError(err, path)
-	}
+func (b *Backend) Capabilities() fs.Capabilities {
+	return fs.Capabilities{CanMove: true, CanCopy: false, CanRecursive: true}
+}
 
+func (b *Backend) Open(ctx context.Context, token, driveID, path string) (io.ReadCloser, error) {
 	url := expandURI(rootRelativeContentURITemplate, rootRelativeContentURITemplate, driveID, path)
-	adapter, err := b.platform.Adapter(ctx)
+	adapter, err := b.createAdapter(ctx, token)
 	if err != nil {
 		return nil, mapError(err, path)
 	}
@@ -133,26 +129,14 @@ func (b *Backend) Open(ctx context.Context, path string) (io.ReadCloser, error) 
 	return io.NopCloser(strings.NewReader(string(content))), nil
 }
 
-func (b *Backend) Create(ctx context.Context, path string, r io.Reader) (fs.Item, error) {
-	driveID, err := b.getDriveID(ctx)
-	if err != nil {
-		return fs.Item{}, mapError(err, path)
-	}
-
-	// For simplicity, we'll read everything to check size, or just use the reader.
-	// In a real scenario we might want to know the size beforehand.
-	// For now, let's just use the basic Put if it's small.
+func (b *Backend) Create(ctx context.Context, token, driveID, path string, r io.Reader) (fs.Item, error) {
 	data, err := io.ReadAll(r)
 	if err != nil {
 		return fs.Item{}, mapError(err, path)
 	}
 
-	if int64(len(data)) > uploadThreshold {
-		return writeLargeFile(ctx, b, driveID, path, strings.NewReader(string(data)), fs.WriteOptions{Size: int64(len(data))})
-	}
-
 	url := expandURI("", rootRelativeContentURITemplate, driveID, path)
-	adapter, err := b.platform.Adapter(ctx)
+	adapter, err := b.createAdapter(ctx, token)
 	if err != nil {
 		return fs.Item{}, mapError(err, path)
 	}
@@ -166,12 +150,7 @@ func (b *Backend) Create(ctx context.Context, path string, r io.Reader) (fs.Item
 	return mapItemToSharedItem(it, path), nil
 }
 
-func (b *Backend) Mkdir(ctx context.Context, itemPath string) error {
-	driveID, err := b.getDriveID(ctx)
-	if err != nil {
-		return mapError(err, itemPath)
-	}
-
+func (b *Backend) Mkdir(ctx context.Context, token, driveID, itemPath string) error {
 	parentPath := path.Dir(itemPath)
 	if parentPath == "." || parentPath == "/" {
 		parentPath = ""
@@ -183,7 +162,7 @@ func (b *Backend) Mkdir(ctx context.Context, itemPath string) error {
 	requestBody.SetFolder(models.NewFolder())
 
 	url := expandURI(rootChildrenURITemplate, rootRelativeChildrenURITemplate, driveID, parentPath)
-	adapter, err := b.platform.Adapter(ctx)
+	adapter, err := b.createAdapter(ctx, token)
 	if err != nil {
 		return mapError(err, itemPath)
 	}
@@ -193,14 +172,9 @@ func (b *Backend) Mkdir(ctx context.Context, itemPath string) error {
 	return mapError(err, itemPath)
 }
 
-func (b *Backend) Remove(ctx context.Context, path string) error {
-	driveID, err := b.getDriveID(ctx)
-	if err != nil {
-		return mapError(err, path)
-	}
-
+func (b *Backend) Remove(ctx context.Context, token, driveID, path string) error {
 	url := expandURI(rootURITemplate, rootRelativeURITemplate, driveID, path)
-	adapter, err := b.platform.Adapter(ctx)
+	adapter, err := b.createAdapter(ctx, token)
 	if err != nil {
 		return mapError(err, path)
 	}
@@ -209,27 +183,14 @@ func (b *Backend) Remove(ctx context.Context, path string) error {
 	return builder.Delete(ctx, nil)
 }
 
-func (b *Backend) Capabilities() fs.Capabilities {
-	return fs.Capabilities{
-		CanMove:      true,
-		CanCopy:      false, // OneDrive copy is async, complex to implement here
-		CanRecursive: true,  // OneDrive API handles recursive operations well if we use their native calls
-	}
-}
-
-func (b *Backend) Move(ctx context.Context, src, dst string) error {
-	driveID, err := b.getDriveID(ctx)
-	if err != nil {
-		return mapError(err, src)
-	}
-
+func (b *Backend) Move(ctx context.Context, token, driveID, src, dst string) error {
 	newName := path.Base(dst)
 	parentPath := path.Dir(dst)
 	if parentPath == "." || parentPath == "/" {
 		parentPath = ""
 	}
 
-	parent, err := b.Stat(ctx, parentPath)
+	parent, err := b.Stat(ctx, token, driveID, parentPath)
 	if err != nil {
 		return err
 	}
@@ -242,7 +203,7 @@ func (b *Backend) Move(ctx context.Context, src, dst string) error {
 	requestBody.SetParentReference(ref)
 
 	url := expandURI(rootURITemplate, rootRelativeURITemplate, driveID, src)
-	adapter, err := b.platform.Adapter(ctx)
+	adapter, err := b.createAdapter(ctx, token)
 	if err != nil {
 		return mapError(err, src)
 	}
@@ -250,6 +211,10 @@ func (b *Backend) Move(ctx context.Context, src, dst string) error {
 	builder := drives.NewItemItemsDriveItemItemRequestBuilder(url, adapter)
 	_, err = builder.Patch(ctx, requestBody, nil)
 	return mapError(err, src)
+}
+
+func (b *Backend) Copy(ctx context.Context, token, driveID, src, dst string) error {
+	return fmt.Errorf("copy not supported on OneDrive backend")
 }
 
 func joinPath(base, name string) string {

@@ -4,25 +4,24 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/michaeldcanady/go-onedrive/internal/drive"
 	"github.com/michaeldcanady/go-onedrive/internal/identity"
-	"github.com/michaeldcanady/go-onedrive/internal/identity/providers/microsoft" // Keep this import for NewGraphProvider
+	"github.com/michaeldcanady/go-onedrive/internal/identity/providers/microsoft"
 	"github.com/michaeldcanady/go-onedrive/internal/logger"
+	proto "github.com/michaeldcanady/go-onedrive/internal/identity/proto"
 	msgraphsdkcore "github.com/microsoftgraph/msgraph-sdk-go-core"
 	"github.com/microsoftgraph/msgraph-sdk-go/models"
 	"github.com/microsoftgraph/msgraph-sdk-go/users"
-	// Removed azidentity import as it's no longer directly used here
 )
 
 // GraphDriveGateway implements the drive.Gateway interface using Microsoft Graph.
 type GraphDriveGateway struct {
-	auth identity.Authorizer // Changed from identity.Authenticator to identity.Authorizer
+	auth identity.Service // Changed from identity.Authorizer to identity.Service
 	log  logger.Logger
 }
 
 // NewGraphDriveGateway initializes a new instance of the GraphDriveGateway.
-func NewGraphDriveGateway(auth identity.Authorizer, log logger.Logger) *GraphDriveGateway {
+func NewGraphDriveGateway(auth identity.Service, log logger.Logger) *GraphDriveGateway {
 	return &GraphDriveGateway{
 		auth: auth,
 		log:  log,
@@ -30,17 +29,18 @@ func NewGraphDriveGateway(auth identity.Authorizer, log logger.Logger) *GraphDri
 }
 
 func (g *GraphDriveGateway) ListDrives(ctx context.Context, identityID string) ([]drive.Drive, error) {
-	// Changed from g.auth.GetCredential to g.auth.Token
-	accessToken, err := g.auth.Token(ctx, identityID)
+	req := &proto.GetTokenRequest{
+		IdentityId: identityID,
+		Scopes:     []string{"Files.Read"},
+	}
+	resp, err := g.auth.Token(ctx, "microsoft", req) // Pass provider
 	if err != nil {
 		return nil, fmt.Errorf("failed to get token for identity %s: %w", identityID, err)
 	}
 
-	// The GraphProvider expects an azcore.TokenCredential.
-	// We need to create one from the identity.AccessToken.
-	// NOTE: This assumes identity.AccessToken.Token holds the actual token string.
-	// A more robust solution might involve the Authorizer providing a way to get a compatible credential directly.
-	cred := azidentity.NewStaticTokenCredential(accessToken.Token, accessToken.ExpiresAt, accessToken.Scopes)
+
+	accessToken := identity.FromProtoAccessToken(resp.GetToken(), identityID)
+	cred := microsoft.NewStaticTokenCredential(accessToken)
 
 	p := microsoft.NewGraphProvider(cred, g.log)
 	adapter, err := p.Adapter(ctx)
@@ -49,13 +49,13 @@ func (g *GraphDriveGateway) ListDrives(ctx context.Context, identityID string) (
 	}
 
 	// Using "me" as a shortcut for the authenticated user.
-	resp, err := users.NewItemDrivesRequestBuilderInternal(map[string]string{"user%2Did": "me"}, adapter).Get(ctx, nil)
+	respDrives, err := users.NewItemDrivesRequestBuilderInternal(map[string]string{"user%2Did": "me"}, adapter).Get(ctx, nil)
 	if err != nil {
 		return nil, err
 	}
 
 	var out []drive.Drive
-	pageIterator, err := msgraphsdkcore.NewPageIterator[models.Driveable](resp, adapter, models.CreateDriveCollectionResponseFromDiscriminatorValue)
+	pageIterator, err := msgraphsdkcore.NewPageIterator[models.Driveable](respDrives, adapter, models.CreateDriveCollectionResponseFromDiscriminatorValue)
 	if err != nil {
 		return nil, err
 	}
@@ -74,14 +74,17 @@ func (g *GraphDriveGateway) ListDrives(ctx context.Context, identityID string) (
 
 // GetPersonalDrive retrieves the user's default personal drive.
 func (g *GraphDriveGateway) GetPersonalDrive(ctx context.Context, identityID string) (drive.Drive, error) {
-	// Changed from g.auth.GetCredential to g.auth.Token
-	accessToken, err := g.auth.Token(ctx, identityID)
+	req := &proto.GetTokenRequest{
+		IdentityId: identityID,
+		Scopes:     []string{"Files.Read"},
+	}
+	resp, err := g.auth.Token(ctx, "microsoft", req) // Pass provider
 	if err != nil {
 		return drive.Drive{}, fmt.Errorf("failed to get token for identity %s: %w", identityID, err)
 	}
 
-	// Similar to ListDrives, create a token credential from the AccessToken.
-	cred := azidentity.NewStaticTokenCredential(accessToken.Token, accessToken.ExpiresAt, accessToken.Scopes)
+	accessToken := identity.FromProtoAccessToken(resp.GetToken(), identityID)
+	cred := microsoft.NewStaticTokenCredential(accessToken)
 
 	p := microsoft.NewGraphProvider(cred, g.log)
 	adapter, err := p.Adapter(ctx)
@@ -89,12 +92,12 @@ func (g *GraphDriveGateway) GetPersonalDrive(ctx context.Context, identityID str
 		return drive.Drive{}, err
 	}
 
-	resp, err := users.NewItemDriveRequestBuilderInternal(map[string]string{"user%2Did": "me"}, adapter).Get(ctx, nil)
+	respDrive, err := users.NewItemDriveRequestBuilderInternal(map[string]string{"user%2Did": "me"}, adapter).Get(ctx, nil)
 	if err != nil {
 		return drive.Drive{}, err
 	}
 
-	return toDrive(resp), nil
+	return toDrive(respDrive), nil
 }
 
 func toDrive(d models.Driveable) drive.Drive {
@@ -123,8 +126,8 @@ func toDrive(d models.Driveable) drive.Drive {
 	}
 
 	readOnly := false
-	// Logic for read-only could be more complex depending on permissions, but keeping it simple for now.
-
+	// Logic for read-only could be inferred from permissions
+	
 	return drive.Drive{
 		ID:       id,
 		Name:     name,

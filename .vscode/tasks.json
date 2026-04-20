@@ -2,6 +2,15 @@
     "version": "2.0.0",
     "tasks": [
         {
+            "label": "Build Storage Plugins",
+            "type": "shell",
+            "command": "go build -o local ./cmd/storage-plugin-local/main.go && go build -o onedrive ./cmd/storage-plugin-onedrive/main.go",
+            "group": "build",
+            "problemMatcher": [
+                "$go"
+            ]
+        },
+        {
             "label": "Build CLI (Go)",
             "type": "shell",
             "command": "go build -o odc ./cmd/odc/",
