@@ -2,9 +2,9 @@
 // versions:
 // 	protoc-gen-go v1.36.11
 // 	protoc        v6.30.2
-// source: internal/features/identity/proto/identity.proto
+// source: identity.proto
 
-package v1
+package proto
 
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
@@ -33,7 +33,7 @@ type AuthenticateRequest struct {
 
 func (x *AuthenticateRequest) Reset() {
 	*x = AuthenticateRequest{}
-	mi := &file_internal_features_identity_proto_identity_proto_msgTypes[0]
+	mi := &file_identity_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -45,7 +45,7 @@ func (x *AuthenticateRequest) String() string {
 func (*AuthenticateRequest) ProtoMessage() {}
 
 func (x *AuthenticateRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_internal_features_identity_proto_identity_proto_msgTypes[0]
+	mi := &file_identity_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -58,7 +58,7 @@ func (x *AuthenticateRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AuthenticateRequest.ProtoReflect.Descriptor instead.
 func (*AuthenticateRequest) Descriptor() ([]byte, []int) {
-	return file_internal_features_identity_proto_identity_proto_rawDescGZIP(), []int{0}
+	return file_identity_proto_rawDescGZIP(), []int{0}
 }
 
 func (x *AuthenticateRequest) GetMethod() string {
@@ -99,7 +99,7 @@ type AuthenticateResponse struct {
 
 func (x *AuthenticateResponse) Reset() {
 	*x = AuthenticateResponse{}
-	mi := &file_internal_features_identity_proto_identity_proto_msgTypes[1]
+	mi := &file_identity_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -111,7 +111,7 @@ func (x *AuthenticateResponse) String() string {
 func (*AuthenticateResponse) ProtoMessage() {}
 
 func (x *AuthenticateResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_internal_features_identity_proto_identity_proto_msgTypes[1]
+	mi := &file_identity_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -124,7 +124,7 @@ func (x *AuthenticateResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AuthenticateResponse.ProtoReflect.Descriptor instead.
 func (*AuthenticateResponse) Descriptor() ([]byte, []int) {
-	return file_internal_features_identity_proto_identity_proto_rawDescGZIP(), []int{1}
+	return file_identity_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *AuthenticateResponse) GetToken() *AccessToken {
@@ -151,7 +151,7 @@ type GetTokenRequest struct {
 
 func (x *GetTokenRequest) Reset() {
 	*x = GetTokenRequest{}
-	mi := &file_internal_features_identity_proto_identity_proto_msgTypes[2]
+	mi := &file_identity_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -163,7 +163,7 @@ func (x *GetTokenRequest) String() string {
 func (*GetTokenRequest) ProtoMessage() {}
 
 func (x *GetTokenRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_internal_features_identity_proto_identity_proto_msgTypes[2]
+	mi := &file_identity_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -176,7 +176,7 @@ func (x *GetTokenRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetTokenRequest.ProtoReflect.Descriptor instead.
 func (*GetTokenRequest) Descriptor() ([]byte, []int) {
-	return file_internal_features_identity_proto_identity_proto_rawDescGZIP(), []int{2}
+	return file_identity_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *GetTokenRequest) GetIdentityId() string {
@@ -202,7 +202,7 @@ type GetTokenResponse struct {
 
 func (x *GetTokenResponse) Reset() {
 	*x = GetTokenResponse{}
-	mi := &file_internal_features_identity_proto_identity_proto_msgTypes[3]
+	mi := &file_identity_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -214,7 +214,7 @@ func (x *GetTokenResponse) String() string {
 func (*GetTokenResponse) ProtoMessage() {}
 
 func (x *GetTokenResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_internal_features_identity_proto_identity_proto_msgTypes[3]
+	mi := &file_identity_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -227,7 +227,7 @@ func (x *GetTokenResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetTokenResponse.ProtoReflect.Descriptor instead.
 func (*GetTokenResponse) Descriptor() ([]byte, []int) {
-	return file_internal_features_identity_proto_identity_proto_rawDescGZIP(), []int{3}
+	return file_identity_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *GetTokenResponse) GetToken() *AccessToken {
@@ -245,7 +245,7 @@ type ListIdentitiesRequest struct {
 
 func (x *ListIdentitiesRequest) Reset() {
 	*x = ListIdentitiesRequest{}
-	mi := &file_internal_features_identity_proto_identity_proto_msgTypes[4]
+	mi := &file_identity_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -257,7 +257,7 @@ func (x *ListIdentitiesRequest) String() string {
 func (*ListIdentitiesRequest) ProtoMessage() {}
 
 func (x *ListIdentitiesRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_internal_features_identity_proto_identity_proto_msgTypes[4]
+	mi := &file_identity_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -270,7 +270,7 @@ func (x *ListIdentitiesRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListIdentitiesRequest.ProtoReflect.Descriptor instead.
 func (*ListIdentitiesRequest) Descriptor() ([]byte, []int) {
-	return file_internal_features_identity_proto_identity_proto_rawDescGZIP(), []int{4}
+	return file_identity_proto_rawDescGZIP(), []int{4}
 }
 
 type ListIdentitiesResponse struct {
@@ -282,7 +282,7 @@ type ListIdentitiesResponse struct {
 
 func (x *ListIdentitiesResponse) Reset() {
 	*x = ListIdentitiesResponse{}
-	mi := &file_internal_features_identity_proto_identity_proto_msgTypes[5]
+	mi := &file_identity_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -294,7 +294,7 @@ func (x *ListIdentitiesResponse) String() string {
 func (*ListIdentitiesResponse) ProtoMessage() {}
 
 func (x *ListIdentitiesResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_internal_features_identity_proto_identity_proto_msgTypes[5]
+	mi := &file_identity_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -307,7 +307,7 @@ func (x *ListIdentitiesResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListIdentitiesResponse.ProtoReflect.Descriptor instead.
 func (*ListIdentitiesResponse) Descriptor() ([]byte, []int) {
-	return file_internal_features_identity_proto_identity_proto_rawDescGZIP(), []int{5}
+	return file_identity_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *ListIdentitiesResponse) GetIdentities() []*Identity {
@@ -326,7 +326,7 @@ type LogoutRequest struct {
 
 func (x *LogoutRequest) Reset() {
 	*x = LogoutRequest{}
-	mi := &file_internal_features_identity_proto_identity_proto_msgTypes[6]
+	mi := &file_identity_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -338,7 +338,7 @@ func (x *LogoutRequest) String() string {
 func (*LogoutRequest) ProtoMessage() {}
 
 func (x *LogoutRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_internal_features_identity_proto_identity_proto_msgTypes[6]
+	mi := &file_identity_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -351,7 +351,7 @@ func (x *LogoutRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LogoutRequest.ProtoReflect.Descriptor instead.
 func (*LogoutRequest) Descriptor() ([]byte, []int) {
-	return file_internal_features_identity_proto_identity_proto_rawDescGZIP(), []int{6}
+	return file_identity_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *LogoutRequest) GetIdentityId() string {
@@ -369,7 +369,7 @@ type LogoutResponse struct {
 
 func (x *LogoutResponse) Reset() {
 	*x = LogoutResponse{}
-	mi := &file_internal_features_identity_proto_identity_proto_msgTypes[7]
+	mi := &file_identity_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -381,7 +381,7 @@ func (x *LogoutResponse) String() string {
 func (*LogoutResponse) ProtoMessage() {}
 
 func (x *LogoutResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_internal_features_identity_proto_identity_proto_msgTypes[7]
+	mi := &file_identity_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -394,7 +394,7 @@ func (x *LogoutResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LogoutResponse.ProtoReflect.Descriptor instead.
 func (*LogoutResponse) Descriptor() ([]byte, []int) {
-	return file_internal_features_identity_proto_identity_proto_rawDescGZIP(), []int{7}
+	return file_identity_proto_rawDescGZIP(), []int{7}
 }
 
 type AccessToken struct {
@@ -409,7 +409,7 @@ type AccessToken struct {
 
 func (x *AccessToken) Reset() {
 	*x = AccessToken{}
-	mi := &file_internal_features_identity_proto_identity_proto_msgTypes[8]
+	mi := &file_identity_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -421,7 +421,7 @@ func (x *AccessToken) String() string {
 func (*AccessToken) ProtoMessage() {}
 
 func (x *AccessToken) ProtoReflect() protoreflect.Message {
-	mi := &file_internal_features_identity_proto_identity_proto_msgTypes[8]
+	mi := &file_identity_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -434,7 +434,7 @@ func (x *AccessToken) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AccessToken.ProtoReflect.Descriptor instead.
 func (*AccessToken) Descriptor() ([]byte, []int) {
-	return file_internal_features_identity_proto_identity_proto_rawDescGZIP(), []int{8}
+	return file_identity_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *AccessToken) GetToken() string {
@@ -479,7 +479,7 @@ type Identity struct {
 
 func (x *Identity) Reset() {
 	*x = Identity{}
-	mi := &file_internal_features_identity_proto_identity_proto_msgTypes[9]
+	mi := &file_identity_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -491,7 +491,7 @@ func (x *Identity) String() string {
 func (*Identity) ProtoMessage() {}
 
 func (x *Identity) ProtoReflect() protoreflect.Message {
-	mi := &file_internal_features_identity_proto_identity_proto_msgTypes[9]
+	mi := &file_identity_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -504,7 +504,7 @@ func (x *Identity) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Identity.ProtoReflect.Descriptor instead.
 func (*Identity) Descriptor() ([]byte, []int) {
-	return file_internal_features_identity_proto_identity_proto_rawDescGZIP(), []int{9}
+	return file_identity_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *Identity) GetId() string {
@@ -549,11 +549,11 @@ func (x *Identity) GetMetadata() map[string]string {
 	return nil
 }
 
-var File_internal_features_identity_proto_identity_proto protoreflect.FileDescriptor
+var File_identity_proto protoreflect.FileDescriptor
 
-const file_internal_features_identity_proto_identity_proto_rawDesc = "" +
+const file_identity_proto_rawDesc = "" +
 	"\n" +
-	"/internal/features/identity/proto/identity.proto\x12\x0fodc.identity.v1\"\x92\x02\n" +
+	"\x0eidentity.proto\x12\x0fodc.identity.v1\"\x92\x02\n" +
 	"\x13AuthenticateRequest\x12\x16\n" +
 	"\x06method\x18\x01 \x01(\tR\x06method\x12\x1f\n" +
 	"\videntity_id\x18\x02 \x01(\tR\n" +
@@ -602,22 +602,22 @@ const file_internal_features_identity_proto_identity_proto_rawDesc = "" +
 	"\fAuthenticate\x12$.odc.identity.v1.AuthenticateRequest\x1a%.odc.identity.v1.AuthenticateResponse\x12O\n" +
 	"\bGetToken\x12 .odc.identity.v1.GetTokenRequest\x1a!.odc.identity.v1.GetTokenResponse\x12a\n" +
 	"\x0eListIdentities\x12&.odc.identity.v1.ListIdentitiesRequest\x1a'.odc.identity.v1.ListIdentitiesResponse\x12I\n" +
-	"\x06Logout\x12\x1e.odc.identity.v1.LogoutRequest\x1a\x1f.odc.identity.v1.LogoutResponseBKZIgithub.com/michaeldcanady/go-onedrive/internal/features/identity/proto;v1b\x06proto3"
+	"\x06Logout\x12\x1e.odc.identity.v1.LogoutRequest\x1a\x1f.odc.identity.v1.LogoutResponseBHZFgithub.com/michaeldcanady/go-onedrive/internal/features/identity/protob\x06proto3"
 
 var (
-	file_internal_features_identity_proto_identity_proto_rawDescOnce sync.Once
-	file_internal_features_identity_proto_identity_proto_rawDescData []byte
+	file_identity_proto_rawDescOnce sync.Once
+	file_identity_proto_rawDescData []byte
 )
 
-func file_internal_features_identity_proto_identity_proto_rawDescGZIP() []byte {
-	file_internal_features_identity_proto_identity_proto_rawDescOnce.Do(func() {
-		file_internal_features_identity_proto_identity_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_internal_features_identity_proto_identity_proto_rawDesc), len(file_internal_features_identity_proto_identity_proto_rawDesc)))
+func file_identity_proto_rawDescGZIP() []byte {
+	file_identity_proto_rawDescOnce.Do(func() {
+		file_identity_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_identity_proto_rawDesc), len(file_identity_proto_rawDesc)))
 	})
-	return file_internal_features_identity_proto_identity_proto_rawDescData
+	return file_identity_proto_rawDescData
 }
 
-var file_internal_features_identity_proto_identity_proto_msgTypes = make([]protoimpl.MessageInfo, 12)
-var file_internal_features_identity_proto_identity_proto_goTypes = []any{
+var file_identity_proto_msgTypes = make([]protoimpl.MessageInfo, 12)
+var file_identity_proto_goTypes = []any{
 	(*AuthenticateRequest)(nil),    // 0: odc.identity.v1.AuthenticateRequest
 	(*AuthenticateResponse)(nil),   // 1: odc.identity.v1.AuthenticateResponse
 	(*GetTokenRequest)(nil),        // 2: odc.identity.v1.GetTokenRequest
@@ -631,7 +631,7 @@ var file_internal_features_identity_proto_identity_proto_goTypes = []any{
 	nil,                            // 10: odc.identity.v1.AuthenticateRequest.ProviderSpecificEntry
 	nil,                            // 11: odc.identity.v1.Identity.MetadataEntry
 }
-var file_internal_features_identity_proto_identity_proto_depIdxs = []int32{
+var file_identity_proto_depIdxs = []int32{
 	10, // 0: odc.identity.v1.AuthenticateRequest.provider_specific:type_name -> odc.identity.v1.AuthenticateRequest.ProviderSpecificEntry
 	8,  // 1: odc.identity.v1.AuthenticateResponse.token:type_name -> odc.identity.v1.AccessToken
 	9,  // 2: odc.identity.v1.AuthenticateResponse.identity:type_name -> odc.identity.v1.Identity
@@ -653,26 +653,26 @@ var file_internal_features_identity_proto_identity_proto_depIdxs = []int32{
 	0,  // [0:6] is the sub-list for field type_name
 }
 
-func init() { file_internal_features_identity_proto_identity_proto_init() }
-func file_internal_features_identity_proto_identity_proto_init() {
-	if File_internal_features_identity_proto_identity_proto != nil {
+func init() { file_identity_proto_init() }
+func file_identity_proto_init() {
+	if File_identity_proto != nil {
 		return
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: unsafe.Slice(unsafe.StringData(file_internal_features_identity_proto_identity_proto_rawDesc), len(file_internal_features_identity_proto_identity_proto_rawDesc)),
+			RawDescriptor: unsafe.Slice(unsafe.StringData(file_identity_proto_rawDesc), len(file_identity_proto_rawDesc)),
 			NumEnums:      0,
 			NumMessages:   12,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
-		GoTypes:           file_internal_features_identity_proto_identity_proto_goTypes,
-		DependencyIndexes: file_internal_features_identity_proto_identity_proto_depIdxs,
-		MessageInfos:      file_internal_features_identity_proto_identity_proto_msgTypes,
+		GoTypes:           file_identity_proto_goTypes,
+		DependencyIndexes: file_identity_proto_depIdxs,
+		MessageInfos:      file_identity_proto_msgTypes,
 	}.Build()
-	File_internal_features_identity_proto_identity_proto = out.File
-	file_internal_features_identity_proto_identity_proto_goTypes = nil
-	file_internal_features_identity_proto_identity_proto_depIdxs = nil
+	File_identity_proto = out.File
+	file_identity_proto_goTypes = nil
+	file_identity_proto_depIdxs = nil
 }

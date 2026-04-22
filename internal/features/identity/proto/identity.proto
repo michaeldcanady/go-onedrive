@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package odc.identity.v1;
 
-option go_package = "github.com/michaeldcanady/go-onedrive/internal/features/identity/proto;v1";
+option go_package = "github.com/michaeldcanady/go-onedrive/internal/features/identity/proto";
 
 service IdentityProvider {
   // Authenticate initiates the login flow.

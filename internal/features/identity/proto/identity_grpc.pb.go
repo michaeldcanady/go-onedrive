@@ -2,9 +2,9 @@
 // versions:
 // - protoc-gen-go-grpc v1.6.1
 // - protoc             v6.30.2
-// source: internal/features/identity/proto/identity.proto
+// source: identity.proto
 
-package v1
+package proto
 
 import (
 	context "context"
@@ -241,5 +241,5 @@ var IdentityProvider_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "internal/features/identity/proto/identity.proto",
+	Metadata: "identity.proto",
 }

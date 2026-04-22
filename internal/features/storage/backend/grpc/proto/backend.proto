@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package v1;
 
-option go_package = "github.com/michaeldcanady/go-onedrive/internal/storage/backend/grpc/proto";
+option go_package = "github.com/michaeldcanady/go-onedrive/internal/features/storage/backend/grpc/proto";
 
 service BackendService {
   rpc Stat(StatRequest) returns (StatResponse);

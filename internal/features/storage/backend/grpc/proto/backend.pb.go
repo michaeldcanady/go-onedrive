@@ -1523,7 +1523,7 @@ const file_backend_proto_rawDesc = "" +
 	"\x04Copy\x12\x0f.v1.CopyRequest\x1a\x10.v1.CopyResponse\x12;\n" +
 	"\n" +
 	"ListDrives\x12\x15.v1.ListDrivesRequest\x1a\x16.v1.ListDrivesResponse\x12M\n" +
-	"\x10GetPersonalDrive\x12\x1b.v1.GetPersonalDriveRequest\x1a\x1c.v1.GetPersonalDriveResponseBKZIgithub.com/michaeldcanady/go-onedrive/internal/features/storage/backend/grpc/protob\x06proto3"
+	"\x10GetPersonalDrive\x12\x1b.v1.GetPersonalDriveRequest\x1a\x1c.v1.GetPersonalDriveResponseBTZRgithub.com/michaeldcanady/go-onedrive/internal/features/storage/backend/grpc/protob\x06proto3"
 
 var (
 	file_backend_proto_rawDescOnce sync.Once
