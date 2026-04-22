@@ -5,7 +5,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/michaeldcanady/go-onedrive/internal/environment"
+	"github.com/michaeldcanady/go-onedrive/internal/features/environment"
 	"github.com/michaeldcanady/go-onedrive/internal/shared"
 	"github.com/stretchr/testify/assert"
 )

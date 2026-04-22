@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	fs "github.com/michaeldcanady/go-onedrive/internal/core/fs"
-	"github.com/michaeldcanady/go-onedrive/internal/logger"
+	"github.com/michaeldcanady/go-onedrive/internal/features/logger"
 )
 
 // Command executes the drive rm operation.

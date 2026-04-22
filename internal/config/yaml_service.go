@@ -4,7 +4,7 @@ import (
 	"context"
 	"sync"
 
-	"github.com/michaeldcanady/go-onedrive/internal/logger"
+	"github.com/michaeldcanady/go-onedrive/internal/features/logger"
 	"github.com/michaeldcanady/go-onedrive/internal/profile"
 )
 

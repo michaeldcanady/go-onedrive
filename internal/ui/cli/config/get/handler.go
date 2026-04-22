@@ -6,7 +6,7 @@ import (
 	"fmt"
 
 	"github.com/michaeldcanady/go-onedrive/internal/config"
-	"github.com/michaeldcanady/go-onedrive/internal/logger"
+	"github.com/michaeldcanady/go-onedrive/internal/features/logger"
 	"gopkg.in/yaml.v3"
 )
 

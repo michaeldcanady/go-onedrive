@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"github.com/michaeldcanady/go-onedrive/internal/di"
-	"github.com/michaeldcanady/go-onedrive/internal/logger"
+	"github.com/michaeldcanady/go-onedrive/internal/features/logger"
 	"github.com/michaeldcanady/go-onedrive/internal/middleware"
 	drive "github.com/michaeldcanady/go-onedrive/internal/ui/cli/drive"
 	auth "github.com/michaeldcanady/go-onedrive/internal/ui/cli/identity"

@@ -78,7 +78,7 @@ Before the first release, ensure the following are configured:
 
 - **Go Version:** Go 1.25+ (as specified in `go.mod`).
 - **Error Handling:** Prefer wrapping errors with `%w` and using package-level error variables.
-- **Logging:** Utilize the structured logging abstraction provided by `internal/logger`.
+- **Logging:** Utilize the structured logging abstraction provided by `internal/features/logger`.
 - **Formatting:** Adhere to Go standards; run `go fmt ./...` before committing.
 - **Linting:** Run `golangci-lint run` to ensure code quality.
 - **CLI Command Validation:**

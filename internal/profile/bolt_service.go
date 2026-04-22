@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/michaeldcanady/go-onedrive/internal/environment"
+	"github.com/michaeldcanady/go-onedrive/internal/features/environment"
 	"github.com/michaeldcanady/go-onedrive/internal/shared"
 	bolt "go.etcd.io/bbolt"
 )

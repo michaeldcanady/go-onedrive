@@ -8,7 +8,7 @@ import (
 
 	fs "github.com/michaeldcanady/go-onedrive/internal/core/fs"
 	"github.com/michaeldcanady/go-onedrive/internal/editor"
-	"github.com/michaeldcanady/go-onedrive/internal/logger"
+	"github.com/michaeldcanady/go-onedrive/internal/features/logger"
 	pkgfs "github.com/michaeldcanady/go-onedrive/pkg/fs"
 )
 

@@ -4,7 +4,7 @@ import (
 	"context"
 
 	fs "github.com/michaeldcanady/go-onedrive/internal/core/fs"
-	"github.com/michaeldcanady/go-onedrive/internal/logger"
+	"github.com/michaeldcanady/go-onedrive/internal/features/logger"
 	formatting "github.com/michaeldcanady/go-onedrive/pkg/format"
 	pkgfs "github.com/michaeldcanady/go-onedrive/pkg/fs"
 )

@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	proto "github.com/michaeldcanady/go-onedrive/internal/identity/proto"
-	"github.com/michaeldcanady/go-onedrive/internal/logger"
+	"github.com/michaeldcanady/go-onedrive/internal/features/logger"
 )
 
 // AuthenticateWithProto simulates calling Authenticate and mapping results to proto.

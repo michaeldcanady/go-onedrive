@@ -59,7 +59,7 @@ package search
 import (
     "context"
     "github.com/michaeldcanady/go-onedrive/internal/fs"
-    "github.com/michaeldcanady/go-onedrive/internal/logger"
+    "github.com/michaeldcanady/go-onedrive/internal/features/logger"
 )
 
 type Command struct {

@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/michaeldcanady/go-onedrive/internal/config"
-	"github.com/michaeldcanady/go-onedrive/internal/logger"
+	"github.com/michaeldcanady/go-onedrive/internal/features/logger"
 )
 
 // Command executes the config set operation.

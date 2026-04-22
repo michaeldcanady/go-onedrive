@@ -17,8 +17,8 @@
               - "!internal/state/**/*.go"
               - "!internal/config/**/*.go"
               - "!internal/di/**/*.go"
-              - "!internal/environment/**/*.go"
-              - "!internal/logger/**/*.go"
+              - "!internal/features/environment/**/*.go"
+              - "!internal/features/logger/**/*.go"
               - "!internal/middleware/**/*.go"
               - "!pkg/cache/**/*.go"
               - "!pkg/ignore/**/*.go"
@@ -81,7 +81,7 @@
   - any:
       - changed-files:
           - any-glob-to-any-file:
-              - "internal/logger/**"
+              - "internal/features/logger/**"
 
 "component: di":
   - any:
@@ -93,7 +93,7 @@
   - any:
       - changed-files:
           - any-glob-to-any-file:
-              - "internal/environment/**"
+              - "internal/features/environment/**"
 
 "component: middleware":
   - any:
