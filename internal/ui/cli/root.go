@@ -5,13 +5,13 @@ import (
 	"os"
 	"strings"
 
-	"github.com/michaeldcanady/go-onedrive/internal/features/di"
-	"github.com/michaeldcanady/go-onedrive/internal/features/logger"
+	"github.com/michaeldcanady/go-onedrive/internal/core/di"
+	"github.com/michaeldcanady/go-onedrive/internal/core/logger"
 	"github.com/michaeldcanady/go-onedrive/internal/features/middleware"
 	drive "github.com/michaeldcanady/go-onedrive/internal/ui/cli/drive"
 	auth "github.com/michaeldcanady/go-onedrive/internal/ui/cli/identity"
 
-	"github.com/michaeldcanady/go-onedrive/internal/features/shared"
+	"github.com/michaeldcanady/go-onedrive/internal/core/shared"
 	"github.com/michaeldcanady/go-onedrive/internal/ui/cli/config"
 	"github.com/michaeldcanady/go-onedrive/internal/ui/cli/fs/cat"
 	"github.com/michaeldcanady/go-onedrive/internal/ui/cli/fs/cp"

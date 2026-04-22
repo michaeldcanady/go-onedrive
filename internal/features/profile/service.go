@@ -3,7 +3,7 @@ package profile
 import (
 	"context"
 
-	"github.com/michaeldcanady/go-onedrive/internal/features/shared"
+	"github.com/michaeldcanady/go-onedrive/internal/core/shared"
 )
 
 // Service provides operations for managing user configuration profiles.

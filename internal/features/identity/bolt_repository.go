@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/michaeldcanady/go-onedrive/internal/features/errors"
+	"github.com/michaeldcanady/go-onedrive/internal/core/errors"
 	bolt "go.etcd.io/bbolt"
 )
 

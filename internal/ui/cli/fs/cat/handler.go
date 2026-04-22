@@ -6,7 +6,7 @@ import (
 	"io"
 
 	fs "github.com/michaeldcanady/go-onedrive/internal/features/fs"
-	"github.com/michaeldcanady/go-onedrive/internal/features/logger"
+	"github.com/michaeldcanady/go-onedrive/internal/core/logger"
 	pkgfs "github.com/michaeldcanady/go-onedrive/pkg/fs"
 )
 

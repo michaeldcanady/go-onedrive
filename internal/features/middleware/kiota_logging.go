@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/michaeldcanady/go-onedrive/internal/features/logger"
+	"github.com/michaeldcanady/go-onedrive/internal/core/logger"
 	nethttp "github.com/microsoft/kiota-http-go"
 )
 

@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/michaeldcanady/go-onedrive/internal/features/logger"
+	"github.com/michaeldcanady/go-onedrive/internal/core/logger"
 	"github.com/michaeldcanady/go-onedrive/internal/features/profile"
-	"github.com/michaeldcanady/go-onedrive/internal/features/shared"
+	"github.com/michaeldcanady/go-onedrive/internal/core/shared"
 )
 
 // Command executes the profile use operation.

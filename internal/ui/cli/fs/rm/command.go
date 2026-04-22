@@ -1,7 +1,7 @@
 package rm
 
 import (
-	"github.com/michaeldcanady/go-onedrive/internal/features/di"
+	"github.com/michaeldcanady/go-onedrive/internal/core/di"
 	cli "github.com/michaeldcanady/go-onedrive/internal/ui/cli/fs"
 
 	"github.com/spf13/cobra"

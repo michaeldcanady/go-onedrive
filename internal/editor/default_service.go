@@ -15,8 +15,8 @@ import (
 	"github.com/google/shlex"
 	"github.com/google/uuid"
 	fs "github.com/michaeldcanady/go-onedrive/internal/features/fs"
-	"github.com/michaeldcanady/go-onedrive/internal/features/environment"
-	"github.com/michaeldcanady/go-onedrive/internal/features/logger"
+	"github.com/michaeldcanady/go-onedrive/internal/core/env"
+	"github.com/michaeldcanady/go-onedrive/internal/core/logger"
 )
 
 // ConfigProvider defines the interface required to fetch editor configuration.

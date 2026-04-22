@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"github.com/michaeldcanady/go-onedrive/internal/features/fs"
-	"github.com/michaeldcanady/go-onedrive/internal/features/logger"
+	"github.com/michaeldcanady/go-onedrive/internal/core/logger"
 )
 
 // Logger defines the interface required for logging within the drive service.

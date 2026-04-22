@@ -6,7 +6,7 @@ import (
 	"slices"
 
 	"github.com/michaeldcanady/go-onedrive/internal/drive"
-	"github.com/michaeldcanady/go-onedrive/internal/features/logger"
+	"github.com/michaeldcanady/go-onedrive/internal/core/logger"
 	formatting "github.com/michaeldcanady/go-onedrive/pkg/format"
 )
 

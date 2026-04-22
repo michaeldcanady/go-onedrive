@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/michaeldcanady/go-onedrive/internal/drive"
-	"github.com/michaeldcanady/go-onedrive/internal/features/logger"
+	"github.com/michaeldcanady/go-onedrive/internal/core/logger"
 )
 
 // Command executes the drive get operation.

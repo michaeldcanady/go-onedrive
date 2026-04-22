@@ -8,7 +8,7 @@ import (
 
 	"github.com/michaeldcanady/go-onedrive/internal/features/config"
 	fs "github.com/michaeldcanady/go-onedrive/internal/features/fs"
-	"github.com/michaeldcanady/go-onedrive/internal/features/logger"
+	"github.com/michaeldcanady/go-onedrive/internal/core/logger"
 	"github.com/stretchr/testify/assert"
 )
 

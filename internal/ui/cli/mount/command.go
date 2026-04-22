@@ -1,7 +1,7 @@
 package mount
 
 import (
-	"github.com/michaeldcanady/go-onedrive/internal/features/di"
+	"github.com/michaeldcanady/go-onedrive/internal/core/di"
 	"github.com/michaeldcanady/go-onedrive/internal/ui/cli/mount/add"
 	"github.com/michaeldcanady/go-onedrive/internal/ui/cli/mount/list"
 	"github.com/michaeldcanady/go-onedrive/internal/ui/cli/mount/remove"

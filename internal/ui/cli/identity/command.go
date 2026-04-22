@@ -1,7 +1,7 @@
 package identity
 
 import (
-	"github.com/michaeldcanady/go-onedrive/internal/features/di"
+	"github.com/michaeldcanady/go-onedrive/internal/core/di"
 	"github.com/michaeldcanady/go-onedrive/internal/ui/cli/identity/login"
 	"github.com/michaeldcanady/go-onedrive/internal/ui/cli/identity/logout"
 	"github.com/spf13/cobra"

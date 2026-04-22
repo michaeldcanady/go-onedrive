@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/michaeldcanady/go-onedrive/internal/features/shared"
+	"github.com/michaeldcanady/go-onedrive/internal/core/shared"
 	"github.com/michaeldcanady/go-onedrive/pkg/logger"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"

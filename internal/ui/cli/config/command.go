@@ -2,7 +2,7 @@
 package config
 
 import (
-	"github.com/michaeldcanady/go-onedrive/internal/features/di"
+	"github.com/michaeldcanady/go-onedrive/internal/core/di"
 	"github.com/michaeldcanady/go-onedrive/internal/ui/cli/config/get"
 	"github.com/michaeldcanady/go-onedrive/internal/ui/cli/config/set"
 	"github.com/spf13/cobra"

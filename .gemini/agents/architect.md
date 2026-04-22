@@ -2,6 +2,8 @@
 name: architect
 description: Responsible for the overall system architecture, dependency management, and design patterns.
 kind: local
+tools:
+  - run_shell_command
 model: gemini-3-flash-preview
 temperature: 0.1
 max_turns: 15

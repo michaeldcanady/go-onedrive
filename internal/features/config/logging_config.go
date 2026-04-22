@@ -1,7 +1,7 @@
 package config
 
 import (
-	"github.com/michaeldcanady/go-onedrive/internal/features/logger"
+	"github.com/michaeldcanady/go-onedrive/internal/core/logger"
 )
 
 type LoggingConfig struct {

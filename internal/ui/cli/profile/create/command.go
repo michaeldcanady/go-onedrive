@@ -1,7 +1,7 @@
 package create
 
 import (
-	"github.com/michaeldcanady/go-onedrive/internal/features/di"
+	"github.com/michaeldcanady/go-onedrive/internal/core/di"
 	"github.com/spf13/cobra"
 )
 

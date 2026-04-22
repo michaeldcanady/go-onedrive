@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
-	"github.com/michaeldcanady/go-onedrive/internal/features/logger"
+	"github.com/michaeldcanady/go-onedrive/internal/core/logger"
 	"github.com/michaeldcanady/go-onedrive/internal/features/middleware"
 	abstractions "github.com/microsoft/kiota-abstractions-go"
 	authentication "github.com/microsoft/kiota-authentication-azure-go"

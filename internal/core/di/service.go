@@ -9,10 +9,10 @@ import (
 
 	"github.com/michaeldcanady/go-onedrive/internal/drive"
 	"github.com/michaeldcanady/go-onedrive/internal/editor"
-	"github.com/michaeldcanady/go-onedrive/internal/features/environment"
+	"github.com/michaeldcanady/go-onedrive/internal/core/env"
 	"github.com/michaeldcanady/go-onedrive/internal/features/identity"
 	"github.com/michaeldcanady/go-onedrive/internal/features/identity/providers/microsoft"
-	"github.com/michaeldcanady/go-onedrive/internal/features/logger"
+	"github.com/michaeldcanady/go-onedrive/internal/core/logger"
 	"github.com/michaeldcanady/go-onedrive/internal/features/mount"
 	"github.com/michaeldcanady/go-onedrive/internal/features/profile"
 	"github.com/michaeldcanady/go-onedrive/internal/features/storage"

@@ -7,7 +7,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/michaeldcanady/go-onedrive/internal/features/environment"
+	"github.com/michaeldcanady/go-onedrive/internal/core/env"
 	"github.com/michaeldcanady/go-onedrive/pkg/logger"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
