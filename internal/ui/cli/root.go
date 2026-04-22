@@ -7,11 +7,11 @@ import (
 
 	"github.com/michaeldcanady/go-onedrive/internal/features/di"
 	"github.com/michaeldcanady/go-onedrive/internal/features/logger"
-	"github.com/michaeldcanady/go-onedrive/internal/middleware"
+	"github.com/michaeldcanady/go-onedrive/internal/features/middleware"
 	drive "github.com/michaeldcanady/go-onedrive/internal/ui/cli/drive"
 	auth "github.com/michaeldcanady/go-onedrive/internal/ui/cli/identity"
 
-	"github.com/michaeldcanady/go-onedrive/internal/shared"
+	"github.com/michaeldcanady/go-onedrive/internal/features/shared"
 	"github.com/michaeldcanady/go-onedrive/internal/ui/cli/config"
 	"github.com/michaeldcanady/go-onedrive/internal/ui/cli/fs/cat"
 	"github.com/michaeldcanady/go-onedrive/internal/ui/cli/fs/cp"
@@ -25,7 +25,7 @@ import (
 	"github.com/michaeldcanady/go-onedrive/internal/ui/cli/fs/upload"
 	"github.com/michaeldcanady/go-onedrive/internal/ui/cli/mount"
 	"github.com/michaeldcanady/go-onedrive/internal/ui/cli/profile"
-	"github.com/michaeldcanady/go-onedrive/internal/version"
+	"github.com/michaeldcanady/go-onedrive/internal/features/version"
 	"github.com/spf13/cobra"
 	"github.com/spf13/cobra/doc"
 )

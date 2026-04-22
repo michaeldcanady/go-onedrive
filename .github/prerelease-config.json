@@ -7,7 +7,7 @@
     ".": {
       "type": "go",
       "extra-files": [
-        "internal/version/version.go"
+        "internal/features/version/version.go"
       ]
     }
   }

@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/michaeldcanady/go-onedrive/internal/features/environment"
-	"github.com/michaeldcanady/go-onedrive/internal/shared"
+	"github.com/michaeldcanady/go-onedrive/internal/features/shared"
 	bolt "go.etcd.io/bbolt"
 )
 

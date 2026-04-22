@@ -8,9 +8,9 @@
           - any-glob-to-any-file:
               - "**/*.go"
               - "!internal/features/identity/**/*.go"
-              - "!internal/shared/**/*.go"
-              - "!internal/errors/**/*.go"
-              - "!internal/concurrency/**/*.go"
+              - "!internal/features/shared/**/*.go"
+              - "!internal/features/errors/**/*.go"
+              - "!internal/features/concurrency/**/*.go"
               - "!internal/fs/**/*.go"
               - "!internal/drive/**/*.go"
               - "!internal/features/profile/**/*.go"
@@ -19,7 +19,7 @@
               - "!internal/di/**/*.go"
               - "!internal/features/environment/**/*.go"
               - "!internal/features/logger/**/*.go"
-              - "!internal/middleware/**/*.go"
+              - "!internal/features/middleware/**/*.go"
               - "!pkg/cache/**/*.go"
               - "!pkg/ignore/**/*.go"
               - "!cmd/odc/**/*.go"
@@ -36,10 +36,10 @@
   - any:
       - changed-files:
           - any-glob-to-any-file:
-              - "internal/shared/**"
-              - "internal/errors/**"
-              - "internal/concurrency/**"
-              - "internal/version/**"
+              - "internal/features/shared/**"
+              - "internal/features/errors/**"
+              - "internal/features/concurrency/**"
+              - "internal/features/version/**"
 
 "component: filesystem":
   - any:
@@ -99,7 +99,7 @@
   - any:
       - changed-files:
           - any-glob-to-any-file:
-              - "internal/middleware/**"
+              - "internal/features/middleware/**"
 
 "component: ignore":
   - any:

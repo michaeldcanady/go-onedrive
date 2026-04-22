@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/michaeldcanady/go-onedrive/internal/features/environment"
-	"github.com/michaeldcanady/go-onedrive/internal/shared"
+	"github.com/michaeldcanady/go-onedrive/internal/features/shared"
 	"github.com/stretchr/testify/assert"
 )
 

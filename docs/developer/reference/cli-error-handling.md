@@ -11,7 +11,7 @@ across the codebase.
 
 ## Standard Error Variables
 
-The `internal/errors` package defines several standard error variables that
+The `internal/features/errors` package defines several standard error variables that
 represent common failure scenarios:
 
 - **`ErrNotFound`**: Indicates an item (file or folder) was not found.
@@ -80,5 +80,5 @@ if errors.As(err, &domainErr) {
 - **Meaningful messages**: Ensure error messages are clear and actionable for
   the end user.
 - **Avoid silencing errors**: Never ignore an error; at a minimum, log it.
-- **Use standard errors**: Prefer the error variables in `internal/errors`
+- **Use standard errors**: Prefer the error variables in `internal/features/errors`
   when they apply.
