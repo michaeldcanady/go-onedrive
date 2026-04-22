@@ -8,8 +8,8 @@ import (
 	"path"
 	"strings"
 
-	"github.com/michaeldcanady/go-onedrive/internal/identity"
-	"github.com/michaeldcanady/go-onedrive/internal/identity/providers/microsoft"
+	"github.com/michaeldcanady/go-onedrive/internal/features/identity"
+	"github.com/michaeldcanady/go-onedrive/internal/features/identity/providers/microsoft"
 	"github.com/michaeldcanady/go-onedrive/pkg/fs"
 	abstractions "github.com/microsoft/kiota-abstractions-go"
 	msgraphsdkgo "github.com/microsoftgraph/msgraph-sdk-go"

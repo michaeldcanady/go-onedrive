@@ -8,8 +8,8 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
-	"github.com/michaeldcanady/go-onedrive/internal/identity"
-	proto "github.com/michaeldcanady/go-onedrive/internal/identity/proto"
+	"github.com/michaeldcanady/go-onedrive/internal/features/identity"
+	proto "github.com/michaeldcanady/go-onedrive/internal/features/identity/proto"
 )
 
 // MicrosoftAuthenticator implements the identity.Authenticator interface for Microsoft.

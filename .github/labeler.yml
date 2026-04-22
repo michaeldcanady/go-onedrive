@@ -7,7 +7,7 @@
       - changed-files:
           - any-glob-to-any-file:
               - "**/*.go"
-              - "!internal/identity/**/*.go"
+              - "!internal/features/identity/**/*.go"
               - "!internal/shared/**/*.go"
               - "!internal/errors/**/*.go"
               - "!internal/concurrency/**/*.go"
@@ -30,7 +30,7 @@
   - any:
       - changed-files:
           - any-glob-to-any-file:
-              - "internal/identity/**"
+              - "internal/features/identity/**"
 
 "component: common":
   - any:

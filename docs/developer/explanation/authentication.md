@@ -42,9 +42,9 @@ The authentication system is built around several key components:
 application to resolve the correct authenticator based on the configuration 
 at runtime.
 
-- **`internal/identity/registry/`:** Contains the registry and service for 
+- **`internal/features/identity/registry/`:** Contains the registry and service for 
   managing identity providers.
-- **`internal/identity/providers/`:** Contains the implementations for 
+- **`internal/features/identity/providers/`:** Contains the implementations for 
   specific providers (e.g., `microsoft`).
 
 ## Next steps

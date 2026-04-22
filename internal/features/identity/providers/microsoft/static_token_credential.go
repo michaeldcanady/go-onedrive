@@ -7,7 +7,7 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
-	"github.com/michaeldcanady/go-onedrive/internal/identity"
+	"github.com/michaeldcanady/go-onedrive/internal/features/identity"
 )
 
 // StaticTokenCredential implements azcore.TokenCredential using a static access token.

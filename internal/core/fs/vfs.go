@@ -7,7 +7,7 @@ import (
 	"io"
 	"strings"
 
-	"github.com/michaeldcanady/go-onedrive/internal/identity"
+	"github.com/michaeldcanady/go-onedrive/internal/features/identity"
 	"github.com/michaeldcanady/go-onedrive/pkg/fs"
 )
 

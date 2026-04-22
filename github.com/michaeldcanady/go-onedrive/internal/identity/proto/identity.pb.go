@@ -602,7 +602,7 @@ const file_internal_identity_proto_identity_proto_rawDesc = "" +
 	"\fAuthenticate\x12$.odc.identity.v1.AuthenticateRequest\x1a%.odc.identity.v1.AuthenticateResponse\x12O\n" +
 	"\bGetToken\x12 .odc.identity.v1.GetTokenRequest\x1a!.odc.identity.v1.GetTokenResponse\x12a\n" +
 	"\x0eListIdentities\x12&.odc.identity.v1.ListIdentitiesRequest\x1a'.odc.identity.v1.ListIdentitiesResponse\x12I\n" +
-	"\x06Logout\x12\x1e.odc.identity.v1.LogoutRequest\x1a\x1f.odc.identity.v1.LogoutResponseBBZ@github.com/michaeldcanady/go-onedrive/internal/identity/proto;v1b\x06proto3"
+	"\x06Logout\x12\x1e.odc.identity.v1.LogoutRequest\x1a\x1f.odc.identity.v1.LogoutResponseBBZ@github.com/michaeldcanady/go-onedrive/internal/features/identity/proto;v1b\x06proto3"
 
 var (
 	file_internal_identity_proto_identity_proto_rawDescOnce sync.Once

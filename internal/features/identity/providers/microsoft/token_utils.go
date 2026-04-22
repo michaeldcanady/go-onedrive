@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/michaeldcanady/go-onedrive/internal/identity"
+	"github.com/michaeldcanady/go-onedrive/internal/features/identity"
 )
 
 // extractIdentityFromToken extracts the identity ID from the access token.

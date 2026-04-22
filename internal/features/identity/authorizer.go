@@ -3,7 +3,7 @@ package identity
 import (
 	"context"
 
-	proto "github.com/michaeldcanady/go-onedrive/internal/identity/proto"
+	proto "github.com/michaeldcanady/go-onedrive/internal/features/identity/proto"
 )
 
 // Authorizer provides a way to obtain access tokens for specific accounts, handling refreshes automatically.

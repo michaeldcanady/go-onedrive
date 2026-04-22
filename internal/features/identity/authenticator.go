@@ -3,7 +3,7 @@ package identity
 import (
 	"context"
 
-	proto "github.com/michaeldcanady/go-onedrive/internal/identity/proto"
+	proto "github.com/michaeldcanady/go-onedrive/internal/features/identity/proto"
 )
 
 // Authenticator defines the interface for an identity provider's authentication logic.

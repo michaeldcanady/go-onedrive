@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/michaeldcanady/go-onedrive/internal/identity"
-	proto "github.com/michaeldcanady/go-onedrive/internal/identity/proto"
+	"github.com/michaeldcanady/go-onedrive/internal/features/identity"
+	proto "github.com/michaeldcanady/go-onedrive/internal/features/identity/proto"
 )
 
 // MicrosoftAuthorizer implements the identity.Authorizer interface for Microsoft.

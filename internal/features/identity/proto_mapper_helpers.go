@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	proto "github.com/michaeldcanady/go-onedrive/internal/identity/proto"
+	proto "github.com/michaeldcanady/go-onedrive/internal/features/identity/proto"
 	"github.com/michaeldcanady/go-onedrive/internal/features/logger"
 )
 

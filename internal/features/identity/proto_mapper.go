@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	proto "github.com/michaeldcanady/go-onedrive/internal/identity/proto"
+	proto "github.com/michaeldcanady/go-onedrive/internal/features/identity/proto"
 )
 
 // --- Conversions to Proto ---
