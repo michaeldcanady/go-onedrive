@@ -6,7 +6,7 @@ import (
 	"sort"
 	"strings"
 
-	shared "github.com/michaeldcanady/go-onedrive/internal/core/fs"
+	shared "github.com/michaeldcanady/go-onedrive/internal/features/fs"
 )
 
 // TreeFormatter implements OutputFormatter to render items in a hierarchical tree layout.

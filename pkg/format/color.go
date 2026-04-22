@@ -4,7 +4,7 @@ import (
 	"io"
 
 	"github.com/fatih/color"
-	shared "github.com/michaeldcanady/go-onedrive/internal/core/fs"
+	shared "github.com/michaeldcanady/go-onedrive/internal/features/fs"
 )
 
 var (

@@ -1,7 +1,7 @@
 package filtering
 
 import (
-	shared "github.com/michaeldcanady/go-onedrive/internal/core/fs"
+	shared "github.com/michaeldcanady/go-onedrive/internal/features/fs"
 )
 
 // Filterer defines the operations for narrowing a collection of filesystem items.

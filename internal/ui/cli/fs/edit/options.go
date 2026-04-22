@@ -4,7 +4,7 @@ import (
 	"io"
 	"os"
 
-	fs "github.com/michaeldcanady/go-onedrive/internal/core/fs"
+	fs "github.com/michaeldcanady/go-onedrive/internal/features/fs"
 )
 
 // Options defines the configuration for the drive edit operation.

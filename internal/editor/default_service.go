@@ -14,7 +14,7 @@ import (
 
 	"github.com/google/shlex"
 	"github.com/google/uuid"
-	fs "github.com/michaeldcanady/go-onedrive/internal/core/fs"
+	fs "github.com/michaeldcanady/go-onedrive/internal/features/fs"
 	"github.com/michaeldcanady/go-onedrive/internal/features/environment"
 	"github.com/michaeldcanady/go-onedrive/internal/features/logger"
 )

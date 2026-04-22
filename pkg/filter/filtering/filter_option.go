@@ -4,7 +4,7 @@ import (
 	"errors"
 	"time"
 
-	shared "github.com/michaeldcanady/go-onedrive/internal/core/fs"
+	shared "github.com/michaeldcanady/go-onedrive/internal/features/fs"
 )
 
 // FilterOption is a functional configuration pattern for FilterOptions.

@@ -3,7 +3,7 @@ package editor
 import (
 	"context"
 
-	fs "github.com/michaeldcanady/go-onedrive/internal/core/fs"
+	fs "github.com/michaeldcanady/go-onedrive/internal/features/fs"
 )
 
 // Session represents the state of an editing lifecycle for a single file.

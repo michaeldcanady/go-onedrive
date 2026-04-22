@@ -3,7 +3,7 @@ package upload
 import (
 	"io"
 
-	fs "github.com/michaeldcanady/go-onedrive/internal/core/fs"
+	fs "github.com/michaeldcanady/go-onedrive/internal/features/fs"
 )
 
 // Options provides the settings for the drive upload command.

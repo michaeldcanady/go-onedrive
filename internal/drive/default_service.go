@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/michaeldcanady/go-onedrive/internal/core/fs"
+	"github.com/michaeldcanady/go-onedrive/internal/features/fs"
 	"github.com/michaeldcanady/go-onedrive/internal/features/logger"
 )
 

@@ -6,7 +6,7 @@ import (
 	"slices"
 	"strings"
 
-	fs "github.com/michaeldcanady/go-onedrive/internal/core/fs"
+	fs "github.com/michaeldcanady/go-onedrive/internal/features/fs"
 	formatting "github.com/michaeldcanady/go-onedrive/pkg/format"
 )
 

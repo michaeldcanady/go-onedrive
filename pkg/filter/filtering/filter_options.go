@@ -4,7 +4,7 @@ import (
 	"errors"
 	"time"
 
-	shared "github.com/michaeldcanady/go-onedrive/internal/core/fs"
+	shared "github.com/michaeldcanady/go-onedrive/internal/features/fs"
 )
 
 // FilterOptions defines the configuration criteria used by a filterer.

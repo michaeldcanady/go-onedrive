@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"io"
 
-	fs "github.com/michaeldcanady/go-onedrive/internal/core/fs"
+	fs "github.com/michaeldcanady/go-onedrive/internal/features/fs"
 )
 
 // State represents the current phase of a session's lifecycle.

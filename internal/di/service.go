@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 
 	"github.com/michaeldcanady/go-onedrive/internal/features/config"
-	registry "github.com/michaeldcanady/go-onedrive/internal/core/fs"
+	registry "github.com/michaeldcanady/go-onedrive/internal/features/fs"
 
 	"github.com/michaeldcanady/go-onedrive/internal/drive"
 	"github.com/michaeldcanady/go-onedrive/internal/editor"
@@ -13,7 +13,7 @@ import (
 	"github.com/michaeldcanady/go-onedrive/internal/features/identity"
 	"github.com/michaeldcanady/go-onedrive/internal/features/identity/providers/microsoft"
 	"github.com/michaeldcanady/go-onedrive/internal/features/logger"
-	"github.com/michaeldcanady/go-onedrive/internal/mount"
+	"github.com/michaeldcanady/go-onedrive/internal/features/mount"
 	"github.com/michaeldcanady/go-onedrive/internal/features/profile"
 	"github.com/michaeldcanady/go-onedrive/internal/features/storage"
 	"github.com/michaeldcanady/go-onedrive/internal/features/storage/backend/local"

@@ -2,7 +2,7 @@ package add
 
 import (
 	"github.com/michaeldcanady/go-onedrive/internal/di"
-	"github.com/michaeldcanady/go-onedrive/internal/mount"
+	"github.com/michaeldcanady/go-onedrive/internal/features/mount"
 	"github.com/spf13/cobra"
 )
 

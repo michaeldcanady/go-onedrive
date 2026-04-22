@@ -2,13 +2,13 @@ package di
 
 import (
 	"github.com/michaeldcanady/go-onedrive/internal/features/config"
-	registry "github.com/michaeldcanady/go-onedrive/internal/core/fs"
+	registry "github.com/michaeldcanady/go-onedrive/internal/features/fs"
 	"github.com/michaeldcanady/go-onedrive/internal/drive"
 	"github.com/michaeldcanady/go-onedrive/internal/editor"
 	"github.com/michaeldcanady/go-onedrive/internal/features/environment"
 	"github.com/michaeldcanady/go-onedrive/internal/features/identity"
 	"github.com/michaeldcanady/go-onedrive/internal/features/logger"
-	"github.com/michaeldcanady/go-onedrive/internal/mount"
+	"github.com/michaeldcanady/go-onedrive/internal/features/mount"
 	"github.com/michaeldcanady/go-onedrive/internal/features/profile"
 )
 

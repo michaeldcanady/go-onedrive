@@ -3,7 +3,7 @@ package sorting
 import (
 	"strings"
 
-	shared "github.com/michaeldcanady/go-onedrive/internal/core/fs"
+	shared "github.com/michaeldcanady/go-onedrive/internal/features/fs"
 	"github.com/michaeldcanady/go-onedrive/pkg/order"
 )
 
