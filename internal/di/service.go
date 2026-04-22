@@ -15,9 +15,9 @@ import (
 	"github.com/michaeldcanady/go-onedrive/internal/features/logger"
 	"github.com/michaeldcanady/go-onedrive/internal/mount"
 	"github.com/michaeldcanady/go-onedrive/internal/features/profile"
-	"github.com/michaeldcanady/go-onedrive/internal/storage"
-	"github.com/michaeldcanady/go-onedrive/internal/storage/backend/local"
-	"github.com/michaeldcanady/go-onedrive/internal/storage/backend/onedrive"
+	"github.com/michaeldcanady/go-onedrive/internal/features/storage"
+	"github.com/michaeldcanady/go-onedrive/internal/features/storage/backend/local"
+	"github.com/michaeldcanady/go-onedrive/internal/features/storage/backend/onedrive"
 	"github.com/michaeldcanady/go-onedrive/pkg/fs"
 	"github.com/michaeldcanady/go-onedrive/pkg/logger/zap"
 )

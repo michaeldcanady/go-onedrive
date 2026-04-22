@@ -6,7 +6,7 @@ import (
 	"os/exec"
 
 	"github.com/hashicorp/go-plugin"
-	"github.com/michaeldcanady/go-onedrive/internal/storage/backend/grpc/proto"
+	"github.com/michaeldcanady/go-onedrive/internal/features/storage/backend/grpc/proto"
 	"github.com/michaeldcanady/go-onedrive/pkg/fs"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"

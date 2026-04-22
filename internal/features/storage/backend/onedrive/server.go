@@ -1,20 +1,56 @@
-package local
+package onedrive
 
 import (
 	"context"
 	"io"
 
-	"github.com/michaeldcanady/go-onedrive/internal/storage/backend/grpc"
-	"github.com/michaeldcanady/go-onedrive/internal/storage/backend/grpc/proto"
+	"github.com/michaeldcanady/go-onedrive/internal/features/storage/backend/grpc"
+	"github.com/michaeldcanady/go-onedrive/internal/features/storage/backend/grpc/proto"
 )
 
-// Server implements the proto.BackendServiceServer interface, wrapping the local Backend.
+// Server implements the proto.BackendServiceServer interface, wrapping the OneDrive Backend.
 type Server struct {
 	proto.UnimplementedBackendServiceServer
 	backend *Backend
 }
 
-// NewServer creates a new gRPC server wrapper for the local Backend.
+func (s *Server) ListDrives(ctx context.Context, req *proto.ListDrivesRequest) (*proto.ListDrivesResponse, error) {
+	drives, err := s.backend.ListDrives(ctx, req.AccessToken)
+	if err != nil {
+		return nil, grpc.ToProtoError(err)
+	}
+
+	protoDrives := make([]*proto.Drive, len(drives))
+	for i, d := range drives {
+		protoDrives[i] = &proto.Drive{
+			Id:       d.ID,
+			Name:     d.Name,
+			Type:     d.Type,
+			Owner:    d.Owner,
+			ReadOnly: d.ReadOnly,
+		}
+	}
+	return &proto.ListDrivesResponse{Drives: protoDrives}, nil
+}
+
+func (s *Server) GetPersonalDrive(ctx context.Context, req *proto.GetPersonalDriveRequest) (*proto.GetPersonalDriveResponse, error) {
+	d, err := s.backend.GetPersonalDrive(ctx, req.AccessToken)
+	if err != nil {
+		return nil, grpc.ToProtoError(err)
+	}
+
+	return &proto.GetPersonalDriveResponse{
+		Drive: &proto.Drive{
+			Id:       d.ID,
+			Name:     d.Name,
+			Type:     d.Type,
+			Owner:    d.Owner,
+			ReadOnly: d.ReadOnly,
+		},
+	}, nil
+}
+
+// NewServer creates a new gRPC server wrapper for the OneDrive Backend.
 func NewServer(b *Backend) *Server {
 	return &Server{backend: b}
 }

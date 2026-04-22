@@ -3,7 +3,7 @@ package grpc
 import (
 	"time"
 
-	proto "github.com/michaeldcanady/go-onedrive/internal/storage/backend/grpc/proto"
+	proto "github.com/michaeldcanady/go-onedrive/internal/features/storage/backend/grpc/proto"
 	"github.com/michaeldcanady/go-onedrive/pkg/fs"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"

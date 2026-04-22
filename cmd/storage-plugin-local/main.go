@@ -2,8 +2,8 @@ package main
 
 import (
 	"github.com/hashicorp/go-plugin"
-	"github.com/michaeldcanady/go-onedrive/internal/storage/backend/grpc"
-	"github.com/michaeldcanady/go-onedrive/internal/storage/backend/local"
+	"github.com/michaeldcanady/go-onedrive/internal/features/storage/backend/grpc"
+	"github.com/michaeldcanady/go-onedrive/internal/features/storage/backend/local"
 )
 
 func main() {
