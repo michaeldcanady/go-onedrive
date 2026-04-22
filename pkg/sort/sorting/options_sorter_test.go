@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/michaeldcanady/go-onedrive/internal/features/fs"
+	"github.com/michaeldcanady/go-onedrive/internal/features/fs/domain"
 	"github.com/stretchr/testify/assert"
 )
 

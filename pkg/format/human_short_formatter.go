@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"io"
 
-	shared "github.com/michaeldcanady/go-onedrive/internal/features/fs"
+	shared "github.com/michaeldcanady/go-onedrive/internal/features/fs/domain"
 )
 
 // HumanShortFormatter implements OutputFormatter to render items in a concise, multi-column layout.

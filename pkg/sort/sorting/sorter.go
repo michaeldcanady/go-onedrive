@@ -1,7 +1,7 @@
 package sorting
 
 import (
-	shared "github.com/michaeldcanady/go-onedrive/internal/features/fs"
+	shared "github.com/michaeldcanady/go-onedrive/internal/features/fs/domain"
 )
 
 // Sorter defines the operations for ordering a collection of filesystem items.

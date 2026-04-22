@@ -5,10 +5,10 @@ import (
 	"path/filepath"
 
 	"github.com/michaeldcanady/go-onedrive/internal/features/config"
-	registry "github.com/michaeldcanady/go-onedrive/internal/features/fs"
+	registry "github.com/michaeldcanady/go-onedrive/internal/features/fs/domain"
 
-	"github.com/michaeldcanady/go-onedrive/internal/drive"
-	"github.com/michaeldcanady/go-onedrive/internal/editor"
+	"github.com/michaeldcanady/go-onedrive/internal/features/drive/domain"
+	"github.com/michaeldcanady/go-onedrive/internal/features/editor/domain"
 	"github.com/michaeldcanady/go-onedrive/internal/core/env"
 	"github.com/michaeldcanady/go-onedrive/internal/features/identity"
 	"github.com/michaeldcanady/go-onedrive/internal/features/identity/providers/microsoft"

@@ -1,7 +1,7 @@
 package filtering
 
 import (
-	shared "github.com/michaeldcanady/go-onedrive/internal/features/fs"
+	shared "github.com/michaeldcanady/go-onedrive/internal/features/fs/domain"
 )
 
 // NoOpFilterer is an implementation of the Filterer interface that performs no exclusion.

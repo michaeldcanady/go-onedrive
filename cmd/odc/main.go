@@ -9,7 +9,7 @@ import (
 	"syscall"
 
 	"github.com/michaeldcanady/go-onedrive/internal/core/di"
-	"github.com/michaeldcanady/go-onedrive/internal/ui/cli"
+	"github.com/michaeldcanady/go-onedrive/internal/features/root/cmd"
 )
 
 func main() {
@@ -33,7 +33,7 @@ func main() {
 	}
 
 	// Create and execute the root command
-	cmd, err := cli.CreateRootCmd(container)
+	cmd, err := root.CreateRootCmd(container)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "failed to create root command: %v\n", err)
 		os.Exit(1)

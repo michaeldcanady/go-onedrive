@@ -3,7 +3,7 @@ package filtering
 import (
 	"path/filepath"
 
-	shared "github.com/michaeldcanady/go-onedrive/internal/features/fs"
+	shared "github.com/michaeldcanady/go-onedrive/internal/features/fs/domain"
 	"github.com/michaeldcanady/go-onedrive/pkg/spec"
 )
 

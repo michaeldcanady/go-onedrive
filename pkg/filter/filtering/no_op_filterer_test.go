@@ -3,7 +3,7 @@ package filtering
 import (
 	"testing"
 
-	shared "github.com/michaeldcanady/go-onedrive/internal/features/fs"
+	shared "github.com/michaeldcanady/go-onedrive/internal/features/fs/domain"
 	"github.com/stretchr/testify/assert"
 )
 

@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	shared "github.com/michaeldcanady/go-onedrive/internal/features/fs"
+	shared "github.com/michaeldcanady/go-onedrive/internal/features/fs/domain"
 	"github.com/michaeldcanady/go-onedrive/pkg/ignore"
 	"github.com/stretchr/testify/assert"
 )

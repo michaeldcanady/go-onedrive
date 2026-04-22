@@ -3,7 +3,7 @@ package formatting
 import (
 	"io"
 
-	shared "github.com/michaeldcanady/go-onedrive/internal/features/fs"
+	shared "github.com/michaeldcanady/go-onedrive/internal/features/fs/domain"
 )
 
 const (

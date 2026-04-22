@@ -1,7 +1,7 @@
 package formatting
 
 import (
-	shared "github.com/michaeldcanady/go-onedrive/internal/features/fs"
+	shared "github.com/michaeldcanady/go-onedrive/internal/features/fs/domain"
 )
 
 // treeNode represents a single element in a hierarchical filesystem tree.
