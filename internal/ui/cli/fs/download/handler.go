@@ -1,6 +1,7 @@
 package download
 
 import (
+	"context"
 	"fmt"
 
 	fs "github.com/michaeldcanady/go-onedrive/internal/core/fs"
@@ -8,15 +9,33 @@ import (
 	pkgfs "github.com/michaeldcanady/go-onedrive/pkg/fs"
 )
 
+// Logger defines the interface required for logging within the download command.
+type Logger interface {
+	Debug(msg string, fields ...logger.Field)
+	Error(msg string, fields ...logger.Field)
+	Info(msg string, fields ...logger.Field)
+	With(fields ...logger.Field) logger.Logger
+	WithContext(ctx context.Context) logger.Logger
+}
+
+type Manager interface {
+	Copy(ctx context.Context, src *pkgfs.URI, dst *pkgfs.URI, opts pkgfs.CopyOptions) error
+}
+
+// URIFactory defines the interface for creating URIs.
+type URIFactory interface {
+	FromString(s string) (*fs.URI, error)
+}
+
 // Command executes the drive download operation.
 type Command struct {
-	manager    fs.Service
-	uriFactory *fs.URIFactory
-	log        logger.Logger
+	manager    Manager
+	uriFactory URIFactory
+	log        Logger
 }
 
 // NewCommand initializes a new instance of the drive download Command.
-func NewCommand(m fs.Service, f *fs.URIFactory, l logger.Logger) *Command {
+func NewCommand(m fs.Service, f *fs.URIFactory, l Logger) *Command {
 	return &Command{
 		manager:    m,
 		uriFactory: f,
@@ -31,13 +50,13 @@ func (c *Command) Validate(ctx *CommandContext) error {
 	if err != nil {
 		return fmt.Errorf("invalid source path: %w", err)
 	}
-	ctx.Options.SourceURI = sourceURI
+	ctx.SourceURI = sourceURI
 
 	destinationURI, err := c.uriFactory.FromString(ctx.Options.Destination)
 	if err != nil {
 		return fmt.Errorf("invalid destination path: %w", err)
 	}
-	ctx.Options.DestinationURI = destinationURI
+	ctx.DestinationURI = destinationURI
 
 	return ctx.Options.Validate()
 }
@@ -45,8 +64,8 @@ func (c *Command) Validate(ctx *CommandContext) error {
 // Execute downloads files and directories from OneDrive to the local filesystem.
 func (c *Command) Execute(ctx *CommandContext) error {
 	log := c.log.WithContext(ctx.Ctx).With(
-		logger.String("source", ctx.Options.SourceURI.String()),
-		logger.String("destination", ctx.Options.DestinationURI.String()),
+		logger.String("source", ctx.SourceURI.String()),
+		logger.String("destination", ctx.DestinationURI.String()),
 		logger.Bool("recursive", ctx.Options.Recursive),
 	)
 
@@ -59,9 +78,9 @@ func (c *Command) Execute(ctx *CommandContext) error {
 	}
 
 	log.Debug("delegating to filesystem manager for download (copy)")
-	if err := c.manager.Copy(ctx.Ctx, ctx.Options.SourceURI, ctx.Options.DestinationURI, cpOpts); err != nil {
+	if err := c.manager.Copy(ctx.Ctx, ctx.SourceURI, ctx.DestinationURI, cpOpts); err != nil {
 		log.Error("download failed", logger.Error(err))
-		return fmt.Errorf("failed to download %s to %s: %w", ctx.Options.SourceURI, ctx.Options.DestinationURI, err)
+		return fmt.Errorf("failed to download %s to %s: %w", ctx.SourceURI, ctx.DestinationURI, err)
 	}
 
 	log.Info("download completed successfully")
@@ -70,6 +89,6 @@ func (c *Command) Execute(ctx *CommandContext) error {
 
 // Finalize performs any necessary cleanup after the download operation.
 func (c *Command) Finalize(ctx *CommandContext) error {
-	fmt.Fprintf(ctx.Options.Stdout, "Downloaded %s to %s\n", ctx.Options.SourceURI, ctx.Options.DestinationURI)
+	fmt.Fprintf(ctx.Options.Stdout, "Downloaded %s to %s\n", ctx.SourceURI, ctx.DestinationURI)
 	return nil
 }

@@ -237,6 +237,7 @@ func (v *VFS) Mounts() []string {
 	}
 	return prefixes
 }
+
 // ListDrives delegates the drive listing operation to the appropriate backend.
 func (v *VFS) ListDrives(ctx context.Context, provider string) ([]fs.Drive, error) {
 	// Try provider as is, then with slash prefix
@@ -317,4 +318,3 @@ func (v *VFS) getToken(ctx context.Context, provider string) (string, error) {
 
 	return string(rawToken), nil
 }
-

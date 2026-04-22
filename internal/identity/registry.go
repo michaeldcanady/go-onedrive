@@ -10,6 +10,12 @@ import (
 	"github.com/michaeldcanady/go-onedrive/internal/logger"
 )
 
+// Logger defines the interface required for logging within the identity service.
+type Logger interface {
+	Debug(msg string, fields ...logger.Field)
+	Error(msg string, fields ...logger.Field)
+}
+
 // Service defines the interface for managing identity providers.
 type Service interface {
 	RegisterAuthenticator(provider string, auth Authenticator)
@@ -36,11 +42,11 @@ type Registry struct {
 	authenticators map[string]Authenticator
 	authorizers    map[string]Authorizer
 	store          AccountStore
-	logger         logger.Logger
+	logger         Logger
 }
 
 // NewRegistry initializes a new instance of the Registry with persistence and logging.
-func NewRegistry(store AccountStore, logger logger.Logger) *Registry {
+func NewRegistry(store AccountStore, logger Logger) *Registry {
 	return &Registry{
 		authenticators: make(map[string]Authenticator),
 		authorizers:    make(map[string]Authorizer),

@@ -3,8 +3,6 @@ package download
 import (
 	"errors"
 	"io"
-
-	fs "github.com/michaeldcanady/go-onedrive/internal/core/fs"
 )
 
 // Options provides the settings for the drive download command.
@@ -12,14 +10,8 @@ type Options struct {
 	// Source is the remote filesystem path of the item to download.
 	Source string
 
-	// SourceURI is the remote filesystem path of the item to download.
-	SourceURI *fs.URI
-
 	// Destination is the local filesystem path where the item should be downloaded.
 	Destination string
-
-	// DestinationURI is the local filesystem path where the item should be downloaded.
-	DestinationURI *fs.URI
 
 	// Recursive determines whether to download directories and their contents.
 	Recursive bool

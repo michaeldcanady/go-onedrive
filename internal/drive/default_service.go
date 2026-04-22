@@ -9,18 +9,24 @@ import (
 	"github.com/michaeldcanady/go-onedrive/internal/logger"
 )
 
-// DefaultService provides the default implementation of the drive service.
-type DefaultService struct {
-	vfs *fs.VFS
-	log logger.Logger
+// Logger defines the interface required for logging within the drive service.
+type Logger interface {
+	Debug(msg string, fields ...logger.Field)
+	Error(msg string, fields ...logger.Field)
 }
 
 // NewDefaultService initializes a new instance of the DefaultService.
-func NewDefaultService(vfs *fs.VFS, l logger.Logger) *DefaultService {
+func NewDefaultService(vfs *fs.VFS, l Logger) *DefaultService {
 	return &DefaultService{
 		vfs: vfs,
 		log: l,
 	}
+}
+
+// DefaultService provides the default implementation of the drive service.
+type DefaultService struct {
+	vfs *fs.VFS
+	log Logger
 }
 
 // ListDrives retrieves all accessible OneDrive drives.

@@ -5,8 +5,12 @@ export DOC_PORT := "8000"
 export DOC_PATH := "."
 export BINARY_NAME := "odc"
 
+# Generate code
+generate:
+    go generate ./...
+
 # Build the odc binary
-build:
+build: generate
     go build -o {{BINARY_NAME}} ./cmd/odc/
 
 # Run the odc binary

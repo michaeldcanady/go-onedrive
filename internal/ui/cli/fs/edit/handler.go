@@ -1,7 +1,9 @@
 package edit
 
 import (
+	"context"
 	"fmt"
+	"io"
 	"os"
 
 	fs "github.com/michaeldcanady/go-onedrive/internal/core/fs"
@@ -10,16 +12,44 @@ import (
 	pkgfs "github.com/michaeldcanady/go-onedrive/pkg/fs"
 )
 
+// Logger defines the interface required for logging within the edit command.
+type Logger interface {
+	Debug(msg string, fields ...logger.Field)
+	Error(msg string, fields ...logger.Field)
+	Info(msg string, fields ...logger.Field)
+	With(fields ...logger.Field) logger.Logger
+	WithContext(ctx context.Context) logger.Logger
+}
+
+type Manager interface {
+	ReadFile(ctx context.Context, uri *pkgfs.URI, opts pkgfs.ReadOptions) (io.ReadCloser, error)
+	WriteFile(ctx context.Context, uri *pkgfs.URI, r io.Reader, opts pkgfs.WriteOptions) (pkgfs.Item, error)
+}
+
+type Editor interface {
+	CreateSession(ctx context.Context, remoteURI *fs.URI, reader io.Reader) (*editor.Session, error)
+	Open(ctx context.Context, session *editor.Session) error
+	Cleanup(ctx context.Context, session *editor.Session) error
+	Modified(session *editor.Session) (bool, error)
+	NewContent(session *editor.Session) (io.ReadCloser, error)
+	WithOptions(opts ...editor.Option) editor.Service
+}
+
+// URIFactory defines the interface for creating URIs.
+type URIFactory interface {
+	FromString(s string) (*fs.URI, error)
+}
+
 // Command executes the edit operation.
 type Command struct {
-	manager    fs.Service
-	uriFactory *fs.URIFactory
-	editor     editor.Service
-	log        logger.Logger
+	manager    Manager
+	uriFactory URIFactory
+	editor     Editor
+	log        Logger
 }
 
 // NewCommand initializes a new instance of the edit Command.
-func NewCommand(m fs.Service, f *fs.URIFactory, e editor.Service, l logger.Logger) *Command {
+func NewCommand(m fs.Service, f *fs.URIFactory, e editor.Service, l Logger) *Command {
 	return &Command{
 		manager:    m,
 		uriFactory: f,

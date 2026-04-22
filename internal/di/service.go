@@ -1,13 +1,12 @@
 package di
-
 import (
 	"context"
 	"fmt"
 	"path/filepath"
-	"time"
 
 	"github.com/michaeldcanady/go-onedrive/internal/config"
 	registry "github.com/michaeldcanady/go-onedrive/internal/core/fs"
+
 	"github.com/michaeldcanady/go-onedrive/internal/drive"
 	"github.com/michaeldcanady/go-onedrive/internal/editor"
 	"github.com/michaeldcanady/go-onedrive/internal/environment"
@@ -16,36 +15,27 @@ import (
 	"github.com/michaeldcanady/go-onedrive/internal/logger"
 	"github.com/michaeldcanady/go-onedrive/internal/mount"
 	"github.com/michaeldcanady/go-onedrive/internal/profile"
+	"github.com/michaeldcanady/go-onedrive/internal/storage"
 	"github.com/michaeldcanady/go-onedrive/internal/storage/backend/local"
 	"github.com/michaeldcanady/go-onedrive/internal/storage/backend/onedrive"
 	"github.com/michaeldcanady/go-onedrive/pkg/fs"
 	"github.com/michaeldcanady/go-onedrive/pkg/logger/zap"
-	bolt "go.etcd.io/bbolt"
 )
 
 // DefaultContainer provides a concrete implementation of the Container interface.
 // It orchestrates the lifecycle and wiring of core application services.
 type DefaultContainer struct {
-	// logger is the centralized logging service.
-	logger logger.Service
-	// config is the service for managing application settings.
-	config config.Service
-	// mounts is the service for managing VFS mount points.
-	mounts mount.Service
-	// identityService is the registry for managing multiple identity providers, providing both authenticators and authorizers.
+	logger          logger.Service
+	config          config.Service
+	mounts          mount.Service
 	identityService identity.Service
-	// profile is the service for managing user configuration profiles.
-	profile profile.Service
-	// manager is the orchestrated filesystem manager.
-	manager registry.Service
-	// environment is the environment-related service.
-	environment environment.Service
-	// editor is the external editor service.
-	editor editor.Service
-	// drive is the OneDrive drive management service.
-	drive drive.Service
-	// uriFactory is the service for creating and resolving URIs.
-	uriFactory *registry.URIFactory
+	profile         profile.Service
+	manager         registry.Service
+	environment     environment.Service
+	editor          editor.Service
+	drive           drive.Service
+	uriFactory      *registry.URIFactory
+	storageService  storage.Service
 }
 
 // NewDefaultContainer initializes a new instance of the DefaultContainer with all core services wired.
@@ -85,6 +75,7 @@ func (c *DefaultContainer) initBaseServices() error {
 		return fmt.Errorf("failed to initialize profile service: %w", err)
 	}
 	c.profile = profileSvc
+    c.storageService = storage.NewDefaultService()
 
 	return nil
 }
@@ -97,46 +88,92 @@ func (c *DefaultContainer) initIdentityServices(ctx context.Context) error {
 		return fmt.Errorf("failed to get state directory: %w", err)
 	}
 	dbPath := filepath.Join(stateDir, "identity.db")
-	db, err := bolt.Open(dbPath, 0600, &bolt.Options{Timeout: 1 * time.Second})
+	db, err := c.storageService.Open(dbPath)
 	if err != nil {
 		return fmt.Errorf("failed to open identity database: %w", err)
 	}
 
 	tokenRepo := identity.NewBoltRepository(db)
-	// Create the MicrosoftAuthenticator.
 	msAuth := microsoft.NewMicrosoftAuthenticator()
 
-	// Create a registry for Identity providers.
 	authRegistry := identity.NewRegistry(tokenRepo, cliLog)
-	authRegistry.RegisterAuthenticator("microsoft", msAuth) // Register Authenticator
+	authRegistry.RegisterAuthenticator("microsoft", msAuth)
 
-	// Create and register the MicrosoftAuthorizer.
 	msAuthorizer := microsoft.NewMicrosoftAuthorizer(tokenRepo)
 	authRegistry.RegisterAuthorizer("microsoft", msAuthorizer)
 
-	c.identityService = authRegistry // Assigning the registry to identityService
+	c.identityService = authRegistry
 
 	return nil
+}
+
+type driveLogger struct {
+	l logger.Logger
+}
+
+func (l *driveLogger) Debug(msg string, fields ...logger.Field) {
+	l.l.Debug(msg, fields...)
+}
+
+func (l *driveLogger) Error(msg string, fields ...logger.Field) {
+	l.l.Error(msg, fields...)
 }
 
 func (c *DefaultContainer) initDriveServices(ctx context.Context) error {
 	cliLog, _ := c.logger.CreateLogger("cli")
 
-	// c.manager is the VFS.
-	c.drive = drive.NewDefaultService(c.manager.(*registry.VFS), cliLog)
+	c.drive = drive.NewDefaultService(c.manager.(*registry.VFS), &driveLogger{l: cliLog})
 
 	return nil
+}
+
+type mountConfigAdapter struct {
+	svc config.Service
+}
+
+func (a *mountConfigAdapter) GetMounts(ctx context.Context) ([]mount.MountConfig, error) {
+	cfg, err := a.svc.GetConfig(ctx)
+	if err != nil {
+		return nil, err
+	}
+	var mounts []mount.MountConfig
+	for _, m := range cfg.Mounts {
+		mounts = append(mounts, mount.MountConfig{
+			Path:       m.Path,
+			Type:       m.Type,
+			IdentityID: m.IdentityID,
+			Options:    m.Options,
+		})
+	}
+	return mounts, nil
+}
+
+func (a *mountConfigAdapter) SaveMounts(ctx context.Context, mounts []mount.MountConfig) error {
+	cfg, err := a.svc.GetConfig(ctx)
+	if err != nil {
+		return err
+	}
+	var newMounts []config.MountConfig
+	for _, m := range mounts {
+		newMounts = append(newMounts, config.MountConfig{
+			Path:       m.Path,
+			Type:       m.Type,
+			IdentityID: m.IdentityID,
+			Options:    m.Options,
+		})
+	}
+	cfg.Mounts = newMounts
+	return a.svc.SaveConfig(ctx, cfg)
 }
 
 func (c *DefaultContainer) initVFSServices(ctx context.Context) error {
 	cliLog, _ := c.logger.CreateLogger("cli")
 	yamlSvc := config.NewConfigService(c.profile, cliLog)
 	c.config = yamlSvc
-	c.mounts = mount.NewMountService(c.config)
+	c.mounts = mount.NewMountService(&mountConfigAdapter{svc: yamlSvc})
 
 	vfs := registry.NewVFS(c.identityService)
 
-	// Load mount configurations and register them with the VFS.
 	mounts, err := c.mounts.ListMounts(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to list mounts: %w", err)

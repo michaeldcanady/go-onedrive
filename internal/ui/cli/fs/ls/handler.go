@@ -1,22 +1,44 @@
 package ls
 
 import (
+	"context"
+
 	fs "github.com/michaeldcanady/go-onedrive/internal/core/fs"
 	"github.com/michaeldcanady/go-onedrive/internal/logger"
 	formatting "github.com/michaeldcanady/go-onedrive/pkg/format"
 	pkgfs "github.com/michaeldcanady/go-onedrive/pkg/fs"
 )
 
+// Logger defines the interface required for logging within the ls command.
+type Logger interface {
+	Debug(msg string, fields ...logger.Field)
+	Error(msg string, fields ...logger.Field)
+	WithContext(ctx context.Context) logger.Logger
+}
+
+type ItemLister interface {
+	List(ctx context.Context, uri *pkgfs.URI, opts pkgfs.ListOptions) ([]pkgfs.Item, error)
+}
+
+type FormatCreator interface {
+	Create(format formatting.Format) (formatting.OutputFormatter, error)
+}
+
+// URIFactory defines the interface for creating URIs.
+type URIFactory interface {
+	FromString(s string) (*fs.URI, error)
+}
+
 // Command executes the ls operation.
 type Command struct {
-	manager          fs.Service
-	uriFactory       *fs.URIFactory
-	formatterFactory *formatting.FormatterFactory
-	log              logger.Logger
+	manager          ItemLister
+	uriFactory       URIFactory
+	formatterFactory FormatCreator
+	log              Logger
 }
 
 // NewCommand initializes a new instance of the ls Command.
-func NewCommand(m fs.Service, f *fs.URIFactory, ff *formatting.FormatterFactory, l logger.Logger) *Command {
+func NewCommand(m ItemLister, f URIFactory, ff FormatCreator, l Logger) *Command {
 	return &Command{
 		manager:          m,
 		uriFactory:       f,

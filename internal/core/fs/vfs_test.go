@@ -17,7 +17,9 @@ func (m *mockBackend) Name() string { return m.name }
 func (m *mockBackend) Stat(ctx context.Context, token, driveID, path string) (fs.Item, error) {
 	return fs.Item{Path: path, Name: m.name}, nil
 }
-func (m *mockBackend) List(ctx context.Context, token, driveID, path string) ([]fs.Item, error) { return nil, nil }
+func (m *mockBackend) List(ctx context.Context, token, driveID, path string) ([]fs.Item, error) {
+	return nil, nil
+}
 func (m *mockBackend) Open(ctx context.Context, token, driveID, path string) (io.ReadCloser, error) {
 	return nil, nil
 }
@@ -26,7 +28,7 @@ func (m *mockBackend) Create(ctx context.Context, token, driveID, path string, r
 }
 func (m *mockBackend) Mkdir(ctx context.Context, token, driveID, path string) error  { return nil }
 func (m *mockBackend) Remove(ctx context.Context, token, driveID, path string) error { return nil }
-func (m *mockBackend) Capabilities() fs.Capabilities                 { return fs.Capabilities{} }
+func (m *mockBackend) Capabilities() fs.Capabilities                                 { return fs.Capabilities{} }
 
 func TestVFS_Resolve(t *testing.T) {
 	vfs := NewVFS(nil)

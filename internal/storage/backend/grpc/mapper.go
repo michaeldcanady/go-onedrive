@@ -62,8 +62,8 @@ func FromProtoItemType(t proto.ItemType) fs.ItemType {
 // ToProtoCapabilities converts an fs.Capabilities to the proto.Capabilities message.
 func ToProtoCapabilities(c fs.Capabilities) *proto.Capabilities {
 	return &proto.Capabilities{
-		CanMove:     c.CanMove,
-		CanCopy:     c.CanCopy,
+		CanMove:      c.CanMove,
+		CanCopy:      c.CanCopy,
 		CanRecursive: c.CanRecursive,
 	}
 }
@@ -71,8 +71,8 @@ func ToProtoCapabilities(c fs.Capabilities) *proto.Capabilities {
 // FromProtoCapabilities converts a proto.Capabilities message to an fs.Capabilities struct.
 func FromProtoCapabilities(p *proto.Capabilities) fs.Capabilities {
 	return fs.Capabilities{
-		CanMove:     p.CanMove,
-		CanCopy:     p.CanCopy,
+		CanMove:      p.CanMove,
+		CanCopy:      p.CanCopy,
 		CanRecursive: p.CanRecursive,
 	}
 }

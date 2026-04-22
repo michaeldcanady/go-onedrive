@@ -41,7 +41,6 @@ func extractFullIdentityFromToken(tokenStr string) (identity.Account, error) {
 		return ident, fmt.Errorf("invalid claims format")
 	}
 
-
 	// Extract Provider-specific ID (oid)
 	if val, ok := claims["oid"].(string); ok && val != "" {
 		ident.ID = val

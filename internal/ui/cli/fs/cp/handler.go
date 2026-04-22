@@ -1,6 +1,7 @@
 package cp
 
 import (
+	"context"
 	"fmt"
 
 	fs "github.com/michaeldcanady/go-onedrive/internal/core/fs"
@@ -8,15 +9,33 @@ import (
 	pkgfs "github.com/michaeldcanady/go-onedrive/pkg/fs"
 )
 
+// Logger defines the interface required for logging within the cp command.
+type Logger interface {
+	Debug(msg string, fields ...logger.Field)
+	Error(msg string, fields ...logger.Field)
+	Info(msg string, fields ...logger.Field)
+	With(fields ...logger.Field) logger.Logger
+	WithContext(ctx context.Context) logger.Logger
+}
+
+type Manager interface {
+	Copy(ctx context.Context, src *pkgfs.URI, dst *pkgfs.URI, opts pkgfs.CopyOptions) error
+}
+
+// URIFactory defines the interface for creating URIs.
+type URIFactory interface {
+	FromString(s string) (*fs.URI, error)
+}
+
 // Command executes the drive cp operation.
 type Command struct {
-	manager    fs.Service
-	uriFactory *fs.URIFactory
-	log        logger.Logger
+	manager    Manager
+	uriFactory URIFactory
+	log        Logger
 }
 
 // NewCommand initializes a new instance of the drive cp Command.
-func NewCommand(m fs.Service, f *fs.URIFactory, l logger.Logger) *Command {
+func NewCommand(m fs.Service, f *fs.URIFactory, l Logger) *Command {
 	return &Command{
 		manager:    m,
 		uriFactory: f,

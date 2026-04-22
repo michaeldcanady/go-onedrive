@@ -1,21 +1,31 @@
 package mkdir
 
 import (
+	"context"
 	"fmt"
 
 	fs "github.com/michaeldcanady/go-onedrive/internal/core/fs"
 	"github.com/michaeldcanady/go-onedrive/internal/logger"
 )
 
+// Logger defines the interface required for logging within the mkdir command.
+type Logger interface {
+	Debug(msg string, fields ...logger.Field)
+	Error(msg string, fields ...logger.Field)
+	Info(msg string, fields ...logger.Field)
+	With(fields ...logger.Field) logger.Logger
+	WithContext(ctx context.Context) logger.Logger
+}
+
 // Command executes the drive mkdir operation.
 type Command struct {
 	manager    fs.Service
 	uriFactory *fs.URIFactory
-	log        logger.Logger
+	log        Logger
 }
 
 // NewCommand initializes a new instance of the drive mkdir Command.
-func NewCommand(m fs.Service, f *fs.URIFactory, l logger.Logger) *Command {
+func NewCommand(m fs.Service, f *fs.URIFactory, l Logger) *Command {
 	return &Command{
 		manager:    m,
 		uriFactory: f,

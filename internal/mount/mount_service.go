@@ -3,72 +3,71 @@ package mount
 import (
 	"context"
 	"fmt"
-
-	"github.com/michaeldcanady/go-onedrive/internal/config"
 )
+
+// ConfigRepository defines the interface for accessing mount configuration.
+type ConfigRepository interface {
+	GetMounts(ctx context.Context) ([]MountConfig, error)
+	SaveMounts(ctx context.Context, mounts []MountConfig) error
+}
 
 // MountService is an implementation of the Service interface.
 type MountService struct {
-	configSvc config.Service
+	configRepo ConfigRepository
 }
 
 // NewMountService creates a new instance of MountService.
-func NewMountService(configSvc config.Service) *MountService {
+func NewMountService(configRepo ConfigRepository) *MountService {
 	return &MountService{
-		configSvc: configSvc,
+		configRepo: configRepo,
 	}
 }
 
 // ListMounts retrieves all configured mount points.
-func (s *MountService) ListMounts(ctx context.Context) ([]config.MountConfig, error) {
-	cfg, err := s.configSvc.GetConfig(ctx)
-	if err != nil {
-		return nil, err
-	}
-	return cfg.Mounts, nil
+func (s *MountService) ListMounts(ctx context.Context) ([]MountConfig, error) {
+	return s.configRepo.GetMounts(ctx)
 }
 
 // AddMount adds or updates a mount point in the configuration.
-func (s *MountService) AddMount(ctx context.Context, m config.MountConfig) error {
-	cfg, err := s.configSvc.GetConfig(ctx)
+func (s *MountService) AddMount(ctx context.Context, m MountConfig) error {
+	mounts, err := s.configRepo.GetMounts(ctx)
 	if err != nil {
 		return err
 	}
 
 	found := false
-	for i, existing := range cfg.Mounts {
+	for i, existing := range mounts {
 		if existing.Path == m.Path {
-			cfg.Mounts[i] = m
+			mounts[i] = m
 			found = true
 			break
 		}
 	}
 
 	if !found {
-		cfg.Mounts = append(cfg.Mounts, m)
+		mounts = append(mounts, m)
 	}
 
-	return s.configSvc.SaveConfig(ctx, cfg)
+	return s.configRepo.SaveMounts(ctx, mounts)
 }
 
 // RemoveMount removes a mount point from the configuration.
 func (s *MountService) RemoveMount(ctx context.Context, path string) error {
-	cfg, err := s.configSvc.GetConfig(ctx)
+	mounts, err := s.configRepo.GetMounts(ctx)
 	if err != nil {
 		return err
 	}
 
-	newMounts := make([]config.MountConfig, 0, len(cfg.Mounts))
-	for _, m := range cfg.Mounts {
+	newMounts := make([]MountConfig, 0, len(mounts))
+	for _, m := range mounts {
 		if m.Path != path {
 			newMounts = append(newMounts, m)
 		}
 	}
 
-	if len(newMounts) == len(cfg.Mounts) {
+	if len(newMounts) == len(mounts) {
 		return fmt.Errorf("mount point %s not found", path)
 	}
 
-	cfg.Mounts = newMounts
-	return s.configSvc.SaveConfig(ctx, cfg)
+	return s.configRepo.SaveMounts(ctx, newMounts)
 }

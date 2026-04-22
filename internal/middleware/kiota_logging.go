@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"context"
 	"net/http"
 	"time"
 
@@ -8,14 +9,21 @@ import (
 	nethttp "github.com/microsoft/kiota-http-go"
 )
 
+// Logger defines the interface required for logging within the middleware.
+type Logger interface {
+	Debug(msg string, fields ...logger.Field)
+	Error(msg string, fields ...logger.Field)
+	WithContext(ctx context.Context) logger.Logger
+}
+
 // KiotaLoggingMiddleware implements the Kiota Middleware interface to provide
 // detailed request and response logging.
 type KiotaLoggingMiddleware struct {
-	log logger.Logger
+	log Logger
 }
 
 // NewKiotaLoggingMiddleware initializes a new instance of KiotaLoggingMiddleware.
-func NewKiotaLoggingMiddleware(log logger.Logger) *KiotaLoggingMiddleware {
+func NewKiotaLoggingMiddleware(log Logger) *KiotaLoggingMiddleware {
 	return &KiotaLoggingMiddleware{
 		log: log,
 	}
@@ -40,9 +48,8 @@ func (m *KiotaLoggingMiddleware) Intercept(pipeline nethttp.Pipeline, middleware
 			logger.String("method", req.Method),
 			logger.String("url", req.URL.String()),
 			logger.Error(err),
-			logger.Duration("duration", duration),
 		)
-		return resp, err
+		return nil, err
 	}
 
 	log.Debug("inbound response",
@@ -51,13 +58,6 @@ func (m *KiotaLoggingMiddleware) Intercept(pipeline nethttp.Pipeline, middleware
 		logger.Int("status", resp.StatusCode),
 		logger.Duration("duration", duration),
 	)
-
-	if resp.StatusCode >= 400 {
-		log.Warn("request returned error status",
-			logger.Int("status", resp.StatusCode),
-			logger.String("url", req.URL.String()),
-		)
-	}
 
 	return resp, nil
 }

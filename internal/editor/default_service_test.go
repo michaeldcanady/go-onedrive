@@ -47,6 +47,9 @@ type mockConfigSvc struct {
 	cfg config.Config
 }
 
+func (m *mockConfigSvc) GetEditorCommand(ctx context.Context) (string, error) {
+	return m.cfg.Editor.Command, nil
+}
 func (m *mockConfigSvc) GetConfig(ctx context.Context) (config.Config, error) {
 	return m.cfg, nil
 }

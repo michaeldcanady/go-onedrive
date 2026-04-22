@@ -2,7 +2,7 @@
 // versions:
 // 	protoc-gen-go v1.36.11
 // 	protoc        v6.30.2
-// source: internal/storage/backend/grpc/proto/backend.proto
+// source: backend.proto
 
 package proto
 
@@ -54,11 +54,11 @@ func (x ItemType) String() string {
 }
 
 func (ItemType) Descriptor() protoreflect.EnumDescriptor {
-	return file_internal_storage_backend_grpc_proto_backend_proto_enumTypes[0].Descriptor()
+	return file_backend_proto_enumTypes[0].Descriptor()
 }
 
 func (ItemType) Type() protoreflect.EnumType {
-	return &file_internal_storage_backend_grpc_proto_backend_proto_enumTypes[0]
+	return &file_backend_proto_enumTypes[0]
 }
 
 func (x ItemType) Number() protoreflect.EnumNumber {
@@ -67,7 +67,7 @@ func (x ItemType) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use ItemType.Descriptor instead.
 func (ItemType) EnumDescriptor() ([]byte, []int) {
-	return file_internal_storage_backend_grpc_proto_backend_proto_rawDescGZIP(), []int{0}
+	return file_backend_proto_rawDescGZIP(), []int{0}
 }
 
 type Drive struct {
@@ -83,7 +83,7 @@ type Drive struct {
 
 func (x *Drive) Reset() {
 	*x = Drive{}
-	mi := &file_internal_storage_backend_grpc_proto_backend_proto_msgTypes[0]
+	mi := &file_backend_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -95,7 +95,7 @@ func (x *Drive) String() string {
 func (*Drive) ProtoMessage() {}
 
 func (x *Drive) ProtoReflect() protoreflect.Message {
-	mi := &file_internal_storage_backend_grpc_proto_backend_proto_msgTypes[0]
+	mi := &file_backend_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -108,7 +108,7 @@ func (x *Drive) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Drive.ProtoReflect.Descriptor instead.
 func (*Drive) Descriptor() ([]byte, []int) {
-	return file_internal_storage_backend_grpc_proto_backend_proto_rawDescGZIP(), []int{0}
+	return file_backend_proto_rawDescGZIP(), []int{0}
 }
 
 func (x *Drive) GetId() string {
@@ -155,7 +155,7 @@ type ListDrivesRequest struct {
 
 func (x *ListDrivesRequest) Reset() {
 	*x = ListDrivesRequest{}
-	mi := &file_internal_storage_backend_grpc_proto_backend_proto_msgTypes[1]
+	mi := &file_backend_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -167,7 +167,7 @@ func (x *ListDrivesRequest) String() string {
 func (*ListDrivesRequest) ProtoMessage() {}
 
 func (x *ListDrivesRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_internal_storage_backend_grpc_proto_backend_proto_msgTypes[1]
+	mi := &file_backend_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -180,7 +180,7 @@ func (x *ListDrivesRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListDrivesRequest.ProtoReflect.Descriptor instead.
 func (*ListDrivesRequest) Descriptor() ([]byte, []int) {
-	return file_internal_storage_backend_grpc_proto_backend_proto_rawDescGZIP(), []int{1}
+	return file_backend_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *ListDrivesRequest) GetAccessToken() string {
@@ -199,7 +199,7 @@ type ListDrivesResponse struct {
 
 func (x *ListDrivesResponse) Reset() {
 	*x = ListDrivesResponse{}
-	mi := &file_internal_storage_backend_grpc_proto_backend_proto_msgTypes[2]
+	mi := &file_backend_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -211,7 +211,7 @@ func (x *ListDrivesResponse) String() string {
 func (*ListDrivesResponse) ProtoMessage() {}
 
 func (x *ListDrivesResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_internal_storage_backend_grpc_proto_backend_proto_msgTypes[2]
+	mi := &file_backend_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -224,7 +224,7 @@ func (x *ListDrivesResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListDrivesResponse.ProtoReflect.Descriptor instead.
 func (*ListDrivesResponse) Descriptor() ([]byte, []int) {
-	return file_internal_storage_backend_grpc_proto_backend_proto_rawDescGZIP(), []int{2}
+	return file_backend_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *ListDrivesResponse) GetDrives() []*Drive {
@@ -243,7 +243,7 @@ type GetPersonalDriveRequest struct {
 
 func (x *GetPersonalDriveRequest) Reset() {
 	*x = GetPersonalDriveRequest{}
-	mi := &file_internal_storage_backend_grpc_proto_backend_proto_msgTypes[3]
+	mi := &file_backend_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -255,7 +255,7 @@ func (x *GetPersonalDriveRequest) String() string {
 func (*GetPersonalDriveRequest) ProtoMessage() {}
 
 func (x *GetPersonalDriveRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_internal_storage_backend_grpc_proto_backend_proto_msgTypes[3]
+	mi := &file_backend_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -268,7 +268,7 @@ func (x *GetPersonalDriveRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetPersonalDriveRequest.ProtoReflect.Descriptor instead.
 func (*GetPersonalDriveRequest) Descriptor() ([]byte, []int) {
-	return file_internal_storage_backend_grpc_proto_backend_proto_rawDescGZIP(), []int{3}
+	return file_backend_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *GetPersonalDriveRequest) GetAccessToken() string {
@@ -287,7 +287,7 @@ type GetPersonalDriveResponse struct {
 
 func (x *GetPersonalDriveResponse) Reset() {
 	*x = GetPersonalDriveResponse{}
-	mi := &file_internal_storage_backend_grpc_proto_backend_proto_msgTypes[4]
+	mi := &file_backend_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -299,7 +299,7 @@ func (x *GetPersonalDriveResponse) String() string {
 func (*GetPersonalDriveResponse) ProtoMessage() {}
 
 func (x *GetPersonalDriveResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_internal_storage_backend_grpc_proto_backend_proto_msgTypes[4]
+	mi := &file_backend_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -312,7 +312,7 @@ func (x *GetPersonalDriveResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetPersonalDriveResponse.ProtoReflect.Descriptor instead.
 func (*GetPersonalDriveResponse) Descriptor() ([]byte, []int) {
-	return file_internal_storage_backend_grpc_proto_backend_proto_rawDescGZIP(), []int{4}
+	return file_backend_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *GetPersonalDriveResponse) GetDrive() *Drive {
@@ -337,7 +337,7 @@ type Item struct {
 
 func (x *Item) Reset() {
 	*x = Item{}
-	mi := &file_internal_storage_backend_grpc_proto_backend_proto_msgTypes[5]
+	mi := &file_backend_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -349,7 +349,7 @@ func (x *Item) String() string {
 func (*Item) ProtoMessage() {}
 
 func (x *Item) ProtoReflect() protoreflect.Message {
-	mi := &file_internal_storage_backend_grpc_proto_backend_proto_msgTypes[5]
+	mi := &file_backend_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -362,7 +362,7 @@ func (x *Item) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Item.ProtoReflect.Descriptor instead.
 func (*Item) Descriptor() ([]byte, []int) {
-	return file_internal_storage_backend_grpc_proto_backend_proto_rawDescGZIP(), []int{5}
+	return file_backend_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *Item) GetId() string {
@@ -425,7 +425,7 @@ type Capabilities struct {
 
 func (x *Capabilities) Reset() {
 	*x = Capabilities{}
-	mi := &file_internal_storage_backend_grpc_proto_backend_proto_msgTypes[6]
+	mi := &file_backend_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -437,7 +437,7 @@ func (x *Capabilities) String() string {
 func (*Capabilities) ProtoMessage() {}
 
 func (x *Capabilities) ProtoReflect() protoreflect.Message {
-	mi := &file_internal_storage_backend_grpc_proto_backend_proto_msgTypes[6]
+	mi := &file_backend_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -450,7 +450,7 @@ func (x *Capabilities) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Capabilities.ProtoReflect.Descriptor instead.
 func (*Capabilities) Descriptor() ([]byte, []int) {
-	return file_internal_storage_backend_grpc_proto_backend_proto_rawDescGZIP(), []int{6}
+	return file_backend_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *Capabilities) GetCanMove() bool {
@@ -485,7 +485,7 @@ type StatRequest struct {
 
 func (x *StatRequest) Reset() {
 	*x = StatRequest{}
-	mi := &file_internal_storage_backend_grpc_proto_backend_proto_msgTypes[7]
+	mi := &file_backend_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -497,7 +497,7 @@ func (x *StatRequest) String() string {
 func (*StatRequest) ProtoMessage() {}
 
 func (x *StatRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_internal_storage_backend_grpc_proto_backend_proto_msgTypes[7]
+	mi := &file_backend_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -510,7 +510,7 @@ func (x *StatRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use StatRequest.ProtoReflect.Descriptor instead.
 func (*StatRequest) Descriptor() ([]byte, []int) {
-	return file_internal_storage_backend_grpc_proto_backend_proto_rawDescGZIP(), []int{7}
+	return file_backend_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *StatRequest) GetPath() string {
@@ -543,7 +543,7 @@ type StatResponse struct {
 
 func (x *StatResponse) Reset() {
 	*x = StatResponse{}
-	mi := &file_internal_storage_backend_grpc_proto_backend_proto_msgTypes[8]
+	mi := &file_backend_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -555,7 +555,7 @@ func (x *StatResponse) String() string {
 func (*StatResponse) ProtoMessage() {}
 
 func (x *StatResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_internal_storage_backend_grpc_proto_backend_proto_msgTypes[8]
+	mi := &file_backend_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -568,7 +568,7 @@ func (x *StatResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use StatResponse.ProtoReflect.Descriptor instead.
 func (*StatResponse) Descriptor() ([]byte, []int) {
-	return file_internal_storage_backend_grpc_proto_backend_proto_rawDescGZIP(), []int{8}
+	return file_backend_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *StatResponse) GetItem() *Item {
@@ -589,7 +589,7 @@ type ListRequest struct {
 
 func (x *ListRequest) Reset() {
 	*x = ListRequest{}
-	mi := &file_internal_storage_backend_grpc_proto_backend_proto_msgTypes[9]
+	mi := &file_backend_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -601,7 +601,7 @@ func (x *ListRequest) String() string {
 func (*ListRequest) ProtoMessage() {}
 
 func (x *ListRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_internal_storage_backend_grpc_proto_backend_proto_msgTypes[9]
+	mi := &file_backend_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -614,7 +614,7 @@ func (x *ListRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListRequest.ProtoReflect.Descriptor instead.
 func (*ListRequest) Descriptor() ([]byte, []int) {
-	return file_internal_storage_backend_grpc_proto_backend_proto_rawDescGZIP(), []int{9}
+	return file_backend_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *ListRequest) GetPath() string {
@@ -647,7 +647,7 @@ type ListResponse struct {
 
 func (x *ListResponse) Reset() {
 	*x = ListResponse{}
-	mi := &file_internal_storage_backend_grpc_proto_backend_proto_msgTypes[10]
+	mi := &file_backend_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -659,7 +659,7 @@ func (x *ListResponse) String() string {
 func (*ListResponse) ProtoMessage() {}
 
 func (x *ListResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_internal_storage_backend_grpc_proto_backend_proto_msgTypes[10]
+	mi := &file_backend_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -672,7 +672,7 @@ func (x *ListResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListResponse.ProtoReflect.Descriptor instead.
 func (*ListResponse) Descriptor() ([]byte, []int) {
-	return file_internal_storage_backend_grpc_proto_backend_proto_rawDescGZIP(), []int{10}
+	return file_backend_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *ListResponse) GetItems() []*Item {
@@ -693,7 +693,7 @@ type OpenRequest struct {
 
 func (x *OpenRequest) Reset() {
 	*x = OpenRequest{}
-	mi := &file_internal_storage_backend_grpc_proto_backend_proto_msgTypes[11]
+	mi := &file_backend_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -705,7 +705,7 @@ func (x *OpenRequest) String() string {
 func (*OpenRequest) ProtoMessage() {}
 
 func (x *OpenRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_internal_storage_backend_grpc_proto_backend_proto_msgTypes[11]
+	mi := &file_backend_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -718,7 +718,7 @@ func (x *OpenRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use OpenRequest.ProtoReflect.Descriptor instead.
 func (*OpenRequest) Descriptor() ([]byte, []int) {
-	return file_internal_storage_backend_grpc_proto_backend_proto_rawDescGZIP(), []int{11}
+	return file_backend_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *OpenRequest) GetPath() string {
@@ -751,7 +751,7 @@ type OpenResponse struct {
 
 func (x *OpenResponse) Reset() {
 	*x = OpenResponse{}
-	mi := &file_internal_storage_backend_grpc_proto_backend_proto_msgTypes[12]
+	mi := &file_backend_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -763,7 +763,7 @@ func (x *OpenResponse) String() string {
 func (*OpenResponse) ProtoMessage() {}
 
 func (x *OpenResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_internal_storage_backend_grpc_proto_backend_proto_msgTypes[12]
+	mi := &file_backend_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -776,7 +776,7 @@ func (x *OpenResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use OpenResponse.ProtoReflect.Descriptor instead.
 func (*OpenResponse) Descriptor() ([]byte, []int) {
-	return file_internal_storage_backend_grpc_proto_backend_proto_rawDescGZIP(), []int{12}
+	return file_backend_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *OpenResponse) GetData() []byte {
@@ -801,7 +801,7 @@ type CreateRequest struct {
 
 func (x *CreateRequest) Reset() {
 	*x = CreateRequest{}
-	mi := &file_internal_storage_backend_grpc_proto_backend_proto_msgTypes[13]
+	mi := &file_backend_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -813,7 +813,7 @@ func (x *CreateRequest) String() string {
 func (*CreateRequest) ProtoMessage() {}
 
 func (x *CreateRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_internal_storage_backend_grpc_proto_backend_proto_msgTypes[13]
+	mi := &file_backend_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -826,7 +826,7 @@ func (x *CreateRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateRequest.ProtoReflect.Descriptor instead.
 func (*CreateRequest) Descriptor() ([]byte, []int) {
-	return file_internal_storage_backend_grpc_proto_backend_proto_rawDescGZIP(), []int{13}
+	return file_backend_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *CreateRequest) GetRequest() isCreateRequest_Request {
@@ -909,7 +909,7 @@ type CreateResponse struct {
 
 func (x *CreateResponse) Reset() {
 	*x = CreateResponse{}
-	mi := &file_internal_storage_backend_grpc_proto_backend_proto_msgTypes[14]
+	mi := &file_backend_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -921,7 +921,7 @@ func (x *CreateResponse) String() string {
 func (*CreateResponse) ProtoMessage() {}
 
 func (x *CreateResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_internal_storage_backend_grpc_proto_backend_proto_msgTypes[14]
+	mi := &file_backend_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -934,7 +934,7 @@ func (x *CreateResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateResponse.ProtoReflect.Descriptor instead.
 func (*CreateResponse) Descriptor() ([]byte, []int) {
-	return file_internal_storage_backend_grpc_proto_backend_proto_rawDescGZIP(), []int{14}
+	return file_backend_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *CreateResponse) GetItem() *Item {
@@ -955,7 +955,7 @@ type MkdirRequest struct {
 
 func (x *MkdirRequest) Reset() {
 	*x = MkdirRequest{}
-	mi := &file_internal_storage_backend_grpc_proto_backend_proto_msgTypes[15]
+	mi := &file_backend_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -967,7 +967,7 @@ func (x *MkdirRequest) String() string {
 func (*MkdirRequest) ProtoMessage() {}
 
 func (x *MkdirRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_internal_storage_backend_grpc_proto_backend_proto_msgTypes[15]
+	mi := &file_backend_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -980,7 +980,7 @@ func (x *MkdirRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MkdirRequest.ProtoReflect.Descriptor instead.
 func (*MkdirRequest) Descriptor() ([]byte, []int) {
-	return file_internal_storage_backend_grpc_proto_backend_proto_rawDescGZIP(), []int{15}
+	return file_backend_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *MkdirRequest) GetPath() string {
@@ -1012,7 +1012,7 @@ type MkdirResponse struct {
 
 func (x *MkdirResponse) Reset() {
 	*x = MkdirResponse{}
-	mi := &file_internal_storage_backend_grpc_proto_backend_proto_msgTypes[16]
+	mi := &file_backend_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1024,7 +1024,7 @@ func (x *MkdirResponse) String() string {
 func (*MkdirResponse) ProtoMessage() {}
 
 func (x *MkdirResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_internal_storage_backend_grpc_proto_backend_proto_msgTypes[16]
+	mi := &file_backend_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1037,7 +1037,7 @@ func (x *MkdirResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MkdirResponse.ProtoReflect.Descriptor instead.
 func (*MkdirResponse) Descriptor() ([]byte, []int) {
-	return file_internal_storage_backend_grpc_proto_backend_proto_rawDescGZIP(), []int{16}
+	return file_backend_proto_rawDescGZIP(), []int{16}
 }
 
 type RemoveRequest struct {
@@ -1051,7 +1051,7 @@ type RemoveRequest struct {
 
 func (x *RemoveRequest) Reset() {
 	*x = RemoveRequest{}
-	mi := &file_internal_storage_backend_grpc_proto_backend_proto_msgTypes[17]
+	mi := &file_backend_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1063,7 +1063,7 @@ func (x *RemoveRequest) String() string {
 func (*RemoveRequest) ProtoMessage() {}
 
 func (x *RemoveRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_internal_storage_backend_grpc_proto_backend_proto_msgTypes[17]
+	mi := &file_backend_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1076,7 +1076,7 @@ func (x *RemoveRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RemoveRequest.ProtoReflect.Descriptor instead.
 func (*RemoveRequest) Descriptor() ([]byte, []int) {
-	return file_internal_storage_backend_grpc_proto_backend_proto_rawDescGZIP(), []int{17}
+	return file_backend_proto_rawDescGZIP(), []int{17}
 }
 
 func (x *RemoveRequest) GetPath() string {
@@ -1108,7 +1108,7 @@ type RemoveResponse struct {
 
 func (x *RemoveResponse) Reset() {
 	*x = RemoveResponse{}
-	mi := &file_internal_storage_backend_grpc_proto_backend_proto_msgTypes[18]
+	mi := &file_backend_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1120,7 +1120,7 @@ func (x *RemoveResponse) String() string {
 func (*RemoveResponse) ProtoMessage() {}
 
 func (x *RemoveResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_internal_storage_backend_grpc_proto_backend_proto_msgTypes[18]
+	mi := &file_backend_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1133,7 +1133,7 @@ func (x *RemoveResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RemoveResponse.ProtoReflect.Descriptor instead.
 func (*RemoveResponse) Descriptor() ([]byte, []int) {
-	return file_internal_storage_backend_grpc_proto_backend_proto_rawDescGZIP(), []int{18}
+	return file_backend_proto_rawDescGZIP(), []int{18}
 }
 
 type CapabilitiesRequest struct {
@@ -1144,7 +1144,7 @@ type CapabilitiesRequest struct {
 
 func (x *CapabilitiesRequest) Reset() {
 	*x = CapabilitiesRequest{}
-	mi := &file_internal_storage_backend_grpc_proto_backend_proto_msgTypes[19]
+	mi := &file_backend_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1156,7 +1156,7 @@ func (x *CapabilitiesRequest) String() string {
 func (*CapabilitiesRequest) ProtoMessage() {}
 
 func (x *CapabilitiesRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_internal_storage_backend_grpc_proto_backend_proto_msgTypes[19]
+	mi := &file_backend_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1169,7 +1169,7 @@ func (x *CapabilitiesRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CapabilitiesRequest.ProtoReflect.Descriptor instead.
 func (*CapabilitiesRequest) Descriptor() ([]byte, []int) {
-	return file_internal_storage_backend_grpc_proto_backend_proto_rawDescGZIP(), []int{19}
+	return file_backend_proto_rawDescGZIP(), []int{19}
 }
 
 type CapabilitiesResponse struct {
@@ -1181,7 +1181,7 @@ type CapabilitiesResponse struct {
 
 func (x *CapabilitiesResponse) Reset() {
 	*x = CapabilitiesResponse{}
-	mi := &file_internal_storage_backend_grpc_proto_backend_proto_msgTypes[20]
+	mi := &file_backend_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1193,7 +1193,7 @@ func (x *CapabilitiesResponse) String() string {
 func (*CapabilitiesResponse) ProtoMessage() {}
 
 func (x *CapabilitiesResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_internal_storage_backend_grpc_proto_backend_proto_msgTypes[20]
+	mi := &file_backend_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1206,7 +1206,7 @@ func (x *CapabilitiesResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CapabilitiesResponse.ProtoReflect.Descriptor instead.
 func (*CapabilitiesResponse) Descriptor() ([]byte, []int) {
-	return file_internal_storage_backend_grpc_proto_backend_proto_rawDescGZIP(), []int{20}
+	return file_backend_proto_rawDescGZIP(), []int{20}
 }
 
 func (x *CapabilitiesResponse) GetCapabilities() *Capabilities {
@@ -1228,7 +1228,7 @@ type MoveRequest struct {
 
 func (x *MoveRequest) Reset() {
 	*x = MoveRequest{}
-	mi := &file_internal_storage_backend_grpc_proto_backend_proto_msgTypes[21]
+	mi := &file_backend_proto_msgTypes[21]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1240,7 +1240,7 @@ func (x *MoveRequest) String() string {
 func (*MoveRequest) ProtoMessage() {}
 
 func (x *MoveRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_internal_storage_backend_grpc_proto_backend_proto_msgTypes[21]
+	mi := &file_backend_proto_msgTypes[21]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1253,7 +1253,7 @@ func (x *MoveRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MoveRequest.ProtoReflect.Descriptor instead.
 func (*MoveRequest) Descriptor() ([]byte, []int) {
-	return file_internal_storage_backend_grpc_proto_backend_proto_rawDescGZIP(), []int{21}
+	return file_backend_proto_rawDescGZIP(), []int{21}
 }
 
 func (x *MoveRequest) GetSrc() string {
@@ -1292,7 +1292,7 @@ type MoveResponse struct {
 
 func (x *MoveResponse) Reset() {
 	*x = MoveResponse{}
-	mi := &file_internal_storage_backend_grpc_proto_backend_proto_msgTypes[22]
+	mi := &file_backend_proto_msgTypes[22]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1304,7 +1304,7 @@ func (x *MoveResponse) String() string {
 func (*MoveResponse) ProtoMessage() {}
 
 func (x *MoveResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_internal_storage_backend_grpc_proto_backend_proto_msgTypes[22]
+	mi := &file_backend_proto_msgTypes[22]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1317,7 +1317,7 @@ func (x *MoveResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MoveResponse.ProtoReflect.Descriptor instead.
 func (*MoveResponse) Descriptor() ([]byte, []int) {
-	return file_internal_storage_backend_grpc_proto_backend_proto_rawDescGZIP(), []int{22}
+	return file_backend_proto_rawDescGZIP(), []int{22}
 }
 
 type CopyRequest struct {
@@ -1332,7 +1332,7 @@ type CopyRequest struct {
 
 func (x *CopyRequest) Reset() {
 	*x = CopyRequest{}
-	mi := &file_internal_storage_backend_grpc_proto_backend_proto_msgTypes[23]
+	mi := &file_backend_proto_msgTypes[23]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1344,7 +1344,7 @@ func (x *CopyRequest) String() string {
 func (*CopyRequest) ProtoMessage() {}
 
 func (x *CopyRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_internal_storage_backend_grpc_proto_backend_proto_msgTypes[23]
+	mi := &file_backend_proto_msgTypes[23]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1357,7 +1357,7 @@ func (x *CopyRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CopyRequest.ProtoReflect.Descriptor instead.
 func (*CopyRequest) Descriptor() ([]byte, []int) {
-	return file_internal_storage_backend_grpc_proto_backend_proto_rawDescGZIP(), []int{23}
+	return file_backend_proto_rawDescGZIP(), []int{23}
 }
 
 func (x *CopyRequest) GetSrc() string {
@@ -1396,7 +1396,7 @@ type CopyResponse struct {
 
 func (x *CopyResponse) Reset() {
 	*x = CopyResponse{}
-	mi := &file_internal_storage_backend_grpc_proto_backend_proto_msgTypes[24]
+	mi := &file_backend_proto_msgTypes[24]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1408,7 +1408,7 @@ func (x *CopyResponse) String() string {
 func (*CopyResponse) ProtoMessage() {}
 
 func (x *CopyResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_internal_storage_backend_grpc_proto_backend_proto_msgTypes[24]
+	mi := &file_backend_proto_msgTypes[24]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1421,14 +1421,14 @@ func (x *CopyResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CopyResponse.ProtoReflect.Descriptor instead.
 func (*CopyResponse) Descriptor() ([]byte, []int) {
-	return file_internal_storage_backend_grpc_proto_backend_proto_rawDescGZIP(), []int{24}
+	return file_backend_proto_rawDescGZIP(), []int{24}
 }
 
-var File_internal_storage_backend_grpc_proto_backend_proto protoreflect.FileDescriptor
+var File_backend_proto protoreflect.FileDescriptor
 
-const file_internal_storage_backend_grpc_proto_backend_proto_rawDesc = "" +
+const file_backend_proto_rawDesc = "" +
 	"\n" +
-	"1internal/storage/backend/grpc/proto/backend.proto\x12\x02v1\"r\n" +
+	"\rbackend.proto\x12\x02v1\"r\n" +
 	"\x05Drive\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x12\n" +
@@ -1526,20 +1526,20 @@ const file_internal_storage_backend_grpc_proto_backend_proto_rawDesc = "" +
 	"\x10GetPersonalDrive\x12\x1b.v1.GetPersonalDriveRequest\x1a\x1c.v1.GetPersonalDriveResponseBKZIgithub.com/michaeldcanady/go-onedrive/internal/storage/backend/grpc/protob\x06proto3"
 
 var (
-	file_internal_storage_backend_grpc_proto_backend_proto_rawDescOnce sync.Once
-	file_internal_storage_backend_grpc_proto_backend_proto_rawDescData []byte
+	file_backend_proto_rawDescOnce sync.Once
+	file_backend_proto_rawDescData []byte
 )
 
-func file_internal_storage_backend_grpc_proto_backend_proto_rawDescGZIP() []byte {
-	file_internal_storage_backend_grpc_proto_backend_proto_rawDescOnce.Do(func() {
-		file_internal_storage_backend_grpc_proto_backend_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_internal_storage_backend_grpc_proto_backend_proto_rawDesc), len(file_internal_storage_backend_grpc_proto_backend_proto_rawDesc)))
+func file_backend_proto_rawDescGZIP() []byte {
+	file_backend_proto_rawDescOnce.Do(func() {
+		file_backend_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_backend_proto_rawDesc), len(file_backend_proto_rawDesc)))
 	})
-	return file_internal_storage_backend_grpc_proto_backend_proto_rawDescData
+	return file_backend_proto_rawDescData
 }
 
-var file_internal_storage_backend_grpc_proto_backend_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_internal_storage_backend_grpc_proto_backend_proto_msgTypes = make([]protoimpl.MessageInfo, 25)
-var file_internal_storage_backend_grpc_proto_backend_proto_goTypes = []any{
+var file_backend_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
+var file_backend_proto_msgTypes = make([]protoimpl.MessageInfo, 25)
+var file_backend_proto_goTypes = []any{
 	(ItemType)(0),                    // 0: v1.ItemType
 	(*Drive)(nil),                    // 1: v1.Drive
 	(*ListDrivesRequest)(nil),        // 2: v1.ListDrivesRequest
@@ -1567,7 +1567,7 @@ var file_internal_storage_backend_grpc_proto_backend_proto_goTypes = []any{
 	(*CopyRequest)(nil),              // 24: v1.CopyRequest
 	(*CopyResponse)(nil),             // 25: v1.CopyResponse
 }
-var file_internal_storage_backend_grpc_proto_backend_proto_depIdxs = []int32{
+var file_backend_proto_depIdxs = []int32{
 	1,  // 0: v1.ListDrivesResponse.drives:type_name -> v1.Drive
 	1,  // 1: v1.GetPersonalDriveResponse.drive:type_name -> v1.Drive
 	0,  // 2: v1.Item.type:type_name -> v1.ItemType
@@ -1604,12 +1604,12 @@ var file_internal_storage_backend_grpc_proto_backend_proto_depIdxs = []int32{
 	0,  // [0:7] is the sub-list for field type_name
 }
 
-func init() { file_internal_storage_backend_grpc_proto_backend_proto_init() }
-func file_internal_storage_backend_grpc_proto_backend_proto_init() {
-	if File_internal_storage_backend_grpc_proto_backend_proto != nil {
+func init() { file_backend_proto_init() }
+func file_backend_proto_init() {
+	if File_backend_proto != nil {
 		return
 	}
-	file_internal_storage_backend_grpc_proto_backend_proto_msgTypes[13].OneofWrappers = []any{
+	file_backend_proto_msgTypes[13].OneofWrappers = []any{
 		(*CreateRequest_Path)(nil),
 		(*CreateRequest_Data)(nil),
 		(*CreateRequest_DriveId)(nil),
@@ -1619,18 +1619,18 @@ func file_internal_storage_backend_grpc_proto_backend_proto_init() {
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: unsafe.Slice(unsafe.StringData(file_internal_storage_backend_grpc_proto_backend_proto_rawDesc), len(file_internal_storage_backend_grpc_proto_backend_proto_rawDesc)),
+			RawDescriptor: unsafe.Slice(unsafe.StringData(file_backend_proto_rawDesc), len(file_backend_proto_rawDesc)),
 			NumEnums:      1,
 			NumMessages:   25,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
-		GoTypes:           file_internal_storage_backend_grpc_proto_backend_proto_goTypes,
-		DependencyIndexes: file_internal_storage_backend_grpc_proto_backend_proto_depIdxs,
-		EnumInfos:         file_internal_storage_backend_grpc_proto_backend_proto_enumTypes,
-		MessageInfos:      file_internal_storage_backend_grpc_proto_backend_proto_msgTypes,
+		GoTypes:           file_backend_proto_goTypes,
+		DependencyIndexes: file_backend_proto_depIdxs,
+		EnumInfos:         file_backend_proto_enumTypes,
+		MessageInfos:      file_backend_proto_msgTypes,
 	}.Build()
-	File_internal_storage_backend_grpc_proto_backend_proto = out.File
-	file_internal_storage_backend_grpc_proto_backend_proto_goTypes = nil
-	file_internal_storage_backend_grpc_proto_backend_proto_depIdxs = nil
+	File_backend_proto = out.File
+	file_backend_proto_goTypes = nil
+	file_backend_proto_depIdxs = nil
 }

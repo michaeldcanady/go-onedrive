@@ -14,11 +14,15 @@ import (
 
 	"github.com/google/shlex"
 	"github.com/google/uuid"
-	"github.com/michaeldcanady/go-onedrive/internal/config"
 	fs "github.com/michaeldcanady/go-onedrive/internal/core/fs"
 	"github.com/michaeldcanady/go-onedrive/internal/environment"
 	"github.com/michaeldcanady/go-onedrive/internal/logger"
 )
+
+// ConfigProvider defines the interface required to fetch editor configuration.
+type ConfigProvider interface {
+	GetEditorCommand(ctx context.Context) (string, error)
+}
 
 // Option represents a configuration option for the editor service.
 type Option func(*DefaultService)
@@ -39,23 +43,23 @@ func WithEditor(cmd string) Option {
 	}
 }
 
-// WithConfig sets the configuration service for the editor.
-func WithConfig(cfgSvc config.Service) Option {
+// WithConfig sets the configuration provider for the editor.
+func WithConfig(cfgProvider ConfigProvider) Option {
 	return func(s *DefaultService) {
-		s.configSvc = cfgSvc
+		s.cfgProvider = cfgProvider
 	}
 }
 
 // DefaultService provides the default implementation of the editor service.
 type DefaultService struct {
-	envSvc     environment.Service
-	configSvc  config.Service
-	uriFactory *fs.URIFactory
-	log        logger.Logger
-	stdin      io.Reader
-	stdout     io.Writer
-	stderr     io.Writer
-	editorCmd  string
+	envSvc      environment.Service
+	cfgProvider ConfigProvider
+	uriFactory  *fs.URIFactory
+	log         logger.Logger
+	stdin       io.Reader
+	stdout      io.Writer
+	stderr      io.Writer
+	editorCmd   string
 }
 
 // NewDefaultService initializes a new instance of the DefaultService.
@@ -79,14 +83,14 @@ func NewDefaultService(envSvc environment.Service, uriFactory *fs.URIFactory, l 
 // WithOptions returns a new Service instance with the specified options applied.
 func (s *DefaultService) WithOptions(opts ...Option) Service {
 	newS := &DefaultService{
-		envSvc:     s.envSvc,
-		configSvc:  s.configSvc,
-		uriFactory: s.uriFactory,
-		log:        s.log,
-		stdin:      s.stdin,
-		stdout:     s.stdout,
-		stderr:     s.stderr,
-		editorCmd:  s.editorCmd,
+		envSvc:      s.envSvc,
+		cfgProvider: s.cfgProvider,
+		uriFactory:  s.uriFactory,
+		log:         s.log,
+		stdin:       s.stdin,
+		stdout:      s.stdout,
+		stderr:      s.stderr,
+		editorCmd:   s.editorCmd,
 	}
 
 	for _, opt := range opts {
@@ -144,11 +148,9 @@ func (s *DefaultService) getEditorCmd() (string, error) {
 	}
 
 	// 2. Try configuration
-	if s.configSvc != nil {
-		if cfg, err := s.configSvc.GetConfig(context.Background()); err == nil {
-			if strings.TrimSpace(cfg.Editor.Command) != "" {
-				return cfg.Editor.Command, nil
-			}
+	if s.cfgProvider != nil {
+		if cmd, err := s.cfgProvider.GetEditorCommand(context.Background()); err == nil && strings.TrimSpace(cmd) != "" {
+			return cmd, nil
 		}
 	}
 

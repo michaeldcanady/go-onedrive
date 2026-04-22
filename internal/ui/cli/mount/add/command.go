@@ -1,8 +1,8 @@
 package add
 
 import (
-	"github.com/michaeldcanady/go-onedrive/internal/config"
 	"github.com/michaeldcanady/go-onedrive/internal/di"
+	"github.com/michaeldcanady/go-onedrive/internal/mount"
 	"github.com/spf13/cobra"
 )
 
@@ -13,7 +13,7 @@ func CreateAddCmd(container di.Container) *cobra.Command {
 		Args:  cobra.ExactArgs(3),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			//TODO: type needs to require options
-			return container.Mounts().AddMount(cmd.Context(), config.MountConfig{
+			return container.Mounts().AddMount(cmd.Context(), mount.MountConfig{
 				Path:       args[0],
 				Type:       args[1],
 				IdentityID: args[2],
