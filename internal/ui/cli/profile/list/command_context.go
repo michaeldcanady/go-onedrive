@@ -3,7 +3,7 @@ package list
 import (
 	"context"
 
-	"github.com/michaeldcanady/go-onedrive/internal/profile"
+	"github.com/michaeldcanady/go-onedrive/internal/features/profile"
 )
 
 type CommandContext struct {

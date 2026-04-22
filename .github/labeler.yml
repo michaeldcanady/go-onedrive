@@ -13,7 +13,7 @@
               - "!internal/concurrency/**/*.go"
               - "!internal/fs/**/*.go"
               - "!internal/drive/**/*.go"
-              - "!internal/profile/**/*.go"
+              - "!internal/features/profile/**/*.go"
               - "!internal/state/**/*.go"
               - "!internal/features/config/**/*.go"
               - "!internal/di/**/*.go"
@@ -57,7 +57,7 @@
   - any:
       - changed-files:
           - any-glob-to-any-file:
-              - "internal/profile/**"
+              - "internal/features/profile/**"
 
 "component: state":
   - any:

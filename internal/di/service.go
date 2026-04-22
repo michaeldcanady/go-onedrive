@@ -14,7 +14,7 @@ import (
 	"github.com/michaeldcanady/go-onedrive/internal/features/identity/providers/microsoft"
 	"github.com/michaeldcanady/go-onedrive/internal/features/logger"
 	"github.com/michaeldcanady/go-onedrive/internal/mount"
-	"github.com/michaeldcanady/go-onedrive/internal/profile"
+	"github.com/michaeldcanady/go-onedrive/internal/features/profile"
 	"github.com/michaeldcanady/go-onedrive/internal/storage"
 	"github.com/michaeldcanady/go-onedrive/internal/storage/backend/local"
 	"github.com/michaeldcanady/go-onedrive/internal/storage/backend/onedrive"

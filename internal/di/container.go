@@ -9,7 +9,7 @@ import (
 	"github.com/michaeldcanady/go-onedrive/internal/features/identity"
 	"github.com/michaeldcanady/go-onedrive/internal/features/logger"
 	"github.com/michaeldcanady/go-onedrive/internal/mount"
-	"github.com/michaeldcanady/go-onedrive/internal/profile"
+	"github.com/michaeldcanady/go-onedrive/internal/features/profile"
 )
 
 // Container defines the interface for retrieving and managing core application services.

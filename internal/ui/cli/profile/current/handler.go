@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/michaeldcanady/go-onedrive/internal/features/logger"
-	"github.com/michaeldcanady/go-onedrive/internal/profile"
+	"github.com/michaeldcanady/go-onedrive/internal/features/profile"
 )
 
 // Command executes the profile current operation.
