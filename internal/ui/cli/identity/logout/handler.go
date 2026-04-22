@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/michaeldcanady/go-onedrive/internal/config"
+	"github.com/michaeldcanady/go-onedrive/internal/features/config"
 	"github.com/michaeldcanady/go-onedrive/internal/identity"
 	"github.com/michaeldcanady/go-onedrive/internal/features/logger"
 )

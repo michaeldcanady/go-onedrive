@@ -59,7 +59,7 @@ To use the schema in VS Code, add the following to your `settings.json`:
 ```json
 {
   "yaml.schemas": {
-    "https://raw.githubusercontent.com/michaeldcanady/go-onedrive/main/internal/config/schema.json": "config.yaml"
+    "https://raw.githubusercontent.com/michaeldcanady/go-onedrive/main/internal/features/config/schema.json": "config.yaml"
   }
 }
 ```

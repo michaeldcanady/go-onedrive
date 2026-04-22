@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"github.com/michaeldcanady/go-onedrive/internal/config"
+	"github.com/michaeldcanady/go-onedrive/internal/features/config"
 	registry "github.com/michaeldcanady/go-onedrive/internal/core/fs"
 
 	"github.com/michaeldcanady/go-onedrive/internal/drive"

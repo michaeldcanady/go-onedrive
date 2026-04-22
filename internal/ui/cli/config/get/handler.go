@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/michaeldcanady/go-onedrive/internal/config"
+	"github.com/michaeldcanady/go-onedrive/internal/features/config"
 	"github.com/michaeldcanady/go-onedrive/internal/features/logger"
 	"gopkg.in/yaml.v3"
 )

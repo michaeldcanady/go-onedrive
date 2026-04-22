@@ -86,7 +86,7 @@ Before the first release, ensure the following are configured:
     - **Options Structs:** Every command should have an `Options` struct with a `Validate() error` method to centralize validation logic.
 - **State vs. Configuration Management:**
     - **Session State:** Managed in-memory within domain services (e.g., `profile.Service` handles session-active profiles).
-    - **Config (`internal/config`):** Represents user-defined settings (e.g., Azure Tenant ID, Redirect URIs, Mount Points). External-facing and user-modifiable.
+    - **Config (`internal/features/config`):** Represents user-defined settings (e.g., Azure Tenant ID, Redirect URIs, Mount Points). External-facing and user-modifiable.
     - **Domain-First Access Pattern:** Commands (UI layer) MUST NOT access internal persistence directly. They must use Domain Services (e.g., `profile.Service`, `drive.Service`, `mount.Service`) which encapsulate state interaction.
     - **Scoping:** The UI layer determines the scope of changes (e.g., `shared.ScopeGlobal` for persistence, `shared.ScopeSession` for transience) and passes it to the Domain Service methods.
 - **Testing:** Unit tests are mandatory for new features and bug fixes. Leverage `stretchr/testify` for assertions and mocking, and use `t.Parallel()` where applicable.

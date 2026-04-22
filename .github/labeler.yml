@@ -15,7 +15,7 @@
               - "!internal/drive/**/*.go"
               - "!internal/profile/**/*.go"
               - "!internal/state/**/*.go"
-              - "!internal/config/**/*.go"
+              - "!internal/features/config/**/*.go"
               - "!internal/di/**/*.go"
               - "!internal/features/environment/**/*.go"
               - "!internal/features/logger/**/*.go"
@@ -75,7 +75,7 @@
   - any:
       - changed-files:
           - any-glob-to-any-file:
-              - "internal/config/**"
+              - "internal/features/config/**"
 
 "component: logger":
   - any:

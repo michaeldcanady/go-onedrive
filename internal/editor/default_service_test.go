@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/michaeldcanady/go-onedrive/internal/config"
+	"github.com/michaeldcanady/go-onedrive/internal/features/config"
 	fs "github.com/michaeldcanady/go-onedrive/internal/core/fs"
 	"github.com/michaeldcanady/go-onedrive/internal/features/logger"
 	"github.com/stretchr/testify/assert"
