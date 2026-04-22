@@ -1,7 +1,6 @@
 package login
 
 import (
-	"context"
 	"fmt"
 
 	"github.com/michaeldcanady/go-onedrive/internal/features/config"
@@ -30,17 +29,18 @@ func NewCommand(
 }
 
 // Validate prepares and validates the options for the login operation.
-func (c *Command) Validate(ctx context.Context, opts *Options) error {
-	return opts.Validate()
+func (c *Command) Validate(ctx *CommandContext) error {
+	return ctx.Options.Validate()
 }
 
 // Execute executes the login operation based on the current profile and provided options.
-func (c *Command) Execute(ctx context.Context, opts Options) error {
-	log := c.log.WithContext(ctx)
+func (c *Command) Execute(ctx *CommandContext) error {
+	log := c.log.WithContext(ctx.Ctx)
+	opts := ctx.Options
 
 	log.Info("starting login flow")
 
-	cfg, err := c.config.GetConfig(ctx)
+	cfg, err := c.config.GetConfig(ctx.Ctx)
 	if err != nil {
 		log.Error("failed to load configuration", logger.Error(err))
 		return fmt.Errorf("failed to load configuration: %w", err)
@@ -86,39 +86,26 @@ func (c *Command) Execute(ctx context.Context, opts Options) error {
 	}
 
 	log.Info("authenticating", logger.String("provider", provider), logger.String("method", method.String()))
-	req, err := identity.ToProtoAuthenticateRequest(loginOpts)
-	if err != nil {
-		return fmt.Errorf("failed to prepare authentication request: %w", err)
-	}
-
-	resp, err := c.identity.Authenticate(ctx, provider, req)
+	resp, err := c.identity.Login(ctx.Ctx, provider, loginOpts)
 	if err != nil {
 		log.Error("authentication failed", logger.Error(err))
 		return fmt.Errorf("authentication failed: %w", err)
 	}
-	token := identity.FromProtoAccessToken(resp.GetToken(), identityID)
 	acc := identity.FromProtoIdentity(resp.GetIdentity())
 
-	// Ensure the AccountID is populated from the identity record
-	token.AccountID = acc.ID
-
-	if err := c.identity.GetStore().Save(ctx, provider, token); err != nil {
-		log.Error("failed to cache token", logger.Error(err))
-		return fmt.Errorf("failed to cache access token: %w", err)
-	}
 	log.Info("authentication successful and token cached",
 		logger.String("identity", acc.ID),
 		logger.String("display_name", acc.DisplayName),
 		logger.String("email", acc.Email))
 
 	if opts.ShowToken {
-		fmt.Fprintf(opts.Stdout, "Access Token: %s\n", token.Token)
+		fmt.Fprintf(opts.Stdout, "Access Token: %s\n", resp.GetToken().GetToken())
 	}
 
 	return nil
 }
 
 // Finalize performs any necessary cleanup after the login operation.
-func (c *Command) Finalize(ctx context.Context, opts Options) error {
+func (c *Command) Finalize(ctx *CommandContext) error {
 	return nil
 }

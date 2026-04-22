@@ -22,6 +22,8 @@ type Service interface {
 	RegisterAuthorizer(provider string, auth Authorizer)
 	GetAuthenticator(provider string) (Authenticator, error)
 	Authenticate(ctx context.Context, provider string, req *proto.AuthenticateRequest) (*proto.AuthenticateResponse, error)
+	Login(ctx context.Context, provider string, opts LoginOptions) (*proto.AuthenticateResponse, error)
+	Logout(ctx context.Context, provider string, identityID string) error
 	Token(ctx context.Context, provider string, req *proto.GetTokenRequest) (*proto.GetTokenResponse, error)
 	GetStore() AccountStore
 }
@@ -34,6 +36,37 @@ func (r *Registry) GetAuthenticator(provider string) (Authenticator, error) {
 		return nil, fmt.Errorf("authenticator for provider %s not found", provider)
 	}
 	return auth, nil
+}
+
+func (r *Registry) Login(ctx context.Context, provider string, opts LoginOptions) (*proto.AuthenticateResponse, error) {
+	req, err := ToProtoAuthenticateRequest(opts)
+	if err != nil {
+		return nil, err
+	}
+	resp, err := r.Authenticate(ctx, provider, req)
+	if err != nil {
+		return nil, err
+	}
+	token := FromProtoAccessToken(resp.GetToken(), opts.AccountID)
+	acc := FromProtoIdentity(resp.GetIdentity())
+	token.AccountID = acc.ID
+	if err := r.store.Save(ctx, provider, token); err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
+
+func (r *Registry) Logout(ctx context.Context, provider string, identityID string) error {
+	r.mu.RLock()
+	auth, ok := r.authenticators[provider]
+	r.mu.RUnlock()
+	if !ok {
+		return fmt.Errorf("authenticator for provider %s not found", provider)
+	}
+	if err := auth.Logout(ctx, identityID); err != nil {
+		return err
+	}
+	return nil
 }
 
 // Registry is a thread-safe implementation of the Service interface, acting as the mediator.

@@ -1,24 +1,36 @@
 package list
 
 import (
-	"fmt"
+	"context"
+	"github.com/michaeldcanady/go-onedrive/internal/core/cli"
 	"github.com/michaeldcanady/go-onedrive/internal/core/di"
+	formatting "github.com/michaeldcanady/go-onedrive/pkg/format"
 	"github.com/spf13/cobra"
 )
 
 func CreateListCmd(container di.Container) *cobra.Command {
-	return &cobra.Command{
-		Use:   "list",
-		Short: "List mount points",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			mounts, err := container.Mounts().ListMounts(cmd.Context())
-			if err != nil {
-				return err
-			}
-			for _, m := range mounts {
-				fmt.Printf("Path: %s, Type: %s, Identity: %s\n", m.Path, m.Type, m.IdentityID)
-			}
-			return nil
+	opts := NewOptions()
+
+	l, _ := container.Logger().CreateLogger("mount-list")
+	handler := NewCommand(container.Mounts(), formatting.NewFormatterFactory(), l)
+
+	cmd := cli.NewCommand(cli.CommandConfig[CommandContext]{
+		Use:     "list",
+		Short:   "List mount points",
+		Handler: handler,
+		Options: NewCommandContext(context.Background(), opts),
+		CtxFunc: func(ctx context.Context, o *CommandContext) *CommandContext {
+			o.Ctx = ctx
+			return o
 		},
+	})
+
+	formatStr := string(opts.Format)
+	cmd.Flags().StringVarP(&formatStr, "format", "f", "short", "output format (short, long, json, yaml, tree, table)")
+
+	cmd.PreRun = func(cmd *cobra.Command, args []string) {
+		opts.Format = formatStr
 	}
+
+	return cmd
 }

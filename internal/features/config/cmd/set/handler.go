@@ -31,29 +31,10 @@ func (c *Command) Validate(ctx context.Context, opts *Options) error {
 func (c *Command) Execute(ctx context.Context, opts Options) error {
 	log := c.log.WithContext(ctx)
 
-	log.Debug("fetching current configuration")
-	cfg, err := c.config.GetConfig(ctx)
-	if err != nil {
-		log.Error("failed to retrieve configuration", logger.Error(err))
-		return fmt.Errorf("failed to retrieve configuration: %w", err)
-	}
-
 	log.Debug("updating configuration setting", logger.String("key", opts.Key), logger.String("value", opts.Value))
-	switch opts.Key {
-	case "auth.provider":
-		cfg.Auth.Provider = opts.Value
-	case "auth.method":
-		cfg.Auth.Method = opts.Value
-	case "logging.format":
-		cfg.Logging.Format = opts.Value
-	default:
-		return fmt.Errorf("configuration key not supported via CLI: %s", opts.Key)
-	}
-
-	log.Debug("saving updated configuration")
-	if err := c.config.SaveConfig(ctx, cfg); err != nil {
-		log.Error("failed to save configuration", logger.Error(err))
-		return fmt.Errorf("failed to save configuration: %w", err)
+	if err := c.config.UpdateConfig(ctx, opts.Key, opts.Value); err != nil {
+		log.Error("failed to update configuration", logger.Error(err))
+		return fmt.Errorf("failed to update configuration: %w", err)
 	}
 
 	log.Info("configuration updated successfully", logger.String("key", opts.Key))

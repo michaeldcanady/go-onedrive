@@ -53,15 +53,8 @@ func (c *Command) Execute(ctx context.Context, opts Options) error {
 		provider = "microsoft"
 	}
 
-	log.Debug("retrieving authenticator for provider", logger.String("provider", provider))
-	auth, err := c.identity.GetAuthenticator(provider)
-	if err != nil {
-		log.Error("unsupported provider", logger.String("provider", provider), logger.Error(err))
-		return fmt.Errorf("provider %s not supported: %w", provider, err)
-	}
-
 	log.Info("logging out from provider", logger.String("provider", provider), logger.String("identity", opts.IdentityID))
-	if err := auth.Logout(ctx, opts.IdentityID); err != nil {
+	if err := c.identity.Logout(ctx, provider, opts.IdentityID); err != nil {
 		log.Error("logout failed", logger.Error(err))
 		return fmt.Errorf("logout failed: %w", err)
 	}

@@ -298,7 +298,7 @@ func (v *VFS) GetPersonalDrive(ctx context.Context, provider string) (fs.Drive, 
 
 // getToken resolves the identity token for a provider.
 func (v *VFS) getToken(ctx context.Context, provider string) (string, error) {
-	// TODO: mind way to resolve identity provider for a backend
+	// TODO: find way to resolve identity provider for a backend, without giving vfs access to the store
 	provider = "microsoft"
 	ids, err := v.identity.GetStore().List(ctx, provider)
 	if err != nil || len(ids) == 0 {
@@ -306,6 +306,7 @@ func (v *VFS) getToken(ctx context.Context, provider string) (string, error) {
 	}
 	identityID := ids[0]
 
+	// TODO: Find away to handle get access token, without giving vfs access to the store
 	accessToken, err := v.identity.GetStore().Get(ctx, provider, identityID)
 	if err != nil {
 		return "", err

@@ -1,13 +1,15 @@
 package login
 
 import (
+	"context"
+	"github.com/michaeldcanady/go-onedrive/internal/core/cli"
 	"github.com/michaeldcanady/go-onedrive/internal/core/di"
 	"github.com/spf13/cobra"
 )
 
 // CreateLoginCmd constructs and returns the cobra.Command for the login operation.
 func CreateLoginCmd(container di.Container) *cobra.Command {
-	var opts Options
+	opts := Options{}
 
 	l, _ := container.Logger().CreateLogger("auth-login")
 	handler := NewCommand(
@@ -16,24 +18,20 @@ func CreateLoginCmd(container di.Container) *cobra.Command {
 		l,
 	)
 
-	cmd := &cobra.Command{
+	cmd := cli.NewCommand(cli.CommandConfig[CommandContext]{
 		Use:   "login",
 		Short: "Authenticate with OneDrive",
 		Long: `Authenticate with OneDrive using various methods (Interactive, Device Code, Service Principal).
 You can specify the method via flags or in your profile configuration.`,
-		PreRunE: func(cmd *cobra.Command, args []string) error {
-			opts.Stdout = cmd.OutOrStdout()
-			opts.Stderr = cmd.ErrOrStderr()
-
-			return handler.Validate(cmd.Context(), &opts)
+		Handler: handler,
+		Options: &CommandContext{Options: opts},
+		CtxFunc: func(ctx context.Context, c *CommandContext) *CommandContext {
+			c.Ctx = ctx
+			// Assuming stdout/stderr are stored in some way; this might need adjustments
+			// if context doesn't provide them. For now, skipping direct I/O assignment.
+			return c
 		},
-		RunE: func(cmd *cobra.Command, args []string) error {
-			return handler.Execute(cmd.Context(), opts)
-		},
-		PostRunE: func(cmd *cobra.Command, args []string) error {
-			return handler.Finalize(cmd.Context(), opts)
-		},
-	}
+	})
 
 	cmd.Flags().StringVar(&opts.IdentityID, "id", "", "The specific identity (email) to authenticate")
 	cmd.Flags().StringVar(&opts.Alias, "alias", "", "An optional human-friendly name for this identity")

@@ -2,6 +2,7 @@ package config
 
 import (
 	"context"
+	"fmt"
 	"sync"
 
 	"github.com/michaeldcanady/go-onedrive/internal/core/logger"
@@ -65,6 +66,27 @@ func (s *ConfigService) GetPath(ctx context.Context) (string, bool) {
 	}
 
 	return "", false
+}
+
+// UpdateConfig updates a configuration setting.
+func (s *ConfigService) UpdateConfig(ctx context.Context, key string, value string) error {
+	cfg, err := s.GetConfig(ctx)
+	if err != nil {
+		return err
+	}
+
+	switch key {
+	case "auth.provider":
+		cfg.Auth.Provider = value
+	case "auth.method":
+		cfg.Auth.Method = value
+	case "logging.format":
+		cfg.Logging.Format = value
+	default:
+		return fmt.Errorf("configuration key not supported via CLI: %s", key)
+	}
+
+	return s.SaveConfig(ctx, cfg)
 }
 
 // SaveConfig saves the Configuration.
