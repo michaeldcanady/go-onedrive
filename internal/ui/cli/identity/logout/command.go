@@ -1,7 +1,7 @@
 package logout
 
 import (
-	"github.com/michaeldcanady/go-onedrive/internal/di"
+	"github.com/michaeldcanady/go-onedrive/internal/features/di"
 	"github.com/spf13/cobra"
 )
 

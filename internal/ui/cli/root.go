@@ -5,7 +5,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/michaeldcanady/go-onedrive/internal/di"
+	"github.com/michaeldcanady/go-onedrive/internal/features/di"
 	"github.com/michaeldcanady/go-onedrive/internal/features/logger"
 	"github.com/michaeldcanady/go-onedrive/internal/middleware"
 	drive "github.com/michaeldcanady/go-onedrive/internal/ui/cli/drive"

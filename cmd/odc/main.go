@@ -8,7 +8,7 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/michaeldcanady/go-onedrive/internal/di"
+	"github.com/michaeldcanady/go-onedrive/internal/features/di"
 	"github.com/michaeldcanady/go-onedrive/internal/ui/cli"
 )
 

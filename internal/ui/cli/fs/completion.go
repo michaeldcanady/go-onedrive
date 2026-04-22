@@ -3,7 +3,7 @@ package fs
 import (
 	"strings"
 
-	"github.com/michaeldcanady/go-onedrive/internal/di"
+	"github.com/michaeldcanady/go-onedrive/internal/features/di"
 	pkgfs "github.com/michaeldcanady/go-onedrive/pkg/fs"
 	"github.com/spf13/cobra"
 )

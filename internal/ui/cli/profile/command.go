@@ -2,7 +2,7 @@
 package profile
 
 import (
-	"github.com/michaeldcanady/go-onedrive/internal/di"
+	"github.com/michaeldcanady/go-onedrive/internal/features/di"
 	"github.com/michaeldcanady/go-onedrive/internal/ui/cli/profile/create"
 	"github.com/michaeldcanady/go-onedrive/internal/ui/cli/profile/current"
 	"github.com/michaeldcanady/go-onedrive/internal/ui/cli/profile/delete"

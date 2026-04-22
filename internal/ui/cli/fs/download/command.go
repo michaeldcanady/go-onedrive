@@ -1,7 +1,7 @@
 package download
 
 import (
-	"github.com/michaeldcanady/go-onedrive/internal/di"
+	"github.com/michaeldcanady/go-onedrive/internal/features/di"
 	cli "github.com/michaeldcanady/go-onedrive/internal/ui/cli/fs"
 
 	"github.com/spf13/cobra"

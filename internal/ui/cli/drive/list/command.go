@@ -3,7 +3,7 @@ package list
 import (
 	"fmt"
 
-	"github.com/michaeldcanady/go-onedrive/internal/di"
+	"github.com/michaeldcanady/go-onedrive/internal/features/di"
 	formatting "github.com/michaeldcanady/go-onedrive/pkg/format"
 	"github.com/spf13/cobra"
 )

@@ -2,7 +2,7 @@
 package cli
 
 import (
-	"github.com/michaeldcanady/go-onedrive/internal/di"
+	"github.com/michaeldcanady/go-onedrive/internal/features/di"
 	"github.com/michaeldcanady/go-onedrive/internal/ui/cli/drive/get"
 	"github.com/michaeldcanady/go-onedrive/internal/ui/cli/drive/list"
 	"github.com/spf13/cobra"

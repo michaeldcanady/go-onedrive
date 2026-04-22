@@ -1,7 +1,7 @@
 package ls
 
 import (
-	"github.com/michaeldcanady/go-onedrive/internal/di"
+	"github.com/michaeldcanady/go-onedrive/internal/features/di"
 	cli "github.com/michaeldcanady/go-onedrive/internal/ui/cli/fs"
 	formatting "github.com/michaeldcanady/go-onedrive/pkg/format"
 
