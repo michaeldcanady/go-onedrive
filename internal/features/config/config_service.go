@@ -9,17 +9,31 @@ import (
 	"github.com/michaeldcanady/go-onedrive/internal/features/profile"
 )
 
+type ActiveProfileGetter interface {
+	GetActive(ctx context.Context) (profile.Profile, error)
+}
+
+type ConfigPathResolver interface {
+	ResolvePath(ctx context.Context, profileName string) (string, error)
+}
+
 // ConfigService is an implementation of the Service interface that uses a Repository for persistence.
 type ConfigService struct {
-	profileSvc profile.Service
-	log        logger.Logger
+	profileSvc interface {
+		ConfigPathResolver
+		ActiveProfileGetter
+	}
+	log logger.Logger
 
 	mu             sync.RWMutex
 	configOverride string
 }
 
 // NewConfigService creates a new instance of ConfigService.
-func NewConfigService(profileSvc profile.Service, log logger.Logger) *ConfigService {
+func NewConfigService(profileSvc interface {
+	ConfigPathResolver
+	ActiveProfileGetter
+}, log logger.Logger) *ConfigService {
 	return &ConfigService{
 		profileSvc: profileSvc,
 		log:        log,

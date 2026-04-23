@@ -11,9 +11,3 @@ type Config struct {
 	// Editor contains settings related to the external editor service.
 	Editor EditorConfig `json:"editor" yaml:"editor"`
 }
-
-// EditorConfig represents the configuration for the external editor.
-type EditorConfig struct {
-	// Command is the explicit editor command to use.
-	Command string `json:"command" yaml:"command"`
-}
