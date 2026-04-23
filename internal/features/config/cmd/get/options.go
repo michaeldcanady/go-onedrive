@@ -8,6 +8,12 @@ type Options struct {
 	Key string
 	// Stdout is the destination for standard output messages.
 	Stdout io.Writer
+
+	Stderr io.Writer
+}
+
+func NewOptions() *Options {
+	return &Options{}
 }
 
 // Validate ensures that the provided options are consistent and valid.

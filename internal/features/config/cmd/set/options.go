@@ -1,7 +1,6 @@
 package set
 
 import (
-	"errors"
 	"io"
 )
 
@@ -13,12 +12,15 @@ type Options struct {
 	Value string
 	// Stdout is the destination for standard output messages.
 	Stdout io.Writer
+
+	Stderr io.Writer
+}
+
+func NewOptions() *Options {
+	return &Options{}
 }
 
 // Validate ensures that the provided options are consistent and valid.
 func (o *Options) Validate() error {
-	if o.Key == "" {
-		return errors.New("configuration key is required")
-	}
 	return nil
 }
