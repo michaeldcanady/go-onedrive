@@ -1,6 +1,9 @@
 package logger
 
-import "strings"
+import (
+	"fmt"
+	"strings"
+)
 
 // Level defines the severity of a log message.
 type Level int8
@@ -17,6 +20,14 @@ const (
 	// LevelError represents error messages.
 	LevelError
 )
+
+func (l *Level) UnmarshalText(text []byte) error {
+	*l = ParseLevel(string(text))
+	if *l == LevelUnknown {
+		return fmt.Errorf("invalid log level: %s", string(text))
+	}
+	return nil
+}
 
 func ParseLevel(level string) Level {
 	switch strings.ToLower(level) {

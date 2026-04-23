@@ -17,23 +17,23 @@ type ConfigPathResolver interface {
 	ResolvePath(ctx context.Context, profileName string) (string, error)
 }
 
+// ProfileProvider defines the requirements for profile-based configuration path resolution.
+type ProfileProvider interface {
+	ConfigPathResolver
+	ActiveProfileGetter
+}
+
 // ConfigService is an implementation of the Service interface that uses a Repository for persistence.
 type ConfigService struct {
-	profileSvc interface {
-		ConfigPathResolver
-		ActiveProfileGetter
-	}
-	log logger.Logger
+	profileSvc ProfileProvider
+	log        logger.Logger
 
 	mu             sync.RWMutex
 	configOverride string
 }
 
 // NewConfigService creates a new instance of ConfigService.
-func NewConfigService(profileSvc interface {
-	ConfigPathResolver
-	ActiveProfileGetter
-}, log logger.Logger) *ConfigService {
+func NewConfigService(profileSvc ProfileProvider, log logger.Logger) *ConfigService {
 	return &ConfigService{
 		profileSvc: profileSvc,
 		log:        log,
@@ -42,7 +42,10 @@ func NewConfigService(profileSvc interface {
 
 // getRepo returns the repository initialized with the currently resolved path.
 func (s *ConfigService) getRepo(ctx context.Context) (Repository, error) {
-	path, _ := s.GetPath(ctx)
+	path, ok := s.GetPath(ctx)
+	if !ok {
+		return nil, fmt.Errorf("could not resolve configuration path")
+	}
 	return NewYAMLRepository(path, s.log), nil
 }
 
@@ -89,15 +92,8 @@ func (s *ConfigService) UpdateConfig(ctx context.Context, key string, value stri
 		return err
 	}
 
-	switch key {
-	case "auth.provider":
-		cfg.Auth.Provider = value
-	case "auth.method":
-		cfg.Auth.Method = value
-	case "logging.format":
-		cfg.Logging.Format = value
-	default:
-		return fmt.Errorf("configuration key not supported via CLI: %s", key)
+	if err := cfg.SetValue(key, value); err != nil {
+		return fmt.Errorf("configuration update failed: %w", err)
 	}
 
 	return s.SaveConfig(ctx, cfg)

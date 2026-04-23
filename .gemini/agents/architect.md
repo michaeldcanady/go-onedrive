@@ -4,7 +4,7 @@ description: Responsible for the overall system architecture, dependency managem
 kind: local
 tools:
   - run_shell_command
-model: gemini-3-flash-preview
+model: inherit
 temperature: 0.1
 max_turns: 15
 ---
