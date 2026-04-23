@@ -27,6 +27,7 @@ type Service interface {
 	Token(ctx context.Context, provider string, req *proto.GetTokenRequest) (*proto.GetTokenResponse, error)
 	GetStore() AccountStore
 	GetAccount(ctx context.Context, identityID string) (*Account, error)
+	ListProviders() []string
 }
 
 func (r *Registry) GetAuthenticator(provider string) (Authenticator, error) {
@@ -172,7 +173,7 @@ func (r *Registry) GetStore() AccountStore {
 func (r *Registry) GetAccount(ctx context.Context, identityID string) (*Account, error) {
 	// For now, we'll just check if the identity exists in any provider's store.
 	// We might need to store full Account objects in the future if we want more details.
-	providers := []string{"microsoft"} // TODO: dynamically list providers if possible
+	providers := r.ListProviders()
 
 	for _, provider := range providers {
 		ids, err := r.store.List(ctx, provider)
@@ -190,4 +191,23 @@ func (r *Registry) GetAccount(ctx context.Context, identityID string) (*Account,
 	}
 
 	return nil, fmt.Errorf("account not found: %s", identityID)
+}
+
+func (r *Registry) ListProviders() []string {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	providersMap := make(map[string]struct{})
+	for p := range r.authenticators {
+		providersMap[p] = struct{}{}
+	}
+	for p := range r.authorizers {
+		providersMap[p] = struct{}{}
+	}
+
+	providers := make([]string, 0, len(providersMap))
+	for p := range providersMap {
+		providers = append(providers, p)
+	}
+	return providers
 }
