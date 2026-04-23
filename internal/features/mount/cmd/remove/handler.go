@@ -45,11 +45,13 @@ func (c *Command) Validate(ctx *CommandContext) error {
 
 func (c *Command) Execute(ctx *CommandContext) error {
 	log := c.log.WithContext(ctx.Ctx)
-	log.Info("starting mount list operation")
+	log.Info("starting mount remove operation")
 
-	// TODO: add execution logic
+	if err := c.mountSvc.RemoveMount(ctx.Ctx, ctx.Uri.String()); err != nil {
+		return fmt.Errorf("failed to remove mount %s: %w", ctx.Uri.String(), err)
+	}
 
-	log.Info("mount list completed successfully")
+	log.Info("mount remove completed successfully")
 	return nil
 }
 

@@ -4,34 +4,6 @@ import (
 	"context"
 )
 
-// MountConfig represents the configuration for a mount point.
-type MountConfig struct {
-	Path       string            `json:"path" yaml:"path"`
-	Type       string            `json:"type" yaml:"type"`
-	IdentityID string            `json:"identity_id,omitempty" yaml:"identity_id,omitempty"`
-	Options    map[string]string `json:"options,omitempty" yaml:"options,omitempty"`
-}
-
-type MountOption struct {
-	Key    string
-	Values []string
-}
-
-// OptionValidator defines the interface for backends that support option validation.
-type OptionValidator interface {
-	ValidateOptions(opts map[string]string) error
-}
-
-// OptionsProvider defines the interface for backends that support options
-type OptionsProvider interface {
-	ProvideOptions() []MountOption
-}
-
-// CompletionProvider defines the interface for backends that support dynamic completion.
-type CompletionProvider interface {
-	GetOptionCompletions(ctx context.Context, identityID string, toComplete string) ([]string, error)
-}
-
 // Service provides methods for managing virtual filesystem mount points.
 type Service interface {
 	// ListMounts retrieves all configured mount points.
