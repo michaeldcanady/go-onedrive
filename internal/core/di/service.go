@@ -171,6 +171,7 @@ func (c *DefaultContainer) initVFSServices(ctx context.Context) error {
 	yamlSvc := config.NewConfigService(c.profile, cliLog)
 	c.config = yamlSvc
 	c.mounts = mount.NewMountService(&mountConfigAdapter{svc: yamlSvc})
+	c.mounts.RegisterValidator("onedrive", onedrive.NewBackend(nil))
 
 	vfs := registry.NewVFS(c.identityService)
 

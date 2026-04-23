@@ -7,18 +7,23 @@ import (
 	"io"
 	"strings"
 
-	"github.com/michaeldcanady/go-onedrive/internal/features/identity"
+	proto "github.com/michaeldcanady/go-onedrive/internal/features/identity/proto"
 	"github.com/michaeldcanady/go-onedrive/pkg/fs"
 )
+
+// TokenProvider defines the interface required for token retrieval.
+type TokenProvider interface {
+	Token(ctx context.Context, provider string, req *proto.GetTokenRequest) (*proto.GetTokenResponse, error)
+}
 
 // VFS (Virtual FileSystem) orchestrates multiple backends via mount points.
 type VFS struct {
 	mounts   map[string]fs.Backend
-	identity identity.Service
+	identity TokenProvider
 }
 
 // NewVFS initializes a new Virtual FileSystem.
-func NewVFS(idService identity.Service) *VFS {
+func NewVFS(idService TokenProvider) *VFS {
 	return &VFS{
 		mounts:   make(map[string]fs.Backend),
 		identity: idService,
@@ -298,21 +303,16 @@ func (v *VFS) GetPersonalDrive(ctx context.Context, provider string) (fs.Drive, 
 
 // getToken resolves the identity token for a provider.
 func (v *VFS) getToken(ctx context.Context, provider string) (string, error) {
-	// TODO: find way to resolve identity provider for a backend, without giving vfs access to the store
+	// TODO: dynamically resolve provider from the backend or config instead of hardcoding
 	provider = "microsoft"
-	ids, err := v.identity.GetStore().List(ctx, provider)
-	if err != nil || len(ids) == 0 {
-		return "", fmt.Errorf("no identity found for provider %s", provider)
-	}
-	identityID := ids[0]
 
-	// TODO: Find away to handle get access token, without giving vfs access to the store
-	accessToken, err := v.identity.GetStore().Get(ctx, provider, identityID)
+	resp, err := v.identity.Token(ctx, provider, &proto.GetTokenRequest{})
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to get token for provider %s: %w", provider, err)
 	}
 
-	rawToken, err := json.Marshal(accessToken)
+	// Assuming the token response needs to be returned as a JSON string for the drive gateway
+	rawToken, err := json.Marshal(resp.GetToken())
 	if err != nil {
 		return "", err
 	}

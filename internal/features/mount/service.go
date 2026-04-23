@@ -12,6 +12,26 @@ type MountConfig struct {
 	Options    map[string]string `json:"options,omitempty" yaml:"options,omitempty"`
 }
 
+type MountOption struct {
+	Key    string
+	Values []string
+}
+
+// OptionValidator defines the interface for backends that support option validation.
+type OptionValidator interface {
+	ValidateOptions(opts map[string]string) error
+}
+
+// OptionsProvider defines the interface for backends that support options
+type OptionsProvider interface {
+	ProvideOptions() []MountOption
+}
+
+// CompletionProvider defines the interface for backends that support dynamic completion.
+type CompletionProvider interface {
+	GetOptionCompletions(ctx context.Context, identityID string, toComplete string) ([]string, error)
+}
+
 // Service provides methods for managing virtual filesystem mount points.
 type Service interface {
 	// ListMounts retrieves all configured mount points.
@@ -20,4 +40,12 @@ type Service interface {
 	AddMount(ctx context.Context, m MountConfig) error
 	// RemoveMount removes a mount point from the configuration.
 	RemoveMount(ctx context.Context, path string) error
+	// RegisterValidator registers a validator for a given mount type.
+	RegisterValidator(mountType string, v OptionValidator)
+	// RegisterCompletionProvider registers a completion provider for a given mount type.
+	RegisterCompletionProvider(mountType string, p CompletionProvider)
+	// GetCompletionProvider retrieves a registered completion provider.
+	GetCompletionProvider(mountType string) (CompletionProvider, bool)
+	// GetMountOptions retrieves all registered mount options.
+	GetMountOptions() map[string][]MountOption
 }

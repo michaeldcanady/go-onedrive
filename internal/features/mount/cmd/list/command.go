@@ -2,6 +2,7 @@ package list
 
 import (
 	"context"
+
 	"github.com/michaeldcanady/go-onedrive/internal/core/cli"
 	"github.com/michaeldcanady/go-onedrive/internal/core/di"
 	formatting "github.com/michaeldcanady/go-onedrive/pkg/format"
@@ -25,12 +26,7 @@ func CreateListCmd(container di.Container) *cobra.Command {
 		},
 	})
 
-	formatStr := string(opts.Format)
-	cmd.Flags().StringVarP(&formatStr, "format", "f", "short", "output format (short, long, json, yaml, tree, table)")
-
-	cmd.PreRun = func(cmd *cobra.Command, args []string) {
-		opts.Format = formatStr
-	}
+	cmd.Flags().StringVarP(&opts.Format, "format", "f", "short", "output format (short, long, json, yaml, tree, table)")
 
 	return cmd
 }

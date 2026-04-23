@@ -10,6 +10,7 @@ import (
 
 	"github.com/michaeldcanady/go-onedrive/internal/features/identity"
 	"github.com/michaeldcanady/go-onedrive/internal/features/identity/providers/microsoft"
+	"github.com/michaeldcanady/go-onedrive/internal/features/mount"
 	"github.com/michaeldcanady/go-onedrive/pkg/fs"
 	abstractions "github.com/microsoft/kiota-abstractions-go"
 	msgraphsdkgo "github.com/microsoftgraph/msgraph-sdk-go"
@@ -41,6 +42,19 @@ func NewBackend(opts map[string]string) *Backend {
 
 	return &Backend{
 		driveID: driveID,
+	}
+}
+
+func (b *Backend) ValidateOptions(opts map[string]string) error {
+	if _, ok := opts[driveIDOptionKey]; !ok {
+		return fmt.Errorf("missing required option: %s", driveIDOptionKey)
+	}
+	return nil
+}
+
+func (b *Backend) ProvideOptions() []mount.MountOption {
+	return []mount.MountOption{
+		{Key: driveIDOptionKey},
 	}
 }
 
