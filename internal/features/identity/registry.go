@@ -26,6 +26,7 @@ type Service interface {
 	Logout(ctx context.Context, provider string, identityID string) error
 	Token(ctx context.Context, provider string, req *proto.GetTokenRequest) (*proto.GetTokenResponse, error)
 	GetStore() AccountStore
+	GetAccount(ctx context.Context, identityID string) (*Account, error)
 }
 
 func (r *Registry) GetAuthenticator(provider string) (Authenticator, error) {
@@ -166,4 +167,27 @@ func (r *Registry) Token(ctx context.Context, provider string, req *proto.GetTok
 
 func (r *Registry) GetStore() AccountStore {
 	return r.store
+}
+
+func (r *Registry) GetAccount(ctx context.Context, identityID string) (*Account, error) {
+	// For now, we'll just check if the identity exists in any provider's store.
+	// We might need to store full Account objects in the future if we want more details.
+	providers := []string{"microsoft"} // TODO: dynamically list providers if possible
+
+	for _, provider := range providers {
+		ids, err := r.store.List(ctx, provider)
+		if err != nil {
+			continue
+		}
+		for _, id := range ids {
+			if id == identityID {
+				return &Account{
+					ID:       identityID,
+					Provider: provider,
+				}, nil
+			}
+		}
+	}
+
+	return nil, fmt.Errorf("account not found: %s", identityID)
 }

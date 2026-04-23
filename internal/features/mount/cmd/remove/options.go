@@ -1,21 +1,19 @@
-package list
+package remove
 
 import (
 	"io"
-
-	formatting "github.com/michaeldcanady/go-onedrive/pkg/format"
 )
 
 type Options struct {
-	Format string
 	Stdout io.Writer
 	Stderr io.Writer
+
+	// Path the mount point's path
+	Path string
 }
 
 func NewOptions() *Options {
-	return &Options{
-		Format: formatting.FormatShort.String(),
-	}
+	return &Options{}
 }
 
 func (o *Options) Validate() error {

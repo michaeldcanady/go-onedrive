@@ -10,6 +10,9 @@ import (
 type Backend interface {
 	Namer
 
+	// IdentityProvider returns the name of the identity provider required by this backend.
+	IdentityProvider() string
+
 	// Stat returns metadata for an item at the specified path.
 	Stat(ctx context.Context, token, driveID, path string) (Item, error)
 

@@ -75,18 +75,18 @@ func (v *VFS) Resolve(absPath string) (string, string, error) {
 	return bestPrefix, relPath, nil
 }
 
-func (v *VFS) resolve(absPath string) (fs.Backend, string, error) {
+func (v *VFS) resolve(absPath string) (fs.Backend, string, string, error) {
 	prefix, relPath, err := v.Resolve(absPath)
 	if err != nil {
-		return nil, "", err
+		return nil, "", "", err
 	}
-	return v.mounts[prefix], relPath, nil
+	return v.mounts[prefix], prefix, relPath, nil
 }
 
-func (v *VFS) selectBackend(uri *fs.URI) (fs.Backend, string, error) {
+func (v *VFS) selectBackend(uri *fs.URI) (fs.Backend, string, string, error) {
 	if uri.Provider != "" {
 		if backend, ok := v.mounts[uri.Provider]; ok {
-			return backend, uri.Path, nil
+			return backend, uri.Provider, uri.Path, nil
 		}
 	}
 	return v.resolve(uri.Path)
@@ -97,11 +97,11 @@ func (v *VFS) Name() string {
 }
 
 func (v *VFS) Stat(ctx context.Context, uri *fs.URI) (fs.Item, error) {
-	backend, relPath, err := v.selectBackend(uri)
+	backend, mountKey, relPath, err := v.selectBackend(uri)
 	if err != nil {
 		return fs.Item{}, err
 	}
-	token, err := v.getToken(ctx, uri.Provider)
+	token, err := v.getToken(ctx, mountKey)
 	if err != nil {
 		return fs.Item{}, err
 	}
@@ -109,11 +109,11 @@ func (v *VFS) Stat(ctx context.Context, uri *fs.URI) (fs.Item, error) {
 }
 
 func (v *VFS) List(ctx context.Context, uri *fs.URI, opts fs.ListOptions) ([]fs.Item, error) {
-	backend, relPath, err := v.selectBackend(uri)
+	backend, mountKey, relPath, err := v.selectBackend(uri)
 	if err != nil {
 		return nil, err
 	}
-	token, err := v.getToken(ctx, backend.Name())
+	token, err := v.getToken(ctx, mountKey)
 	if err != nil {
 		return nil, err
 	}
@@ -121,11 +121,11 @@ func (v *VFS) List(ctx context.Context, uri *fs.URI, opts fs.ListOptions) ([]fs.
 }
 
 func (v *VFS) ReadFile(ctx context.Context, uri *fs.URI, opts fs.ReadOptions) (io.ReadCloser, error) {
-	backend, relPath, err := v.selectBackend(uri)
+	backend, mountKey, relPath, err := v.selectBackend(uri)
 	if err != nil {
 		return nil, err
 	}
-	token, err := v.getToken(ctx, uri.Provider)
+	token, err := v.getToken(ctx, mountKey)
 	if err != nil {
 		return nil, err
 	}
@@ -133,11 +133,11 @@ func (v *VFS) ReadFile(ctx context.Context, uri *fs.URI, opts fs.ReadOptions) (i
 }
 
 func (v *VFS) WriteFile(ctx context.Context, uri *fs.URI, r io.Reader, opts fs.WriteOptions) (fs.Item, error) {
-	backend, relPath, err := v.selectBackend(uri)
+	backend, mountKey, relPath, err := v.selectBackend(uri)
 	if err != nil {
 		return fs.Item{}, err
 	}
-	token, err := v.getToken(ctx, uri.Provider)
+	token, err := v.getToken(ctx, mountKey)
 	if err != nil {
 		return fs.Item{}, err
 	}
@@ -145,11 +145,11 @@ func (v *VFS) WriteFile(ctx context.Context, uri *fs.URI, r io.Reader, opts fs.W
 }
 
 func (v *VFS) Mkdir(ctx context.Context, uri *fs.URI) error {
-	backend, relPath, err := v.selectBackend(uri)
+	backend, mountKey, relPath, err := v.selectBackend(uri)
 	if err != nil {
 		return err
 	}
-	token, err := v.getToken(ctx, uri.Provider)
+	token, err := v.getToken(ctx, mountKey)
 	if err != nil {
 		return err
 	}
@@ -157,11 +157,11 @@ func (v *VFS) Mkdir(ctx context.Context, uri *fs.URI) error {
 }
 
 func (v *VFS) Remove(ctx context.Context, uri *fs.URI) error {
-	backend, relPath, err := v.selectBackend(uri)
+	backend, mountKey, relPath, err := v.selectBackend(uri)
 	if err != nil {
 		return err
 	}
-	token, err := v.getToken(ctx, uri.Provider)
+	token, err := v.getToken(ctx, mountKey)
 	if err != nil {
 		return err
 	}
@@ -169,11 +169,11 @@ func (v *VFS) Remove(ctx context.Context, uri *fs.URI) error {
 }
 
 func (v *VFS) Touch(ctx context.Context, uri *fs.URI) (fs.Item, error) {
-	backend, relPath, err := v.selectBackend(uri)
+	backend, mountKey, relPath, err := v.selectBackend(uri)
 	if err != nil {
 		return fs.Item{}, err
 	}
-	token, err := v.getToken(ctx, uri.Provider)
+	token, err := v.getToken(ctx, mountKey)
 	if err != nil {
 		return fs.Item{}, err
 	}
@@ -181,16 +181,16 @@ func (v *VFS) Touch(ctx context.Context, uri *fs.URI) (fs.Item, error) {
 }
 
 func (v *VFS) Copy(ctx context.Context, src, dst *fs.URI, opts fs.CopyOptions) error {
-	srcBackend, srcRel, err := v.selectBackend(src)
+	srcBackend, srcMount, srcRel, err := v.selectBackend(src)
 	if err != nil {
 		return err
 	}
-	dstBackend, dstRel, err := v.selectBackend(dst)
+	dstBackend, _, dstRel, err := v.selectBackend(dst)
 	if err != nil {
 		return err
 	}
 
-	token, err := v.getToken(ctx, src.Provider)
+	token, err := v.getToken(ctx, srcMount)
 	if err != nil {
 		return err
 	}
@@ -210,16 +210,16 @@ func (v *VFS) Copy(ctx context.Context, src, dst *fs.URI, opts fs.CopyOptions) e
 }
 
 func (v *VFS) Move(ctx context.Context, src, dst *fs.URI) error {
-	srcBackend, srcRel, err := v.selectBackend(src)
+	srcBackend, srcMount, srcRel, err := v.selectBackend(src)
 	if err != nil {
 		return err
 	}
-	dstBackend, dstRel, err := v.selectBackend(dst)
+	dstBackend, _, dstRel, err := v.selectBackend(dst)
 	if err != nil {
 		return err
 	}
 
-	token, err := v.getToken(ctx, src.Provider)
+	token, err := v.getToken(ctx, srcMount)
 	if err != nil {
 		return err
 	}
@@ -265,7 +265,7 @@ func (v *VFS) ListDrives(ctx context.Context, provider string) ([]fs.Drive, erro
 		return nil, fmt.Errorf("backend does not support drive discovery: %s", provider)
 	}
 
-	token, err := v.getToken(ctx, provider)
+	token, err := v.getToken(ctx, mountKey)
 	if err != nil {
 		return nil, err
 	}
@@ -293,7 +293,7 @@ func (v *VFS) GetPersonalDrive(ctx context.Context, provider string) (fs.Drive, 
 		return fs.Drive{}, fmt.Errorf("backend does not support drive discovery: %s", provider)
 	}
 
-	token, err := v.getToken(ctx, provider)
+	token, err := v.getToken(ctx, mountKey)
 	if err != nil {
 		return fs.Drive{}, err
 	}
@@ -302,9 +302,17 @@ func (v *VFS) GetPersonalDrive(ctx context.Context, provider string) (fs.Drive, 
 }
 
 // getToken resolves the identity token for a provider.
-func (v *VFS) getToken(ctx context.Context, provider string) (string, error) {
-	// TODO: dynamically resolve provider from the backend or config instead of hardcoding
-	provider = "microsoft"
+func (v *VFS) getToken(ctx context.Context, mountKey string) (string, error) {
+	backend, ok := v.mounts[mountKey]
+	if !ok {
+		return "", fmt.Errorf("backend not found for mount: %s", mountKey)
+	}
+
+	provider := backend.IdentityProvider()
+	if provider == "" {
+		// No identity provider required for this backend
+		return "", nil
+	}
 
 	resp, err := v.identity.Token(ctx, provider, &proto.GetTokenRequest{})
 	if err != nil {

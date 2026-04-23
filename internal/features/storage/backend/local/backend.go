@@ -22,6 +22,10 @@ func NewBackend(root string) *Backend {
 	}
 }
 
+func (b *Backend) IdentityProvider() string {
+	return ""
+}
+
 func (b *Backend) Name() string {
 	return "local"
 }

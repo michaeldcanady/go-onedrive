@@ -58,6 +58,10 @@ func (b *Backend) ProvideOptions() []mount.MountOption {
 	}
 }
 
+func (b *Backend) IdentityProvider() string {
+	return "microsoft"
+}
+
 func (b *Backend) Name() string {
 	return "onedrive"
 }

@@ -7,18 +7,9 @@ import (
 
 	"github.com/michaeldcanady/go-onedrive/internal/core/cli"
 	"github.com/michaeldcanady/go-onedrive/internal/core/di"
-	"github.com/michaeldcanady/go-onedrive/internal/features/identity"
 	"github.com/michaeldcanady/go-onedrive/internal/features/mount"
 	"github.com/spf13/cobra"
 )
-
-type noOpAccountGetter struct{}
-
-func (_ *noOpAccountGetter) GetAccount(ctx context.Context, identityID string) (*identity.Account, error) {
-	return &identity.Account{
-		ID: identityID,
-	}, nil
-}
 
 // baseFlagCompletion builds option completion
 // map is option = slice of options
@@ -101,8 +92,7 @@ func CreateAddCmd(container di.Container) *cobra.Command {
 	opts := NewOptions()
 
 	l, _ := container.Logger().CreateLogger("mount-add")
-	// TODO: need really account getter
-	handler := NewCommand(container.Mounts(), &noOpAccountGetter{}, l)
+	handler := NewCommand(container.Mounts(), container.Identity(), l)
 
 	cmd := cli.NewCommand(cli.CommandConfig[CommandContext]{
 		Use:     "add <path> <type> <identity_id>",
