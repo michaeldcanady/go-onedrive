@@ -73,7 +73,7 @@ func TestGetEditorCmd(t *testing.T) {
 
 	t.Run("explicit editor", func(t *testing.T) {
 		s := NewDefaultService(env, nil, l, WithEditor("my-editor"))
-		cmd, err := s.getEditorCmd()
+		cmd, err := s.resolver.Resolve(context.Background())
 		assert.NoError(t, err)
 		assert.Equal(t, "my-editor", cmd)
 	})
@@ -85,7 +85,7 @@ func TestGetEditorCmd(t *testing.T) {
 			},
 		}
 		s := NewDefaultService(env, nil, l, WithConfig(cfgSvc))
-		cmd, err := s.getEditorCmd()
+		cmd, err := s.resolver.Resolve(context.Background())
 		assert.NoError(t, err)
 		assert.Equal(t, "config-editor", cmd)
 	})
@@ -93,7 +93,7 @@ func TestGetEditorCmd(t *testing.T) {
 	t.Run("visual variable", func(t *testing.T) {
 		env.visual = "visual-editor"
 		s := NewDefaultService(env, nil, l)
-		cmd, err := s.getEditorCmd()
+		cmd, err := s.resolver.Resolve(context.Background())
 		assert.NoError(t, err)
 		assert.Equal(t, "visual-editor", cmd)
 		env.visual = ""
@@ -102,7 +102,7 @@ func TestGetEditorCmd(t *testing.T) {
 	t.Run("editor variable", func(t *testing.T) {
 		env.editor = "editor-cmd"
 		s := NewDefaultService(env, nil, l)
-		cmd, err := s.getEditorCmd()
+		cmd, err := s.resolver.Resolve(context.Background())
 		assert.NoError(t, err)
 		assert.Equal(t, "editor-cmd", cmd)
 		env.editor = ""
@@ -111,7 +111,7 @@ func TestGetEditorCmd(t *testing.T) {
 	t.Run("windows fallback", func(t *testing.T) {
 		env.isWindows = true
 		s := NewDefaultService(env, nil, l)
-		cmd, err := s.getEditorCmd()
+		cmd, err := s.resolver.Resolve(context.Background())
 		assert.NoError(t, err)
 		assert.Equal(t, "notepad.exe", cmd)
 		env.isWindows = false
@@ -124,21 +124,21 @@ func TestGetEditorParts(t *testing.T) {
 
 	t.Run("simple command", func(t *testing.T) {
 		s := NewDefaultService(env, nil, l, WithEditor("vim"))
-		parts, err := s.getEditorParts()
+		parts, err := s.getEditorParts(context.Background())
 		assert.NoError(t, err)
 		assert.Equal(t, []string{"vim"}, parts)
 	})
 
 	t.Run("command with args", func(t *testing.T) {
 		s := NewDefaultService(env, nil, l, WithEditor("code --wait"))
-		parts, err := s.getEditorParts()
+		parts, err := s.getEditorParts(context.Background())
 		assert.NoError(t, err)
 		assert.Equal(t, []string{"code", "--wait"}, parts)
 	})
 
 	t.Run("quoted args", func(t *testing.T) {
 		s := NewDefaultService(env, nil, l, WithEditor(`"my editor" --args`))
-		parts, err := s.getEditorParts()
+		parts, err := s.getEditorParts(context.Background())
 		assert.NoError(t, err)
 		assert.Equal(t, []string{"my editor", "--args"}, parts)
 	})
