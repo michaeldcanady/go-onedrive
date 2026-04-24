@@ -15,7 +15,7 @@ import (
 	"github.com/google/shlex"
 	"github.com/google/uuid"
 	fs "github.com/michaeldcanady/go-onedrive/internal/features/fs/domain"
-	"github.com/michaeldcanady/go-onedrive/internal/core/env"
+	environment "github.com/michaeldcanady/go-onedrive/internal/core/env"
 	"github.com/michaeldcanady/go-onedrive/internal/core/logger"
 )
 
@@ -60,6 +60,7 @@ type DefaultService struct {
 	stdout      io.Writer
 	stderr      io.Writer
 	editorCmd   string
+	sm          *StateMachine[State, Event, *Context]
 }
 
 // NewDefaultService initializes a new instance of the DefaultService.
@@ -77,7 +78,31 @@ func NewDefaultService(envSvc environment.Service, uriFactory *fs.URIFactory, l 
 		opt(s)
 	}
 
+	s.sm = s.setupStateMachine()
+
 	return s
+}
+
+func (s *DefaultService) setupStateMachine() *StateMachine[State, Event, *Context] {
+	sm := NewStateMachine[State, Event, *Context]()
+
+	// Define transitions
+	sm.AddTransition([]State{StateCreated}, EventOpen, StateEditing, nil)
+	sm.AddTransition([]State{StateEditing}, EventComplete, StateCompleted, nil)
+
+	sm.AddTransition([]State{StateCreated, StateEditing, StateCompleted}, EventClose, StateClosed, func(ctx *Context) error {
+		remover, ok := ctx.Service.(fileRemover)
+		if !ok {
+			return fmt.Errorf("service does not support file removal")
+		}
+		return remover.removeFile(ctx.Session)
+	})
+
+	return sm
+}
+
+type fileRemover interface {
+	removeFile(session *Session) error
 }
 
 // WithOptions returns a new Service instance with the specified options applied.
@@ -96,6 +121,8 @@ func (s *DefaultService) WithOptions(opts ...Option) Service {
 	for _, opt := range opts {
 		opt(newS)
 	}
+
+	newS.sm = newS.setupStateMachine()
 
 	return newS
 }
@@ -214,7 +241,15 @@ func (s *DefaultService) getEditorParts() ([]string, error) {
 
 // Open launches the configured editor for the given session and waits for it to exit.
 func (s *DefaultService) Open(ctx context.Context, session *Session) error {
-	return session.Handle(ctx, s, EventOpen)
+	if err := session.Handle(ctx, s, EventOpen); err != nil {
+		return err
+	}
+
+	if err := s.runEditor(ctx, session); err != nil {
+		return err
+	}
+
+	return session.Handle(ctx, s, EventComplete)
 }
 
 // runEditor is the internal implementation that actually launches the editor.

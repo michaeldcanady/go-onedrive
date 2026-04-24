@@ -64,6 +64,13 @@ func (e Event) String() string {
 	}
 }
 
+// Context provides the necessary data for state transitions.
+type Context struct {
+	Session *Session
+	Service Service
+	Ctx     context.Context
+}
+
 // Service defines the interface for editor-related operations and session management.
 type Service interface {
 	// CreateSession initializes a new editing session for the given remote URI.

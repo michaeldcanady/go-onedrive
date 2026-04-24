@@ -229,4 +229,22 @@ func TestSessionStateTransitions(t *testing.T) {
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "invalid transition")
 	})
+
+	t.Run("editor failure", func(t *testing.T) {
+		remoteURI := &fs.URI{Provider: "/onedrive", Path: "/test.txt"}
+		session, err := s.CreateSession(context.Background(), remoteURI, strings.NewReader("content"))
+		assert.NoError(t, err)
+		defer s.Cleanup(context.Background(), session)
+
+		// Use a command that fails
+		s2 := s.WithOptions(WithEditor("false"))
+		err = s2.Open(context.Background(), session)
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "editor failed")
+
+		// State should still be Editing if it failed?
+		// Actually, in the current implementation, it transitions to Editing, runs, and then Complete.
+		// If run fails, it returns error before EventComplete.
+		assert.Equal(t, StateEditing, session.State())
+	})
 }

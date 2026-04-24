@@ -2,6 +2,7 @@ package editor
 
 import (
 	"context"
+	"fmt"
 
 	fs "github.com/michaeldcanady/go-onedrive/internal/features/fs/domain"
 )
@@ -32,7 +33,12 @@ func (s *Session) SetState(state State) {
 
 // Handle triggers a state transition on the session based on the provided event.
 func (s *Session) Handle(ctx context.Context, svc Service, event Event) error {
-	return sessionSM.Handle(s, event, &Context{
+	ds, ok := svc.(*DefaultService)
+	if !ok {
+		return fmt.Errorf("unsupported service type")
+	}
+
+	return ds.sm.Handle(s, event, &Context{
 		Session: s,
 		Service: svc,
 		Ctx:     ctx,
