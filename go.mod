@@ -3,14 +3,15 @@ module github.com/michaeldcanady/go-onedrive
 go 1.25.3
 
 require (
-	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.21.0
+	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.21.1
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.13.1
 	github.com/fatih/color v1.19.0
 	github.com/gofrs/flock v0.13.0
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510
 	github.com/google/uuid v1.6.0
 	github.com/hashicorp/go-plugin v1.7.0
-	github.com/microsoftgraph/msgraph-sdk-go v1.96.0
+	github.com/microsoftgraph/msgraph-sdk-go v1.97.0
+	github.com/microsoftgraph/msgraph-sdk-go-core v1.4.0
 	github.com/spf13/cobra v1.10.2
 	go.etcd.io/bbolt v1.4.3
 	go.uber.org/zap v1.27.1
@@ -40,7 +41,7 @@ require (
 )
 
 require (
-	github.com/Azure/azure-sdk-for-go/sdk/internal v1.11.2 // indirect
+	github.com/Azure/azure-sdk-for-go/sdk/internal v1.12.0 // indirect
 	github.com/AzureAD/microsoft-authentication-library-for-go v1.6.0 // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
@@ -50,7 +51,7 @@ require (
 	github.com/microsoft/kiota-abstractions-go v1.9.4
 	github.com/microsoft/kiota-authentication-azure-go v1.3.1
 	github.com/microsoft/kiota-http-go v1.5.5
-	github.com/microsoft/kiota-serialization-form-go v1.1.2 // indirect
+	github.com/microsoft/kiota-serialization-form-go v1.1.3 // indirect
 	github.com/microsoft/kiota-serialization-json-go v1.1.2 // indirect
 	github.com/microsoft/kiota-serialization-multipart-go v1.1.2 // indirect
 	github.com/microsoft/kiota-serialization-text-go v1.1.3 // indirect
@@ -63,10 +64,10 @@ require (
 	go.opentelemetry.io/otel/metric v1.39.0 // indirect
 	go.opentelemetry.io/otel/trace v1.39.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
-	golang.org/x/crypto v0.47.0 // indirect
-	golang.org/x/net v0.49.0 // indirect
+	golang.org/x/crypto v0.50.0 // indirect
+	golang.org/x/net v0.53.0 // indirect
 	golang.org/x/sys v0.43.0 // indirect
-	golang.org/x/text v0.33.0 // indirect
+	golang.org/x/text v0.36.0 // indirect
 )
 
 replace github.com/michaeldcanady/go-onedrive/internal/storage/backend/grpc/proto => ./internal/storage/backend/grpc/proto
