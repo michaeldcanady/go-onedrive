@@ -23,6 +23,7 @@ type CommandConfig[T any] struct {
 	Handler           Handler[T]
 	Options           *T
 	CtxFunc           func(context.Context, *T) *T
+	PreRunE           func(cmd *cobra.Command, args []string) error
 }
 
 // NewCommand creates a standardized cobra command.
@@ -34,6 +35,12 @@ func NewCommand[T any](cfg CommandConfig[T]) *cobra.Command {
 		Args:              cfg.Args,
 		ValidArgsFunction: cfg.ValidArgsFunction,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
+			if cfg.PreRunE != nil {
+				if err := cfg.PreRunE(cmd, args); err != nil {
+					return err
+				}
+			}
+
 			if cfg.CtxFunc == nil {
 				return nil
 			}
