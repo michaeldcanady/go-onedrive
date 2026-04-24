@@ -10,6 +10,8 @@ type Options struct {
 	DriveRef string
 	// Stdout is the destination for the formatted drive details.
 	Stdout io.Writer
+	// Stderr is the destination for standard error messages.
+	Stderr io.Writer
 }
 
 // Validate ensures that the provided options are consistent and valid.

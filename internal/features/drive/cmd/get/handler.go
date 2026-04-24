@@ -26,19 +26,19 @@ func (c *Command) Validate(ctx *CommandContext) error {
 	return ctx.Options.Validate()
 }
 
-// Execute retrieves and displays the personal drive.
+// Execute retrieves and displays the specified drive.
 func (c *Command) Execute(ctx *CommandContext) error {
 	log := c.log.WithContext(ctx.Ctx)
 
-	log.Debug("fetching personal drive", logger.String("identity", ctx.Options.IdentityID))
-	d, err := c.drive.ResolvePersonalDrive(ctx.Ctx, ctx.Options.IdentityID)
+	log.Debug("fetching drive", logger.String("ref", ctx.Options.DriveRef), logger.String("identity", ctx.Options.IdentityID))
+	d, err := c.drive.ResolveDrive(ctx.Ctx, ctx.Options.DriveRef, ctx.Options.IdentityID)
 	if err != nil {
-		log.Error("failed to get personal drive", logger.Error(err))
-		return fmt.Errorf("failed to get personal drive: %w", err)
+		log.Error("failed to resolve drive", logger.String("ref", ctx.Options.DriveRef), logger.Error(err))
+		return fmt.Errorf("failed to resolve drive %s: %w", ctx.Options.DriveRef, err)
 	}
 
-	log.Info("personal drive retrieved successfully", logger.String("id", d.ID))
-	fmt.Fprintf(ctx.Options.Stdout, "Personal drive: %s (%s)\n", d.Name, d.ID)
+	log.Info("drive resolved successfully", logger.String("id", d.ID))
+	fmt.Fprintf(ctx.Options.Stdout, "Drive: %s (%s) [%s]\n", d.Name, d.ID, d.Type)
 
 	return nil
 }

@@ -14,12 +14,14 @@ func CreateGetCmd(container di.Container) *cobra.Command {
 	handler := NewCommand(container.Drive(), l)
 
 	cmd := &cobra.Command{
-		Use:   "get",
-		Short: "Display the primary personal OneDrive drive",
-		Long:  "Retrieve and show the name and ID of your primary personal OneDrive drive.",
-		Args:  cobra.NoArgs,
+		Use:   "get <drive-ref>",
+		Short: "Display details for a specific drive",
+		Long:  "Retrieve and show the metadata for a OneDrive drive identified by its ID or name.",
+		Args:  cobra.ExactArgs(1),
 		PreRunE: func(cmd *cobra.Command, args []string) error {
+			opts.DriveRef = args[0]
 			opts.Stdout = cmd.OutOrStdout()
+			opts.Stderr = cmd.ErrOrStderr()
 
 			c = &CommandContext{
 				Ctx:     cmd.Context(),

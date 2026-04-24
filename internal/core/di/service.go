@@ -125,7 +125,7 @@ func (l *driveLogger) Error(msg string, fields ...logger.Field) {
 func (c *DefaultContainer) initDriveServices(ctx context.Context) error {
 	cliLog, _ := c.logger.CreateLogger("cli")
 
-	c.drive = drive.NewDefaultService(c.manager.(*registry.VFS), &driveLogger{l: cliLog})
+	c.drive = drive.NewDefaultService(c.manager.(*registry.VFS), c.mounts, &driveLogger{l: cliLog})
 
 	return nil
 }
