@@ -1,0 +1,33 @@
+package {{.PackageName}}
+
+import (
+	"github.com/michaeldcanady/go-onedrive/internal/core/logger"
+)
+
+type Command struct {
+	log logger.Logger
+}
+
+func NewCommand(container di.Container, l logger.Logger) *Command {
+	return &Command{
+		log: l,
+	}
+}
+
+func (c *Command) Validate(ctx *CommandContext) error {
+	return nil
+}
+
+func (c *Command) Execute(ctx *CommandContext) error {
+	log := c.log.WithContext(ctx.Ctx)
+	log.Info("starting operation")
+
+	// Logic here
+
+	log.Info("operation completed successfully")
+	return nil
+}
+
+func (c *Command) Finalize(ctx *CommandContext) error {
+	return nil
+}

@@ -1,0 +1,152 @@
+syntax = "proto3";
+
+package v1;
+
+option go_package = "github.com/michaeldcanady/go-onedrive/internal/features/storage/backend/grpc/proto";
+
+service BackendService {
+  rpc Stat(StatRequest) returns (StatResponse);
+  rpc List(ListRequest) returns (ListResponse);
+  rpc Open(OpenRequest) returns (stream OpenResponse);
+  rpc Create(stream CreateRequest) returns (CreateResponse);
+  rpc Mkdir(MkdirRequest) returns (MkdirResponse);
+  rpc Remove(RemoveRequest) returns (RemoveResponse);
+  rpc Capabilities(CapabilitiesRequest) returns (CapabilitiesResponse);
+  
+  // Advanced operations
+  rpc Move(MoveRequest) returns (MoveResponse);
+  rpc Copy(CopyRequest) returns (CopyResponse);
+
+  // Drive discovery
+  rpc ListDrives(ListDrivesRequest) returns (ListDrivesResponse);
+  rpc GetPersonalDrive(GetPersonalDriveRequest) returns (GetPersonalDriveResponse);
+}
+
+message Drive {
+  string id = 1;
+  string name = 2;
+  string type = 3;
+  string owner = 4;
+  bool read_only = 5;
+}
+
+message ListDrivesRequest {
+  string access_token = 1;
+}
+
+message ListDrivesResponse {
+  repeated Drive drives = 1;
+}
+
+message GetPersonalDriveRequest {
+  string access_token = 1;
+}
+
+message GetPersonalDriveResponse {
+  Drive drive = 1;
+}
+
+message Item {
+  string id = 1;
+  string name = 2;
+  string path = 3;
+  ItemType type = 4;
+  int64 size = 5;
+  int64 modified_at = 6; // Unix timestamp
+  string etag = 7;
+}
+
+enum ItemType {
+  ITEM_TYPE_UNKNOWN = 0;
+  ITEM_TYPE_FILE = 1;
+  ITEM_TYPE_FOLDER = 2;
+}
+
+message Capabilities {
+  bool can_move = 1;
+  bool can_copy = 2;
+  bool can_recursive = 3;
+}
+
+message StatRequest {
+  string path = 1;
+  string drive_id = 2;
+  string access_token = 3;
+}
+
+message StatResponse {
+  Item item = 1;
+}
+
+message ListRequest {
+  string path = 1;
+  string drive_id = 2;
+  string access_token = 3;
+}
+
+message ListResponse {
+  repeated Item items = 1;
+}
+
+message OpenRequest {
+  string path = 1;
+  string drive_id = 2;
+  string access_token = 3;
+}
+
+message OpenResponse {
+  bytes data = 1;
+}
+
+message CreateRequest {
+  oneof request {
+    string path = 1; 
+    bytes data = 2;  
+    string drive_id = 3;
+    string access_token = 4;
+  }
+}
+
+message CreateResponse {
+  Item item = 1;
+}
+
+message MkdirRequest {
+  string path = 1;
+  string drive_id = 2;
+  string access_token = 3;
+}
+
+message MkdirResponse {}
+
+message RemoveRequest {
+  string path = 1;
+  string drive_id = 2;
+  string access_token = 3;
+}
+
+message RemoveResponse {}
+
+message CapabilitiesRequest {}
+
+message CapabilitiesResponse {
+  Capabilities capabilities = 1;
+}
+
+message MoveRequest {
+  string src = 1;
+  string dst = 2;
+  string drive_id = 3;
+  string access_token = 4;
+}
+
+message MoveResponse {}
+
+message CopyRequest {
+  string src = 1;
+  string dst = 2;
+  string drive_id = 3;
+  string access_token = 4;
+}
+
+message CopyResponse {}

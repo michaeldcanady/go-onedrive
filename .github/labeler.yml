@@ -7,19 +7,19 @@
       - changed-files:
           - any-glob-to-any-file:
               - "**/*.go"
-              - "!internal/identity/**/*.go"
-              - "!internal/shared/**/*.go"
-              - "!internal/errors/**/*.go"
-              - "!internal/concurrency/**/*.go"
+              - "!internal/features/identity/**/*.go"
+              - "!internal/features/shared/**/*.go"
+              - "!internal/features/errors/**/*.go"
+              - "!internal/features/concurrency/**/*.go"
               - "!internal/fs/**/*.go"
               - "!internal/drive/**/*.go"
-              - "!internal/profile/**/*.go"
+              - "!internal/features/profile/**/*.go"
               - "!internal/state/**/*.go"
-              - "!internal/config/**/*.go"
+              - "!internal/features/config/**/*.go"
               - "!internal/di/**/*.go"
-              - "!internal/environment/**/*.go"
-              - "!internal/logger/**/*.go"
-              - "!internal/middleware/**/*.go"
+              - "!internal/features/environment/**/*.go"
+              - "!internal/features/logger/**/*.go"
+              - "!internal/features/middleware/**/*.go"
               - "!pkg/cache/**/*.go"
               - "!pkg/ignore/**/*.go"
               - "!cmd/odc/**/*.go"
@@ -30,16 +30,16 @@
   - any:
       - changed-files:
           - any-glob-to-any-file:
-              - "internal/identity/**"
+              - "internal/features/identity/**"
 
 "component: common":
   - any:
       - changed-files:
           - any-glob-to-any-file:
-              - "internal/shared/**"
-              - "internal/errors/**"
-              - "internal/concurrency/**"
-              - "internal/version/**"
+              - "internal/features/shared/**"
+              - "internal/features/errors/**"
+              - "internal/features/concurrency/**"
+              - "internal/features/version/**"
 
 "component: filesystem":
   - any:
@@ -57,7 +57,7 @@
   - any:
       - changed-files:
           - any-glob-to-any-file:
-              - "internal/profile/**"
+              - "internal/features/profile/**"
 
 "component: state":
   - any:
@@ -75,13 +75,13 @@
   - any:
       - changed-files:
           - any-glob-to-any-file:
-              - "internal/config/**"
+              - "internal/features/config/**"
 
 "component: logger":
   - any:
       - changed-files:
           - any-glob-to-any-file:
-              - "internal/logger/**"
+              - "internal/features/logger/**"
 
 "component: di":
   - any:
@@ -93,13 +93,13 @@
   - any:
       - changed-files:
           - any-glob-to-any-file:
-              - "internal/environment/**"
+              - "internal/features/environment/**"
 
 "component: middleware":
   - any:
       - changed-files:
           - any-glob-to-any-file:
-              - "internal/middleware/**"
+              - "internal/features/middleware/**"
 
 "component: ignore":
   - any:

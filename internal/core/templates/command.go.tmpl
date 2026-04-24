@@ -1,0 +1,29 @@
+package {{.PackageName}}
+
+import (
+	"context"
+	"github.com/michaeldcanady/go-onedrive/internal/core/cli"
+	"github.com/michaeldcanady/go-onedrive/internal/core/di"
+	"github.com/spf13/cobra"
+)
+
+func Create{{.CommandName}}Cmd(container di.Container) *cobra.Command {
+	opts := NewOptions()
+
+	// Initialize dependencies here
+	l, _ := container.Logger().CreateLogger("{{.LoggerName}}")
+	handler := NewCommand(container, l)
+
+	cmd := cli.NewCommand(cli.CommandConfig[CommandContext]{
+		Use:     "{{.CommandUse}}",
+		Short:   "{{.ShortDescription}}",
+		Handler: handler,
+		Options: &CommandContext{Options: opts},
+		CtxFunc: func(ctx context.Context, c *CommandContext) *CommandContext {
+			c.Ctx = ctx
+			return c
+		},
+	})
+
+	return cmd
+}

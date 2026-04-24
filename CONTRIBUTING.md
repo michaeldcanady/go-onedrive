@@ -14,7 +14,7 @@ We follow a modular architectural pattern in the `internal` directory:
 - **Core (`internal/core`):** Core domain services, filesystem abstractions, and identity management.
 - **Slices (`internal/slices`):** CLI command definitions (Cobra) organized by functionality.
 - **Dependency Injection (`internal/di`):** Service container and dependency resolution.
-- **Middleware (`internal/middleware`):** API communication and logging middleware.
+- **Middleware (`internal/features/middleware`):** API communication and logging middleware.
 
 ## Coding Standards
 

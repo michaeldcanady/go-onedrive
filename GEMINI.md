@@ -18,9 +18,9 @@
 
 ## Architecture
 
-The project follows a modular design, with core functionalities organized within the `internal/feature/` directory. Key architectural components include:
+The project follows a modular design, with core functionalities organized within the `internal/` directory. Key architectural components include:
 - **`cmd/odc/`:** The entry point for the CLI application.
-- **`internal/feature/`:** Contains core domain services and feature-specific logic (e.g., `fs`, `state`, `profile`, `drive`, `identity`).
+- **`internal/`:** Contains core domain services and logic (e.g., `core/fs`, `profile`, `drive`, `identity`, `mount`).
 - **`internal/di/`:** Manages the Dependency Injection container for wiring services.
 - **`pkg/`:** Houses general-purpose utilities and shared components.
 - **`docs/`:** Contains project documentation managed by MkDocs.
@@ -78,17 +78,17 @@ Before the first release, ensure the following are configured:
 
 - **Go Version:** Go 1.25+ (as specified in `go.mod`).
 - **Error Handling:** Prefer wrapping errors with `%w` and using package-level error variables.
-- **Logging:** Utilize the structured logging abstraction provided by `internal/logger`.
+- **Logging:** Utilize the structured logging abstraction provided by `internal/features/logger`.
 - **Formatting:** Adhere to Go standards; run `go fmt ./...` before committing.
 - **Linting:** Run `golangci-lint run` to ensure code quality.
 - **CLI Command Validation:**
     - **Fail Fast:** Use Cobra's `PreRunE` to populate the command's `Options` struct and perform validation.
     - **Options Structs:** Every command should have an `Options` struct with a `Validate() error` method to centralize validation logic.
 - **State vs. Configuration Management:**
-    - **State (`internal/state`):** Represents volatile or persistent runtime status (e.g., active profile name, current drive ID, cached tokens). Internal to the app.
-    - **Config (`internal/config`):** Represents user-defined settings (e.g., Azure Tenant ID, Redirect URIs). External-facing and user-modifiable.
-    - **Domain-First Access Pattern:** Commands (UI layer) MUST NOT access `internal/state` directly. They must use Domain Services (e.g., `profile.Service`, `drive.Service`) which encapsulate state interaction.
-    - **Scoping:** The UI layer determines the scope of state changes (e.g., `state.ScopeGlobal` for persistence, `state.ScopeSession` for transience) and passes it to the Domain Service methods.
+    - **Session State:** Managed in-memory within domain services (e.g., `profile.Service` handles session-active profiles).
+    - **Config (`internal/features/config`):** Represents user-defined settings (e.g., Azure Tenant ID, Redirect URIs, Mount Points). External-facing and user-modifiable.
+    - **Domain-First Access Pattern:** Commands (UI layer) MUST NOT access internal persistence directly. They must use Domain Services (e.g., `profile.Service`, `drive.Service`, `mount.Service`) which encapsulate state interaction.
+    - **Scoping:** The UI layer determines the scope of changes (e.g., `shared.ScopeGlobal` for persistence, `shared.ScopeSession` for transience) and passes it to the Domain Service methods.
 - **Testing:** Unit tests are mandatory for new features and bug fixes. Leverage `stretchr/testify` for assertions and mocking, and use `t.Parallel()` where applicable.
 - **Pull Request Process:** Follow the guidelines in `CONTRIBUTING.md`, including forking, branching, building, testing, linting, documentation updates, and submitting PRs.
 

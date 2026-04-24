@@ -50,7 +50,7 @@ The project is organized to support these principles:
       `command_cmd.go`, and `options.go`.
     - **`internal/di/`:** Manages the Dependency Injection container.
     - **`internal/fs/`:** The filesystem abstraction layer.
-    - **`internal/identity/`:** Authentication and identity management.
+    - **`internal/features/identity/`:** Authentication and identity management.
 - **`pkg/`:** General-purpose utilities that are not specific to the 
   `odc` domain.
 

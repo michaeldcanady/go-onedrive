@@ -20,7 +20,7 @@ The container provides access to services such as:
 - **Profile:** For profile management.
 - **FS:** For the filesystem abstraction layer.
 - **Drive:** For drive-specific operations.
-- **Alias:** For drive alias management.
+- **Mounts:** For managing virtual filesystem mount points.
 
 ## Why Use DI?
 

@@ -16,8 +16,8 @@ uses prefixes to distinguish between them.
   `onedrive:/Documents/report.txt`).
 - **Local path:** Use the `local:` prefix to refer to your local machine (e.g.,
   `local:/home/user/notes.txt`).
-- **Drive aliases:** You can use a drive alias as a prefix to target a specific
-  drive directly (e.g., `work-share:/Reports/january.pdf`).
+- **Mount points:** You can use a mount point as a prefix to target a specific
+  drive or location directly (e.g., `onedrive:/Reports/january.pdf`).
 
 > **Note:** Most `odc` commands expect absolute paths starting with `/` when
 > referring to OneDrive items. For local paths, you can use absolute or

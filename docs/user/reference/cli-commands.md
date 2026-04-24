@@ -5,16 +5,18 @@ the path syntax used throughout the application.
 
 ## Path Syntax
 
-`odc` supports multiple storage providers and drive aliases through path
+`odc` supports multiple storage providers and mount points through path
 prefixes.
 
-- **OneDrive (Default):** Absolute paths starting with `/` refer to your active
-  OneDrive drive (e.g., `/Documents/report.txt`). You can also use the
-  `onedrive:` prefix.
-- **Local Filesystem:** Paths starting with `local:` refer to your local machine
+- **VFS (Default):** Absolute paths starting with `/` refer to your virtual
+  filesystem. By default, `/onedrive` maps to your personal OneDrive and
+  `/local` maps to your local filesystem.
+- **Explicit OneDrive path:** Use the `onedrive:` prefix (e.g.,
+  `onedrive:/Documents/report.txt`).
+- **Local path:** Use the `local:` prefix to refer to your local machine
   (e.g., `local:/home/user/notes.txt`).
-- **Drive Aliases:** Use a drive alias as a prefix to target a specific drive
-  (e.g., `work-share:/Reports/january.pdf`).
+- **Mount points:** Use a mount point name as a prefix to target a specific
+  drive directly (e.g., `work:/Reports/january.pdf`).
 
 ## Standard Filesystem Commands
 
@@ -29,16 +31,16 @@ List the contents of a directory.
     - `--sort`: Sort items by field (`name`, `size`, `modified`).
     - `--desc`: Sort in descending order.
 - **Examples:**
-    - `odc ls /` (Lists root of active drive)
-    - `odc ls local:./projects` (Lists local directory)
-    - `odc ls -r -o tree /Documents` (Recursive tree listing)
+    - `odc ls /onedrive` (Lists root of personal OneDrive)
+    - `odc ls local:/home/user` (Lists local directory)
+    - `odc ls -r -o tree /onedrive/Documents` (Recursive tree listing)
 
 ### `mkdir` - Create a directory
 Create a new folder in OneDrive or local filesystem.
 
 - **Usage:** `odc mkdir [PATH]`
 - **Examples:**
-    - `odc mkdir /NewFolder`
+    - `odc mkdir /onedrive/NewFolder`
     - `odc mkdir local:./new_local_folder`
 
 ### `touch` - Create a new file
@@ -53,8 +55,8 @@ Delete files or folders.
 - **Flags:**
     - `-r`, `--recursive`: Remove directories recursively.
 - **Examples:**
-    - `odc rm /file.txt`
-    - `odc rm -r /OldFolder`
+    - `odc rm /onedrive/file.txt`
+    - `odc rm -r /onedrive/OldFolder`
 
 ### `cp` - Copy files
 Copy files or directories between providers or within a provider.
@@ -63,16 +65,16 @@ Copy files or directories between providers or within a provider.
 - **Flags:**
     - `-r`, `--recursive`: Copy directories recursively.
 - **Examples:**
-    - `odc cp local:file.txt /remote-copy.txt`
-    - `odc cp /file1.txt /folder/file1.txt`
+    - `odc cp local:file.txt /onedrive/remote-copy.txt`
+    - `odc cp /onedrive/file1.txt /onedrive/folder/file1.txt`
 
 ### `mv` - Move files
 Move or rename a file or directory.
 
 - **Usage:** `odc mv [SOURCE] [DESTINATION]`
 - **Examples:**
-    - `odc mv /old-name.txt /new-name.txt`
-    - `odc mv /file.txt /MyFolder/file.txt`
+    - `odc mv /onedrive/old-name.txt /onedrive/new-name.txt`
+    - `odc mv /onedrive/file.txt /onedrive/MyFolder/file.txt`
 
 
 ### `cat` - Display file content
@@ -137,19 +139,32 @@ Profiles allow you to switch between multiple OneDrive accounts.
 
 ---
 
-## Drive Management
+## Drive Discovery
 
-### `drive` - Manage drives
-OneDrive accounts can have multiple drives (e.g., personal, shared SharePoint libraries).
+### `backend-discovery` - Discover drives
+Discover available OneDrive drives and shared libraries.
 
 - **Subcommands:**
     - `list`: List all drives you have access to.
-    - `get [ID|ALIAS]`: Get information about a specific drive.
-    - `use [ID|ALIAS]`: Set the default drive for the current session.
-    - `alias`: Manage shortcuts for drives.
-        - `list`: List all drive aliases.
-        - `set [NAME] [ID]`: Create a shortcut for a drive.
-        - `remove [NAME]`: Delete a drive alias.
+    - `get`: Get information about your primary personal drive.
+
+> **Note:** `drive` is an alias for `backend-discovery`.
+
+---
+
+## Mount Management
+
+### `mount` - Manage mount points
+Map OneDrive drives or local directories to paths in the virtual filesystem.
+
+- **Subcommands:**
+    - `list`: List all active mount points.
+    - `add`: Add a new mount point.
+        - **Flags:**
+            - `--type`: Backend type (`onedrive`, `local`).
+            - `--drive-id`: OneDrive drive ID (for `onedrive` type).
+            - `--root`: Local root directory (for `local` type).
+    - `remove [PATH]`: Remove a mount point.
 
 ---
 

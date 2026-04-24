@@ -1,0 +1,69 @@
+syntax = "proto3";
+
+package odc.identity.v1;
+
+option go_package = "github.com/michaeldcanady/go-onedrive/internal/features/identity/proto";
+
+service IdentityProvider {
+  // Authenticate initiates the login flow.
+  rpc Authenticate(AuthenticateRequest) returns (AuthenticateResponse);
+  
+  // GetToken retrieves a valid access token for an identity.
+  // It should handle refreshing if necessary.
+  rpc GetToken(GetTokenRequest) returns (GetTokenResponse);
+  
+  // ListIdentities returns all identities known to this provider.
+  rpc ListIdentities(ListIdentitiesRequest) returns (ListIdentitiesResponse);
+  
+  // Logout invalidates the session for an identity.
+  rpc Logout(LogoutRequest) returns (LogoutResponse);
+}
+
+message AuthenticateRequest {
+  string method = 1; // "interactive", "device_code", "client_secret"
+  string identity_id = 2;
+  bool force = 3;
+  map<string, string> provider_specific = 4;
+}
+
+message AuthenticateResponse {
+  AccessToken token = 1;
+  Identity identity = 2;
+}
+
+message GetTokenRequest {
+  string identity_id = 1;
+  repeated string scopes = 2;
+}
+
+message GetTokenResponse {
+  AccessToken token = 1;
+}
+
+message ListIdentitiesRequest {}
+
+message ListIdentitiesResponse {
+  repeated Identity identities = 1;
+}
+
+message LogoutRequest {
+  string identity_id = 1;
+}
+
+message LogoutResponse {}
+
+message AccessToken {
+  string token = 1;
+  string refresh_token = 2;
+  int64 expires_at = 3; // Unix timestamp
+  repeated string scopes = 4;
+}
+
+message Identity {
+  string id = 1;
+  string display_name = 2;
+  string email = 3;
+  string provider = 4;
+  string avatar_url = 5;
+  map<string, string> metadata = 6;
+}

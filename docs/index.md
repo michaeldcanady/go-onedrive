@@ -11,7 +11,8 @@ Welcome to the documentation for **odc**, a reimagined coreutils experience for 
 - **Familiar CLI Interface:** Manage OneDrive files using standard commands like `ls`, `cp`, `mv`, and `rm`.
 - **Vertical Slice Architecture:** Built for maintainability and scalability.
 - **Profile Support:** Seamlessly switch between multiple OneDrive accounts (e.g., Personal, School, Work).
-- **Multiple Drives & Aliases:** Easily navigate between personal drives, shared folders, and SharePoint libraries.
+- **Multiple Drives & Mount Points:** Easily navigate between personal drives,
+  shared folders, and SharePoint libraries.
 - **Native Integration:** Open OneDrive files directly in your favorite local editor.
 
 ## Getting Started
