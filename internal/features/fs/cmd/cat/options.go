@@ -3,6 +3,8 @@ package cat
 import (
 	"errors"
 	"io"
+
+	"github.com/michaeldcanady/go-onedrive/pkg/validation"
 )
 
 // Options provides the settings for the drive cat command.
@@ -15,8 +17,14 @@ type Options struct {
 
 // Validate ensures that the provided options are consistent and valid.
 func (o *Options) Validate() error {
-	if o.Path == "" {
-		return errors.New("path is required")
-	}
-	return nil
+	p := validation.All(
+		validation.PolicyFunc[Options](func(o Options) error {
+			if o.Path == "" {
+				return errors.New("path is required")
+			}
+			return nil
+		}),
+	)
+
+	return p.Evaluate(*o)
 }
