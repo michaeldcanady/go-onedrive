@@ -74,6 +74,9 @@ func (c *DefaultContainer) initBaseServices() error {
 	if err != nil {
 		return fmt.Errorf("failed to initialize profile service: %w", err)
 	}
+	if err := profile.Bootstrap(context.Background(), profileSvc); err != nil {
+		return fmt.Errorf("failed to bootstrap profile service: %w", err)
+	}
 	c.profile = profileSvc
     c.storageService = storage.NewDefaultService()
 

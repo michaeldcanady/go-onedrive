@@ -6,4 +6,7 @@ import "io"
 type Options struct {
 	// Stdout is the destination for standard output messages.
 	Stdout io.Writer
+
+	// Stderr is the destination for standard error messages.
+	Stderr io.Writer
 }

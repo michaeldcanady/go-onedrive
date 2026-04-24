@@ -3,21 +3,19 @@ package profile
 import (
 	"context"
 	"fmt"
-	"path/filepath"
 	"sync"
 	"time"
 
-	"github.com/michaeldcanady/go-onedrive/internal/core/env"
+	environment "github.com/michaeldcanady/go-onedrive/internal/core/env"
 	"github.com/michaeldcanady/go-onedrive/internal/core/shared"
-	bolt "go.etcd.io/bbolt"
 )
 
 // DefaultService is an implementation of the profile.Service.
 type DefaultService struct {
 	profileRepo  ProfileRepository
 	settingsRepo SettingsRepository
+	repo         *BoltRepository
 	env          environment.Service
-	db           *bolt.DB // Kept for cleanup
 
 	mu             sync.RWMutex
 	sessionProfile string
@@ -30,57 +28,43 @@ func NewDefaultService(env environment.Service) (*DefaultService, error) {
 		return nil, fmt.Errorf("failed to get config directory: %w", err)
 	}
 
-	dbFilePath := filepath.Join(configDir, "profiles.db")
-	db, err := bolt.Open(dbFilePath, 0600, &bolt.Options{Timeout: 1 * time.Second})
+	repo, err := NewBoltRepository(fmt.Sprintf("%s/profiles.db", configDir))
 	if err != nil {
-		return nil, fmt.Errorf("failed to open BoltDB: %w", err)
-	}
-
-	// Ensure buckets are created
-	err = db.Update(func(tx *bolt.Tx) error {
-		if _, err := tx.CreateBucketIfNotExists([]byte("profiles")); err != nil {
-			return fmt.Errorf("failed to create profiles bucket: %w", err)
-		}
-		if _, err := tx.CreateBucketIfNotExists([]byte("settings")); err != nil {
-			return fmt.Errorf("failed to create settings bucket: %w", err)
-		}
-		return nil
-	})
-	if err != nil {
-		db.Close()
 		return nil, err
 	}
 
-	repo := NewBoltRepository(db)
 	s := &DefaultService{
 		profileRepo:  repo,
 		settingsRepo: repo,
+		repo:         repo,
 		env:          env,
-		db:           db,
-	}
-
-	// Ensure default profile exists
-	exists, _ := repo.Exists(context.Background(), shared.DefaultProfileName)
-	if !exists {
-		_, _ = s.Create(context.Background(), shared.DefaultProfileName)
-		_ = repo.SetSetting(context.Background(), "active_profile", shared.DefaultProfileName)
 	}
 
 	return s, nil
 }
 
-// ResolvePath returns the configuration file path for the specified profile name.
-func (s *DefaultService) ResolvePath(ctx context.Context, profileName string) (string, error) {
-	p, err := s.profileRepo.Get(ctx, profileName)
+// Bootstrap ensures the profile service is correctly initialized with default data.
+func Bootstrap(ctx context.Context, s Service) error {
+	exists, err := s.Exists(ctx, shared.DefaultProfileName)
 	if err != nil {
-		return "", err
+		return err
 	}
-	return p.ConfigPath, nil
+
+	if !exists {
+		if _, err := s.Create(ctx, shared.DefaultProfileName); err != nil {
+			return err
+		}
+		if err := s.SetActive(ctx, shared.DefaultProfileName, shared.ScopeGlobal); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
-// Close closes the BoltDB database connection.
+// Close closes the database connection.
 func (s *DefaultService) Close() error {
-	return s.db.Close()
+	return s.repo.Close()
 }
 
 // Get returns the profile with the specified name.
@@ -98,7 +82,7 @@ func (s *DefaultService) Create(ctx context.Context, name string) (Profile, erro
 	configDir, _ := s.env.ConfigDir()
 	p := Profile{
 		Name:       name,
-		ConfigPath: filepath.Join(configDir, fmt.Sprintf("%s.yaml", name)),
+		ConfigPath: fmt.Sprintf("%s/%s.yaml", configDir, name),
 		CreatedAt:  time.Now(),
 		UpdatedAt:  time.Now(),
 	}

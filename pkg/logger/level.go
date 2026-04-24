@@ -1,12 +1,17 @@
 package logger
 
 import (
+	"encoding"
 	"fmt"
+	"strconv"
 	"strings"
 )
 
 // Level defines the severity of a log message.
 type Level int8
+
+var _ encoding.TextMarshaler = Level(0)
+var _ encoding.TextUnmarshaler = (*Level)(nil)
 
 const (
 	// LevelUnknown represents an unknown logging level.
@@ -21,12 +26,28 @@ const (
 	LevelError
 )
 
+func (l Level) MarshalText() ([]byte, error) {
+	return []byte(l.String()), nil
+}
+
 func (l *Level) UnmarshalText(text []byte) error {
-	*l = ParseLevel(string(text))
-	if *l == LevelUnknown {
-		return fmt.Errorf("invalid log level: %s", string(text))
+	s := string(text)
+	*l = ParseLevel(s)
+	if *l != LevelUnknown {
+		return nil
 	}
-	return nil
+
+	// Try parsing as integer for backward compatibility
+	if i, err := strconv.Atoi(s); err == nil {
+		lvl := Level(i)
+		switch lvl {
+		case LevelDebug, LevelInfo, LevelWarn, LevelError:
+			*l = lvl
+			return nil
+		}
+	}
+
+	return fmt.Errorf("invalid log level: %s", s)
 }
 
 func ParseLevel(level string) Level {

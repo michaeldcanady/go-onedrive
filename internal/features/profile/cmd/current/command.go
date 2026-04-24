@@ -20,6 +20,7 @@ func CreateCurrentCmd(container di.Container) *cobra.Command {
 		Args:  cobra.NoArgs,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			opts.Stdout = cmd.OutOrStdout()
+			opts.Stderr = cmd.ErrOrStderr()
 
 			c = &CommandContext{
 				Ctx:     cmd.Context(),

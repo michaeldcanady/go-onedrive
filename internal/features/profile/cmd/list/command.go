@@ -20,6 +20,7 @@ func CreateListCmd(container di.Container) *cobra.Command {
 
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			opts.Stdout = cmd.OutOrStdout()
+			opts.Stderr = cmd.ErrOrStderr()
 
 			c = &CommandContext{
 				Ctx:     cmd.Context(),
@@ -30,10 +31,9 @@ func CreateListCmd(container di.Container) *cobra.Command {
 		},
 
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return handler.Execute(c)
-		},
-
-		PostRunE: func(cmd *cobra.Command, args []string) error {
+			if err := handler.Execute(c); err != nil {
+				return err
+			}
 			return handler.Finalize(c)
 		},
 	}

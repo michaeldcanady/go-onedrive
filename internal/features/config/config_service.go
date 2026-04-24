@@ -9,18 +9,8 @@ import (
 	"github.com/michaeldcanady/go-onedrive/internal/features/profile"
 )
 
-type ActiveProfileGetter interface {
-	GetActive(ctx context.Context) (profile.Profile, error)
-}
-
-type ConfigPathResolver interface {
-	ResolvePath(ctx context.Context, profileName string) (string, error)
-}
-
-// ProfileProvider defines the requirements for profile-based configuration path resolution.
 type ProfileProvider interface {
-	ConfigPathResolver
-	ActiveProfileGetter
+	GetActive(ctx context.Context) (profile.Profile, error)
 }
 
 // ConfigService is an implementation of the Service interface that uses a Repository for persistence.
@@ -74,11 +64,8 @@ func (s *ConfigService) GetPath(ctx context.Context) (string, bool) {
 
 	if s.profileSvc != nil {
 		p, err := s.profileSvc.GetActive(ctx)
-		if err == nil {
-			path, err := s.profileSvc.ResolvePath(ctx, p.Name)
-			if err == nil && path != "" {
-				return path, true
-			}
+		if err == nil && p.ConfigPath != "" {
+			return p.ConfigPath, true
 		}
 	}
 

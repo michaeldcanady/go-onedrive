@@ -23,8 +23,12 @@ func TestBoltRepository(t *testing.T) {
 		_, _ = tx.CreateBucketIfNotExists([]byte("settings"))
 		return nil
 	})
+	db.Close()
 
-	repo := NewBoltRepository(db)
+	repo, err := NewBoltRepository(dbFile)
+	assert.NoError(t, err)
+	defer repo.Close()
+
 	ctx := context.Background()
 	p := Profile{
 		Name:      "test-profile",

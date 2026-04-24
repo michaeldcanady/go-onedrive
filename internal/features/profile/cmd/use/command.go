@@ -21,6 +21,7 @@ func CreateUseCmd(container di.Container) *cobra.Command {
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			opts.Name = args[0]
 			opts.Stdout = cmd.OutOrStdout()
+			opts.Stderr = cmd.ErrOrStderr()
 
 			c = &CommandContext{
 				Ctx:     cmd.Context(),
