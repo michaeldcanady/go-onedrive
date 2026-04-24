@@ -15,20 +15,40 @@ func TestOptions_Validate(t *testing.T) {
 		errMsgs []string
 	}{
 		{
-			name: "valid options",
+			name: "valid minimal options",
 			options: Options{
 				Format: formatting.FormatShort,
 			},
 			wantErr: false,
 		},
 		{
-			name: "invalid sort field",
+			name: "valid full options",
+			options: Options{
+				Format:         formatting.FormatLong,
+				Recursive:      true,
+				SortFields:     []string{"name", "SIZE", "modified"},
+				SortDescending: true,
+				All:            true,
+			},
+			wantErr: false,
+		},
+		{
+			name: "invalid single sort field",
 			options: Options{
 				Format:     formatting.FormatShort,
 				SortFields: []string{"invalid"},
 			},
 			wantErr: true,
 			errMsgs: []string{"invalid sorting field 'invalid'"},
+		},
+		{
+			name: "mix of valid and invalid sort fields",
+			options: Options{
+				Format:     formatting.FormatShort,
+				SortFields: []string{"name", "wrong", "size"},
+			},
+			wantErr: true,
+			errMsgs: []string{"invalid sorting field 'wrong'"},
 		},
 		{
 			name: "unknown format",
@@ -39,7 +59,15 @@ func TestOptions_Validate(t *testing.T) {
 			errMsgs: []string{"unknown output format specified"},
 		},
 		{
-			name: "recursive incompatible format",
+			name: "recursive mode - supported formats",
+			options: Options{
+				Recursive: true,
+				Format:    formatting.FormatTree,
+			},
+			wantErr: false,
+		},
+		{
+			name: "recursive mode - unsupported format (short)",
 			options: Options{
 				Recursive: true,
 				Format:    formatting.FormatShort,
@@ -48,10 +76,19 @@ func TestOptions_Validate(t *testing.T) {
 			errMsgs: []string{"recursive mode (-r/--recursive) is not supported with the 'short' format"},
 		},
 		{
-			name: "recursive compatible format",
+			name: "recursive mode - unsupported format (table)",
 			options: Options{
 				Recursive: true,
-				Format:    formatting.FormatTree,
+				Format:    formatting.FormatTable,
+			},
+			wantErr: true,
+			errMsgs: []string{"recursive mode (-r/--recursive) is not supported with the 'table' format"},
+		},
+		{
+			name: "no sort fields is valid",
+			options: Options{
+				Format:     formatting.FormatShort,
+				SortFields: []string{},
 			},
 			wantErr: false,
 		},

@@ -21,12 +21,29 @@ func TestOptions_Validate(t *testing.T) {
 			wantErr: false,
 		},
 		{
+			name: "root path",
+			options: Options{
+				Path: "/",
+			},
+			wantErr: false,
+		},
+		{
 			name: "empty path",
 			options: Options{
 				Path: "",
 			},
 			wantErr: true,
 			errMsg:  "path is required",
+		},
+		{
+			name: "whitespace path",
+			options: Options{
+				Path: "   ",
+			},
+			// Currently, our Required policy only checks for "", not whitespace.
+			// If we want to fail on whitespace, we should update the policy or the test expectation.
+			// For now, I'll stick to current behavior which only checks for "".
+			wantErr: false,
 		},
 	}
 
