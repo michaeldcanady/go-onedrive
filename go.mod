@@ -11,7 +11,6 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/hashicorp/go-plugin v1.7.0
 	github.com/microsoftgraph/msgraph-sdk-go v1.97.0
-	github.com/microsoftgraph/msgraph-sdk-go-core v1.4.0
 	github.com/spf13/cobra v1.10.2
 	go.etcd.io/bbolt v1.4.3
 	go.uber.org/zap v1.27.1
