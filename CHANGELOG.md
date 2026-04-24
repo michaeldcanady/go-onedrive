@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.2.0-alpha.1](https://github.com/michaeldcanady/go-onedrive/compare/v0.2.0-alpha...v0.2.0-alpha.1) (2026-04-24)
+
+
+### Features
+
+* **fs:** uri factory ([#122](https://github.com/michaeldcanady/go-onedrive/issues/122)) ([198b750](https://github.com/michaeldcanady/go-onedrive/commit/198b7504440db332a96827331134df9d5e1d226b))
+* redesign drive management and access design ([#126](https://github.com/michaeldcanady/go-onedrive/issues/126)) ([a1cf13d](https://github.com/michaeldcanady/go-onedrive/commit/a1cf13dd6252393ae42077d2622afc600c42b7f9))
+* sort spec ([#121](https://github.com/michaeldcanady/go-onedrive/issues/121)) ([e966c5e](https://github.com/michaeldcanady/go-onedrive/commit/e966c5e4f7661d0ddb78ddd306f32d1ee959e845))
+* **spec:** add filter spec ([#120](https://github.com/michaeldcanady/go-onedrive/issues/120)) ([fa7ce0e](https://github.com/michaeldcanady/go-onedrive/commit/fa7ce0ec152d51dcfb0c97bea3d7af84d2ad44e3))
+
 ## [0.2.0-alpha](https://github.com/michaeldcanady/go-onedrive/compare/v0.1.0...v0.2.0-alpha) (2026-04-07)
 
 
