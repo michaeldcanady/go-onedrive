@@ -1,11 +1,9 @@
 package add
 
 import (
-	"context"
 	"maps"
 	"strings"
 
-	"github.com/michaeldcanady/go-onedrive/internal/core/cli"
 	"github.com/michaeldcanady/go-onedrive/internal/core/di"
 	"github.com/michaeldcanady/go-onedrive/internal/features/mount"
 	"github.com/spf13/cobra"
@@ -89,22 +87,34 @@ func baseFlagCompletion(mountOptions map[string][]mount.MountOption) cobra.Compl
 }
 
 func CreateAddCmd(container di.Container) *cobra.Command {
-	opts := NewOptions()
+	var opts Options
+	var c *CommandContext
 
 	l, _ := container.Logger().CreateLogger("mount-add")
-	handler := NewCommand(container.Mounts(), container.Identity(), l)
+	handler := NewCommand(container.Mounts(), container.Identity(), container.URIFactory(), l)
 
-	cmd := cli.NewCommand(cli.CommandConfig[CommandContext]{
-		Use:     "add <path> <type> <identity_id>",
-		Short:   "Add a mount point",
-		Args:    cobra.ExactArgs(3),
-		Handler: handler,
-		Options: NewCommandContext(context.Background(), opts),
-		CtxFunc: func(ctx context.Context, o *CommandContext) *CommandContext {
-			o.Ctx = ctx
-			return o
+	cmd := &cobra.Command{
+		Use:   "add <path> <type> <identity_id>",
+		Short: "Add a mount point",
+		Args:  cobra.ExactArgs(3),
+		PreRunE: func(cmd *cobra.Command, args []string) error {
+			opts.Path = args[0]
+			opts.Type = args[1]
+			opts.IdentityID = args[2]
+			opts.Stdout = cmd.OutOrStdout()
+			opts.Stderr = cmd.ErrOrStderr()
+
+			c = NewCommandContext(cmd.Context(), &opts)
+
+			return handler.Validate(c)
 		},
-	})
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if err := handler.Execute(c); err != nil {
+				return err
+			}
+			return handler.Finalize(c)
+		},
+	}
 
 	cmd.RegisterFlagCompletionFunc("option", baseFlagCompletion(container.Mounts().GetMountOptions()))
 

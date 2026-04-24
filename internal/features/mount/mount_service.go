@@ -3,11 +3,13 @@ package mount
 import (
 	"context"
 	"fmt"
+	"sync"
 )
 
 // MountService is an implementation of the Service interface.
 type MountService struct {
 	configRepo          ConfigRepository
+	mu                  sync.RWMutex
 	validators          map[string]OptionValidator
 	completionProviders map[string]CompletionProvider
 }
@@ -23,22 +25,30 @@ func NewMountService(configRepo ConfigRepository) *MountService {
 
 // RegisterValidator registers a validator for a given mount type.
 func (s *MountService) RegisterValidator(mountType string, v OptionValidator) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	s.validators[mountType] = v
 }
 
 // RegisterCompletionProvider registers a completion provider for a given mount type.
 func (s *MountService) RegisterCompletionProvider(mountType string, p CompletionProvider) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	s.completionProviders[mountType] = p
 }
 
 // GetCompletionProvider retrieves a registered completion provider.
 func (s *MountService) GetCompletionProvider(mountType string) (CompletionProvider, bool) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
 	p, ok := s.completionProviders[mountType]
 	return p, ok
 }
 
 // GetMountOptions retrieves all registered mount options.
 func (s *MountService) GetMountOptions() map[string][]MountOption {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
 	options := make(map[string][]MountOption)
 	for mountType, validator := range s.validators {
 		if provider, ok := validator.(OptionsProvider); ok {
@@ -55,7 +65,11 @@ func (s *MountService) ListMounts(ctx context.Context) ([]MountConfig, error) {
 
 // AddMount adds or updates a mount point in the configuration.
 func (s *MountService) AddMount(ctx context.Context, m MountConfig) error {
-	if validator, ok := s.validators[m.Type]; ok {
+	s.mu.RLock()
+	validator, ok := s.validators[m.Type]
+	s.mu.RUnlock()
+
+	if ok {
 		if err := validator.ValidateOptions(m.Options); err != nil {
 			return fmt.Errorf("invalid options for mount type %s: %w", m.Type, err)
 		}

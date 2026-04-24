@@ -11,11 +11,3 @@ type Options struct {
 	// Path the mount point's path
 	Path string
 }
-
-func NewOptions() *Options {
-	return &Options{}
-}
-
-func (o *Options) Validate() error {
-	return nil
-}

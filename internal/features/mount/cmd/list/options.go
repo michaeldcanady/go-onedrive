@@ -2,22 +2,10 @@ package list
 
 import (
 	"io"
-
-	formatting "github.com/michaeldcanady/go-onedrive/pkg/format"
 )
 
 type Options struct {
 	Format string
 	Stdout io.Writer
 	Stderr io.Writer
-}
-
-func NewOptions() *Options {
-	return &Options{
-		Format: formatting.FormatShort.String(),
-	}
-}
-
-func (o *Options) Validate() error {
-	return nil
 }

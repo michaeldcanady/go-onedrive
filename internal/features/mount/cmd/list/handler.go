@@ -31,6 +31,7 @@ func NewCommand(m MountLister, ff FormatCreator, l logger.Logger) *Command {
 }
 
 func (c *Command) Validate(ctx *CommandContext) error {
+	ctx.Format = formatting.NewFormat(ctx.Options.Format)
 	return nil
 }
 
