@@ -21,7 +21,7 @@ func InList[T comparable](value T, allowed []T, fieldName string) error {
 }
 
 // InListFunc returns a PolicyFunc for checking if a value is in a list.
-func InListFunc[T comparable](allowed []T, fieldName string, getter func(T) T) PolicyFunc[T] {
+func InListFunc[T any, V comparable](allowed []V, fieldName string, getter func(T) V) PolicyFunc[T] {
 	return func(candidate T) error {
 		val := getter(candidate)
 		return InList(val, allowed, fieldName)
