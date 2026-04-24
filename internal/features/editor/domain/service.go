@@ -71,6 +71,14 @@ type Context struct {
 	Ctx     context.Context
 }
 
+// SessionManager defines the interface for managing the lifecycle of editing sessions.
+type SessionManager interface {
+	CreateSession(ctx context.Context, remoteURI *fs.URI, reader io.Reader) (*Session, error)
+	Modified(session *Session) (bool, error)
+	NewContent(session *Session) (io.ReadCloser, error)
+	Cleanup(ctx context.Context, svc Service, session *Session) error
+}
+
 // Service defines the interface for editor-related operations and session management.
 type Service interface {
 	// CreateSession initializes a new editing session for the given remote URI.

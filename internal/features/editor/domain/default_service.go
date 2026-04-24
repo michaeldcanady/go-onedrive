@@ -52,6 +52,13 @@ func WithResolver(resolver EditorResolver) Option {
 	}
 }
 
+// WithSessionManager sets the session manager for the service.
+func WithSessionManager(sm SessionManager) Option {
+	return func(s *DefaultService) {
+		s.sessions = sm
+	}
+}
+
 // DefaultService provides the default implementation of the editor service.
 type DefaultService struct {
 	envSvc      environment.Service
@@ -63,6 +70,7 @@ type DefaultService struct {
 	stderr      io.Writer
 	editorCmd   string
 	resolver    EditorResolver
+	sessions    SessionManager
 	sm          *StateMachine[State, Event, *Context]
 }
 
@@ -85,6 +93,10 @@ func NewDefaultService(envSvc environment.Service, uriFactory *fs.URIFactory, l 
 		s.resolver = NewDefaultResolver(s.envSvc, s.cfgProvider, s.editorCmd)
 	}
 
+	if s.sessions == nil {
+		s.sessions = NewDefaultSessionManager(s.envSvc, s.uriFactory)
+	}
+
 	s.sm = s.setupStateMachine()
 
 	return s
@@ -98,6 +110,10 @@ func (s *DefaultService) setupStateMachine() *StateMachine[State, Event, *Contex
 	sm.AddTransition([]State{StateEditing}, EventComplete, StateCompleted, nil)
 
 	sm.AddTransition([]State{StateCreated, StateEditing, StateCompleted}, EventClose, StateClosed, func(ctx *Context) error {
+		type fileRemover interface {
+			removeFile(session *Session) error
+		}
+
 		remover, ok := ctx.Service.(fileRemover)
 		if !ok {
 			return fmt.Errorf("service does not support file removal")
@@ -108,8 +124,14 @@ func (s *DefaultService) setupStateMachine() *StateMachine[State, Event, *Contex
 	return sm
 }
 
-type fileRemover interface {
-	removeFile(session *Session) error
+func (s *DefaultService) removeFile(session *Session) error {
+	type internalRemover interface {
+		removeFile(session *Session) error
+	}
+	if ir, ok := s.sessions.(internalRemover); ok {
+		return ir.removeFile(session)
+	}
+	return fmt.Errorf("session manager does not support internal file removal")
 }
 
 // WithOptions returns a new Service instance with the specified options applied.
@@ -124,6 +146,7 @@ func (s *DefaultService) WithOptions(opts ...Option) Service {
 		stderr:      s.stderr,
 		editorCmd:   s.editorCmd,
 		resolver:    s.resolver,
+		sessions:    s.sessions,
 	}
 
 	for _, opt := range opts {
@@ -138,6 +161,26 @@ func (s *DefaultService) WithOptions(opts ...Option) Service {
 	newS.sm = newS.setupStateMachine()
 
 	return newS
+}
+
+// CreateSession initializes a new editing session.
+func (s *DefaultService) CreateSession(ctx context.Context, remoteURI *fs.URI, r io.Reader) (*Session, error) {
+	return s.sessions.CreateSession(ctx, remoteURI, r)
+}
+
+// Modified checks if the local file in the session has changed.
+func (s *DefaultService) Modified(session *Session) (bool, error) {
+	return s.sessions.Modified(session)
+}
+
+// NewContent returns a reader for the modified content in the session.
+func (s *DefaultService) NewContent(session *Session) (io.ReadCloser, error) {
+	return s.sessions.NewContent(session)
+}
+
+// Cleanup removes the temporary local file and releases session resources.
+func (s *DefaultService) Cleanup(ctx context.Context, session *Session) error {
+	return s.sessions.Cleanup(ctx, s, session)
 }
 
 func (s *DefaultService) getEditorParts(ctx context.Context) ([]string, error) {

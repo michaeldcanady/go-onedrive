@@ -10,12 +10,27 @@ import (
 	"path/filepath"
 
 	"github.com/google/uuid"
+	environment "github.com/michaeldcanady/go-onedrive/internal/core/env"
 	fs "github.com/michaeldcanady/go-onedrive/internal/features/fs/domain"
 )
 
+// DefaultSessionManager implements the SessionManager interface.
+type DefaultSessionManager struct {
+	envSvc     environment.Service
+	uriFactory *fs.URIFactory
+}
+
+// NewDefaultSessionManager initializes a new instance of the DefaultSessionManager.
+func NewDefaultSessionManager(envSvc environment.Service, uriFactory *fs.URIFactory) *DefaultSessionManager {
+	return &DefaultSessionManager{
+		envSvc:     envSvc,
+		uriFactory: uriFactory,
+	}
+}
+
 // CreateSession initializes a new editing session.
-func (s *DefaultService) CreateSession(ctx context.Context, remoteURI *fs.URI, r io.Reader) (*Session, error) {
-	tempDir, err := s.envSvc.TempDir()
+func (m *DefaultSessionManager) CreateSession(ctx context.Context, remoteURI *fs.URI, r io.Reader) (*Session, error) {
+	tempDir, err := m.envSvc.TempDir()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get temp directory: %w", err)
 	}
@@ -28,7 +43,7 @@ func (s *DefaultService) CreateSession(ctx context.Context, remoteURI *fs.URI, r
 	defer tmpFile.Close()
 
 	localPath := tmpFile.Name()
-	localURI, err := s.uriFactory.FromLocalPath(localPath)
+	localURI, err := m.uriFactory.FromLocalPath(localPath)
 	if err != nil {
 		_ = os.Remove(localPath)
 		return nil, fmt.Errorf("failed to create local URI: %w", err)
@@ -55,7 +70,7 @@ func (s *DefaultService) CreateSession(ctx context.Context, remoteURI *fs.URI, r
 }
 
 // Modified checks if the local file in the session has changed.
-func (s *DefaultService) Modified(session *Session) (bool, error) {
+func (m *DefaultSessionManager) Modified(session *Session) (bool, error) {
 	if state := session.State(); state != StateCompleted {
 		return false, fmt.Errorf("cannot check modifications for session in state %s", state)
 	}
@@ -75,7 +90,7 @@ func (s *DefaultService) Modified(session *Session) (bool, error) {
 }
 
 // NewContent returns a reader for the modified content in the session.
-func (s *DefaultService) NewContent(session *Session) (io.ReadCloser, error) {
+func (m *DefaultSessionManager) NewContent(session *Session) (io.ReadCloser, error) {
 	if state := session.State(); state != StateCompleted {
 		return nil, fmt.Errorf("cannot get content for session in state %s", state)
 	}
@@ -88,11 +103,11 @@ func (s *DefaultService) NewContent(session *Session) (io.ReadCloser, error) {
 }
 
 // Cleanup removes the temporary local file and releases session resources.
-func (s *DefaultService) Cleanup(ctx context.Context, session *Session) error {
-	return session.Handle(ctx, s, EventClose)
+func (m *DefaultSessionManager) Cleanup(ctx context.Context, svc Service, session *Session) error {
+	return session.Handle(ctx, svc, EventClose)
 }
 
 // removeFile is the internal implementation that actually deletes the local file.
-func (s *DefaultService) removeFile(session *Session) error {
+func (m *DefaultSessionManager) removeFile(session *Session) error {
 	return os.Remove(session.LocalURI.Path)
 }
