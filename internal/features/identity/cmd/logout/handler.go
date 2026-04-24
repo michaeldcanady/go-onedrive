@@ -1,7 +1,6 @@
 package logout
 
 import (
-	"context"
 	"fmt"
 
 	"github.com/michaeldcanady/go-onedrive/internal/features/config"
@@ -30,18 +29,19 @@ func NewCommand(
 }
 
 // Validate prepares and validates the options for the logout operation.
-func (c *Command) Validate(ctx context.Context, opts *Options) error {
-	return opts.Validate()
+func (c *Command) Validate(ctx *CommandContext) error {
+	return ctx.Options.Validate()
 }
 
 // Execute performs the logout operation.
-func (c *Command) Execute(ctx context.Context, opts Options) error {
-	log := c.log.WithContext(ctx)
+func (c *Command) Execute(ctx *CommandContext) error {
+	log := c.log.WithContext(ctx.Ctx)
+	opts := ctx.Options
 
 	log.Info("starting logout flow")
 
 	log.Debug("loading profile configuration")
-	cfg, err := c.config.GetConfig(ctx)
+	cfg, err := c.config.GetConfig(ctx.Ctx)
 	if err != nil {
 		log.Error("failed to load configuration", logger.Error(err))
 		return fmt.Errorf("failed to load configuration: %w", err)
@@ -54,7 +54,7 @@ func (c *Command) Execute(ctx context.Context, opts Options) error {
 	}
 
 	log.Info("logging out from provider", logger.String("provider", provider), logger.String("identity", opts.IdentityID))
-	if err := c.identity.Logout(ctx, provider, opts.IdentityID); err != nil {
+	if err := c.identity.Logout(ctx.Ctx, provider, opts.IdentityID); err != nil {
 		log.Error("logout failed", logger.Error(err))
 		return fmt.Errorf("logout failed: %w", err)
 	}
@@ -66,6 +66,6 @@ func (c *Command) Execute(ctx context.Context, opts Options) error {
 }
 
 // Finalize performs any necessary cleanup after the logout operation.
-func (c *Command) Finalize(ctx context.Context, opts Options) error {
+func (c *Command) Finalize(ctx *CommandContext) error {
 	return nil
 }
