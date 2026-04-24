@@ -8,6 +8,7 @@ import (
 
 	fs "github.com/michaeldcanady/go-onedrive/internal/features/fs/domain"
 	formatting "github.com/michaeldcanady/go-onedrive/pkg/format"
+	"github.com/michaeldcanady/go-onedrive/pkg/validation"
 )
 
 // Options provides the user-facing settings for the drive ls command.
@@ -33,25 +34,47 @@ type Options struct {
 
 // Validate ensures that the provided options are consistent and valid.
 func (o *Options) Validate() error {
-	// Validate SortFields
+	p := validation.All(
+		sortFieldsPolicy(),
+		formatPolicy(),
+		recursiveCompatibilityPolicy(),
+	)
+
+	return p.Evaluate(*o)
+}
+
+func sortFieldsPolicy() validation.Policy[Options] {
 	validSortFields := []string{"name", "size", "modified"}
-	for _, field := range o.SortFields {
-		if !slices.Contains(validSortFields, strings.ToLower(field)) {
-			return fmt.Errorf("invalid sorting field '%s'; please use one of the following valid fields: %s",
-				field, strings.Join(validSortFields, ", "))
+
+	return validation.Each(
+		func(o Options) []string { return o.SortFields },
+		validation.PolicyFunc[string](func(field string) error {
+			if !slices.Contains(validSortFields, strings.ToLower(field)) {
+				return fmt.Errorf("invalid sorting field '%s'; please use one of the following valid fields: %s",
+					field, strings.Join(validSortFields, ", "))
+			}
+			return nil
+		}),
+	)
+}
+
+func formatPolicy() validation.Policy[Options] {
+	return validation.PolicyFunc[Options](func(o Options) error {
+		if o.Format == formatting.FormatUnknown {
+			validFormats := []string{"short", "long", "json", "yaml", "tree", "table"}
+			return fmt.Errorf("unknown output format specified; please provide a valid format such as: %s",
+				strings.Join(validFormats, ", "))
 		}
-	}
+		return nil
+	})
+}
 
-	// Validate Format
-	// Note: FormatUnknown is set when the provided format string doesn't match known types.
-	if o.Format == formatting.FormatUnknown {
-		validFormats := []string{"short", "long", "json", "yaml", "tree", "table"}
-		return fmt.Errorf("unknown output format specified; please provide a valid format such as: %s",
-			strings.Join(validFormats, ", "))
-	}
+func recursiveCompatibilityPolicy() validation.Policy[Options] {
+	return validation.PolicyFunc[Options](func(o Options) error {
+		if !o.Recursive {
+			return nil
+		}
 
-	// Cross-field validation: Recursive mode restrictions
-	if o.Recursive {
 		allowedRecursiveFormats := []formatting.Format{
 			formatting.FormatTree,
 			formatting.FormatLong,
@@ -69,7 +92,6 @@ func (o *Options) Validate() error {
 				"please use a compatible format like: %s",
 				o.Format.String(), strings.Join(allowedStrings, ", "))
 		}
-	}
-
-	return nil
+		return nil
+	})
 }
