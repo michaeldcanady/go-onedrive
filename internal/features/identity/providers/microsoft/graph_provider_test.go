@@ -25,27 +25,52 @@ func TestGraphProvider_Name(t *testing.T) {
 }
 
 func TestGraphProvider_Client(t *testing.T) {
-	ctx := context.Background()
-	mCred := new(mockTokenCredential)
-	mLog := new(mockLogger)
+	tests := []struct {
+		name    string
+		setup   func(mCred *mockTokenCredential, mLog *mockLogger) (azcore.TokenCredential, *mockLogger)
+		wantErr bool
+		errMsg  string
+	}{
+		{
+			name: "initialization success",
+			setup: func(mCred *mockTokenCredential, mLog *mockLogger) (azcore.TokenCredential, *mockLogger) {
+				return mCred, mLog
+			},
+			wantErr: false,
+		},
+		{
+			name: "missing credential",
+			setup: func(mCred *mockTokenCredential, mLog *mockLogger) (azcore.TokenCredential, *mockLogger) {
+				return nil, mLog
+			},
+			wantErr: true,
+			errMsg:  "no authentication credential provided",
+		},
+	}
 
-	p := NewGraphProvider(mCred, mLog)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx := context.Background()
+			mCred := new(mockTokenCredential)
+			mLog := new(mockLogger)
 
-	t.Run("initialization success", func(t *testing.T) {
-		client, err := p.Client(ctx)
-		assert.NoError(t, err)
-		assert.NotNil(t, client)
-		
-		// Second call should return the same client
-		client2, err := p.Client(ctx)
-		assert.NoError(t, err)
-		assert.Same(t, client, client2)
-	})
+			cred, log := tt.setup(mCred, mLog)
+			p := NewGraphProvider(cred, log)
 
-	t.Run("missing credential", func(t *testing.T) {
-		pNoCred := NewGraphProvider(nil, mLog)
-		_, err := pNoCred.Client(ctx)
-		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "no authentication credential provided")
-	})
+			client, err := p.Client(ctx)
+
+			if tt.wantErr {
+				assert.Error(t, err)
+				assert.Contains(t, err.Error(), tt.errMsg)
+			} else {
+				assert.NoError(t, err)
+				assert.NotNil(t, client)
+
+				// Second call should return the same client
+				client2, err := p.Client(ctx)
+				assert.NoError(t, err)
+				assert.Same(t, client, client2)
+			}
+		})
+	}
 }

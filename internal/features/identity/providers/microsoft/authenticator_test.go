@@ -13,21 +13,46 @@ func TestMicrosoftAuthenticator_ProviderName(t *testing.T) {
 }
 
 func TestMicrosoftAuthenticator_Logout(t *testing.T) {
-	a := NewMicrosoftAuthenticator()
-	ctx := context.Background()
+	tests := []struct {
+		name       string
+		identityID string
+		setup      func(a *MicrosoftAuthenticator)
+		wantErr    bool
+	}{
+		{
+			name:       "logout non-existent identity",
+			identityID: "non-existent",
+			setup:      func(a *MicrosoftAuthenticator) {},
+			wantErr:    false,
+		},
+		{
+			name:       "logout existing identity",
+			identityID: "user1",
+			setup: func(a *MicrosoftAuthenticator) {
+				a.mu.Lock()
+				a.creds["user1"] = new(mockTokenCredential)
+				a.mu.Unlock()
+			},
+			wantErr: false,
+		},
+	}
 
-	// Logout of a non-existent identity should not fail
-	err := a.Logout(ctx, "non-existent")
-	assert.NoError(t, err)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			a := NewMicrosoftAuthenticator()
+			tt.setup(a)
 
-	// We can't easily verify the internal state of creds since it's private,
-	// but we can ensure it doesn't panic and returns no error.
-	a.creds["user1"] = new(mockTokenCredential)
-	err = a.Logout(ctx, "user1")
-	assert.NoError(t, err)
-	
-	a.mu.RLock()
-	_, ok := a.creds["user1"]
-	a.mu.RUnlock()
-	assert.False(t, ok)
+			err := a.Logout(context.Background(), tt.identityID)
+
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+				a.mu.RLock()
+				_, ok := a.creds[tt.identityID]
+				a.mu.RUnlock()
+				assert.False(t, ok)
+			}
+		})
+	}
 }
