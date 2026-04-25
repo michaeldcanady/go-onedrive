@@ -1,6 +1,8 @@
 package touch
 
 import (
+	"context"
+
 	"github.com/michaeldcanady/go-onedrive/internal/core/di"
 	cli "github.com/michaeldcanady/go-onedrive/internal/core/cli"
 
@@ -9,35 +11,31 @@ import (
 
 // CreateTouchCmd constructs and returns the cobra.Command for the drive touch operation.
 func CreateTouchCmd(container di.Container) *cobra.Command {
-	var opts Options
-	var c *CommandContext
+	ctx := &CommandContext{
+		Options: Options{},
+	}
 
-	l, _ := container.Logger().CreateLogger("drive-touch")
+	l, _ := container.Logger().CreateLogger("touch")
 	handler := NewCommand(container.FS(), container.URIFactory(), l)
 
-	cmd := &cobra.Command{
-		Use:               "touch <path>",
-		Short:             "Create a new file or update the timestamp of an existing file",
-		Args:              cobra.ExactArgs(1),
-		ValidArgsFunction: cli.ProviderPathCompletion(container),
+	cmd := cli.NewCommand(cli.CommandConfig[CommandContext]{
+		Use:     "touch <path>",
+		Short:   "Create a new empty file",
+		Args:    cobra.ExactArgs(1),
+		Handler: handler,
+		Options: ctx,
+		CtxFunc: func(c context.Context, cc *CommandContext) *CommandContext {
+			cc.Ctx = c
+			return cc
+		},
 		PreRunE: func(cmd *cobra.Command, args []string) error {
-			opts.Path = args[0]
-			opts.Stdout = cmd.OutOrStdout()
-
-			c = &CommandContext{
-				Ctx:     cmd.Context(),
-				Options: opts,
-			}
-
-			return handler.Validate(c)
+			ctx.Options.Path = args[0]
+			ctx.Options.Stdout = cmd.OutOrStdout()
+			return nil
 		},
-		RunE: func(cmd *cobra.Command, args []string) error {
-			if err := handler.Execute(c); err != nil {
-				return err
-			}
-			return handler.Finalize(c)
-		},
-	}
+	})
+
+	cmd.ValidArgsFunction = cli.ProviderPathCompletion(container)
 
 	return cmd
 }
