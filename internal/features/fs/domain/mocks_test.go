@@ -73,3 +73,16 @@ func (m *mockVFS) Resolve(absPath string) (string, string, error) {
 	args := m.Called(absPath)
 	return args.String(0), args.String(1), args.Error(2)
 }
+
+func (m *mockBackend) ListDrives(ctx context.Context, token string) ([]fs.Drive, error) {
+	args := m.Called(ctx, token)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]fs.Drive), args.Error(1)
+}
+
+func (m *mockBackend) GetPersonalDrive(ctx context.Context, token string) (fs.Drive, error) {
+	args := m.Called(ctx, token)
+	return args.Get(0).(fs.Drive), args.Error(1)
+}
