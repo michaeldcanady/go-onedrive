@@ -4,17 +4,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 )
-
-type mockVFS struct {
-	mock.Mock
-}
-
-func (m *mockVFS) Resolve(absPath string) (string, string, error) {
-	args := m.Called(absPath)
-	return args.String(0), args.String(1), args.Error(2)
-}
 
 func TestURIFactory_FromString(t *testing.T) {
 	tests := []struct {
