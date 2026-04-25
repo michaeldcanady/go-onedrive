@@ -2,9 +2,7 @@ package get
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
-	"strings"
 
 	"github.com/michaeldcanady/go-onedrive/internal/core/logger"
 	"github.com/michaeldcanady/go-onedrive/internal/features/config"
@@ -25,25 +23,8 @@ func NewCommand(c config.Service, l logger.Logger) *Command {
 	}
 }
 
-var illegalChars = []string{
-	" ",
-	"\n",
-	"\r",
-}
-
 // Validate prepares and validates the options for the config get operation.
 func (c *Command) Validate(ctx *CommandContext) error {
-	cleanKey := strings.TrimSpace(ctx.Options.Key)
-	if cleanKey == "" {
-		return errors.New("key is empty")
-	}
-
-	for _, illegalChar := range illegalChars {
-		if strings.Contains(cleanKey, illegalChar) {
-			return fmt.Errorf("key contains illegal char %s", illegalChar)
-		}
-	}
-
 	return ctx.Options.Validate()
 }
 
