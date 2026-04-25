@@ -64,8 +64,8 @@ func TestCp_Functional(t *testing.T) {
 	}{
 		{
 			name:        "successful copy within same backend (native)",
-			source:      "od:/src.txt",
-			destination: "od:/dst.txt",
+			source:      "/od/src.txt",
+			destination: "/od/dst.txt",
 			setup: func(m *mockBackend) {
 				m.On("IdentityProvider").Return("")
 				m.On("Capabilities").Return(fs.Capabilities{CanCopy: true})
@@ -75,8 +75,8 @@ func TestCp_Functional(t *testing.T) {
 		},
 		{
 			name:        "successful copy fallback (Open/Create)",
-			source:      "od:/src.txt",
-			destination: "od:/dst.txt",
+			source:      "/od/src.txt",
+			destination: "/od/dst.txt",
 			setup: func(m *mockBackend) {
 				m.On("IdentityProvider").Return("")
 				m.On("Capabilities").Return(fs.Capabilities{CanCopy: false})
@@ -89,8 +89,8 @@ func TestCp_Functional(t *testing.T) {
 		},
 		{
 			name:        "copy failed - source not found",
-			source:      "od:/nonexistent.txt",
-			destination: "od:/dst.txt",
+			source:      "/od/nonexistent.txt",
+			destination: "/od/dst.txt",
 			setup: func(m *mockBackend) {
 				m.On("IdentityProvider").Return("")
 				m.On("Capabilities").Return(fs.Capabilities{CanCopy: true})

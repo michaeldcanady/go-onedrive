@@ -74,13 +74,13 @@ func TestLsCommand_Integration(t *testing.T) {
 	}{
 		{
 			name: "ls with recursive and sort flags",
-			args: []string{"ls", "od:/test", "--recursive", "--format", "json", "--sort", "size", "--desc"},
+			args: []string{"ls", "/od/test", "--recursive", "--format", "json", "--sort", "size", "--desc"},
 			setup: func(m *mockContainer, mFS *mockFsService, mLogSvc *mockLoggerService, mLog *mockLogger, mVFS *mockVFS) {
 				mLogSvc.On("CreateLogger", "ls").Return(mLog, nil)
 				m.On("Logger").Return(mLogSvc)
 				m.On("FS").Return(mFS)
 				m.On("URIFactory").Return(registry.NewURIFactory(mVFS))
-				mVFS.On("Resolve", mock.Anything).Return("od:/test", "/", nil)
+				mVFS.On("Resolve", mock.Anything).Return("/od/test", "/", nil)
 				mLog.On("WithContext", mock.Anything).Return(mLog)
 				mLog.On("With", mock.Anything).Return(mLog)
 				mLog.On("Info", mock.Anything, mock.Anything).Return()

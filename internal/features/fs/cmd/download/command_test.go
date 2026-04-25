@@ -74,13 +74,13 @@ func TestDownloadCommand_Integration(t *testing.T) {
 	}{
 		{
 			name: "download successfully",
-			args: []string{"download", "od:/src", "/local/dst"},
+			args: []string{"download", "/od/src", "/local/dst"},
 			setup: func(m *mockContainer, mFS *mockFsService, mLogSvc *mockLoggerService, mLog *mockLogger, mVFS *mockVFS) {
 				mLogSvc.On("CreateLogger", "download").Return(mLog, nil)
 				m.On("Logger").Return(mLogSvc)
 				m.On("FS").Return(mFS)
 				m.On("URIFactory").Return(registry.NewURIFactory(mVFS))
-				mVFS.On("Resolve", mock.Anything).Return("od:/src", "/", nil)
+				mVFS.On("Resolve", mock.Anything).Return("/od/src", "/", nil)
 				mLog.On("WithContext", mock.Anything).Return(mLog)
 				mLog.On("With", mock.Anything).Return(mLog)
 				mLog.On("Info", mock.Anything, mock.Anything).Return()

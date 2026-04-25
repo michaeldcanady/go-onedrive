@@ -59,7 +59,7 @@ func TestCat_Functional(t *testing.T) {
 	}{
 		{
 			name:    "successful cat of remote file",
-			path:    "od:/test.txt",
+			path:    "/od/test.txt",
 			content: "hello world",
 			setup: func(m *mockBackend) {
 				m.On("Open", mock.Anything, mock.Anything, mock.Anything, "/test.txt").
@@ -70,7 +70,7 @@ func TestCat_Functional(t *testing.T) {
 		},
 		{
 			name: "cat failed - file not found",
-			path: "od:/nonexistent.txt",
+			path: "/od/nonexistent.txt",
 			setup: func(m *mockBackend) {
 				m.On("Open", mock.Anything, mock.Anything, mock.Anything, "/nonexistent.txt").
 					Return(nil, errors.New("file not found"))

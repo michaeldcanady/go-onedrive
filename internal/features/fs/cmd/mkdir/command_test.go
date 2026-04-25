@@ -74,13 +74,13 @@ func TestMkdirCommand_Integration(t *testing.T) {
 	}{
 		{
 			name: "mkdir successfully",
-			args: []string{"mkdir", "od:/newdir"},
+			args: []string{"mkdir", "/od/newdir"},
 			setup: func(m *mockContainer, mFS *mockFsService, mLogSvc *mockLoggerService, mLog *mockLogger, mVFS *mockVFS) {
 				mLogSvc.On("CreateLogger", "drive-mkdir").Return(mLog, nil)
 				m.On("Logger").Return(mLogSvc)
 				m.On("FS").Return(mFS)
 				m.On("URIFactory").Return(registry.NewURIFactory(mVFS))
-				mVFS.On("Resolve", mock.Anything).Return("od:/newdir", "/", nil)
+				mVFS.On("Resolve", mock.Anything).Return("/od/newdir", "/", nil)
 				mLog.On("WithContext", mock.Anything).Return(mLog)
 				mLog.On("Info", mock.Anything, mock.Anything).Return()
 				mLog.On("Debug", mock.Anything, mock.Anything).Return()
