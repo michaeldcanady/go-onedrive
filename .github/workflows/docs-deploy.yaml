@@ -14,7 +14,11 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  validate:
+    uses: ./.github/workflows/_docs-validate.yaml
+
   deploy-docs:
+    needs: validate
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -22,15 +26,8 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Set up Python
-        uses: actions/setup-python@v6
-        with:
-          python-version: '3.x'
-
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
+      - name: Setup Docs
+        uses: ./.github/actions/setup-docs
 
       - name: Deploy documentation
         run: |

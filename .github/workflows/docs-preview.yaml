@@ -9,6 +9,9 @@ on:
       - mkdocs.yml
       - requirements.txt
       - '.github/workflows/docs-preview.yaml'
+      - '.github/workflows/_docs-validate.yaml'
+      - '.github/actions/setup-docs/**'
+      - '.vale.ini'
     types:
       - opened
       - synchronize
@@ -32,7 +35,14 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  validate:
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.action != 'closed')
+    uses: ./.github/workflows/_docs-validate.yaml
+    with:
+      ref: ${{ github.event.pull_request.head.sha || inputs.branch }}
+
   deploy-preview:
+    needs: validate
     if: github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.action != 'closed')
     runs-on: ubuntu-latest
     steps:
@@ -41,15 +51,8 @@ jobs:
         with:
           ref: ${{ inputs.branch || github.event.pull_request.head.sha }}
 
-      - name: Set up Python
-        uses: actions/setup-python@v6
-        with:
-          python-version: '3.x'
-
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
+      - name: Setup Docs
+        uses: ./.github/actions/setup-docs
 
       - name: Build docs
         run: |
