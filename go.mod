@@ -70,3 +70,5 @@ require (
 )
 
 replace github.com/michaeldcanady/go-onedrive/internal/storage/backend/grpc/proto => ./internal/storage/backend/grpc/proto
+
+replace github.com/michaeldcanady/go-onedrive => ./
