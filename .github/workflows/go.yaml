@@ -28,6 +28,16 @@ permissions:
   contents: read
 
 jobs:
+  config:
+    name: Global Configuration
+    runs-on: ubuntu-latest
+    outputs:
+      go-version: "1.25.x"
+      os-matrix: '["ubuntu-latest", "macos-latest", "windows-latest"]'
+      cmds: '["odc", "storage-plugin-local", "storage-plugin-onedrive"]'
+    steps:
+      - run: echo "Initializing CI configuration"
+
   changes:
     runs-on: ubuntu-latest
     outputs:
@@ -35,7 +45,6 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
-
       - name: Changed Files
         uses: tj-actions/changed-files@v47.0.1
         id: filter
@@ -46,18 +55,14 @@ jobs:
 
   check-go:
     name: Check Go Modules
-    needs:
-      - changes
+    needs: [config, changes]
     if: ${{ needs.changes.outputs.code == 'true' }}
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        go-version: ["1.25.x"]
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-go@v6
         with:
-          go-version: ${{ matrix.go-version }}
+          go-version: ${{ needs.config.outputs.go-version }}
       - run: go mod download
       - run: go mod verify
       - run: |
@@ -66,22 +71,20 @@ jobs:
           git diff --exit-code -- .
 
   build-go:
-    name: Build Go Code
-    needs:
-      - changes
+    name: Build ${{ matrix.cmd }} (${{ matrix.os }})
+    needs: [config, changes]
     if: ${{ needs.changes.outputs.code == 'true' }}
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
-        go-version: ["1.25.x"]
-        cmd: [odc, storage-plugin-local, storage-plugin-onedrive]
+        os: ${{ fromJson(needs.config.outputs.os-matrix) }}
+        cmd: ${{ fromJson(needs.config.outputs.cmds) }}
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-go@v6
         with:
-          go-version: ${{ matrix.go-version }}
+          go-version: ${{ needs.config.outputs.go-version }}
       - name: Cache Go build
         uses: actions/cache@v5
         with:
@@ -94,18 +97,14 @@ jobs:
 
   lint-go:
     name: Lint Go Code
-    needs:
-      - changes
+    needs: [config, changes]
     if: ${{ needs.changes.outputs.code == 'true' }}
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        go-version: ["1.25.x"]
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-go@v6
         with:
-          go-version: ${{ matrix.go-version }}
+          go-version: ${{ needs.config.outputs.go-version }}
       - name: Run golangci-lint
         uses: golangci/golangci-lint-action@v9
         with:
@@ -114,8 +113,7 @@ jobs:
 
   security-go:
     name: Security Scan
-    needs:
-      - changes
+    needs: [config, changes]
     if: ${{ needs.changes.outputs.code == 'true' }}
     runs-on: ubuntu-latest
     steps:
@@ -125,7 +123,7 @@ jobs:
       - name: Run govulncheck
         uses: golang/govulncheck-action@v1
         with:
-          go-version-input: "1.25.x"
+          go-version-input: ${{ needs.config.outputs.go-version }}
           go-package: ./...
       - name: Run gitleaks
         uses: gitleaks/gitleaks-action@v2
@@ -134,16 +132,14 @@ jobs:
 
   benchmark-go:
     name: Performance Benchmarking
-    needs:
-      - changes
-      - build-go
+    needs: [config, changes, build-go]
     if: ${{ needs.changes.outputs.code == 'true' && github.event_name == 'pull_request' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-go@v6
         with:
-          go-version: "1.25.x"
+          go-version: ${{ needs.config.outputs.go-version }}
       - name: Run benchmarks
         run: go test -v -bench=. -run=^$ ./... | tee benchmark_output.txt
       - name: Store benchmark result
@@ -154,87 +150,46 @@ jobs:
           output-file-path: benchmark_output.txt
           github-token: ${{ secrets.GITHUB_TOKEN }}
           auto-push: true
-          # Show alert on performance regression
           alert-threshold: '200%'
           comment-on-alert: true
           fail-on-alert: true
 
-  test-unit:
-    name: Unit Tests
-    needs:
-      - changes
+  test-fast:
+    name: ${{ matrix.tier }} Tests (${{ matrix.os }})
+    needs: [config, changes, build-go]
     if: ${{ needs.changes.outputs.code == 'true' }}
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
-        go-version: ["1.25.x"]
+        os: ${{ fromJson(needs.config.outputs.os-matrix) }}
+        tier: [unit, integration, smoke]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-go@v6
         with:
-          go-version: ${{ matrix.go-version }}
-      - name: Run unit tests
-        run: go test -v -short ./...
+          go-version: ${{ needs.config.outputs.go-version }}
+      - name: Setup Just
+        uses: extractions/setup-just@v2
+      - name: Run tests
+        run: just test-${{ matrix.tier }}
 
-  test-integration:
-    name: Integration Tests
-    needs:
-      - changes
-    if: ${{ needs.changes.outputs.code == 'true' }}
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
-        go-version: ["1.25.x"]
-    runs-on: ${{ matrix.os }}
-    steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-go@v6
-        with:
-          go-version: ${{ matrix.go-version }}
-      - name: Run integration tests
-        run: go test -v -run Integration ./...
-
-  test-functional:
-    name: Functional Tests
-    needs:
-      - changes
-      - build-go
+  test-heavy:
+    name: ${{ matrix.tier }} Tests (${{ matrix.os }})
+    needs: [config, changes, build-go]
     if: ${{ needs.changes.outputs.code == 'true' && github.event_name == 'pull_request' }}
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
-        go-version: ["1.25.x"]
+        os: ${{ fromJson(needs.config.outputs.os-matrix) }}
+        tier: [functional]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-go@v6
         with:
-          go-version: ${{ matrix.go-version }}
-      - name: Run functional tests
-        run: go test -v -run Functional ./...
-
-  test-smoke:
-    name: Smoke Tests
-    needs:
-      - changes
-      - build-go
-    if: ${{ needs.changes.outputs.code == 'true' }}
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
-        go-version: ["1.25.x"]
-    runs-on: ${{ matrix.os }}
-    steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-go@v6
-        with:
-          go-version: ${{ matrix.go-version }}
-      - name: Download odc binary
-        run: go build -o odc ./cmd/odc/
-      - name: Run smoke test
-        run: ./odc --version
+          go-version: ${{ needs.config.outputs.go-version }}
+      - name: Setup Just
+        uses: extractions/setup-just@v2
+      - name: Run tests
+        run: just test-${{ matrix.tier }}
