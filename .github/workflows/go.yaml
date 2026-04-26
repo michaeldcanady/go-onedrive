@@ -9,15 +9,11 @@ on:
       - "**.go"
       - ".github/workflows/go.yml"
       - ".github/actions/**"
-    paths-ignore:
-      - "docs/**"
   pull_request:
     paths:
       - "**.go"
       - ".github/workflows/go.yml"
       - ".github/actions/**"
-    paths-ignore:
-      - "docs/**"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
