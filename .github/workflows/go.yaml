@@ -52,7 +52,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        go-version: ["1.23", "1.24"]
+        go-version: ["1.25.x"]
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-go@v6
@@ -74,7 +74,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        go-version: ["1.23", "1.24"]
+        go-version: ["1.25.x"]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v6
@@ -98,7 +98,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        go-version: ["1.23", "1.24"]
+        go-version: ["1.25.x"]
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-go@v6
@@ -110,6 +110,26 @@ jobs:
           version: latest
           skip-cache: false
 
+  security-go:
+    name: Security Scan
+    needs:
+      - changes
+    if: ${{ needs.changes.outputs.code == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - name: Run govulncheck
+        uses: golang/govulncheck-action@v1
+        with:
+          go-version-input: "1.25.x"
+          go-package: ./...
+      - name: Run gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   test-go:
     name: Test Go Code
     needs:
@@ -119,7 +139,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        go-version: ["1.23", "1.24"]
+        go-version: ["1.25.x"]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v6

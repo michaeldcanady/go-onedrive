@@ -9,6 +9,21 @@ export BINARY_NAME := "odc"
 generate:
     go generate ./...
 
+# Run all tests
+test:
+    go test -v ./...
+
+# Run all tests (alias for CI parity)
+test-all: test
+
+# Run linter
+lint:
+    golangci-lint run ./...
+
+# Run security checks
+secure:
+    govulncheck ./...
+
 # Build the odc binary
 build: generate
     go build -o {{BINARY_NAME}} ./cmd/odc/

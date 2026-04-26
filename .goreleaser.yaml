@@ -35,6 +35,9 @@ archives:
     format_overrides:
       - formats: ["zip"]
 
+sboms:
+  - artifacts: archive
+
 nfpms:  
   - id: odc-linux
     package_name: odc
