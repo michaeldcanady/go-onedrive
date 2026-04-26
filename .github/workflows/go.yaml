@@ -8,12 +8,14 @@ on:
     paths:
       - "**.go"
       - ".github/workflows/go.yml"
+      - ".github/actions/**"
     paths-ignore:
       - "docs/**"
   pull_request:
     paths:
       - "**.go"
       - ".github/workflows/go.yml"
+      - ".github/actions/**"
     paths-ignore:
       - "docs/**"
 
@@ -59,8 +61,8 @@ jobs:
     if: ${{ needs.changes.outputs.code == 'true' }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-go@v6
+      - name: Setup Environment
+        uses: ./.github/actions/setup-odc
         with:
           go-version: ${{ needs.config.outputs.go-version }}
       - run: go mod download
@@ -81,16 +83,10 @@ jobs:
         cmd: ${{ fromJson(needs.config.outputs.cmds) }}
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-go@v6
+      - name: Setup Environment
+        uses: ./.github/actions/setup-odc
         with:
           go-version: ${{ needs.config.outputs.go-version }}
-      - name: Cache Go build
-        uses: actions/cache@v5
-        with:
-          path: ~/.cache/go-build
-          key: ${{ runner.os }}-go-build-${{ matrix.os }}-${{ matrix.cmd }}-${{ hashFiles('go.sum') }}
-          restore-keys: ${{ runner.os }}-go-build-
       - run: go mod download
       - name: Build Command
         run: go build ./cmd/${{ matrix.cmd }}/
@@ -101,8 +97,8 @@ jobs:
     if: ${{ needs.changes.outputs.code == 'true' }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-go@v6
+      - name: Setup Environment
+        uses: ./.github/actions/setup-odc
         with:
           go-version: ${{ needs.config.outputs.go-version }}
       - name: Run golangci-lint
@@ -117,8 +113,10 @@ jobs:
     if: ${{ needs.changes.outputs.code == 'true' }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - name: Setup Environment
+        uses: ./.github/actions/setup-odc
         with:
+          go-version: ${{ needs.config.outputs.go-version }}
           fetch-depth: 0
       - name: Run govulncheck
         uses: golang/govulncheck-action@v1
@@ -136,8 +134,8 @@ jobs:
     if: ${{ needs.changes.outputs.code == 'true' && github.event_name == 'pull_request' }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-go@v6
+      - name: Setup Environment
+        uses: ./.github/actions/setup-odc
         with:
           go-version: ${{ needs.config.outputs.go-version }}
       - name: Run benchmarks
@@ -165,12 +163,10 @@ jobs:
         tier: [unit, integration, smoke]
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-go@v6
+      - name: Setup Environment
+        uses: ./.github/actions/setup-odc
         with:
           go-version: ${{ needs.config.outputs.go-version }}
-      - name: Setup Just
-        uses: extractions/setup-just@v2
       - name: Run tests
         run: just test-${{ matrix.tier }}
 
@@ -185,11 +181,9 @@ jobs:
         tier: [functional]
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-go@v6
+      - name: Setup Environment
+        uses: ./.github/actions/setup-odc
         with:
           go-version: ${{ needs.config.outputs.go-version }}
-      - name: Setup Just
-        uses: extractions/setup-just@v2
       - name: Run tests
         run: just test-${{ matrix.tier }}
