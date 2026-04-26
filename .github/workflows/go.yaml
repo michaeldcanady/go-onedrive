@@ -57,6 +57,8 @@ jobs:
     if: ${{ needs.changes.outputs.code == 'true' }}
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
       - name: Setup Environment
         uses: ./.github/actions/setup-odc
         with:
@@ -79,6 +81,8 @@ jobs:
         cmd: ${{ fromJson(needs.config.outputs.cmds) }}
     runs-on: ${{ matrix.os }}
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
       - name: Setup Environment
         uses: ./.github/actions/setup-odc
         with:
@@ -93,6 +97,8 @@ jobs:
     if: ${{ needs.changes.outputs.code == 'true' }}
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
       - name: Setup Environment
         uses: ./.github/actions/setup-odc
         with:
@@ -109,11 +115,14 @@ jobs:
     if: ${{ needs.changes.outputs.code == 'true' }}
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
       - name: Setup Environment
         uses: ./.github/actions/setup-odc
         with:
           go-version: ${{ needs.config.outputs.go-version }}
-          fetch-depth: 0
       - name: Run govulncheck
         uses: golang/govulncheck-action@v1
         with:
@@ -130,6 +139,8 @@ jobs:
     if: ${{ needs.changes.outputs.code == 'true' && github.event_name == 'pull_request' }}
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
       - name: Setup Environment
         uses: ./.github/actions/setup-odc
         with:
@@ -159,6 +170,8 @@ jobs:
         tier: [unit, integration, smoke]
     runs-on: ${{ matrix.os }}
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
       - name: Setup Environment
         uses: ./.github/actions/setup-odc
         with:
@@ -177,6 +190,8 @@ jobs:
         tier: [functional]
     runs-on: ${{ matrix.os }}
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
       - name: Setup Environment
         uses: ./.github/actions/setup-odc
         with:
