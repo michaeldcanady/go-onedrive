@@ -2,8 +2,6 @@ package microsoft
 
 import (
 	"testing"
-
-	"go.uber.org/goleak"
 )
 
 func FuzzExtractFullIdentityFromToken(f *testing.F) {
@@ -19,8 +17,8 @@ func FuzzExtractFullIdentityFromToken(f *testing.F) {
 }
 
 func BenchmarkExtractFullIdentityFromToken(b *testing.B) {
-	goleak.IgnoreCurrent()
 	// A mock token that looks like a JWT
+	// gitleaks:allow
 	// nolint:gosec // G101 // not real credentials
 	token := "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJvaWQiOiJ1c2VyMSIsInByZWZlcnJlZF91c2VybmFtZSI6InVzZXIxQGV4YW1wbGUuY29tIiwibmFtZSI6IlVzZXIgMSJ9.signature"
 
