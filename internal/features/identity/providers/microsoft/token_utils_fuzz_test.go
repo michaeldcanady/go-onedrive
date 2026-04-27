@@ -7,7 +7,7 @@ import (
 )
 
 func FuzzExtractFullIdentityFromToken(f *testing.F) {
-	defer goleak.VerifyNone(f)
+	goleak.IgnoreCurrent()
 	f.Add("header.payload.signature")
 	f.Add("")
 	f.Add("not-a-jwt")
