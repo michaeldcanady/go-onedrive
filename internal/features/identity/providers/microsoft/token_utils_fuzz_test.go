@@ -7,7 +7,6 @@ import (
 )
 
 func FuzzExtractFullIdentityFromToken(f *testing.F) {
-	goleak.IgnoreCurrent()
 	f.Add("header.payload.signature")
 	f.Add("")
 	f.Add("not-a-jwt")
@@ -20,6 +19,7 @@ func FuzzExtractFullIdentityFromToken(f *testing.F) {
 }
 
 func BenchmarkExtractFullIdentityFromToken(b *testing.B) {
+	goleak.IgnoreCurrent()
 	// A mock token that looks like a JWT
 	// nolint:gosec // G101 // not real credentials
 	token := "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJvaWQiOiJ1c2VyMSIsInByZWZlcnJlZF91c2VybmFtZSI6InVzZXIxQGV4YW1wbGUuY29tIiwibmFtZSI6IlVzZXIgMSJ9.signature"
