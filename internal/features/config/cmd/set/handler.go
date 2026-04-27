@@ -1,9 +1,7 @@
 package set
 
 import (
-	"errors"
 	"fmt"
-	"strings"
 
 	"github.com/michaeldcanady/go-onedrive/internal/core/logger"
 	"github.com/michaeldcanady/go-onedrive/internal/features/config"
@@ -13,12 +11,6 @@ import (
 type Command struct {
 	config config.Service
 	log    logger.Logger
-}
-
-var illegalChars = []string{
-	" ",
-	"\n",
-	"\r",
 }
 
 // NewCommand initializes a new instance of the config set Command.
@@ -31,22 +23,6 @@ func NewCommand(c config.Service, l logger.Logger) *Command {
 
 // Validate prepares and validates the options for the config set operation.
 func (c *Command) Validate(ctx *CommandContext) error {
-	cleanKey := strings.TrimSpace(ctx.Options.Key)
-	if cleanKey == "" {
-		return errors.New("key is empty")
-	}
-
-	for _, illegalChar := range illegalChars {
-		if strings.Contains(cleanKey, illegalChar) {
-			return fmt.Errorf("key contains illegal char %s", illegalChar)
-		}
-	}
-
-	cleanValue := strings.TrimSpace(ctx.Options.Value)
-	if cleanValue == "" {
-		return errors.New("value is empty")
-	}
-
 	return ctx.Options.Validate()
 }
 

@@ -102,3 +102,80 @@ func TestDefaultService_ListDrives(t *testing.T) {
 		assert.Equal(t, "d1", drives[0].ID)
 	})
 }
+
+func TestDefaultService_ResolveDrive(t *testing.T) {
+	source := new(mockDriveSource)
+	mounts := new(mockMountProvider)
+	svc := NewDefaultService(source, mounts, &dummyLogger{})
+
+	ctx := context.Background()
+
+	mounts.On("ListMounts", ctx).Return([]mount.MountConfig{
+		{Path: "/od", Type: "onedrive", IdentityID: "user1"},
+	}, nil)
+
+	source.On("ListDrives", ctx, "/od").Return([]fs.Drive{
+		{ID: "d1", Name: "Personal Drive", Type: "personal"},
+		{ID: "d2", Name: "Work Drive", Type: "business"},
+	}, nil)
+
+	t.Run("resolve by ID", func(t *testing.T) {
+		d, err := svc.ResolveDrive(ctx, "d1", "")
+		assert.NoError(t, err)
+		assert.Equal(t, "d1", d.ID)
+	})
+
+	t.Run("resolve by Name", func(t *testing.T) {
+		d, err := svc.ResolveDrive(ctx, "Work Drive", "")
+		assert.NoError(t, err)
+		assert.Equal(t, "d2", d.ID)
+	})
+
+	t.Run("resolve case insensitive", func(t *testing.T) {
+		d, err := svc.ResolveDrive(ctx, "work drive", "")
+		assert.NoError(t, err)
+		assert.Equal(t, "d2", d.ID)
+	})
+
+	t.Run("not found", func(t *testing.T) {
+		_, err := svc.ResolveDrive(ctx, "nonexistent", "")
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "not found")
+	})
+}
+
+func TestDefaultService_ResolvePersonalDrive(t *testing.T) {
+	source := new(mockDriveSource)
+	mounts := new(mockMountProvider)
+	svc := NewDefaultService(source, mounts, &dummyLogger{})
+
+	ctx := context.Background()
+
+	t.Run("success", func(t *testing.T) {
+		mounts.On("ListMounts", ctx).Return([]mount.MountConfig{
+			{Path: "/od", Type: "onedrive", IdentityID: "user1"},
+		}, nil).Once()
+
+		source.On("ListDrives", ctx, "/od").Return([]fs.Drive{
+			{ID: "d1", Name: "Personal", Type: "personal"},
+		}, nil).Once()
+
+		d, err := svc.ResolvePersonalDrive(ctx, "")
+		assert.NoError(t, err)
+		assert.Equal(t, "d1", d.ID)
+	})
+
+	t.Run("no personal drive", func(t *testing.T) {
+		mounts.On("ListMounts", ctx).Return([]mount.MountConfig{
+			{Path: "/od", Type: "onedrive", IdentityID: "user1"},
+		}, nil).Once()
+
+		source.On("ListDrives", ctx, "/od").Return([]fs.Drive{
+			{ID: "d2", Name: "Business", Type: "business"},
+		}, nil).Once()
+
+		_, err := svc.ResolvePersonalDrive(ctx, "")
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "no personal drive found")
+	})
+}

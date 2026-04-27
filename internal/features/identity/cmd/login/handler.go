@@ -3,9 +3,9 @@ package login
 import (
 	"fmt"
 
+	"github.com/michaeldcanady/go-onedrive/internal/core/logger"
 	"github.com/michaeldcanady/go-onedrive/internal/features/config"
 	"github.com/michaeldcanady/go-onedrive/internal/features/identity"
-	"github.com/michaeldcanady/go-onedrive/internal/core/logger"
 )
 
 // Command orchestrates the authentication flow for a specific request.

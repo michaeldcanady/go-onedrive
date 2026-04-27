@@ -1,4 +1,5 @@
 package di
+
 import (
 	"context"
 	"fmt"
@@ -7,12 +8,12 @@ import (
 	"github.com/michaeldcanady/go-onedrive/internal/features/config"
 	registry "github.com/michaeldcanady/go-onedrive/internal/features/fs/domain"
 
+	"github.com/michaeldcanady/go-onedrive/internal/core/env"
+	"github.com/michaeldcanady/go-onedrive/internal/core/logger"
 	"github.com/michaeldcanady/go-onedrive/internal/features/drive/domain"
 	"github.com/michaeldcanady/go-onedrive/internal/features/editor/domain"
-	"github.com/michaeldcanady/go-onedrive/internal/core/env"
 	"github.com/michaeldcanady/go-onedrive/internal/features/identity"
 	"github.com/michaeldcanady/go-onedrive/internal/features/identity/providers/microsoft"
-	"github.com/michaeldcanady/go-onedrive/internal/core/logger"
 	"github.com/michaeldcanady/go-onedrive/internal/features/mount"
 	"github.com/michaeldcanady/go-onedrive/internal/features/profile"
 	"github.com/michaeldcanady/go-onedrive/internal/features/storage"
@@ -55,9 +56,7 @@ func NewDefaultContainer() (*DefaultContainer, error) {
 		return nil, err
 	}
 
-	if err := c.initDriveServices(ctx); err != nil {
-		return nil, err
-	}
+	c.initDriveServices(ctx)
 
 	return c, nil
 }
@@ -78,12 +77,12 @@ func (c *DefaultContainer) initBaseServices() error {
 		return fmt.Errorf("failed to bootstrap profile service: %w", err)
 	}
 	c.profile = profileSvc
-    c.storageService = storage.NewDefaultService()
+	c.storageService = storage.NewDefaultService()
 
 	return nil
 }
 
-func (c *DefaultContainer) initIdentityServices(ctx context.Context) error {
+func (c *DefaultContainer) initIdentityServices(_ context.Context) error {
 	cliLog, _ := c.logger.CreateLogger("cli")
 
 	stateDir, err := c.environment.StateDir()
@@ -122,12 +121,10 @@ func (l *driveLogger) Error(msg string, fields ...logger.Field) {
 	l.l.Error(msg, fields...)
 }
 
-func (c *DefaultContainer) initDriveServices(ctx context.Context) error {
+func (c *DefaultContainer) initDriveServices(_ context.Context) {
 	cliLog, _ := c.logger.CreateLogger("cli")
 
 	c.drive = drive.NewDefaultService(c.manager.(*registry.VFS), c.mounts, &driveLogger{l: cliLog})
-
-	return nil
 }
 
 type mountConfigAdapter struct {

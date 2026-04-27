@@ -16,12 +16,10 @@ func ProviderPathCompletion(container di.Container) func(cmd *cobra.Command, arg
 
 		var results []string
 		for _, profile := range profiles {
-
 			if toComplete == "" || strings.HasPrefix(strings.ToLower(profile.Name), strings.ToLower(toComplete)) {
 				results = append(results, profile.Name)
 			}
 		}
 		return results, cobra.ShellCompDirectiveNoSpace | cobra.ShellCompDirectiveNoFileComp
-
 	}
 }

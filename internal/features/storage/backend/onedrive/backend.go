@@ -66,7 +66,7 @@ func (b *Backend) Name() string {
 	return "onedrive"
 }
 
-func (b *Backend) createAdapter(ctx context.Context, rawToken string) (abstractions.RequestAdapter, error) {
+func (b *Backend) createAdapter(_ context.Context, rawToken string) (abstractions.RequestAdapter, error) {
 	var token identity.AccessToken
 
 	if err := json.Unmarshal([]byte(rawToken), &token); err != nil {

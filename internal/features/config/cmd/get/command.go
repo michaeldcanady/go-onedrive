@@ -29,7 +29,6 @@ func CreateGetCmd(container di.Container) *cobra.Command {
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-
 			if err := handler.Execute(ctx); err != nil {
 				return err
 			}

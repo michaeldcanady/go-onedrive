@@ -2,9 +2,7 @@ package get
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
-	"strings"
 
 	"github.com/michaeldcanady/go-onedrive/internal/core/logger"
 	"github.com/michaeldcanady/go-onedrive/internal/features/config"
@@ -25,25 +23,8 @@ func NewCommand(c config.Service, l logger.Logger) *Command {
 	}
 }
 
-var illegalChars = []string{
-	" ",
-	"\n",
-	"\r",
-}
-
 // Validate prepares and validates the options for the config get operation.
 func (c *Command) Validate(ctx *CommandContext) error {
-	cleanKey := strings.TrimSpace(ctx.Options.Key)
-	if cleanKey == "" {
-		return errors.New("key is empty")
-	}
-
-	for _, illegalChar := range illegalChars {
-		if strings.Contains(cleanKey, illegalChar) {
-			return fmt.Errorf("key contains illegal char %s", illegalChar)
-		}
-	}
-
 	return ctx.Options.Validate()
 }
 
@@ -60,8 +41,6 @@ func (c *Command) Execute(ctx *CommandContext) error {
 
 	if ctx.Options.Key != "" {
 		log.Debug("retrieving specific configuration key", logger.String("key", ctx.Options.Key))
-		// TODO: define a generic way to discover key values in the appropriate format?
-		// For now, we'll just handle a few common keys manually until we have a generic way.
 		var val interface{}
 		switch ctx.Options.Key {
 		case "auth.provider":
@@ -79,7 +58,6 @@ func (c *Command) Execute(ctx *CommandContext) error {
 		return nil
 	}
 
-	// TODO: this needs to be handled by the formatter
 	log.Debug("displaying full configuration")
 	var data []byte
 	switch cfg.Logging.Format {

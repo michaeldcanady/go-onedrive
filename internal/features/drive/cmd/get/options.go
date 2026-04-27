@@ -1,6 +1,10 @@
 package get
 
-import "io"
+import (
+	"io"
+
+	"github.com/michaeldcanady/go-onedrive/pkg/validation"
+)
 
 // Options defines the configuration for the drive get operation.
 type Options struct {
@@ -16,5 +20,7 @@ type Options struct {
 
 // Validate ensures that the provided options are consistent and valid.
 func (o *Options) Validate() error {
-	return nil
+	p := validation.Required(func(o Options) string { return o.DriveRef }, "drive reference")
+
+	return p.Evaluate(*o)
 }

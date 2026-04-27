@@ -51,6 +51,7 @@ func (r *BoltRepository) Save(ctx context.Context, provider string, token Access
 		if err != nil {
 			return err
 		}
+		// nolint:gosec // G117 // allowed
 		data, err := json.Marshal(token)
 		if err != nil {
 			return err

@@ -8,14 +8,12 @@ on:
     paths:
       - "**.go"
       - ".github/workflows/go.yml"
-    paths-ignore:
-      - "docs/**"
+      - ".github/actions/**"
   pull_request:
     paths:
       - "**.go"
       - ".github/workflows/go.yml"
-    paths-ignore:
-      - "docs/**"
+      - ".github/actions/**"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
@@ -28,6 +26,16 @@ permissions:
   contents: read
 
 jobs:
+  config:
+    name: Global Configuration
+    runs-on: ubuntu-latest
+    outputs:
+      go-version: "1.25.x"
+      os-matrix: '["ubuntu-latest", "macos-latest", "windows-latest"]'
+      cmds: '["odc", "storage-plugin-local", "storage-plugin-onedrive"]'
+    steps:
+      - run: echo "Initializing CI configuration"
+
   changes:
     runs-on: ubuntu-latest
     outputs:
@@ -35,7 +43,6 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
-
       - name: Changed Files
         uses: tj-actions/changed-files@v47.0.1
         id: filter
@@ -46,114 +53,148 @@ jobs:
 
   check-go:
     name: Check Go Modules
-    needs:
-      - changes
+    needs: [config, changes]
     if: ${{ needs.changes.outputs.code == 'true' }}
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        go-version: ["1.23", "1.24"]
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-go@v6
+      - name: Checkout code
+        uses: actions/checkout@v6
+      - name: Setup Environment
+        uses: ./.github/actions/setup-odc
         with:
-          go-version: ${{ matrix.go-version }}
+          go-version: ${{ needs.config.outputs.go-version }}
       - run: go mod download
       - run: go mod verify
       - run: |
           go mod tidy
           go generate ./...
-          git diff --exit-code -- .
 
   build-go:
-    name: Build Go Code
-    needs:
-      - changes
+    name: Build ${{ matrix.cmd }} (${{ matrix.os }})
+    needs: [config, changes]
     if: ${{ needs.changes.outputs.code == 'true' }}
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
-        go-version: ["1.23", "1.24"]
+        os: ${{ fromJson(needs.config.outputs.os-matrix) }}
+        cmd: ${{ fromJson(needs.config.outputs.cmds) }}
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-go@v6
+      - name: Checkout code
+        uses: actions/checkout@v6
+      - name: Setup Environment
+        uses: ./.github/actions/setup-odc
         with:
-          go-version: ${{ matrix.go-version }}
-      - name: Cache Go build
-        uses: actions/cache@v5
-        with:
-          path: ~/.cache/go-build
-          key: ${{ runner.os }}-go-build-${{ matrix.os }}-${{ hashFiles('go.sum') }}
-          restore-keys: ${{ runner.os }}-go-build-
+          go-version: ${{ needs.config.outputs.go-version }}
       - run: go mod download
-      - run: go build ./...
+      - name: Build Command
+        run: go build ./cmd/${{ matrix.cmd }}/
 
   lint-go:
     name: Lint Go Code
-    needs:
-      - changes
+    needs: [config, changes]
     if: ${{ needs.changes.outputs.code == 'true' }}
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        go-version: ["1.23", "1.24"]
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-go@v6
+      - name: Checkout code
+        uses: actions/checkout@v6
+      - name: Setup Environment
+        uses: ./.github/actions/setup-odc
         with:
-          go-version: ${{ matrix.go-version }}
+          go-version: ${{ needs.config.outputs.go-version }}
       - name: Run golangci-lint
         uses: golangci/golangci-lint-action@v9
         with:
           version: latest
           skip-cache: false
 
-  test-go:
-    name: Test Go Code
-    needs:
-      - changes
+  security-go:
+    name: Security Scan
+    needs: [config, changes]
+    if: ${{ needs.changes.outputs.code == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Setup Environment
+        uses: ./.github/actions/setup-odc
+        with:
+          go-version: ${{ needs.config.outputs.go-version }}
+      - name: Run govulncheck
+        uses: golang/govulncheck-action@v1
+        with:
+          go-version-input: ${{ needs.config.outputs.go-version }}
+          go-package: ./...
+      - name: Run gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  benchmark-go:
+    name: Performance Benchmarking
+    needs: [config, changes, build-go]
+    if: ${{ needs.changes.outputs.code == 'true' && github.event_name == 'pull_request' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+      - name: Setup Environment
+        uses: ./.github/actions/setup-odc
+        with:
+          go-version: ${{ needs.config.outputs.go-version }}
+      - name: Run benchmarks
+        run: go test -v -bench=. -run=^$ ./... | tee benchmark_output.txt
+      - name: Store benchmark result
+        uses: benchmark-action/github-action-benchmark@v1
+        with:
+          name: Go Benchmark
+          tool: 'go'
+          output-file-path: benchmark_output.txt
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          auto-push: true
+          alert-threshold: '200%'
+          comment-on-alert: true
+          fail-on-alert: true
+
+  test-fast:
+    name: ${{ matrix.tier }} Tests (${{ matrix.os }})
+    needs: [config, changes, build-go]
     if: ${{ needs.changes.outputs.code == 'true' }}
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
-        go-version: ["1.23", "1.24"]
+        os: ${{ fromJson(needs.config.outputs.os-matrix) }}
+        tier: [unit, integration, smoke]
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-go@v6
+      - name: Checkout code
+        uses: actions/checkout@v6
+      - name: Setup Environment
+        uses: ./.github/actions/setup-odc
         with:
-          go-version: ${{ matrix.go-version }}
-      - name: Cache Go build
-        uses: actions/cache@v5
+          go-version: ${{ needs.config.outputs.go-version }}
+      - name: Run tests
+        run: just test-${{ matrix.tier }}
+
+  test-heavy:
+    name: ${{ matrix.tier }} Tests (${{ matrix.os }})
+    needs: [config, changes, build-go]
+    if: ${{ needs.changes.outputs.code == 'true' && github.event_name == 'pull_request' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: ${{ fromJson(needs.config.outputs.os-matrix) }}
+        tier: [functional]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+      - name: Setup Environment
+        uses: ./.github/actions/setup-odc
         with:
-          path: ~/.cache/go-build
-          key: ${{ matrix.os }}-go-build-${{ matrix.go-version }}-${{ hashFiles('go.sum') }}
-          restore-keys: ${{ runner.os }}-go-build-${{ hashFiles('go.sum') }}
-      - name: Run tests (Unix)
-        if: runner.os != 'Windows'
-        run: |
-          go test -count=1 -tags=preview.query -coverpkg=./... -covermode=atomic -coverprofile=$COVERAGE_FILE ./...
-          grep -v -E -f .covignore $COVERAGE_FILE > coverage.filtered.out && mv coverage.filtered.out $COVERAGE_FILE
-          go tool cover -func=$COVERAGE_FILE
-          go tool cover -html=$COVERAGE_FILE -o cover.html
-      - name: Run tests (Windows)
-        if: runner.os == 'Windows'
-        run: |
-          go test -count=1 -tags="preview.query" -coverpkg=./... -covermode=atomic -coverprofile="$($env:COVERAGE_FILE)" ./...
-          dir
-          findstr /V /G:.covignore $env:COVERAGE_FILE > coverage.filtered.out
-          Move-Item -Path coverage.filtered.out -Destination $env:COVERAGE_FILE -Force
-          go tool cover -func="$($env:COVERAGE_FILE)"
-          go tool cover -html="$($env:COVERAGE_FILE)" -o cover.html
-      - name: Upload Coverage Report
-        uses: actions/upload-artifact@v6
-        with:
-          name: ${{ matrix.os }}-coverage-report-${{ matrix.go-version }}-${{ hashFiles('go.sum') }}) }}
-          path: cover.html
-      - name: Upload to Codecov
-        uses: codecov/codecov-action@v5
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
+          go-version: ${{ needs.config.outputs.go-version }}
+      - name: Run tests
+        run: just test-${{ matrix.tier }}

@@ -6,8 +6,8 @@ import (
 	"sync"
 	"time"
 
-	proto "github.com/michaeldcanady/go-onedrive/internal/features/identity/proto"
 	"github.com/michaeldcanady/go-onedrive/internal/core/logger"
+	proto "github.com/michaeldcanady/go-onedrive/internal/features/identity/proto"
 )
 
 // Logger defines the interface required for logging within the identity service.

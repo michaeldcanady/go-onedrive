@@ -9,6 +9,45 @@ export BINARY_NAME := "odc"
 generate:
     go generate ./...
 
+# Run all tests
+test:
+    go test -v ./...
+
+# Run all tests (alias for CI parity)
+test-all: test
+
+# Run unit tests (fast, no IO)
+test-unit:
+    go test -v -short ./...
+
+# Run integration tests (domain interactions, mocks external APIs)
+test-integration:
+    go test -v -run Integration ./...
+
+# Run functional tests (feature slice validation, DI wired)
+test-functional:
+    go test -v -run Functional ./...
+
+# Run performance benchmarks
+test-perf:
+    go test -v -bench=. -run=^$ ./...
+
+# Run E2E tests (binary against environment)
+test-e2e: build
+    go test -v -tags=e2e ./...
+
+# Run a quick smoke test on the built binary
+test-smoke: build
+    ./{{BINARY_NAME}} --version
+
+# Run linter
+lint:
+    golangci-lint run ./...
+
+# Run security checks
+secure:
+    govulncheck ./...
+
 # Build the odc binary
 build: generate
     go build -o {{BINARY_NAME}} ./cmd/odc/

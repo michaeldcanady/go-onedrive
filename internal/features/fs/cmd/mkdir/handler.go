@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	fs "github.com/michaeldcanady/go-onedrive/internal/features/fs/domain"
 	"github.com/michaeldcanady/go-onedrive/internal/core/logger"
+	fs "github.com/michaeldcanady/go-onedrive/internal/features/fs/domain"
 )
 
 // Logger defines the interface required for logging within the mkdir command.
@@ -17,15 +17,24 @@ type Logger interface {
 	WithContext(ctx context.Context) logger.Logger
 }
 
+// URIFactory defines the interface for creating URIs.
+type URIFactory interface {
+	FromString(s string) (*fs.URI, error)
+}
+
+type ItemCreator interface {
+	Mkdir(ctx context.Context, uri *fs.URI) error
+}
+
 // Command executes the drive mkdir operation.
 type Command struct {
-	manager    fs.Service
-	uriFactory *fs.URIFactory
+	manager    ItemCreator
+	uriFactory URIFactory
 	log        Logger
 }
 
 // NewCommand initializes a new instance of the drive mkdir Command.
-func NewCommand(m fs.Service, f *fs.URIFactory, l Logger) *Command {
+func NewCommand(m ItemCreator, f URIFactory, l Logger) *Command {
 	return &Command{
 		manager:    m,
 		uriFactory: f,

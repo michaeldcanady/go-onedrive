@@ -1,8 +1,8 @@
 package upload
 
 import (
-	"github.com/michaeldcanady/go-onedrive/internal/core/di"
 	cli "github.com/michaeldcanady/go-onedrive/internal/core/cli"
+	"github.com/michaeldcanady/go-onedrive/internal/core/di"
 
 	"github.com/spf13/cobra"
 )
@@ -12,14 +12,14 @@ func CreateUploadCmd(container di.Container) *cobra.Command {
 	var opts Options
 	var c *CommandContext
 
-	l, _ := container.Logger().CreateLogger("drive-upload")
+	l, _ := container.Logger().CreateLogger("upload")
 	handler := NewCommand(container.FS(), container.URIFactory(), l)
 
 	cmd := &cobra.Command{
-		Use:               "upload <local_path> <remote_path>",
-		Short:             "Upload files and directories to OneDrive",
+		Use:               "upload <source> <destination>",
+		Short:             "Upload files and directories",
 		Args:              cobra.ExactArgs(2),
-		ValidArgsFunction: cli.ProviderPathCompletion(container),
+		ValidArgsFunction: cli.ProviderPathCompletion(container.FS(), container.URIFactory(), container.Mounts()),
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			opts.Source = args[0]
 			opts.Destination = args[1]
@@ -40,6 +40,7 @@ func CreateUploadCmd(container di.Container) *cobra.Command {
 		},
 	}
 
+	cmd.ValidArgsFunction = cli.ProviderPathCompletion(container.FS(), container.URIFactory(), container.Mounts())
 	cmd.Flags().BoolVarP(&opts.Recursive, "recursive", "r", false, "upload directories recursively")
 
 	return cmd

@@ -222,6 +222,7 @@ func (s *DefaultService) runEditor(ctx context.Context, session *Session) error 
 	}
 
 	args := append(editorParts, session.LocalURI.Path)
+	// nolint:gosec // 204 // doesn't allow for user input
 	cmd := exec.CommandContext(ctx, args[0], args[1:]...)
 	cmd.Stdin = s.stdin
 	cmd.Stdout = s.stdout

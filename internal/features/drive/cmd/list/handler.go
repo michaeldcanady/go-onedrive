@@ -5,8 +5,8 @@ import (
 	"reflect"
 	"slices"
 
-	"github.com/michaeldcanady/go-onedrive/internal/features/drive/domain"
 	"github.com/michaeldcanady/go-onedrive/internal/core/logger"
+	"github.com/michaeldcanady/go-onedrive/internal/features/drive/domain"
 	formatting "github.com/michaeldcanady/go-onedrive/pkg/format"
 )
 

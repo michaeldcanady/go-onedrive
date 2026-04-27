@@ -6,9 +6,9 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/michaeldcanady/go-onedrive/internal/core/logger"
 	"github.com/michaeldcanady/go-onedrive/internal/features/config"
 	fs "github.com/michaeldcanady/go-onedrive/internal/features/fs/domain"
-	"github.com/michaeldcanady/go-onedrive/internal/core/logger"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -173,7 +173,10 @@ func TestCreateSession(t *testing.T) {
 		session, err := s.CreateSession(context.Background(), remoteURI, strings.NewReader(content))
 		assert.NoError(t, err)
 		assert.NotNil(t, session)
-		defer s.Cleanup(context.Background(), session)
+		defer func() {
+			err := s.Cleanup(context.Background(), session)
+			assert.NoError(t, err)
+		}()
 
 		assert.Equal(t, remoteURI, session.RemoteURI)
 		assert.Contains(t, session.LocalURI.Path, "odc-edit-")
@@ -222,7 +225,8 @@ func TestSessionStateTransitions(t *testing.T) {
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "cannot get content")
 
-		s.Cleanup(context.Background(), session)
+		err = s.Cleanup(context.Background(), session)
+		assert.NoError(t, err)
 
 		// Cannot open after cleanup
 		err = s.Open(context.Background(), session)
@@ -234,7 +238,10 @@ func TestSessionStateTransitions(t *testing.T) {
 		remoteURI := &fs.URI{Provider: "/onedrive", Path: "/test.txt"}
 		session, err := s.CreateSession(context.Background(), remoteURI, strings.NewReader("content"))
 		assert.NoError(t, err)
-		defer s.Cleanup(context.Background(), session)
+		defer func() {
+			err := s.Cleanup(context.Background(), session)
+			assert.NoError(t, err)
+		}()
 
 		// Use a command that fails
 		s2 := s.WithOptions(WithEditor("false"))

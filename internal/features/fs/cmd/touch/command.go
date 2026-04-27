@@ -1,8 +1,8 @@
 package touch
 
 import (
-	"github.com/michaeldcanady/go-onedrive/internal/core/di"
 	cli "github.com/michaeldcanady/go-onedrive/internal/core/cli"
+	"github.com/michaeldcanady/go-onedrive/internal/core/di"
 
 	"github.com/spf13/cobra"
 )
@@ -12,14 +12,14 @@ func CreateTouchCmd(container di.Container) *cobra.Command {
 	var opts Options
 	var c *CommandContext
 
-	l, _ := container.Logger().CreateLogger("drive-touch")
+	l, _ := container.Logger().CreateLogger("touch")
 	handler := NewCommand(container.FS(), container.URIFactory(), l)
 
 	cmd := &cobra.Command{
 		Use:               "touch <path>",
-		Short:             "Create a new file or update the timestamp of an existing file",
+		Short:             "Create a new empty file",
 		Args:              cobra.ExactArgs(1),
-		ValidArgsFunction: cli.ProviderPathCompletion(container),
+		ValidArgsFunction: cli.ProviderPathCompletion(container.FS(), container.URIFactory(), container.Mounts()),
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			opts.Path = args[0]
 			opts.Stdout = cmd.OutOrStdout()
@@ -38,6 +38,8 @@ func CreateTouchCmd(container di.Container) *cobra.Command {
 			return handler.Finalize(c)
 		},
 	}
+
+	cmd.ValidArgsFunction = cli.ProviderPathCompletion(container.FS(), container.URIFactory(), container.Mounts())
 
 	return cmd
 }
