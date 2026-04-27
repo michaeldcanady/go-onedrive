@@ -6,13 +6,13 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.21.1
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.13.1
 	github.com/fatih/color v1.19.0
-	github.com/gofrs/flock v0.13.0
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510
 	github.com/google/uuid v1.6.0
 	github.com/hashicorp/go-plugin v1.7.0
 	github.com/microsoftgraph/msgraph-sdk-go v1.97.0
 	github.com/spf13/cobra v1.10.2
 	go.etcd.io/bbolt v1.4.3
+	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.1
 	golang.org/x/term v0.42.0
 	google.golang.org/grpc v1.80.0

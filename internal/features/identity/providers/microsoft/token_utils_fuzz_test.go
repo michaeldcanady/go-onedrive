@@ -2,9 +2,12 @@ package microsoft
 
 import (
 	"testing"
+
+	"go.uber.org/goleak"
 )
 
 func FuzzExtractFullIdentityFromToken(f *testing.F) {
+	defer goleak.VerifyNone(f)
 	f.Add("header.payload.signature")
 	f.Add("")
 	f.Add("not-a-jwt")
