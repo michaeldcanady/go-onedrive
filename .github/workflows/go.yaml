@@ -64,8 +64,11 @@ jobs:
         with:
           go-version: ${{ needs.config.outputs.go-version }}
       - name: Install Protoc
+        uses: arduino/setup-protoc@v3
+        with:
+          version: "29.x"
+      - name: Install Protoc Plugins
         run: |
-          sudo apt-get update && sudo apt-get install -y protobuf-compiler
           go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
           go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
           echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
@@ -123,12 +126,11 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
       - name: Setup Environment
         uses: ./.github/actions/setup-odc
         with:
           go-version: ${{ needs.config.outputs.go-version }}
+          fetch-depth: 0
       - name: Run govulncheck
         uses: golang/govulncheck-action@v1
         with:
