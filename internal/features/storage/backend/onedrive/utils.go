@@ -1,7 +1,6 @@
 package onedrive
 
 import (
-	"context"
 	"errors"
 	"path"
 
@@ -37,21 +36,6 @@ func mapError(err error, path string) error {
 		Err:  err,
 		Path: path,
 	}
-}
-
-func resolveDriveID(ctx context.Context, uri *fs.URI, resolver fs.DriveResolver) string {
-	if uri.DriveID != "" {
-		return uri.DriveID
-	}
-
-	if resolver != nil {
-		driveID, err := resolver.GetActiveDriveID(ctx)
-		if err == nil && driveID != "" {
-			return driveID
-		}
-	}
-
-	return "me"
 }
 
 func expandURI(rootTemplate, relativeTemplate, driveID, itemPath string) string {
