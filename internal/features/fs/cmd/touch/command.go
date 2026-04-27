@@ -19,7 +19,7 @@ func CreateTouchCmd(container di.Container) *cobra.Command {
 		Use:               "touch <path>",
 		Short:             "Create a new empty file",
 		Args:              cobra.ExactArgs(1),
-		ValidArgsFunction: cli.ProviderPathCompletion(container),
+		ValidArgsFunction: cli.ProviderPathCompletion(container.FS(), container.URIFactory(), container.Mounts()),
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			opts.Path = args[0]
 			opts.Stdout = cmd.OutOrStdout()
@@ -39,7 +39,7 @@ func CreateTouchCmd(container di.Container) *cobra.Command {
 		},
 	}
 
-	cmd.ValidArgsFunction = cli.ProviderPathCompletion(container)
+	cmd.ValidArgsFunction = cli.ProviderPathCompletion(container.FS(), container.URIFactory(), container.Mounts())
 
 	return cmd
 }

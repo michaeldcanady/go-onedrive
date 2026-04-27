@@ -18,7 +18,7 @@ func CreateCpCmd(container di.Container) *cobra.Command {
 		Use:               "cp <source> <destination>",
 		Short:             "Copy files and directories",
 		Args:              cobra.ExactArgs(2),
-		ValidArgsFunction: cli.ProviderPathCompletion(container),
+		ValidArgsFunction: cli.ProviderPathCompletion(container.FS(), container.URIFactory(), container.Mounts()),
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			opts.Source = args[0]
 			opts.Destination = args[1]

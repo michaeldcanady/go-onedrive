@@ -22,7 +22,7 @@ func CreateLsCmd(container di.Container) *cobra.Command {
 		Short:             "List items in a directory",
 		Long:              "List the items in a specified directory in OneDrive or the local filesystem.",
 		Args:              cobra.MaximumNArgs(1),
-		ValidArgsFunction: cli.ProviderPathCompletion(container),
+		ValidArgsFunction: cli.ProviderPathCompletion(container.FS(), container.URIFactory(), container.Mounts()),
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			if len(args) > 0 {
 				opts.Path = args[0]

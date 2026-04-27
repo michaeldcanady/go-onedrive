@@ -19,7 +19,7 @@ func CreateUploadCmd(container di.Container) *cobra.Command {
 		Use:               "upload <source> <destination>",
 		Short:             "Upload files and directories",
 		Args:              cobra.ExactArgs(2),
-		ValidArgsFunction: cli.ProviderPathCompletion(container),
+		ValidArgsFunction: cli.ProviderPathCompletion(container.FS(), container.URIFactory(), container.Mounts()),
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			opts.Source = args[0]
 			opts.Destination = args[1]
@@ -40,7 +40,7 @@ func CreateUploadCmd(container di.Container) *cobra.Command {
 		},
 	}
 
-	cmd.ValidArgsFunction = cli.ProviderPathCompletion(container)
+	cmd.ValidArgsFunction = cli.ProviderPathCompletion(container.FS(), container.URIFactory(), container.Mounts())
 	cmd.Flags().BoolVarP(&opts.Recursive, "recursive", "r", false, "upload directories recursively")
 
 	return cmd

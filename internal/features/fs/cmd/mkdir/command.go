@@ -19,7 +19,7 @@ func CreateMkdirCmd(container di.Container) *cobra.Command {
 		Use:               "mkdir <path>",
 		Short:             "Create a new directory",
 		Args:              cobra.ExactArgs(1),
-		ValidArgsFunction: cli.ProviderPathCompletion(container),
+		ValidArgsFunction: cli.ProviderPathCompletion(container.FS(), container.URIFactory(), container.Mounts()),
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			opts.Path = args[0]
 			opts.Stdout = cmd.OutOrStdout()
