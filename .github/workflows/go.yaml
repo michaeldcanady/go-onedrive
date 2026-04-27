@@ -125,11 +125,13 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          persist-credentials: false
       - name: Setup Environment
         uses: ./.github/actions/setup-odc
         with:
           go-version: ${{ needs.config.outputs.go-version }}
-          fetch-depth: 0
       - name: Run govulncheck
         uses: golang/govulncheck-action@v1
         with:
