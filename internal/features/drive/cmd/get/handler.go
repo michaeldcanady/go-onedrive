@@ -3,8 +3,8 @@ package get
 import (
 	"fmt"
 
-	"github.com/michaeldcanady/go-onedrive/internal/features/drive/domain"
 	"github.com/michaeldcanady/go-onedrive/internal/core/logger"
+	"github.com/michaeldcanady/go-onedrive/internal/features/drive/domain"
 )
 
 // Command executes the drive get operation.

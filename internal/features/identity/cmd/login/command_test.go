@@ -20,16 +20,18 @@ import (
 
 type mockContainer struct{ mock.Mock }
 
-func (m *mockContainer) Logger() logger.Service             { return m.Called().Get(0).(logger.Service) }
-func (m *mockContainer) Config() config.Service             { return m.Called().Get(0).(config.Service) }
-func (m *mockContainer) Mounts() mount.Service              { return m.Called().Get(0).(mount.Service) }
-func (m *mockContainer) Identity() identity.Service         { return m.Called().Get(0).(identity.Service) }
-func (m *mockContainer) Profile() profile.Service           { return m.Called().Get(0).(profile.Service) }
-func (m *mockContainer) FS() fs.Service                     { return m.Called().Get(0).(fs.Service) }
-func (m *mockContainer) Environment() environment.Service { return m.Called().Get(0).(environment.Service) }
-func (m *mockContainer) Editor() editor.Service             { return m.Called().Get(0).(editor.Service) }
-func (m *mockContainer) Drive() drive.Service               { return m.Called().Get(0).(drive.Service) }
-func (m *mockContainer) URIFactory() *fs.URIFactory         { return m.Called().Get(0).(*fs.URIFactory) }
+func (m *mockContainer) Logger() logger.Service     { return m.Called().Get(0).(logger.Service) }
+func (m *mockContainer) Config() config.Service     { return m.Called().Get(0).(config.Service) }
+func (m *mockContainer) Mounts() mount.Service      { return m.Called().Get(0).(mount.Service) }
+func (m *mockContainer) Identity() identity.Service { return m.Called().Get(0).(identity.Service) }
+func (m *mockContainer) Profile() profile.Service   { return m.Called().Get(0).(profile.Service) }
+func (m *mockContainer) FS() fs.Service             { return m.Called().Get(0).(fs.Service) }
+func (m *mockContainer) Environment() environment.Service {
+	return m.Called().Get(0).(environment.Service)
+}
+func (m *mockContainer) Editor() editor.Service     { return m.Called().Get(0).(editor.Service) }
+func (m *mockContainer) Drive() drive.Service       { return m.Called().Get(0).(drive.Service) }
+func (m *mockContainer) URIFactory() *fs.URIFactory { return m.Called().Get(0).(*fs.URIFactory) }
 
 type mockLoggerService struct{ mock.Mock }
 

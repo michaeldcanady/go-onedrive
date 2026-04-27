@@ -14,10 +14,10 @@ func TestStaticTokenCredential_GetToken(t *testing.T) {
 	now := time.Now()
 
 	tests := []struct {
-		name      string
-		token     identity.AccessToken
-		wantErr   bool
-		errMsg    string
+		name    string
+		token   identity.AccessToken
+		wantErr bool
+		errMsg  string
 	}{
 		{
 			name: "valid token",
@@ -38,6 +38,7 @@ func TestStaticTokenCredential_GetToken(t *testing.T) {
 		},
 		{
 			name: "token expiring soon",
+			// nolint:gosec // G101 // not real credentials
 			token: identity.AccessToken{
 				Token:     "expiring-soon-token",
 				ExpiresAt: now.Add(4 * time.Minute),

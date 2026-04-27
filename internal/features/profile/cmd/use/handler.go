@@ -6,8 +6,8 @@ import (
 	"strings"
 
 	"github.com/michaeldcanady/go-onedrive/internal/core/logger"
-	"github.com/michaeldcanady/go-onedrive/internal/features/profile"
 	"github.com/michaeldcanady/go-onedrive/internal/core/shared"
+	"github.com/michaeldcanady/go-onedrive/internal/features/profile"
 )
 
 // Command executes the profile use operation.

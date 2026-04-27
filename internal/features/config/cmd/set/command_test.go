@@ -6,9 +6,9 @@ import (
 
 	environment "github.com/michaeldcanady/go-onedrive/internal/core/env"
 	"github.com/michaeldcanady/go-onedrive/internal/core/logger"
+	"github.com/michaeldcanady/go-onedrive/internal/features/config"
 	drive "github.com/michaeldcanady/go-onedrive/internal/features/drive/domain"
 	editor "github.com/michaeldcanady/go-onedrive/internal/features/editor/domain"
-	"github.com/michaeldcanady/go-onedrive/internal/features/config"
 	fs "github.com/michaeldcanady/go-onedrive/internal/features/fs/domain"
 	"github.com/michaeldcanady/go-onedrive/internal/features/identity"
 	"github.com/michaeldcanady/go-onedrive/internal/features/mount"
@@ -18,24 +18,30 @@ import (
 )
 
 type mockContainer struct{ mock.Mock }
-func (m *mockContainer) Logger() logger.Service { return m.Called().Get(0).(logger.Service) }
-func (m *mockContainer) Config() config.Service { return m.Called().Get(0).(config.Service) }
-func (m *mockContainer) Mounts() mount.Service { return m.Called().Get(0).(mount.Service) }
+
+func (m *mockContainer) Logger() logger.Service     { return m.Called().Get(0).(logger.Service) }
+func (m *mockContainer) Config() config.Service     { return m.Called().Get(0).(config.Service) }
+func (m *mockContainer) Mounts() mount.Service      { return m.Called().Get(0).(mount.Service) }
 func (m *mockContainer) Identity() identity.Service { return m.Called().Get(0).(identity.Service) }
-func (m *mockContainer) Profile() profile.Service { return m.Called().Get(0).(profile.Service) }
-func (m *mockContainer) FS() fs.Service { return m.Called().Get(0).(fs.Service) }
-func (m *mockContainer) Environment() environment.Service { return m.Called().Get(0).(environment.Service) }
-func (m *mockContainer) Editor() editor.Service { return m.Called().Get(0).(editor.Service) }
-func (m *mockContainer) Drive() drive.Service { return m.Called().Get(0).(drive.Service) }
+func (m *mockContainer) Profile() profile.Service   { return m.Called().Get(0).(profile.Service) }
+func (m *mockContainer) FS() fs.Service             { return m.Called().Get(0).(fs.Service) }
+func (m *mockContainer) Environment() environment.Service {
+	return m.Called().Get(0).(environment.Service)
+}
+func (m *mockContainer) Editor() editor.Service     { return m.Called().Get(0).(editor.Service) }
+func (m *mockContainer) Drive() drive.Service       { return m.Called().Get(0).(drive.Service) }
 func (m *mockContainer) URIFactory() *fs.URIFactory { return m.Called().Get(0).(*fs.URIFactory) }
 
 type mockLoggerService struct{ mock.Mock }
+
 func (m *mockLoggerService) CreateLogger(name string) (logger.Logger, error) {
 	args := m.Called(name)
 	return args.Get(0).(logger.Logger), args.Error(1)
 }
 func (m *mockLoggerService) SetAllLevel(level logger.Level) { m.Called(level) }
-func (m *mockLoggerService) Reconfigure(level logger.Level, output string, format string) error { return m.Called(level, output, format).Error(0) }
+func (m *mockLoggerService) Reconfigure(level logger.Level, output string, format string) error {
+	return m.Called(level, output, format).Error(0)
+}
 
 func TestSetCommand_Integration(t *testing.T) {
 	tests := []struct {
@@ -51,9 +57,9 @@ func TestSetCommand_Integration(t *testing.T) {
 				mLogSvc.On("CreateLogger", "config-set").Return(mLog, nil)
 				m.On("Logger").Return(mLogSvc)
 				m.On("Config").Return(mSvc)
-				
+
 				mSvc.On("UpdateConfig", mock.Anything, "logging.level", "debug").Return(nil)
-				
+
 				mLog.On("WithContext", mock.Anything).Return(mLog)
 				mLog.On("Debug", mock.Anything, mock.Anything).Return()
 				mLog.On("Info", mock.Anything, mock.Anything).Return()

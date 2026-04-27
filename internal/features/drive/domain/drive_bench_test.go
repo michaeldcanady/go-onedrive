@@ -21,7 +21,7 @@ func BenchmarkDefaultService_ListDrives(b *testing.B) {
 	for i := 0; i < 10; i++ {
 		path := fmt.Sprintf("/mount%d", i)
 		mountConfigs = append(mountConfigs, mount.MountConfig{Path: path, IdentityID: "user1"})
-		
+
 		var drives []fs.Drive
 		for j := 0; j < 10; j++ {
 			drives = append(drives, fs.Drive{ID: fmt.Sprintf("d%d-%d", i, j), Name: fmt.Sprintf("Drive %d-%d", i, j)})
@@ -44,7 +44,7 @@ func BenchmarkDefaultService_ResolveDrive(b *testing.B) {
 
 	// Setup 1 mount with 100 drives
 	mounts.On("ListMounts", mock.Anything).Return([]mount.MountConfig{{Path: "/od", IdentityID: "user1"}}, nil)
-	
+
 	var drives []fs.Drive
 	for j := 0; j < 100; j++ {
 		drives = append(drives, fs.Drive{ID: fmt.Sprintf("d%d", j), Name: fmt.Sprintf("Drive %d", j)})

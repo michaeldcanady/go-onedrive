@@ -1,8 +1,8 @@
 package ls
 
 import (
-	"github.com/michaeldcanady/go-onedrive/internal/core/di"
 	cli "github.com/michaeldcanady/go-onedrive/internal/core/cli"
+	"github.com/michaeldcanady/go-onedrive/internal/core/di"
 	formatting "github.com/michaeldcanady/go-onedrive/pkg/format"
 
 	"github.com/spf13/cobra"
@@ -18,10 +18,10 @@ func CreateLsCmd(container di.Container) *cobra.Command {
 	handler := NewCommand(container.FS(), container.URIFactory(), formatting.NewFormatterFactory(), l)
 
 	cmd := &cobra.Command{
-		Use:   "ls <path>",
-		Short: "List items in a directory",
-		Long:  "List the items in a specified directory in OneDrive or the local filesystem.",
-		Args:  cobra.MaximumNArgs(1),
+		Use:               "ls <path>",
+		Short:             "List items in a directory",
+		Long:              "List the items in a specified directory in OneDrive or the local filesystem.",
+		Args:              cobra.MaximumNArgs(1),
 		ValidArgsFunction: cli.ProviderPathCompletion(container),
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			if len(args) > 0 {

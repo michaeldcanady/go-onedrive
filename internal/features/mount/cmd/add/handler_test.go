@@ -77,10 +77,10 @@ func TestHandler_Execute(t *testing.T) {
 		cmd := NewCommand(mountSvc, nil, nil, mockLog)
 
 		ctx := &CommandContext{
-			Ctx: context.Background(),
-			Uri: &fs.URI{},
-			Type: "onedrive",
-			Identity: &identity.Account{ID: "id"},
+			Ctx:          context.Background(),
+			Uri:          &fs.URI{},
+			Type:         "onedrive",
+			Identity:     &identity.Account{ID: "id"},
 			MountOptions: map[string]string{"key": "value"},
 		}
 
@@ -88,10 +88,10 @@ func TestHandler_Execute(t *testing.T) {
 		mockLog.On("Info", "starting mount add operation", mock.Anything).Return()
 		mockLog.On("Info", "mount add completed successfully", mock.Anything).Return()
 		mountSvc.On("AddMount", ctx.Ctx, mount.MountConfig{
-			Path: ctx.Uri.String(),
-			Type: ctx.Type,
+			Path:       ctx.Uri.String(),
+			Type:       ctx.Type,
 			IdentityID: ctx.Identity.ID,
-			Options: ctx.MountOptions,
+			Options:    ctx.MountOptions,
 		}).Return(nil)
 
 		err := cmd.Execute(ctx)
@@ -105,9 +105,9 @@ func TestHandler_Execute(t *testing.T) {
 		cmd := NewCommand(mountSvc, nil, nil, mockLog)
 
 		ctx := &CommandContext{
-			Ctx: context.Background(),
-			Uri: &fs.URI{},
-			Type: "onedrive",
+			Ctx:      context.Background(),
+			Uri:      &fs.URI{},
+			Type:     "onedrive",
 			Identity: &identity.Account{ID: "id"},
 		}
 
@@ -130,7 +130,7 @@ func (m *MockLogger) Debug(msg string, fields ...logger.Field) { m.Called(msg, f
 func (m *MockLogger) Info(msg string, fields ...logger.Field)  { m.Called(msg, fields) }
 func (m *MockLogger) Warn(msg string, fields ...logger.Field)  { m.Called(msg, fields) }
 func (m *MockLogger) Error(msg string, fields ...logger.Field) { m.Called(msg, fields) }
-func (m *MockLogger) SetLevel(level logger.Level)             { m.Called(level) }
+func (m *MockLogger) SetLevel(level logger.Level)              { m.Called(level) }
 func (m *MockLogger) With(fields ...logger.Field) logger.Logger {
 	args := m.Called(fields)
 	return args.Get(0).(logger.Logger)

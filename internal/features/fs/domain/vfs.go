@@ -320,6 +320,7 @@ func (v *VFS) getToken(ctx context.Context, mountKey string) (string, error) {
 	}
 
 	// Assuming the token response needs to be returned as a JSON string for the drive gateway
+	// nolint:gosec // G117 // allowed
 	rawToken, err := json.Marshal(resp.GetToken())
 	if err != nil {
 		return "", err

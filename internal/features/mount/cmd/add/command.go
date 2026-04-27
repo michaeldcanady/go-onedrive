@@ -1,6 +1,7 @@
 package add
 
 import (
+	"fmt"
 	"maps"
 	"strings"
 
@@ -116,7 +117,10 @@ func CreateAddCmd(container di.Container) *cobra.Command {
 		},
 	}
 
-	cmd.RegisterFlagCompletionFunc("option", baseFlagCompletion(container.Mounts().GetMountOptions()))
+	if err := cmd.RegisterFlagCompletionFunc("option", baseFlagCompletion(container.Mounts().GetMountOptions())); err != nil {
+		// Log the error and return the command without completion
+		fmt.Fprintf(cmd.ErrOrStderr(), "failed to register flag completion: %v\n", err)
+	}
 
 	cmd.Flags().StringSliceVar(&opts.MountOptions, "option", []string{}, "Provider-specific options in key=value format (repeatable)")
 

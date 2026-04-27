@@ -17,7 +17,7 @@ type mockBackend struct {
 	mock.Mock
 }
 
-func (m *mockBackend) Name() string { return m.Called().String(0) }
+func (m *mockBackend) Name() string             { return m.Called().String(0) }
 func (m *mockBackend) IdentityProvider() string { return m.Called().String(0) }
 func (m *mockBackend) Stat(ctx context.Context, token, driveID, path string) (fs.Item, error) {
 	args := m.Called(ctx, token, driveID, path)
@@ -82,7 +82,7 @@ func TestCat_Functional(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx := context.Background()
-			
+
 			// Setup Mocks
 			mBackend := new(mockBackend)
 			mBackend.On("IdentityProvider").Return("")
@@ -100,9 +100,9 @@ func TestCat_Functional(t *testing.T) {
 			// Setup Real Services
 			vfs := fsdomain.NewVFS(nil)
 			vfs.Mount("/od", mBackend)
-			
+
 			uriFactory := fsdomain.NewURIFactory(vfs)
-			
+
 			handler := NewCommand(vfs, uriFactory, mLog)
 
 			// Setup Context

@@ -7,16 +7,16 @@ import (
 
 	"github.com/michaeldcanady/go-onedrive/internal/core/di"
 	"github.com/michaeldcanady/go-onedrive/internal/core/logger"
-	"github.com/michaeldcanady/go-onedrive/internal/features/middleware"
 	drive "github.com/michaeldcanady/go-onedrive/internal/features/drive/cmd"
 	auth "github.com/michaeldcanady/go-onedrive/internal/features/identity/cmd"
+	"github.com/michaeldcanady/go-onedrive/internal/features/middleware"
 
 	"github.com/michaeldcanady/go-onedrive/internal/core/shared"
 	"github.com/michaeldcanady/go-onedrive/internal/features/config/cmd"
+	"github.com/michaeldcanady/go-onedrive/internal/features/editor/cmd"
 	"github.com/michaeldcanady/go-onedrive/internal/features/fs/cmd/cat"
 	"github.com/michaeldcanady/go-onedrive/internal/features/fs/cmd/cp"
 	"github.com/michaeldcanady/go-onedrive/internal/features/fs/cmd/download"
-	"github.com/michaeldcanady/go-onedrive/internal/features/editor/cmd"
 	"github.com/michaeldcanady/go-onedrive/internal/features/fs/cmd/ls"
 	"github.com/michaeldcanady/go-onedrive/internal/features/fs/cmd/mkdir"
 	"github.com/michaeldcanady/go-onedrive/internal/features/fs/cmd/mv"

@@ -21,16 +21,20 @@ import (
 
 type mockContainer struct{ mock.Mock }
 
-func (m *mockContainer) Logger() logger.Service             { return m.Called().Get(0).(logger.Service) }
-func (m *mockContainer) Config() config.Service             { return m.Called().Get(0).(config.Service) }
-func (m *mockContainer) Mounts() mount.Service              { return m.Called().Get(0).(mount.Service) }
-func (m *mockContainer) Identity() identity.Service         { return m.Called().Get(0).(identity.Service) }
-func (m *mockContainer) Profile() profile.Service           { return m.Called().Get(0).(profile.Service) }
-func (m *mockContainer) FS() fsdomain.Service               { return m.Called().Get(0).(fsdomain.Service) }
-func (m *mockContainer) Environment() environment.Service   { return m.Called().Get(0).(environment.Service) }
-func (m *mockContainer) Editor() editor.Service             { return m.Called().Get(0).(editor.Service) }
-func (m *mockContainer) Drive() drive.Service               { return m.Called().Get(0).(drive.Service) }
-func (m *mockContainer) URIFactory() *fsdomain.URIFactory   { return m.Called().Get(0).(*fsdomain.URIFactory) }
+func (m *mockContainer) Logger() logger.Service     { return m.Called().Get(0).(logger.Service) }
+func (m *mockContainer) Config() config.Service     { return m.Called().Get(0).(config.Service) }
+func (m *mockContainer) Mounts() mount.Service      { return m.Called().Get(0).(mount.Service) }
+func (m *mockContainer) Identity() identity.Service { return m.Called().Get(0).(identity.Service) }
+func (m *mockContainer) Profile() profile.Service   { return m.Called().Get(0).(profile.Service) }
+func (m *mockContainer) FS() fsdomain.Service       { return m.Called().Get(0).(fsdomain.Service) }
+func (m *mockContainer) Environment() environment.Service {
+	return m.Called().Get(0).(environment.Service)
+}
+func (m *mockContainer) Editor() editor.Service { return m.Called().Get(0).(editor.Service) }
+func (m *mockContainer) Drive() drive.Service   { return m.Called().Get(0).(drive.Service) }
+func (m *mockContainer) URIFactory() *fsdomain.URIFactory {
+	return m.Called().Get(0).(*fsdomain.URIFactory)
+}
 
 type mockMountService struct{ mock.Mock }
 
@@ -63,8 +67,10 @@ func (m *mockMountService) GetCompletionProvider(name string) (mount.CompletionP
 
 type mockIdentityService struct{ mock.Mock }
 
-func (m *mockIdentityService) RegisterAuthenticator(p string, a identity.Authenticator) { m.Called(p, a) }
-func (m *mockIdentityService) RegisterAuthorizer(p string, a identity.Authorizer)       { m.Called(p, a) }
+func (m *mockIdentityService) RegisterAuthenticator(p string, a identity.Authenticator) {
+	m.Called(p, a)
+}
+func (m *mockIdentityService) RegisterAuthorizer(p string, a identity.Authorizer) { m.Called(p, a) }
 func (m *mockIdentityService) GetAuthenticator(p string) (identity.Authenticator, error) {
 	args := m.Called(p)
 	return args.Get(0).(identity.Authenticator), args.Error(1)
@@ -113,7 +119,7 @@ func (m *mockLogger) Debug(msg string, fields ...logger.Field) { m.Called(msg, f
 func (m *mockLogger) Info(msg string, fields ...logger.Field)  { m.Called(msg, fields) }
 func (m *mockLogger) Warn(msg string, fields ...logger.Field)  { m.Called(msg, fields) }
 func (m *mockLogger) Error(msg string, fields ...logger.Field) { m.Called(msg, fields) }
-func (m *mockLogger) SetLevel(level logger.Level)             { m.Called(level) }
+func (m *mockLogger) SetLevel(level logger.Level)              { m.Called(level) }
 func (m *mockLogger) With(fields ...logger.Field) logger.Logger {
 	args := m.Called(fields)
 	return args.Get(0).(logger.Logger)
@@ -123,7 +129,10 @@ func (m *mockLogger) WithContext(ctx context.Context) logger.Logger {
 	return args.Get(0).(logger.Logger)
 }
 
-type mockVFS struct{ mock.Mock; fsdomain.Service }
+type mockVFS struct {
+	mock.Mock
+	fsdomain.Service
+}
 
 func (m *mockVFS) Resolve(absPath string) (string, string, error) {
 	args := m.Called(absPath)
@@ -145,7 +154,7 @@ func TestAddCmd_Integration(t *testing.T) {
 				m.On("Logger").Return(mLogSvc)
 				m.On("Mounts").Return(mMount)
 				m.On("Identity").Return(mIdent)
-				
+
 				mVFS := new(mockVFS)
 				mVFS.On("Resolve", "/od").Return("/od", "", nil)
 				m.On("URIFactory").Return(fsdomain.NewURIFactory(mVFS))

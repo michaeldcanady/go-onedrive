@@ -55,12 +55,12 @@ func (a *mountConfigAdapter) SaveMounts(ctx context.Context, mounts []mount.Moun
 
 type dummyLogger struct{ mock.Mock }
 
-func (l *dummyLogger) Debug(msg string, fields ...logger.Field) {}
-func (l *dummyLogger) Info(msg string, fields ...logger.Field)  {}
-func (l *dummyLogger) Warn(msg string, fields ...logger.Field)  {}
-func (l *dummyLogger) Error(msg string, fields ...logger.Field) {}
-func (l *dummyLogger) SetLevel(level logger.Level)             {}
-func (l *dummyLogger) With(fields ...logger.Field) logger.Logger { return l }
+func (l *dummyLogger) Debug(msg string, fields ...logger.Field)      {}
+func (l *dummyLogger) Info(msg string, fields ...logger.Field)       {}
+func (l *dummyLogger) Warn(msg string, fields ...logger.Field)       {}
+func (l *dummyLogger) Error(msg string, fields ...logger.Field)      {}
+func (l *dummyLogger) SetLevel(level logger.Level)                   {}
+func (l *dummyLogger) With(fields ...logger.Field) logger.Logger     { return l }
 func (l *dummyLogger) WithContext(ctx context.Context) logger.Logger { return l }
 
 func TestMountFeature_Functional(t *testing.T) {
@@ -68,7 +68,7 @@ func TestMountFeature_Functional(t *testing.T) {
 	configPath := filepath.Join(tmpDir, "config.yaml")
 
 	// Create initial empty config
-	err := os.WriteFile(configPath, []byte("mounts: []"), 0644)
+	err := os.WriteFile(configPath, []byte("mounts: []"), 0600)
 	require.NoError(t, err)
 
 	ctx := context.Background()

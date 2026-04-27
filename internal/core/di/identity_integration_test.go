@@ -10,7 +10,7 @@ import (
 func TestDefaultContainer_IdentityWiring(t *testing.T) {
 	// We need to provide a minimal environment for the container to initialize
 	t.Setenv("HOME", t.TempDir())
-	
+
 	container, err := NewDefaultContainer()
 	require.NoError(t, err)
 	require.NotNil(t, container)

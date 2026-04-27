@@ -13,7 +13,7 @@ type mockBackend struct {
 	mock.Mock
 }
 
-func (m *mockBackend) Name() string { return m.Called().String(0) }
+func (m *mockBackend) Name() string             { return m.Called().String(0) }
 func (m *mockBackend) IdentityProvider() string { return m.Called().String(0) }
 func (m *mockBackend) Stat(ctx context.Context, token, driveID, path string) (fs.Item, error) {
 	args := m.Called(ctx, token, driveID, path)

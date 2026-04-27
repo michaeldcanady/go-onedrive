@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	fs "github.com/michaeldcanady/go-onedrive/internal/features/fs/domain"
 	"github.com/michaeldcanady/go-onedrive/internal/core/logger"
+	fs "github.com/michaeldcanady/go-onedrive/internal/features/fs/domain"
 )
 
 // Logger defines the interface required for logging within the mv command.

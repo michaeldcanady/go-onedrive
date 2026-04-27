@@ -101,7 +101,7 @@ func (m *MockLogger) Debug(msg string, fields ...logger.Field) { m.Called(msg, f
 func (m *MockLogger) Info(msg string, fields ...logger.Field)  { m.Called(msg, fields) }
 func (m *MockLogger) Warn(msg string, fields ...logger.Field)  { m.Called(msg, fields) }
 func (m *MockLogger) Error(msg string, fields ...logger.Field) { m.Called(msg, fields) }
-func (m *MockLogger) SetLevel(level logger.Level)             { m.Called(level) }
+func (m *MockLogger) SetLevel(level logger.Level)              { m.Called(level) }
 func (m *MockLogger) With(fields ...logger.Field) logger.Logger {
 	args := m.Called(fields)
 	return args.Get(0).(logger.Logger)

@@ -42,7 +42,7 @@ func TestHandler_Execute(t *testing.T) {
 			handler := NewCommand(mockManager, mockFactory, mockLogger)
 
 			ctx := &CommandContext{
-				Ctx:        context.Background(),
+				Ctx:            context.Background(),
 				SourceURI:      &pkgfs.URI{},
 				DestinationURI: &pkgfs.URI{},
 				Options: Options{

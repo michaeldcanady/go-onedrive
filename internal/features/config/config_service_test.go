@@ -92,7 +92,7 @@ func TestConfigService_UpdateConfig(t *testing.T) {
 
 	// Create initial config file
 	initialCfg := []byte("auth:\n  provider: microsoft\n")
-	err := os.WriteFile(configPath, initialCfg, 0644)
+	err := os.WriteFile(configPath, initialCfg, 0600)
 	assert.NoError(t, err)
 
 	svc := NewConfigService(nil, &mockLoggerSvc{})

@@ -8,12 +8,12 @@ import (
 
 func TestURIFactory_FromString(t *testing.T) {
 	tests := []struct {
-		name     string
-		input    string
-		setup    func(m *mockVFS)
-		want     *URI
-		wantErr  bool
-		errMsg   string
+		name    string
+		input   string
+		setup   func(m *mockVFS)
+		want    *URI
+		wantErr bool
+		errMsg  string
 	}{
 		{
 			name:  "absolute path resolved by VFS",
@@ -90,7 +90,7 @@ func TestURIFactory_FromLocalPath(t *testing.T) {
 func TestURIFactory_FromMount(t *testing.T) {
 	mVFS := new(mockVFS)
 	mVFS.On("Resolve", "/od").Return("/od", "/", nil)
-	
+
 	f := NewURIFactory(mVFS)
 	got, err := f.FromMount("od", "test.txt")
 	assert.NoError(t, err)

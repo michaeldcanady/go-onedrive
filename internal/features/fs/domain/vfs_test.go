@@ -85,7 +85,7 @@ func TestVFS_Concurrency(t *testing.T) {
 	t.Run("Concurrent Resolves", func(t *testing.T) {
 		const workers = 10
 		const iterations = 100
-		
+
 		done := make(chan bool)
 		for i := 0; i < workers; i++ {
 			go func() {

@@ -10,16 +10,17 @@ import (
 )
 
 type mockItemCreator struct{ mock.Mock }
+
 func (m *mockItemCreator) Mkdir(ctx context.Context, uri *fsdomain.URI) error {
 	return m.Called(ctx, uri).Error(0)
 }
 
 type mockURIFactory struct{ mock.Mock }
+
 func (m *mockURIFactory) FromString(s string) (*fsdomain.URI, error) {
 	args := m.Called(s)
 	return args.Get(0).(*fsdomain.URI), args.Error(1)
 }
-
 
 func TestHandler_Execute(t *testing.T) {
 	mockManager := new(mockItemCreator)

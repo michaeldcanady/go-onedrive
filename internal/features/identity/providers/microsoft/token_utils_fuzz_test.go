@@ -18,8 +18,9 @@ func FuzzExtractFullIdentityFromToken(f *testing.F) {
 
 func BenchmarkExtractFullIdentityFromToken(b *testing.B) {
 	// A mock token that looks like a JWT
+	// nolint:gosec // G101 // not real credentials
 	token := "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJvaWQiOiJ1c2VyMSIsInByZWZlcnJlZF91c2VybmFtZSI6InVzZXIxQGV4YW1wbGUuY29tIiwibmFtZSI6IlVzZXIgMSJ9.signature"
-	
+
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		_, _ = extractFullIdentityFromToken(token)

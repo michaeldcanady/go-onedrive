@@ -14,10 +14,10 @@ import (
 
 func TestVFS_Integration_Operations(t *testing.T) {
 	tests := []struct {
-		name    string
-		setup   func(ctx context.Context, v *VFS, mID *mockTokenProvider, mB *mockBackend)
-		action  func(ctx context.Context, v *VFS) error
-		verify  func(t *testing.T, err error)
+		name   string
+		setup  func(ctx context.Context, v *VFS, mID *mockTokenProvider, mB *mockBackend)
+		action func(ctx context.Context, v *VFS) error
+		verify func(t *testing.T, err error)
 	}{
 		{
 			name: "Stat delegation",
@@ -150,9 +150,9 @@ func TestVFS_Integration_CopyMove(t *testing.T) {
 					Return(fs.Item{}, nil).Once()
 			},
 			action: func(ctx context.Context, v *VFS) error {
-				return v.Copy(ctx, 
-					&fs.URI{Provider: "/src", Path: "/file.txt"}, 
-					&fs.URI{Provider: "/dst", Path: "/file.txt"}, 
+				return v.Copy(ctx,
+					&fs.URI{Provider: "/src", Path: "/file.txt"},
+					&fs.URI{Provider: "/dst", Path: "/file.txt"},
 					fs.CopyOptions{})
 			},
 			wantErr: false,
@@ -165,9 +165,9 @@ func TestVFS_Integration_CopyMove(t *testing.T) {
 				mSrc.On("Copy", mock.Anything, "", "", "/file1.txt", "/file2.txt").Return(nil).Once()
 			},
 			action: func(ctx context.Context, v *VFS) error {
-				return v.Copy(ctx, 
-					&fs.URI{Provider: "/src", Path: "/file1.txt"}, 
-					&fs.URI{Provider: "/src", Path: "/file2.txt"}, 
+				return v.Copy(ctx,
+					&fs.URI{Provider: "/src", Path: "/file1.txt"},
+					&fs.URI{Provider: "/src", Path: "/file2.txt"},
 					fs.CopyOptions{})
 			},
 			wantErr: false,
@@ -180,8 +180,8 @@ func TestVFS_Integration_CopyMove(t *testing.T) {
 				mSrc.On("Move", mock.Anything, "", "", "/old.txt", "/new.txt").Return(nil).Once()
 			},
 			action: func(ctx context.Context, v *VFS) error {
-				return v.Move(ctx, 
-					&fs.URI{Provider: "/src", Path: "/old.txt"}, 
+				return v.Move(ctx,
+					&fs.URI{Provider: "/src", Path: "/old.txt"},
 					&fs.URI{Provider: "/src", Path: "/new.txt"})
 			},
 			wantErr: false,

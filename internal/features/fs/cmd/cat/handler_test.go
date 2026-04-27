@@ -74,6 +74,7 @@ func TestHandler_Execute(t *testing.T) {
 }
 
 type mockURIFactory struct{ mock.Mock }
+
 func (m *mockURIFactory) FromString(s string) (*fsdomain.URI, error) {
 	args := m.Called(s)
 	return args.Get(0).(*fsdomain.URI), args.Error(1)

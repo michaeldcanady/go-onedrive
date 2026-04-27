@@ -17,7 +17,7 @@ type mockBackend struct {
 	mock.Mock
 }
 
-func (m *mockBackend) Name() string { return m.Called().String(0) }
+func (m *mockBackend) Name() string             { return m.Called().String(0) }
 func (m *mockBackend) IdentityProvider() string { return m.Called().String(0) }
 func (m *mockBackend) Stat(ctx context.Context, token, driveID, path string) (fs.Item, error) {
 	args := m.Called(ctx, token, driveID, path)
@@ -50,7 +50,6 @@ func (m *mockBackend) Remove(ctx context.Context, token, driveID, path string) e
 func (m *mockBackend) Capabilities() fs.Capabilities {
 	return m.Called().Get(0).(fs.Capabilities)
 }
-
 
 func TestUpload_Functional(t *testing.T) {
 	tests := []struct {

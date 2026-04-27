@@ -14,26 +14,29 @@ import (
 )
 
 type mockItemLister struct{ mock.Mock }
+
 func (m *mockItemLister) List(ctx context.Context, uri *pkgfs.URI, opts pkgfs.ListOptions) ([]pkgfs.Item, error) {
 	args := m.Called(ctx, uri, opts)
 	return args.Get(0).([]pkgfs.Item), args.Error(1)
 }
 
 type mockFormatCreator struct{ mock.Mock }
+
 func (m *mockFormatCreator) Create(f formatting.Format) (formatting.OutputFormatter, error) {
 	args := m.Called(f)
 	return args.Get(0).(formatting.OutputFormatter), args.Error(1)
 }
 
 type mockFormatter struct{ mock.Mock }
+
 func (m *mockFormatter) Format(w io.Writer, items []any) error { return m.Called(w, items).Error(0) }
 
 type mockURIFactory struct{ mock.Mock }
+
 func (m *mockURIFactory) FromString(s string) (*fsdomain.URI, error) {
 	args := m.Called(s)
 	return args.Get(0).(*fsdomain.URI), args.Error(1)
 }
-
 
 func TestHandler_Execute(t *testing.T) {
 	mockManager := new(mockItemLister)

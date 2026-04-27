@@ -64,9 +64,9 @@ func (a *mountConfigAdapter) SaveMounts(ctx context.Context, mounts []mount.Moun
 
 type testContainer struct {
 	mock.Mock
-	logger      logger.Service
-	config      config.Service
-	mounts      mount.Service
+	logger logger.Service
+	config config.Service
+	mounts mount.Service
 }
 
 func (c *testContainer) Logger() logger.Service           { return c.logger }
@@ -83,14 +83,14 @@ func (c *testContainer) URIFactory() *fsdomain.URIFactory { return nil }
 func TestListCmd_Functional(t *testing.T) {
 	tmpDir := t.TempDir()
 	configPath := filepath.Join(tmpDir, "config.yaml")
-	
+
 	initialConfig := `
 mounts:
   - path: "/od"
     type: "onedrive"
     identity_id: "user1"
 `
-	err := os.WriteFile(configPath, []byte(initialConfig), 0644)
+	err := os.WriteFile(configPath, []byte(initialConfig), 0600)
 	require.NoError(t, err)
 
 	envSvc := environment.NewDefaultService("odc-test")
@@ -102,11 +102,11 @@ mounts:
 	require.NoError(t, err)
 
 	mountSvc := mount.NewMountService(&mountConfigAdapter{svc: configSvc})
-	
+
 	container := &testContainer{
-		logger:     logSvc,
-		config:     configSvc,
-		mounts:     mountSvc,
+		logger: logSvc,
+		config: configSvc,
+		mounts: mountSvc,
 	}
 
 	cmd := list.CreateListCmd(container)

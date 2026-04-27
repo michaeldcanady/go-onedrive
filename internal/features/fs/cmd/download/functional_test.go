@@ -17,7 +17,7 @@ type mockBackend struct {
 	mock.Mock
 }
 
-func (m *mockBackend) Name() string { return m.Called().String(0) }
+func (m *mockBackend) Name() string             { return m.Called().String(0) }
 func (m *mockBackend) IdentityProvider() string { return m.Called().String(0) }
 func (m *mockBackend) Stat(ctx context.Context, token, driveID, path string) (fs.Item, error) {
 	args := m.Called(ctx, token, driveID, path)
@@ -89,7 +89,7 @@ func TestDownload_Functional(t *testing.T) {
 			recursive:   true,
 			setup: func(mRemote, mLocal *mockBackend) {
 				mRemote.On("IdentityProvider").Return("")
-				// VFS.Copy for different backends doesn't natively handle recursion yet, 
+				// VFS.Copy for different backends doesn't natively handle recursion yet,
 				// it opens the source as a file. If it's a directory, Open will fail.
 				// However, our current VFS implementation of Copy for different backends is simple:
 				// It just opens src and creates dst.

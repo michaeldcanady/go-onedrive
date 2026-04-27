@@ -81,7 +81,10 @@ func (c *testContainer) Editor() editor.Service           { return nil }
 func (c *testContainer) Drive() drive.Service             { return nil }
 func (c *testContainer) URIFactory() *fsdomain.URIFactory { return c.uriFactory }
 
-type mockVFS struct{ mock.Mock; fsdomain.Service }
+type mockVFS struct {
+	mock.Mock
+	fsdomain.Service
+}
 
 func (m *mockVFS) Resolve(absPath string) (string, string, error) {
 	args := m.Called(absPath)
@@ -98,7 +101,7 @@ mounts:
     type: "onedrive"
     identity_id: "user1"
 `
-	err := os.WriteFile(configPath, []byte(initialConfig), 0644)
+	err := os.WriteFile(configPath, []byte(initialConfig), 0600)
 	require.NoError(t, err)
 
 	envSvc := environment.NewDefaultService("odc-test")

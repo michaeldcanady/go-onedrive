@@ -64,11 +64,11 @@ func (a *mountConfigAdapter) SaveMounts(ctx context.Context, mounts []mount.Moun
 
 type testContainer struct {
 	mock.Mock
-	logger      logger.Service
-	config      config.Service
-	mounts      mount.Service
-	identity    identity.Service
-	uriFactory  *fsdomain.URIFactory
+	logger     logger.Service
+	config     config.Service
+	mounts     mount.Service
+	identity   identity.Service
+	uriFactory *fsdomain.URIFactory
 }
 
 func (c *testContainer) Logger() logger.Service           { return c.logger }
@@ -82,14 +82,24 @@ func (c *testContainer) Editor() editor.Service           { return nil }
 func (c *testContainer) Drive() drive.Service             { return nil }
 func (c *testContainer) URIFactory() *fsdomain.URIFactory { return c.uriFactory }
 
-type mockIdentityService struct{ mock.Mock; identity.Service }
+type mockIdentityService struct {
+	mock.Mock
+	identity.Service
+}
+
 func (m *mockIdentityService) GetAccount(ctx context.Context, id string) (*identity.Account, error) {
 	args := m.Called(ctx, id)
-	if args.Get(0) == nil { return nil, args.Error(1) }
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
 	return args.Get(0).(*identity.Account), args.Error(1)
 }
 
-type mockVFS struct{ mock.Mock; fsdomain.Service }
+type mockVFS struct {
+	mock.Mock
+	fsdomain.Service
+}
+
 func (m *mockVFS) Resolve(absPath string) (string, string, error) {
 	args := m.Called(absPath)
 	return args.String(0), args.String(1), args.Error(2)
@@ -98,7 +108,7 @@ func (m *mockVFS) Resolve(absPath string) (string, string, error) {
 func TestAddCmd_Functional(t *testing.T) {
 	tmpDir := t.TempDir()
 	configPath := filepath.Join(tmpDir, "config.yaml")
-	err := os.WriteFile(configPath, []byte("mounts: []"), 0644)
+	err := os.WriteFile(configPath, []byte("mounts: []"), 0600)
 	require.NoError(t, err)
 
 	envSvc := environment.NewDefaultService("odc-test")
@@ -110,7 +120,7 @@ func TestAddCmd_Functional(t *testing.T) {
 	require.NoError(t, err)
 
 	mountSvc := mount.NewMountService(&mountConfigAdapter{svc: configSvc})
-	
+
 	identSvc := new(mockIdentityService)
 	identSvc.On("GetAccount", mock.Anything, "user1").Return(&identity.Account{ID: "user1"}, nil)
 
