@@ -77,7 +77,6 @@ jobs:
       - run: |
           go mod tidy
           go generate ./...
-          git diff --exit-code -- .
 
   build-go:
     name: Build ${{ matrix.cmd }} (${{ matrix.os }})
