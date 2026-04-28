@@ -13,7 +13,7 @@ require (
 	github.com/microsoftgraph/msgraph-sdk-go v1.97.0
 	github.com/spf13/cobra v1.10.2
 	go.etcd.io/bbolt v1.4.3
-	go.uber.org/zap v1.27.1
+	go.uber.org/zap v1.28.0
 	golang.org/x/term v0.42.0
 	google.golang.org/grpc v1.80.0
 	google.golang.org/protobuf v1.36.11
