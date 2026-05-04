@@ -3,6 +3,8 @@ CLI
 ETag
 Go
 gRPC
+MUST
+NOT
 OTel
 OTLP
 RPC
