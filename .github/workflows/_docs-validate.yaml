@@ -22,6 +22,7 @@ jobs:
         uses: errata-ai/vale-action@v2
         with:
           files: docs
+          vale_flags: --config=.vale.ini
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
