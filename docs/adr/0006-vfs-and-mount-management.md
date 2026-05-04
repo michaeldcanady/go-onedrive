@@ -1,4 +1,4 @@
-# 6. Virtual File System (VFS) and Mount Management
+# 6. Virtual File System (VFS) and mount management
 
 Date: 2026-04-22
 

@@ -1,4 +1,4 @@
-# 3. Dependency Injection Container Pattern
+# 3. Dependency injection container pattern
 
 Date: 2025-05-14
 

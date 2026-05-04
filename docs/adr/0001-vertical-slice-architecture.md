@@ -1,4 +1,4 @@
-# 1. Use Vertical Slice Architecture for Feature Organization
+# 1. Use vertical slice architecture for feature organization
 
 Date: 2025-05-14
 

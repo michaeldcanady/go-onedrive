@@ -1,4 +1,4 @@
-# 5. External Plugin Architecture using gRPC and go-plugin
+# 5. External plugin architecture using gRPC and go-plugin
 
 Date: 2026-04-22
 

@@ -1,4 +1,4 @@
-# 4. Domain-First Access Pattern
+# 4. Domain-first access pattern
 
 Date: 2025-05-14
 

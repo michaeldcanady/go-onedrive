@@ -141,7 +141,7 @@ Profiles allow you to switch between multiple OneDrive accounts.
 
 ## Drive Discovery
 
-### `storage-discovery` - Discover drives
+### `storage-discovery` - discover drives
 Discover available OneDrive drives and shared libraries.
 
 - **Subcommands:**
