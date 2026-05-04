@@ -1,0 +1,29 @@
+name: ~ Build Go
+
+on:
+  workflow_call:
+    inputs:
+      go-version:
+        required: true
+        type: string
+      os:
+        required: true
+        type: string
+      cmd:
+        required: true
+        type: string
+
+jobs:
+  build:
+    name: Build ${{ inputs.cmd }} (${{ inputs.os }})
+    runs-on: ${{ inputs.os }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+      - name: Setup Environment
+        uses: ./.github/actions/setup-odc
+        with:
+          go-version: ${{ inputs.go-version }}
+      - run: go mod download
+      - name: Build Command
+        run: go build ./cmd/${{ inputs.cmd }}/

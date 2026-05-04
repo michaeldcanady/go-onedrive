@@ -1,0 +1,25 @@
+name: ~ Check Go
+
+on:
+  workflow_call:
+    inputs:
+      go-version:
+        required: true
+        type: string
+
+jobs:
+  check:
+    name: Check Go Modules
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+      - name: Setup Environment
+        uses: ./.github/actions/setup-odc
+        with:
+          go-version: ${{ inputs.go-version }}
+      - run: go mod download
+      - run: go mod verify
+      - run: |
+          go mod tidy
+          go generate ./...
