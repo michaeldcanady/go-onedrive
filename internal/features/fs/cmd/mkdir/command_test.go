@@ -37,6 +37,31 @@ func (m *mockContainer) URIFactory() *registry.URIFactory {
 	return m.Called().Get(0).(*registry.URIFactory)
 }
 
+type mockMountService struct{ mock.Mock }
+
+func (m *mockMountService) ListMounts(ctx context.Context) ([]mount.MountConfig, error) {
+	args := m.Called(ctx)
+	return args.Get(0).([]mount.MountConfig), args.Error(1)
+}
+
+func (m *mockMountService) AddMount(ctx context.Context, config mount.MountConfig) error {
+	return m.Called(ctx, config).Error(0)
+}
+
+func (m *mockMountService) RemoveMount(ctx context.Context, path string) error {
+	return m.Called(ctx, path).Error(0)
+}
+
+func (m *mockMountService) RegisterValidator(mountType string, v mount.OptionValidator) {}
+func (m *mockMountService) RegisterCompletionProvider(mountType string, p mount.CompletionProvider) {
+}
+func (m *mockMountService) GetCompletionProvider(mountType string) (mount.CompletionProvider, bool) {
+	return nil, false
+}
+func (m *mockMountService) GetMountOptions() map[string][]mount.MountOption {
+	return nil
+}
+
 type mockLoggerService struct{ mock.Mock }
 
 func (m *mockLoggerService) CreateLogger(name string) (logger.Logger, error) {
@@ -113,16 +138,17 @@ func TestMkdirCommand_Integration(t *testing.T) {
 	tests := []struct {
 		name    string
 		args    []string
-		setup   func(m *mockContainer, mFS *mockFsService, mLogSvc *mockLoggerService, mLog *mockLogger, mVFS *mockVFS)
+		setup   func(m *mockContainer, mFS *mockFsService, mLogSvc *mockLoggerService, mLog *mockLogger, mVFS *mockVFS, mMounts *mockMountService)
 		wantErr bool
 	}{
 		{
 			name: "mkdir successfully",
 			args: []string{"mkdir", "/od/newdir"},
-			setup: func(m *mockContainer, mFS *mockFsService, mLogSvc *mockLoggerService, mLog *mockLogger, mVFS *mockVFS) {
+			setup: func(m *mockContainer, mFS *mockFsService, mLogSvc *mockLoggerService, mLog *mockLogger, mVFS *mockVFS, mMounts *mockMountService) {
 				mLogSvc.On("CreateLogger", "drive-mkdir").Return(mLog, nil)
 				m.On("Logger").Return(mLogSvc)
 				m.On("FS").Return(mFS)
+				m.On("Mounts").Return(mMounts)
 				m.On("URIFactory").Return(registry.NewURIFactory(mVFS))
 				mVFS.On("Resolve", mock.Anything).Return("/od/newdir", "/", nil)
 				mLog.On("WithContext", mock.Anything).Return(mLog)
@@ -141,9 +167,10 @@ func TestMkdirCommand_Integration(t *testing.T) {
 			mLogSvc := new(mockLoggerService)
 			mLog := new(mockLogger)
 			mVFS := new(mockVFS)
+			mMounts := new(mockMountService)
 
 			if tt.setup != nil {
-				tt.setup(mContainer, mFS, mLogSvc, mLog, mVFS)
+				tt.setup(mContainer, mFS, mLogSvc, mLog, mVFS, mMounts)
 			}
 
 			cmd := CreateMkdirCmd(mContainer)
