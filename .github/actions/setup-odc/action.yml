@@ -11,7 +11,12 @@ inputs:
     default: 'true'
   shell:
     description: 'The shell to use'
-    required: true
+    required: false
+    default: 'bash'
+  github-token:
+    description: 'GitHub token to use for authenticated requests'
+    required: false
+    default: ${{ github.token }}
 
 runs:
   using: "composite"
@@ -30,6 +35,7 @@ runs:
       uses: arduino/setup-protoc@v3
       with:
         version: "29.x"
+        repo-token: ${{ inputs.github-token }}
   
     - name: Install Protoc Plugins
       shell: ${{ inputs.shell }}
