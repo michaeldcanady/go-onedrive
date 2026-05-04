@@ -12,9 +12,9 @@ The `odc` project aims to be a flexible CLI tool capable of interacting with var
 
 ## Decision
 
-We have decided to implement an external plugin architecture using HashiCorp's `go-plugin` library. 
+Users have decided to implement an external plugin architecture using HashiCorp's `go-plugin` library. 
 - **Protocol:** Plugins will communicate with the host process via gRPC over local Unix domain sockets or TCP.
-- **Interfaces:** A set of standard interfaces for storage operations (e.g., `Read`, `Write`, `List`, `Delete`) will be defined using Protocol Buffers.
+- **Interfaces:** A set of standard interfaces for storage operations (for example, `Read`, `Write`, `List`, `Delete`) will be defined using Protocol Buffers.
 - **Discovery:** Plugins will be discovered as standalone binaries in a designated plugin directory.
 - **Lifecycle:** The host process will manage the lifecycle (starting/stopping) of the plugin processes.
 

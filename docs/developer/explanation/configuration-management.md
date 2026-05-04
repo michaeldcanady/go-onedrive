@@ -46,7 +46,7 @@ This means:
 - JSON, YAML, TOML, or other formats can be supported  
 - encrypted configuration files can be added later  
 - enterprise or remote configuration sources can be plugged in  
-- users are not locked into a single format  
+- users aren't locked into a single format  
 
 This flexibility is achieved through a **Loader abstraction**, which allows odc to read configuration files without caring about their underlying format.
 

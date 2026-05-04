@@ -10,7 +10,7 @@ Before you begin, ensure you have the following installed on your machine:
 - **Go:** Version 1.25 or higher.
 - **Just:** A handy command runner (optional, but recommended).
 - **Git:** For version control.
-- **An IDE:** We recommend **VS Code** with the **Go** extension.
+- **An IDE:** Users recommend **VS Code** with the **Go** extension.
 
 ## Getting the Source Code
 

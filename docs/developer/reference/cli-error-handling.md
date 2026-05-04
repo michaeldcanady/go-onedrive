@@ -15,8 +15,8 @@ The `internal/features/errors` package defines several standard error variables 
 represent common failure scenarios:
 
 - **`ErrNotFound`**: Indicates an item (file or folder) was not found.
-- **`ErrNotFolder`**: Indicates the specified item is not a folder.
-- **`ErrUnauthorized`**: Indicates the user is not authenticated.
+- **`ErrNotFolder`**: Indicates the specified item isn't a folder.
+- **`ErrUnauthorized`**: Indicates the user isn't authenticated.
 - **`ErrForbidden`**: Indicates the user is authenticated but does not 
   have permission for the operation.
 - **`ErrConflict`**: Indicates a resource conflict, such as a file with 

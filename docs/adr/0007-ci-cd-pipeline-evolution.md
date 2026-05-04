@@ -13,15 +13,15 @@ This document outlines the strategy for enhancing the CI/CD pipelines and automa
 
 ### 2.2 Identified Gaps
 - **Security**: Lack of automated vulnerability scanning (Go-specific), secret scanning, and SBOM generation.
-- **Performance**: Benchmarks exist but are not executed or tracked in CI.
+- **Performance**: Benchmarks exist but aren't executed or tracked in CI.
 - **E2E Testing**: No full-scenario E2E tests or validation of distributed packages.
-- **Plugin Support**: Pipeline is not yet configured to handle multi-binary plugin builds.
+- **Plugin Support**: Pipeline isn't yet configured to handle multi-binary plugin builds.
 - **Telemetry**: No validation of OpenTelemetry instrumentation.
 
 ## 3. Proposed Improvements
 
 ### 3.1 Security Guardrails
-We will implement a "Security-First" approach by adding the following to the CI pipeline:
+Users will implement a "Security-First" approach by adding the following to the CI pipeline:
 - **`govulncheck`**: Integrate into the `go.yaml` workflow to detect known vulnerabilities in dependencies.
 - **Secret Scanning**: Add `gitleaks` or a similar action to prevent accidental credential leakage.
 - **SBOM Generation**: Configure GoReleaser to generate SPDX/CycloneDX SBOMs for all releases.
@@ -30,7 +30,7 @@ We will implement a "Security-First" approach by adding the following to the CI 
 ### 3.2 Performance Benchmarking Pipeline
 - **Continuous Benchmarking**: Add a new job to `go.yaml` that runs `go test -bench`.
 - **Regression Detection**: Use `github-action-benchmark` to store results and provide visual feedback on performance changes over time.
-- **Performance Thresholds**: Define critical paths (e.g., VFS resolution) and fail builds if performance degrades beyond a set percentage.
+- **Performance Thresholds**: Define critical paths (for example, VFS resolution) and fail builds if performance degrades beyond a set percentage.
 
 ### 3.3 Enhanced E2E and Multi-Platform Validation
 - **Scenario Testing**: Develop a suite of E2E tests using a mock server (or a test OneDrive account with secrets) that mimics real-world usage.
@@ -38,7 +38,7 @@ We will implement a "Security-First" approach by adding the following to the CI 
 - **Windows Release Restoration**: Re-enable and validate Windows builds in `.goreleaser.yaml`.
 
 ### 3.4 Support for Plugin-Based Architecture
-As the project moves to a plugin-based model (e.g., `storage-plugin-onedrive`):
+As the project moves to a plugin-based model (for example, `storage-plugin-onedrive`):
 - **Matrix Builds for Plugins**: Update the build job to iterate over all directories in `cmd/` to ensure all plugins are built and tested.
 - **Plugin Compatibility Tests**: Create a test suite that verifies the core CLI can load and communicate with plugins using the defined RPC/proto interface.
 

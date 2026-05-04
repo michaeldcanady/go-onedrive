@@ -13,7 +13,7 @@ Ensure all UI components (commands) interact only with domain services and avoid
 
 ## Implementation Plan
 1.  **Audit State Access**: Use `grep` or similar tools to find all direct uses of `container.State()` in `internal/root/` and `internal/**/ui/cli/`.
-2.  **Expose Domain Methods**: Ensure that `profile.Service` and other domain services have methods for all necessary operations (e.g., `SetActive(ctx, name, scope)`).
+2.  **Expose Domain Methods**: Ensure that `profile.Service` and other domain services have methods for all necessary operations (for example, `SetActive(ctx, name, scope)`).
 3.  **Refactor Commands**: Update all commands and the root command to use these domain service methods.
 
 ## Difficulty

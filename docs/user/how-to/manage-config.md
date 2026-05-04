@@ -41,7 +41,7 @@ The following keys are available for the `microsoft` provider:
 
 | Key                  | Description                                      |
 | :------------------- | :----------------------------------------------- |
-| `auth.provider`      | The identity provider (e.g., `microsoft`).      |
+| `auth.provider`      | The identity provider (for example, `microsoft`).      |
 | `auth.client_id`     | Your Azure AD Application (Client) ID.          |
 | `auth.tenant_id`     | Your Azure AD Tenant ID (or `common`).          |
 | `auth.client_secret` | The client secret for Service Principals.       |
@@ -50,7 +50,7 @@ The following keys are available for the `microsoft` provider:
 
 ## Configuration Schema
 
-If you prefer to edit your configuration manually, we provide a JSON schema 
+If you prefer to edit your configuration manually, users provide a JSON schema 
 to ensure your `config.yaml` is valid. You can use this schema in editors like 
 VS Code to get validation and autocompletion.
 

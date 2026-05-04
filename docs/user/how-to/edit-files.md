@@ -36,7 +36,7 @@ odc edit /Documents/config.json --force
 `odc` defaults to common terminal editors.
 
 To set your preferred editor, add the following line to your shell profile
-(e.g., `~/.bashrc` or `~/.zshrc`):
+(for example, `~/.bashrc` or `~/.zshrc`):
 
 ```bash
 # Example: Use VS Code as your default editor for odc

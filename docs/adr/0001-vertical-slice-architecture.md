@@ -8,11 +8,11 @@ Status: Accepted
 
 ## Context
 
-The `odc` project needs a maintainable and scalable way to organize code. Traditional layered architecture (e.g., separating all controllers, services, and repositories into distinct top-level directories) often leads to "shotgun surgery" where adding or modifying a single feature requires jumping between many layers.
+The `odc` project needs a maintainable and scalable way to organize code. Traditional layered architecture (for example, separating all controllers, services, and repositories into distinct top-level directories) often leads to "shotgun surgery" where adding or modifying a single feature requires jumping between many layers.
 
 ## Decision
 
-We have decided to organize code into **Vertical Slices** based on features within the `internal/features/` directory. Each slice (e.g., `identity`, `profile`, `drive`) should contain its own:
+Users have decided to organize code into **Vertical Slices** based on features within the `internal/features/` directory. Each slice (for example, `identity`, `profile`, `drive`) should contain its own:
 - Domain logic and interfaces
 - Data access implementations (repositories)
 - CLI commands and handlers

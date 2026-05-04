@@ -122,4 +122,4 @@ rootCmd.AddCommand(
 ## Next steps
 
 - **[Architecture Overview](../explanation/architecture.md)**
-- **[Testing Your Changes](testing.md)**
+- **[Testing Your Changes](../recommendations/01-improve-test-coverage.md)**

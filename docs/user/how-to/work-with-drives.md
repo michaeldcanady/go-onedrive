@@ -8,26 +8,26 @@ virtual filesystem for easy access.
 ## Discover Available Drives
 
 To see all the drives that your account has access to, use the
-`backend-discovery list` command. This is often the first step when you're
+`storage-discovery list` command. This is often the first step when you're
 looking for a shared folder or a SharePoint library.
 
 ```bash
-odc backend-discovery list
+odc storage-discovery list
 ```
 
 The output includes each drive's name and ID. Your primary personal drive is
 marked with an asterisk (*).
 
-> **Note:** `drive` is an alias for `backend-discovery`, so you can also use
+> **Note:** `drive` is an alias for `storage-discovery`, so you can also use
 > `odc drive list`.
 
 ## Get Personal Drive Details
 
 To view information about your primary personal OneDrive drive, use the
-`backend-discovery get` command.
+`storage-discovery get` command.
 
 ```bash
-odc backend-discovery get
+odc storage-discovery get
 ```
 
 This returns the name and ID of your personal drive.

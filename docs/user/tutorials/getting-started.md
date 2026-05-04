@@ -9,7 +9,7 @@ first profile, and run your first commands.
 Before installing `odc`, ensure your system meets the following requirements:
 
 - **Go:** You must have Go 1.25 or higher installed.
-- **Just:** We recommend installing `just` to automate the build process.
+- **Just:** Users recommend installing `just` to automate the build process.
 - **Git:** You'll need Git to clone the repository.
 
 ## Installation
@@ -68,7 +68,7 @@ Understanding these two concepts will help you navigate your OneDrive files
 more effectively.
 
 ### Profiles
-A **profile** represents a single OneDrive account (e.g., your personal account
+A **profile** represents a single OneDrive account (for example, your personal account
 or your work account). `odc` lets you manage multiple profiles and switch
 between them easily.
 

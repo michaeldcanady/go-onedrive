@@ -15,8 +15,8 @@ one place requires touching many files.
 VSA addresses this by:
 
 - **Feature Isolation:** Each CLI command is a self-contained "slice." 
-  Modifying one command (e.g., `upload`) has a minimal "blast radius" and 
-  is unlikely to break another (e.g., `ls`).
+  Modifying one command (for example, `upload`) has a minimal "blast radius" and 
+  is unlikely to break another (for example, `ls`).
 - **Improved Maintainability:** You can find all the code related to a 
   command—options parsing, business logic, and command definition—in a single 
   directory.
@@ -29,7 +29,7 @@ VSA addresses this by:
 
 `odc` follows these fundamental architectural principles:
 
-- **Organization by Feature:** Code is grouped by what the system does (e.g., 
+- **Organization by Feature:** Code is grouped by what the system does (for example, 
   "Login," "List Files") rather than its technical role.
 - **Self-Contained Slices:** Each slice contains the entry point (Cobra 
   command), the business logic (Command), and the specific options.
@@ -51,7 +51,7 @@ The project is organized to support these principles:
     - **`internal/di/`:** Manages the Dependency Injection container.
     - **`internal/fs/`:** The filesystem abstraction layer.
     - **`internal/features/identity/`:** Authentication and identity management.
-- **`pkg/`:** General-purpose utilities that are not specific to the 
+- **`pkg/`:** General-purpose utilities that aren't specific to the 
   `odc` domain.
 
 ## Next steps
@@ -61,4 +61,4 @@ the other explanation guides:
 
 - **[Dependency Injection](dependency-injection.md)**
 - **[Configuration Management](configuration-management.md)**
-- **[Filesystem Abstraction](filesystem-abstraction.md)**
+- **[Filesystem Abstraction](architecture.md)**

@@ -11,13 +11,13 @@ supports multiple "providers" (like OneDrive and your local filesystem) and
 uses prefixes to distinguish between them.
 
 - **Default path:** Without a prefix, paths refer to your active OneDrive drive
-  (e.g., `/Documents/report.txt`).
-- **Explicit OneDrive path:** Use the `onedrive:` prefix (e.g.,
+  (for example, `/Documents/report.txt`).
+- **Explicit OneDrive path:** Use the `onedrive:` prefix (for example,
   `onedrive:/Documents/report.txt`).
-- **Local path:** Use the `local:` prefix to refer to your local machine (e.g.,
+- **Local path:** Use the `local:` prefix to refer to your local machine (for example,
   `local:/home/user/notes.txt`).
 - **Mount points:** You can use a mount point as a prefix to target a specific
-  drive or location directly (e.g., `onedrive:/Reports/january.pdf`).
+  drive or location directly (for example, `onedrive:/Reports/january.pdf`).
 
 > **Note:** Most `odc` commands expect absolute paths starting with `/` when
 > referring to OneDrive items. For local paths, you can use absolute or

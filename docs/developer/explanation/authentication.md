@@ -30,9 +30,9 @@ The authentication system is built around several key components:
 2. **Login:** When a user executes the `login` command, `odc` retrieves 
    the appropriate authenticator for the selected provider.
 3. **Execution:** The authenticator performs the chosen authentication 
-   flow (e.g., interactive login).
+   flow (for example, interactive login).
 4. **Result:** A successful login returns an `AccessToken`, which 
-   contains the token itself and its metadata (e.g., expiration).
+   contains the token itself and its metadata (for example, expiration).
 5. **Persistence:** The token is cached securely for future use by the 
    active profile.
 
@@ -45,9 +45,9 @@ at runtime.
 - **`internal/features/identity/registry/`:** Contains the registry and service for 
   managing identity providers.
 - **`internal/features/identity/providers/`:** Contains the implementations for 
-  specific providers (e.g., `microsoft`).
+  specific providers (for example, `microsoft`).
 
 ## Next steps
 
-- **[Profile Management](../how-to/manage-profiles.md)**
+- **[Profile Management](../../user/how-to/manage-profiles.md)**
 - **[Configuration Management](configuration-management.md)**

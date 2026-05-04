@@ -63,7 +63,7 @@ odc download -r /RemoteFolder/ ./LocalCopy/
   upload or download over an existing file. Use the `--force` flag (if
   available) to overwrite without confirmation.
 - **Paths with spaces:** If your file or folder names contain spaces, wrap the
-  entire path in double quotes (e.g., `"/Documents/My Project/"`).
+  entire path in double quotes (for example, `"/Documents/My Project/"`).
 - **Relative vs. absolute:** For remote paths in OneDrive, it's always safer to
   use an absolute path starting with `/`.
 

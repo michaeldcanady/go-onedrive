@@ -14,8 +14,8 @@ Break down the monolithic `onedrive.Provider` into smaller, more focused compone
 
 ## Value
 - **High**: Reduces the cognitive load for developers working on the OneDrive integration.
-- Enables more granular unit testing of individual components (e.g., testing the upload logic without needing a full provider).
-- Improves code reuse (e.g., the error mapper could be shared).
+- Enables more granular unit testing of individual components (for example, testing the upload logic without needing a full provider).
+- Improves code reuse (for example, the error mapper could be shared).
 
 ## Implementation Plan
 1.  **Extract Error Mapping**: Move error mapping logic to a separate helper or utility within the package.

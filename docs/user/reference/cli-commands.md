@@ -11,12 +11,12 @@ prefixes.
 - **VFS (Default):** Absolute paths starting with `/` refer to your virtual
   filesystem. By default, `/onedrive` maps to your personal OneDrive and
   `/local` maps to your local filesystem.
-- **Explicit OneDrive path:** Use the `onedrive:` prefix (e.g.,
+- **Explicit OneDrive path:** Use the `onedrive:` prefix (for example,
   `onedrive:/Documents/report.txt`).
 - **Local path:** Use the `local:` prefix to refer to your local machine
-  (e.g., `local:/home/user/notes.txt`).
+  (for example, `local:/home/user/notes.txt`).
 - **Mount points:** Use a mount point name as a prefix to target a specific
-  drive directly (e.g., `work:/Reports/january.pdf`).
+  drive directly (for example, `work:/Reports/january.pdf`).
 
 ## Standard Filesystem Commands
 
@@ -141,14 +141,14 @@ Profiles allow you to switch between multiple OneDrive accounts.
 
 ## Drive Discovery
 
-### `backend-discovery` - Discover drives
+### `storage-discovery` - Discover drives
 Discover available OneDrive drives and shared libraries.
 
 - **Subcommands:**
     - `list`: List all drives you have access to.
     - `get`: Get information about your primary personal drive.
 
-> **Note:** `drive` is an alias for `backend-discovery`.
+> **Note:** `drive` is an alias for `storage-discovery`.
 
 ---
 
@@ -161,7 +161,7 @@ Map OneDrive drives or local directories to paths in the virtual filesystem.
     - `list`: List all active mount points.
     - `add`: Add a new mount point.
         - **Flags:**
-            - `--type`: Backend type (`onedrive`, `local`).
+            - `--type`: Storage type (`onedrive`, `local`).
             - `--drive-id`: OneDrive drive ID (for `onedrive` type).
             - `--root`: Local root directory (for `local` type).
     - `remove [PATH]`: Remove a mount point.

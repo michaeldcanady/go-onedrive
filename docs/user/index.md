@@ -45,7 +45,7 @@ workflow.
 - **[Working with drives](how-to/work-with-drives.md):** Learn how to access
   shared folders, SharePoint sites, and multiple drives within your account.
 - **[Managing profiles](how-to/manage-profiles.md):** Set up and switch between
-  multiple OneDrive accounts (e.g., work and personal) seamlessly.
+  multiple OneDrive accounts (for example, work and personal) seamlessly.
 - **[File operations](how-to/file-operations.md):** Master powerful flags for
   filtering, sorting, and managing your files efficiently.
 
