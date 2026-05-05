@@ -39,10 +39,10 @@ To set your preferred editor, add the following line to your shell profile
 (for example, `~/.bashrc` or `~/.zshrc`):
 
 ```bash
-# Example: use vs code as your default editor for odc
+# Example: Use vs code as your default editor for odc
 export EDITOR='code --wait'
 
-# Example: use vim as your default editor
+# Example: Use vim as your default editor
 export EDITOR='vim'
 ```
 

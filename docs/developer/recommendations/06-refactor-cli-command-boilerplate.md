@@ -1,4 +1,4 @@
-# Recommendation: refactor CLI command boilerplate
+# Recommendation: Refactor CLI command boilerplate
 
 ## Goal
 Reduce the repetitive boilerplate code in CLI command definitions and improve consistency

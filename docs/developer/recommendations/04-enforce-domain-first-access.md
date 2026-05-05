@@ -1,4 +1,4 @@
-# Recommendation: enforce domain-first access
+# Recommendation: Enforce domain-first access
 
 ## Goal
 Ensure all UI components (commands) interact only with domain services and avoid direct access to the application's internal state

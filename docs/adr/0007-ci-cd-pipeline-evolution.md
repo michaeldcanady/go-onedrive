@@ -1,4 +1,4 @@
-# Design document: ci/cd pipeline and automation evolution
+# Design document: Ci/cd pipeline and automation evolution
 
 ## 1. Introduction
 This document outlines the strategy for enhancing the CI/CD pipelines and automation scripts for the `go-onedrive` (odc) project. The goal is to improve security, ensure performance stability, and support the upcoming transition to a plugin-based architecture with OpenTelemetry integration
@@ -59,17 +59,17 @@ Update the `justfile` to include commands that mirror CI steps, allowing develop
 
 ## 4. Implementation roadmap
 
-### Phase 1: security and automation hardening (immediate)
+### Phase 1: Security and automation hardening (immediate)
 - Update `justfile` with `lint`, `secure`, and `test-all`
 - Add `govulncheck` and `gitleaks` to `go.yaml`
 - Enable SBOM generation in `.goreleaser.yaml`
 
-### Phase 2: performance and package validation (short-term)
+### Phase 2: Performance and package validation (short-term)
 - Implement `github-action-benchmark` in CI
 - Add containerized smoke tests for Linux packages
 - Restore Windows builds in GoReleaser
 
-### Phase 3: plugin and telemetry support (mid-term)
+### Phase 3: Plugin and telemetry support (mid-term)
 - Refactor CI to support multi-plugin builds
 - Add E2E scenario tests for plugin interactions
 - Integrate OTel span validation in CI

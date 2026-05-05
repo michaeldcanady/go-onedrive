@@ -1,4 +1,4 @@
-# Recommendation: improve test coverage
+# Recommendation: Improve test coverage
 
 ## Goal
  increase unit and integration test coverage across core packages to ensure stability and facilitate safe refactoring

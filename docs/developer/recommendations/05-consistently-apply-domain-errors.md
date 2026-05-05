@@ -1,4 +1,4 @@
-# Recommendation: consistently apply domain errors
+# Recommendation: Consistently apply domain errors
 
 ## Goal
 Standardize error handling across the application by ensuring all services return domain-specific errors

@@ -1,4 +1,4 @@
-# Recommendation: decompose OneDrive provider
+# Recommendation: Decompose OneDrive provider
 
 ## Goal
 Break down the monolithic `onedrive.Provider` into smaller, more focused components to improve readability, maintainability, and testability

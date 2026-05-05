@@ -1,7 +1,15 @@
+accessible
 ACID
+actionable
 ADR
+against
+alias
+allow
+allows
 CGO
 CLI
+ensure
+Ensure
 ETag
 GNU
 Go

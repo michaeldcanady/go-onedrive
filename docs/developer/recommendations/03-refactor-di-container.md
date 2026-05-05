@@ -1,4 +1,4 @@
-# Recommendation: refactor DI container
+# Recommendation: Refactor DI container
 
 ## Goal
 Decouple the dependency injection container's initialization from the concrete service implementations and move towards a more modular, provider-based approach
