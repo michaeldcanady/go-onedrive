@@ -2,13 +2,13 @@
 
 `odc` (OneDrive CLI) is designed to be a first-class citizen in your terminal
 workflow. This guide covers the features that make `odc` powerful for
-automation, from machine-readable output to environment-driven configuration.
+automation, from machine-readable output to environment-driven configuration
 
 ## Machine-Readable Output
 
 Most `odc` commands support the `-o json` (or `--format json`) flag. This
-provides a consistent JSON structure that is perfect for parsing with tools
-like `jq`.
+provides a consistent JSON structure that's perfect for parsing with tools
+like `jq`
 
 ### Common jq patterns
 
@@ -30,11 +30,11 @@ like `jq`.
 ## Integration with Shell Tools
 
 Since `odc` follows Unix philosophy, you can easily combine it with other
-powerful shell tools like `xargs`, `find`, and `grep`.
+powerful shell tools like `xargs`, `find`, and `grep`
 
 ### Bulk operations with xargs
 You can use `odc` in combination with `xargs` to perform bulk operations
-efficiently.
+efficiently
 
 ```bash
 # Delete all files in a directory ending in .tmp
@@ -43,7 +43,7 @@ odc ls /Temp -o json | jq -r '.[] | select(.name | endswith(".tmp")) | .path' | 
 
 ### Scripting complex workflows
 You can use `odc` within bash or zsh scripts to automate complex data
-management tasks.
+management tasks
 
 ```bash
 #!/bin/bash
@@ -61,7 +61,7 @@ odc upload -r ./my_project "$BACKUP_DIR"
 ## Environment Variables
 
 You can configure `odc` using environment variables, which is especially
-useful in CI/CD pipelines where interactive configuration isn't possible.
+useful in CI/CD pipelines where interactive configuration isn't possible
 
 | Variable | Description |
 | :--- | :--- |
@@ -73,21 +73,21 @@ useful in CI/CD pipelines where interactive configuration isn't possible.
 
 Every execution of `odc` is assigned a unique **Correlation ID**. This ID is
 printed to the log file and is essential for tracing a specific execution from
-the CLI through to the Microsoft Graph API.
+the CLI through to the Microsoft Graph API
 
-You can view the correlation ID for a command by enabling debug-level logging.
+You can view the correlation ID for a command by enabling debug-level logging
 
 ```bash
 odc ls / --level debug
 ```
 
 Check the `app.log` file in the `~/.local/state/odc/logs/` directory for detailed
-information associated with a specific correlation ID.
+information associated with a specific correlation ID
 
 ## Non-Interactive Authentication
 
 For automated systems and CI/CD pipelines, you can use **Client Secret** or
-**Environment-based** authentication methods to avoid interactive prompts.
+**Environment-based** authentication methods to avoid interactive prompts
 
 ```bash
 # Login using a service principal

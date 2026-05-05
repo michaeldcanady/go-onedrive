@@ -2,7 +2,7 @@
 
 The OneDrive CLI (`odc`) follows a consistent pattern for adding new 
 commands. This guide explains how to create a new vertical slice for a 
-subcommand.
+subcommand
 
 ## Overview of a Vertical Slice
 
@@ -10,11 +10,11 @@ A typical subcommand slice resides in
 `internal/<feature>/ui/cli/<command>/` and consists of three files:
 
 1.  **`command.go`:** Defines the Cobra command, its flags, and validation 
-    logic.
+    logic
 2.  **`command_cmd.go`:** Contains the `Command` which implements the 
-    business logic for the command.
+    business logic for the command
 3.  **`options.go`:** Defines the options struct for the command and its 
-    validation.
+    validation
 
 ## Step-by-Step Guide
 
@@ -29,7 +29,7 @@ mkdir -p internal/fs/ui/cli/search
 
 ### 2. Define the Options
 
-In `options.go`, define the parameters your command needs.
+In `options.go`, define the parameters your command needs
 
 ```go
 package search
@@ -51,7 +51,7 @@ func (o Options) Validate() error {
 
 ### 3. Create the Command
 
-In `command_cmd.go`, implement the `Command` and its `Handle` method.
+In `command_cmd.go`, implement the `Command` and its `Handle` method
 
 ```go
 package search
@@ -79,7 +79,7 @@ func (c *Command) Handle(ctx context.Context, opts Options) error {
 
 ### 4. Define the Cobra Command
 
-In `command.go`, use the `Create<Name>Cmd` pattern.
+In `command.go`, use the `Create<Name>Cmd` pattern
 
 ```go
 package search
@@ -110,7 +110,7 @@ func CreateSearchCmd(container di.Container) *cobra.Command {
 ### 5. Register the Command
 
 Finally, register your new command in the root command in 
-`internal/root/root.go`.
+`internal/root/root.go`
 
 ```go
 rootCmd.AddCommand(

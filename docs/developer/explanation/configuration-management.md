@@ -4,9 +4,9 @@ The OneDrive CLI (odc) needs a flexible and predictable way to understand how it
 
 1. **Configurations can come from multiple places**  
 2. **Configurations should be easy to override**  
-3. **Configurations should not assume a specific file format**
+3. **Configurations shouldn't assume a specific file format**
 
-This section explains the reasoning behind the configuration system and how it fits into the broader architecture of odc.
+This section explains the reasoning behind the configuration system and how it fits into the broader architecture of odc
 
 ## Multiple Sources of Configuration
 
@@ -26,7 +26,7 @@ This is ideal for:
 - testing new settings  
 - running odc without modifying local files  
 
-CLI‑provided configuration always takes precedence because it represents the user’s most explicit intent.
+CLI‑provided configuration always takes precedence because it represents the user’s most explicit intent
 
 ### **2. Installed Configuration**
 When no CLI override is provided, odc falls back to the user’s installed configuration. This is stored in OS‑appropriate locations:
@@ -35,11 +35,11 @@ When no CLI override is provided, odc falls back to the user’s installed confi
 - macOS: `~/Library/Application Support/odc/`
 - Windows: `%APPDATA%\odc\`
 
-Installed configuration represents the user’s long‑term preferences and is the foundation for profile management.
+Installed configuration represents the user’s long‑term preferences and is the foundation for profile management
 
 ## File‑Type Agnostic by Design
 
-odc does not assume that configuration files are JSON. While JSON is the default today, the configuration manager is intentionally designed to be **file‑type agnostic**.
+odc doesn't assume that configuration files are JSON. While JSON is the default today, the configuration manager is intentionally designed to be **file‑type agnostic**
 
 This means:
 
@@ -48,11 +48,11 @@ This means:
 - enterprise or remote configuration sources can be plugged in  
 - users aren't locked into a single format  
 
-This flexibility is achieved through a **Loader abstraction**, which allows odc to read configuration files without caring about their underlying format.
+This flexibility is achieved through a **Loader abstraction**, which allows odc to read configuration files without caring about their underlying format
 
 ## Lazy Loading and Caching
 
-Configurations are loaded **only when needed**. This keeps odc fast and avoids unnecessary disk access.
+Configurations are loaded **only when needed**. This keeps odc fast and avoids unnecessary disk access
 
 The process works like this:
 
@@ -69,13 +69,13 @@ This approach ensures:
 
 ## Separation of Concerns
 
-The configuration system is intentionally separated from authentication and profile management.
+The configuration system is intentionally separated from authentication and profile management
 
 - **ConfigurationService** loads and caches configuration files  
 - **CacheService** stores authentication records  
 - **ProfileService** combines configuration + identity + overrides  
 
-This separation keeps each component simple and focused, and it allows odc to evolve without breaking existing behavior.
+This separation keeps each component simple and focused, and it allows odc to evolve without breaking existing behavior
 
 ## Why This Matters
 
@@ -86,4 +86,4 @@ A flexible configuration system is essential for a CLI tool that needs to work a
 - multiple profiles
 - multiple authentication methods
 
-By keeping the configuration manager format‑agnostic, lazy‑loaded, and decoupled from other services, odc ensures that users can adapt it to their needs without friction.
+By keeping the configuration manager format‑agnostic, lazy‑loaded, and decoupled from other services, odc ensures that users can adapt it to their needs without friction

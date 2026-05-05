@@ -1,42 +1,42 @@
 # CLI Commands Reference
 
 This page provides a detailed reference for all `odc` commands, their flags, and
-the path syntax used throughout the application.
+the path syntax used throughout the application
 
 ## Path Syntax
 
 `odc` supports multiple storage providers and mount points through path
-prefixes.
+prefixes
 
 - **VFS (Default):** Absolute paths starting with `/` refer to your virtual
   filesystem. By default, `/onedrive` maps to your personal OneDrive and
-  `/local` maps to your local filesystem.
+  `/local` maps to your local filesystem
 - **Explicit OneDrive path:** Use the `onedrive:` prefix (for example,
-  `onedrive:/Documents/report.txt`).
+  `onedrive:/Documents/report.txt`)
 - **Local path:** Use the `local:` prefix to refer to your local machine
-  (for example, `local:/home/user/notes.txt`).
+  (for example, `local:/home/user/notes.txt`)
 - **Mount points:** Use a mount point name as a prefix to target a specific
-  drive directly (for example, `work:/Reports/january.pdf`).
+  drive directly (for example, `work:/Reports/january.pdf`)
 
 ## Standard Filesystem Commands
 
 ### `ls` - List files and directories
-List the contents of a directory.
+List the contents of a directory
 
 - **Usage:** `odc ls [PATH]`
 - **Flags:**
-    - `-r`, `--recursive`: List items recursively.
-    - `-o`, `--format`: Output format (`short`, `long`, `json`, `yaml`, `tree`, `table`).
-    - `-a`, `--all`: Show hidden items.
-    - `--sort`: Sort items by field (`name`, `size`, `modified`).
-    - `--desc`: Sort in descending order.
+    - `-r`, `--recursive`: List items recursively
+    - `-o`, `--format`: Output format (`short`, `long`, `json`, `yaml`, `tree`, `table`)
+    - `-a`, `--all`: Show hidden items
+    - `--sort`: Sort items by field (`name`, `size`, `modified`)
+    - `--desc`: Sort in descending order
 - **Examples:**
     - `odc ls /onedrive` (Lists root of personal OneDrive)
     - `odc ls local:/home/user` (Lists local directory)
     - `odc ls -r -o tree /onedrive/Documents` (Recursive tree listing)
 
 ### `mkdir` - Create a directory
-Create a new folder in OneDrive or local filesystem.
+Create a new folder in OneDrive or local filesystem
 
 - **Usage:** `odc mkdir [PATH]`
 - **Examples:**
@@ -44,32 +44,32 @@ Create a new folder in OneDrive or local filesystem.
     - `odc mkdir local:./new_local_folder`
 
 ### `touch` - Create a new file
-Create a new, empty file or update the timestamp of an existing file.
+Create a new, empty file or update the timestamp of an existing file
 
 - **Usage:** `odc touch [PATH]`
 
 ### `rm` - Remove files or directories
-Delete files or folders.
+Delete files or folders
 
 - **Usage:** `odc rm [PATH]`
 - **Flags:**
-    - `-r`, `--recursive`: Remove directories recursively.
+    - `-r`, `--recursive`: Remove directories recursively
 - **Examples:**
     - `odc rm /onedrive/file.txt`
     - `odc rm -r /onedrive/OldFolder`
 
 ### `cp` - Copy files
-Copy files or directories between providers or within a provider.
+Copy files or directories between providers or within a provider
 
 - **Usage:** `odc cp [SOURCE] [DESTINATION]`
 - **Flags:**
-    - `-r`, `--recursive`: Copy directories recursively.
+    - `-r`, `--recursive`: Copy directories recursively
 - **Examples:**
     - `odc cp local:file.txt /onedrive/remote-copy.txt`
     - `odc cp /onedrive/file1.txt /onedrive/folder/file1.txt`
 
 ### `mv` - Move files
-Move or rename a file or directory.
+Move or rename a file or directory
 
 - **Usage:** `odc mv [SOURCE] [DESTINATION]`
 - **Examples:**
@@ -78,7 +78,7 @@ Move or rename a file or directory.
 
 
 ### `cat` - Display file content
-Print the content of a file to your terminal.
+Print the content of a file to your terminal
 
 - **Usage:** `odc cat [PATH]`
 
@@ -88,96 +88,96 @@ Print the content of a file to your terminal.
 
 ### `upload` - Upload local files
 Transfer a file or directory from your local machine to OneDrive. This is a
-shortcut for `cp local:SOURCE onedrive:DESTINATION`.
+shortcut for `cp local:SOURCE onedrive:DESTINATION`
 
 - **Usage:** `odc upload [LOCAL_PATH] [REMOTE_PATH]`
 - **Flags:**
-    - `-r`, `--recursive`: Upload directories recursively.
+    - `-r`, `--recursive`: Upload directories recursively
 
 ### `download` - Download remote files
 Transfer a file or directory from OneDrive to your local machine. This is a
-shortcut for `cp onedrive:SOURCE local:DESTINATION`.
+shortcut for `cp onedrive:SOURCE local:DESTINATION`
 
 - **Usage:** `odc download [REMOTE_PATH] [LOCAL_PATH]`
 - **Flags:**
-    - `-r`, `--recursive`: Download directories recursively.
+    - `-r`, `--recursive`: Download directories recursively
 
 ### `edit` - Edit a file in your local editor
 Download a OneDrive file to a temporary location, open it with your local
-editor, and automatically upload it back when you save and exit.
+editor, and automatically upload it back when you save and exit
 
 - **Usage:** `odc edit [REMOTE_PATH]`
 - **Flags:**
-    - `-f`, `--force`: Overwrite existing items if they exist.
+    - `-f`, `--force`: Overwrite existing items if they exist
 
 ---
 
 ## Authentication and Profile Management
 
 ### `auth` - Manage authentication
-Manage your authentication session for the active profile.
+Manage your authentication session for the active profile
 
 - **Subcommands:**
-    - `login`: Authenticate your current profile.
+    - `login`: Authenticate your current profile
         - **Flags:**
-            - `--method`: Auth method (`interactive`, `device-code`, `client-secret`, `environment`).
-            - `--client-id`: Azure AD Application (Client) ID.
-            - `--tenant-id`: Azure AD Tenant ID.
-            - `--client-secret`: Client secret (for Service Principals).
-            - `--show-token`: Print the access token to stdout.
-    - `logout`: Clear the authentication state.
+            - `--method`: Auth method (`interactive`, `device-code`, `client-secret`, `environment`)
+            - `--client-id`: Azure AD Application (Client) ID
+            - `--tenant-id`: Azure AD Tenant ID
+            - `--client-secret`: Client secret (for Service Principals)
+            - `--show-token`: Print the access token to stdout
+    - `logout`: Clear the authentication state
 
 ### `profile` - Manage account profiles
-Profiles allow you to switch between multiple OneDrive accounts.
+Profiles allow you to switch between multiple OneDrive accounts
 
 - **Subcommands:**
-    - `create [NAME]`: Create a new profile.
-    - `list`: List all available profiles.
-    - `use [NAME]`: Set the active profile.
-    - `delete [NAME]`: Delete a profile.
-    - `current`: Display the name of the active profile.
+    - `create [NAME]`: Create a new profile
+    - `list`: List all available profiles
+    - `use [NAME]`: Set the active profile
+    - `delete [NAME]`: Delete a profile
+    - `current`: Display the name of the active profile
 
 ---
 
 ## Drive Discovery
 
 ### `storage-discovery` - discover drives
-Discover available OneDrive drives and shared libraries.
+Discover available OneDrive drives and shared libraries
 
 - **Subcommands:**
-    - `list`: List all drives you have access to.
-    - `get`: Get information about your primary personal drive.
+    - `list`: List all drives you have access to
+    - `get`: Get information about your primary personal drive
 
-> **Note:** `drive` is an alias for `storage-discovery`.
+> **Note:** `drive` is an alias for `storage-discovery`
 
 ---
 
 ## Mount Management
 
 ### `mount` - Manage mount points
-Map OneDrive drives or local directories to paths in the virtual filesystem.
+Map OneDrive drives or local directories to paths in the virtual filesystem
 
 - **Subcommands:**
-    - `list`: List all active mount points.
-    - `add`: Add a new mount point.
+    - `list`: List all active mount points
+    - `add`: Add a new mount point
         - **Flags:**
-            - `--type`: Storage type (`onedrive`, `local`).
-            - `--drive-id`: OneDrive drive ID (for `onedrive` type).
-            - `--root`: Local root directory (for `local` type).
-    - `remove [PATH]`: Remove a mount point.
+            - `--type`: Storage type (`onedrive`, `local`)
+            - `--drive-id`: OneDrive drive ID (for `onedrive` type)
+            - `--root`: Local root directory (for `local` type)
+    - `remove [PATH]`: Remove a mount point
 
 ---
 
 ## Configuration and Utilities
 
 ### `config` - Manage settings
-Directly manage configuration keys for the active profile.
+Directly manage configuration keys for the active profile
 
 - **Subcommands:**
-    - `get [KEY]`: View all or specific configuration settings.
-    - `set [KEY] [VALUE]`: Update a specific configuration setting.
+    - `get [KEY]`: View all or specific configuration settings
+    - `set [KEY] [VALUE]`: Update a specific configuration setting
 
 ### `completion` - Generate completion script
-Generate shell completion scripts for your environment.
+Generate shell completion scripts for your environment
 
 - **Usage:** `odc completion [bash|zsh|fish|powershell]`

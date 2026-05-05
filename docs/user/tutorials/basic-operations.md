@@ -2,30 +2,30 @@
 
 Once you've authenticated, you can start managing your OneDrive files using
 standard Unix-style commands. This tutorial covers the most common file and
-directory operations.
+directory operations
 
 ## Understanding Paths
 
 When you use `odc`, you specify file and directory locations using paths. `odc`
 supports multiple "providers" (like OneDrive and your local filesystem) and
-uses prefixes to distinguish between them.
+uses prefixes to distinguish between them
 
 - **Default path:** Without a prefix, paths refer to your active OneDrive drive
-  (for example, `/Documents/report.txt`).
+  (for example, `/Documents/report.txt`)
 - **Explicit OneDrive path:** Use the `onedrive:` prefix (for example,
-  `onedrive:/Documents/report.txt`).
+  `onedrive:/Documents/report.txt`)
 - **Local path:** Use the `local:` prefix to refer to your local machine (for example,
-  `local:/home/user/notes.txt`).
+  `local:/home/user/notes.txt`)
 - **Mount points:** You can use a mount point as a prefix to target a specific
-  drive or location directly (for example, `onedrive:/Reports/january.pdf`).
+  drive or location directly (for example, `onedrive:/Reports/january.pdf`)
 
 > **Note:** Most `odc` commands expect absolute paths starting with `/` when
 > referring to OneDrive items. For local paths, you can use absolute or
-> relative paths after the `local:` prefix.
+> relative paths after the `local:` prefix
 
 ## Listing Files and Directories
 
-The `ls` command lets you view the contents of a directory.
+The `ls` command lets you view the contents of a directory
 
 ```bash
 # List files in the root directory
@@ -41,17 +41,17 @@ odc ls -o long /Documents
 ### Powerful listing options
 `odc` offers powerful flags to help you find exactly what you're looking for:
 
-- **Recursive listing:** View all files and subdirectories.
+- **Recursive listing:** View all files and subdirectories
   ```bash
   odc ls -r /Projects
   ```
 
-- **Tree view:** View your directory structure in a visual tree format.
+- **Tree view:** View your directory structure in a visual tree format
   ```bash
   odc ls -o tree /Projects
   ```
 
-- **Sorting:** Organize your files by name, size, or modification date.
+- **Sorting:** Organize your files by name, size, or modification date
   ```bash
   odc ls --sort modified --desc /Documents
   ```
@@ -59,7 +59,7 @@ odc ls -o long /Documents
 ## Creating Files and Directories
 
 Use `mkdir` to create directories and `touch` to create empty files or update
-timestamps.
+timestamps
 
 ```bash
 # Create a new directory
@@ -71,7 +71,7 @@ odc touch /Work/new_draft.txt
 
 ## Copying and Moving Items
 
-Use `cp` to copy items and `mv` to move or rename them.
+Use `cp` to copy items and `mv` to move or rename them
 
 ```bash
 # Copy a file to another folder
@@ -86,7 +86,7 @@ odc mv /Work/new_name.txt /Documents/
 
 ## Deleting Items
 
-Use the `rm` command to delete files or directories.
+Use the `rm` command to delete files or directories
 
 ```bash
 # Delete a file
@@ -97,12 +97,12 @@ odc rm -r /OldProject
 ```
 
 > **Warning:** Be careful when using `rm -r`. This command permanently deletes
-> the directory and its contents without a confirmation prompt.
+> the directory and its contents without a confirmation prompt
 
 ## Displaying File Content
 
-Use `cat` to display the contents of a text file directly in your terminal.
-This is useful for quickly checking the contents of small files.
+Use `cat` to display the contents of a text file directly in your terminal
+This is useful for quickly checking the contents of small files
 
 ```bash
 odc cat /Documents/notes.txt
