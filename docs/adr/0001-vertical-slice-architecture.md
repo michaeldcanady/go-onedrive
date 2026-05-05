@@ -30,7 +30,7 @@ Shared infrastructure and utilities are kept in `internal/core/` or `pkg/`
 
 ## Trade-offs
 - **Potential Duplication:** Existing a risk of duplicating small utility logic between slices if not  extracted to `pkg/`
-- **Architectural Discipline:** Requires discipline to ensure features don't start depending on each other's internal implementation details rather than their public interfaces
+- **Architectural Discipline:** Requires discipline to confirm features don't start depending on each other's internal implementation details rather than their public interfaces
 
 ## Links
 

@@ -8,7 +8,7 @@ Status: Accepted
 
 ## Context
 
-The `odc` CLI tool needs to persist user profiles, session tokens, cached drive data, and configuration state locally. This data must survive application restarts and be accessible across different CLI invocations. Users need a solution that's lightweight, reliable, and requires no external server installation
+The `odc` CLI tool needs to persist user profiles, session tokens, cached drive data, and configuration state locally. This data must survive application restarts and be available across different CLI invocations. Users need a solution that's lightweight, reliable, and requires no external server installation
 
 ## Decision
 

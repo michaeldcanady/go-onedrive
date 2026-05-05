@@ -1,6 +1,6 @@
 # Manage configuration
 
-`odc` allows you to manage its configuration directly from the command 
+`odc` lets users you to manage its configuration directly from the command 
 line. This is useful for updating your Microsoft Graph Client ID, tenant, 
 or redirect URIs without manually editing YAML files
 
@@ -51,7 +51,7 @@ The following keys are available for the `microsoft` provider:
 ## Configuration schema
 
 If you prefer to edit your configuration manually, users provide a JSON schema 
-to ensure your `config.yaml` is valid. You can use this schema in editors like 
+to confirm your `config.yaml` is valid. You can use this schema in editors like 
 VS Code to get validation and autocompletion
 
 To use the schema in VS Code, add the following to your `settings.json`:

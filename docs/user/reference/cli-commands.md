@@ -128,7 +128,7 @@ Manage your authentication session for the active profile
     - `logout`: Clear the authentication state
 
 ### `profile` - Manage account profiles
-Profiles allow you to switch between multiple OneDrive accounts
+Profiles let users you to switch between multiple OneDrive accounts
 
 - **Subcommands:**
     - `create [NAME]`: Create a new profile
@@ -148,7 +148,7 @@ Discover available OneDrive drives and shared libraries
     - `list`: List all drives you have access to
     - `get`: Get information about your primary personal drive
 
-> **Note:** `drive` is an alias for `storage-discovery`
+> **Note:** `drive` is an alternate name for `storage-discovery`
 
 ---
 

@@ -8,7 +8,7 @@ Status: Accepted
 
 ## Context
 
-To ensure the CLI application is maintainable and that business rules are consistently applied, users need to prevent the UI layer (CLI commands) from directly manipulating low-level details like database records or external API calls
+To confirm the CLI application is maintainable and that business rules are consistently applied, users need to prevent the UI layer (CLI commands) from directly manipulating low-level details like database records or external API calls
 
 ## Decision
 

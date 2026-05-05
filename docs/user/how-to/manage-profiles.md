@@ -1,6 +1,6 @@
 # Manage profiles
 
-Profiles in `odc` allow you to manage multiple OneDrive accounts or 
+Profiles in `odc` let users you to manage multiple OneDrive accounts or 
 configurations on the same machine. Each profile stores its own 
 authentication state, drive preferences, and configuration settings
 

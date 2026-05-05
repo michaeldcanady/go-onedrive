@@ -1,6 +1,6 @@
 # Native file editing
 
-The `edit` command in `odc` allows you to modify OneDrive files using your
+The `edit` command in `odc` lets users you to modify OneDrive files using your
 favorite local terminal editor (like `vim`, `nano`, or `code`). It streamlines
 your workflow by handling the download and upload process automatically,
 providing a seamless editing experience
@@ -23,7 +23,7 @@ odc edit /Documents/config.json
 
 ## Handle conflicts
 
-If you want to ensure that your changes overwrite the remote file even if
+If you want to confirm that your changes overwrite the remote file even if
 there have been changes since you started editing, use the `--force` flag
 
 ```bash
@@ -50,7 +50,7 @@ export EDITOR='vim'
 
 - **Save often:** While `odc` only uploads when you exit, saving frequently in
   your editor is still a good habit
-- **Wait for upload:** Ensure you stay in your terminal until `odc` confirms the
+- **Wait for upload:** Confirm you stay in your terminal until `odc` confirms the
   upload has been completed after you exit your editor
 - **Large files:** For  large files, consider using `download` and `upload`
   separately for more control over the transfer process

@@ -57,7 +57,7 @@ When an error occurs, it should be wrapped with context if possible. Use
 
 ### Checking errors
 
-Always use `errors.Is` and `errors.As` for checking errors to ensure compatibility
+Always use `errors.Is` and `errors.As` for checking errors to confirm compatibility
 with wrapped errors
 
 ```go
@@ -77,7 +77,7 @@ if errors.As(err, &domainErr) {
   why the error occurred
 - **Fail fast**: Validate inputs and preconditions early to avoid unnecessary
   processing
-- **Meaningful messages**: Ensure error messages are clear and actionable for
+- **Meaningful messages**: Confirm error messages are clear and useful for
   the end user
 - **Avoid silencing errors**: Never ignore an error; at a minimum, log it
 - **Use standard errors**: Prefer the error variables in `internal/features/errors`

@@ -48,7 +48,7 @@ This means:
 - enterprise or remote configuration sources can be plugged in  
 - users aren't locked into a single format  
 
-This flexibility is achieved through a **Loader abstraction**, which allows odc to read configuration files without caring about their underlying format
+This flexibility is achieved through a **Loader abstraction**, which lets users odc to read configuration files without caring about their underlying format
 
 ## Lazy loading and caching
 
@@ -75,7 +75,7 @@ The configuration system is intentionally separated from authentication and prof
 - **CacheService** stores authentication records  
 - **ProfileService** combines configuration + identity + overrides  
 
-This separation keeps each component simple and focused, and it allows odc to evolve without breaking existing behavior
+This separation keeps each component simple and focused, and it lets users odc to evolve without breaking existing behavior
 
 ## Why this matters
 

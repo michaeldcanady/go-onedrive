@@ -73,7 +73,7 @@ The Drive Service manages OneDrive drive-specific operations
 ### `drive.Service`
 
 - **`ListDrives(ctx context.Context, identityID string) ([]Drive, error)`**: Retrieves all 
-  OneDrive drives accessible to the user, optionally scoped to an identity
+  OneDrive drives available to the user, optionally scoped to an identity
 - **`ResolveDrive(ctx context.Context, driveRef string, identityID string) (Drive, error)`**:
   Identifies a drive by its ID or name, optionally scoped to an identity
 - **`ResolvePersonalDrive(ctx context.Context, identityID string) (Drive, error)`**: Retrieves 

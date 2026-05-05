@@ -6,7 +6,7 @@ first profile, and run your first commands
 
 ## Prerequisites
 
-Before installing `odc`, ensure your system meets the following requirements:
+Before installing `odc`, confirm your system meets the following requirements:
 
 - **Go:** You must have Go 1.25 or higher installed
 - **Just:** Users recommend installing `just` to automate the build process

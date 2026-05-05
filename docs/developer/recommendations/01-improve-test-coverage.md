@@ -1,7 +1,7 @@
 # Recommendation: Improve test coverage
 
 ## Goal
- increase unit and integration test coverage across core packages to ensure stability and facilitate safe refactoring
+ increase unit and integration test coverage across core packages to confirm stability and facilitate safe refactoring
 
 ## Current state
 - Test coverage is currently concentrated in `pkg/spec`, `pkg/ignore`, and `internal/fs/filtering`

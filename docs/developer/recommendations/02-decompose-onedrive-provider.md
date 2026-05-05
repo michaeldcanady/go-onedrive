@@ -25,4 +25,4 @@ Break down the monolithic `onedrive.Provider` into smaller, more focused compone
 5.  **Refactor Provider**: Update the `Provider` struct to use these new components, keeping its role as an orchestrator that implements the `fs.Service` interface
 
 ## Difficulty
-- **Medium**: Requires careful extraction of logic and updating dependencies. Testing will be needed to ensure no regressions in complex operations like resumable uploads
+- **Medium**: Requires careful extraction of logic and updating dependencies. Testing will be needed to confirm no regressions in complex operations like resumable uploads

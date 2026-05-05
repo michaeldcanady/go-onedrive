@@ -38,7 +38,7 @@ The authentication system builds around some key components:
 
 ## The identity registry
 
-`odc` uses a registry pattern to manage identity providers. This allows the 
+`odc` uses a registry pattern to manage identity providers. This lets users the 
 application to resolve the correct authenticator based on the configuration 
 at runtime
 

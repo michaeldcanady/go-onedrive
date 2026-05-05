@@ -5,7 +5,7 @@ development environment for the OneDrive CLI (`odc`)
 
 ## Prerequisites
 
-Before you begin, ensure you have the following installed on your machine:
+Before you begin, confirm you have the following installed on your machine:
 
 - **Go:** Version 1.25 or higher
 - **Just:** A handy command runner (optional, but recommended)
@@ -47,7 +47,7 @@ The resulting binary will be named `odc` in the root of the project
 
 ## Running tests
 
-Ensure your environment is set up correctly by running the project's tests
+Confirm your environment is set up correctly by running the project's tests
 
 ```bash
 # Using just

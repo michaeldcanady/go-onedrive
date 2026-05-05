@@ -13,7 +13,7 @@ Standardize error handling across the application by ensuring all services retur
 
 ## Implementation plan
 1.  **Define Error Kinds**: Audit the existing error kinds in `internal/features/errors` and add any missing ones (for example, `ErrDriveNotFound`, `ErrInvalidProfile`)
-2.  **Audit Service Returns**: Systematic check of all service methods in `internal/` to ensure errors are mapped or wrapped into `DomainError`
+2.  **Audit Service Returns**: Systematic check of all service methods in `internal/` to confirm errors are mapped or wrapped into `DomainError`
 3.  **Standardize Mapping**: Use common error mapping helpers for frequent external errors (for example, from the Microsoft Graph SDK)
 
 ## Difficulty

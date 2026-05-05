@@ -14,7 +14,7 @@ Users of `odc` need to interact with multiple storage accounts and different typ
 
 Users have decided to implement a Virtual File System (VFS) layer that manages multiple "mounts."
 - **Mount Definition:** A mount maps a logical path (for example, `/work`) to a specific storage provider instance (for example, a specific OneDrive account) and a path within that provider
-- **Unified URI:** The VFS supports a unified URI scheme (for example, `odc://profile/path/to/file`) and local relative/absolute paths by resolving them against active mounts
+- **Unified URI:** The VFS supports a unified URI scheme (for example, `odc://profile/path/to/file`) and local relative/absolute paths by resolving them with active mounts
 - **Provider Abstraction:** All storage operations from the CLI layer go through the VFS, which dispatches the request to the appropriate storage provider based on the path
 - **Mount Persistence:** Mount configurations store in the persistent state (bbolt) to be available across sessions
 
@@ -22,7 +22,7 @@ Users have decided to implement a Virtual File System (VFS) layer that manages m
 
 ### Benefits
 - **Unified Interface:** CLI commands (ls, cp, mv) work consistently regardless of whether the target is OneDrive, a local disk, or another plugin-provided storage
-- **Multi-Account Support:** Allows users to "mount" multiple OneDrive accounts and move files between them 
+- **Multi-Account Support:** Lets users users to "mount" multiple OneDrive accounts and move files between them 
 - **Abstraction:** Hides the complexity of different API structures (for example, OneDrive DriveIDs and ItemIDs) behind a familiar path-based hierarchy
 
 ### Trade-offs

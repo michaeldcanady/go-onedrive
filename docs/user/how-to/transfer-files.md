@@ -58,7 +58,7 @@ odc download -r /RemoteFolder/ ./LocalCopy/
 ## Best practices for data transfer
 
 - **Large transfers:** For  large folders or thousands of small files,
-  use the `-r` flag with caution. Ensure you have a stable internet connection
+  use the `-r` flag with caution. Confirm you have a stable internet connection
 - **Handling conflicts:** By default, `odc` will prompt or fail if you try to
   upload or download over an existing file. Use the `--force` flag (if
   available) to overwrite without confirmation

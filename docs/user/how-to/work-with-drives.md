@@ -18,7 +18,7 @@ odc storage-discovery list
 The output includes each drive's name and ID. Your primary personal drive is
 marked with an asterisk (*)
 
-> **Note:** `drive` is an alias for `storage-discovery`, so you can also use
+> **Note:** `drive` is an alternate name for `storage-discovery`, so you can also use
 > `odc drive list`
 
 ## Get personal drive details
@@ -34,7 +34,7 @@ This returns the name and ID of your personal drive
 
 ## Manage mount points
 
-Mount points allow you to map a specific OneDrive drive or local directory to
+Mount points let users you to map a specific OneDrive drive or local directory to
 a path in your virtual filesystem. This provides a consistent way to access
 different storage locations
 

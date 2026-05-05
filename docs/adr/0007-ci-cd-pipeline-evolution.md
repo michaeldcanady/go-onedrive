@@ -1,7 +1,7 @@
 # Design document: Ci/cd pipeline and automation evolution
 
 ## 1. Introduction
-This document outlines the strategy for enhancing the CI/CD pipelines and automation scripts for the `go-onedrive` (odc) project. The goal is to improve security, ensure performance stability, and support the upcoming transition to a plugin-based architecture with OpenTelemetry integration
+This document outlines the strategy for enhancing the CI/CD pipelines and automation scripts for the `go-onedrive` (odc) project. The goal is to improve security, confirm performance stability, and support the upcoming transition to a plugin-based architecture with OpenTelemetry integration
 
 ## 2. Current state assessment
 
@@ -39,12 +39,12 @@ Users will implement a "Security-First" approach by adding the following to the 
 
 ### 3.4 Support for plugin-based architecture
 As the project moves to a plugin-based model (for example, `storage-plugin-onedrive`):
-- **Matrix Builds for Plugins**: Update the build job to iterate over all directories in `cmd/` to ensure all plugins build and tested
+- **Matrix Builds for Plugins**: Update the build job to iterate over all directories in `cmd/` to confirm all plugins build and tested
 - **Plugin Compatibility Tests**: Create a test suite that verifies the core CLI can load and communicate with plugins using the defined RPC/proto interface
 
 ### 3.5 Opentelemetry integration validation
 - **Span Verification**: Implement a "telemetry smoke test" that runs a CLI command and verifies that the expected OTel spans are produced (using a local collector or OTLP-compatible mock)
-- **Metric Tracking**: Ensure that basic metrics (command execution time, error rates) are consistently reported
+- **Metric Tracking**: Confirm that basic metrics (command execution time, error rates) are consistently reported
 
 ### 3.6 Automation parity (`justfile`)
 Update the `justfile` to include commands that mirror CI steps, allowing developers to catch issues early:
@@ -54,7 +54,7 @@ Update the `justfile` to include commands that mirror CI steps, allowing develop
 - `just test-all`: Runs unit, integration, and E2E tests
 
 ### 3.7 Documentation integrity
-- **Man Page Validation**: Add a CI step to ensure that `just generate-man` succeeds and doesn't produce empty files
+- **Man Page Validation**: Add a CI step to confirm that `just generate-man` succeeds and doesn't produce empty files
 - **MkDocs Build Check**: Integrate `just generate-docs` into the PR workflow to prevent documentation build regressions
 
 ## 4. Implementation roadmap
