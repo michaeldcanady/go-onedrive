@@ -53,7 +53,7 @@ export EDITOR='vim'
 - **Wait for upload:** Confirm you stay in your terminal until `odc` confirms the
   upload has been completed after you exit your editor
 - **Large files:** For  large files, consider using `download` and `upload`
-  separately for more control over the transfer process
+   for more control over the transfer process
 
 ## Next steps
 

@@ -6,7 +6,7 @@ This document describes the error handling patterns and practices used in `odc`
 
 `odc` uses a structured approach to error handling to provide meaningful
 feedback to users and robust error recovery within the application. Errors
-are categorized into domain-level errors and handle consistently
+categorize into domain-level errors and handle consistently
 across the codebase
 
 ## Standard error variables
@@ -17,7 +17,7 @@ represent common failure scenarios:
 - **`ErrNotFound`**: Indicates an item (file or folder) wasn't found
 - **`ErrNotFolder`**: Indicates the specified item isn't a folder
 - **`ErrUnauthorized`**: Indicates the user isn't authenticated
-- **`ErrForbidden`**: Indicates the user is authenticated but doesn't 
+- **`ErrForbidden`**: Indicates the user authenticates but doesn't 
   have permission for the operation
 - **`ErrConflict`**: Indicates a resource conflict, such as a file with 
   the same name

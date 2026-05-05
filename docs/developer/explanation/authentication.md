@@ -33,7 +33,7 @@ The authentication system builds around some key components:
    flow (for example, interactive login)
 4. **Result:** A successful login returns an `AccessToken`, which 
    contains the token itself and its metadata (for example, expiration)
-5. **Persistence:** The token is cached securely for future use by the 
+5. **Persistence:** The token caches securely for future use by the 
    active profile
 
 ## The identity registry

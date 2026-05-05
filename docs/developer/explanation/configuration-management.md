@@ -48,18 +48,18 @@ This means:
 - enterprise or remote configuration sources can be plugged in  
 - users aren't locked into a single format  
 
-This flexibility is achieved through a **Loader abstraction**, which lets users odc to read configuration files without caring about their underlying format
+This flexibility achieves through a **Loader abstraction**, which lets users odc to read configuration files without caring about their underlying format
 
 ## Lazy loading and caching
 
-Configurations are loaded **only when needed**. This keeps odc fast and avoids unnecessary disk access
+Configurations load **only when needed**. This keeps odc fast and avoids unnecessary disk access
 
 The process works like this:
 
 1. odc asks the configuration manager for a configuration by name  
 2. the configuration manager checks its cache  
 3. if not cached, it loads the configuration from disk using the appropriate loader  
-4. the loaded configuration is cached for future use  
+4. the loaded configuration caches for future use  
 
 This approach ensures:
 

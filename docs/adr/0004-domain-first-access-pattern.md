@@ -24,7 +24,7 @@ Users enforce a **Domain-First Access Pattern**
 ## Benefits
 - **Clear Separation of Concerns:** The UI layer focuses on presentation and interaction, while domain services focus on logic and data
 - **Interchangeable Backends:** Users can change the persistence layer or external API provider without modifying CLI command logic
-- **Consistent Business Logic:** Business rules (like validation or side effects) are centralized in services, ensuring they're applied regardless of which command triggers the action
+- **Consistent Business Logic:** Business rules (like validation or side effects) centralize in services, ensuring they're applied regardless of which command triggers the action
 - **Improved Testability:** Domain services can be unit tested in isolation from the CLI framework
 
 ## Trade-offs

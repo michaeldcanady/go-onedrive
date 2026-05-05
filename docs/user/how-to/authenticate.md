@@ -44,10 +44,10 @@ odc auth logout
 
 ## How authentication works
 
-`odc` uses the [Azure Identity](https://github.com/Azure/azure-sdk-for-go/tree/main/sdk/azidentity) SDK under the hood. Tokens are cached locally in your profile's state, allowing you to run commands without re-authenticating every time
+`odc` uses the [Azure Identity](https://github.com/Azure/azure-sdk-for-go/tree/main/sdk/azidentity) SDK under the hood. Tokens cache locally in your profile's state, allowing you to run commands without re-authenticating every time
 
 ## Next steps
 
-Once you are authenticated, you can [manage your profiles](manage-profiles.md) or 
+Once you authenticate, you can [manage your profiles](manage-profiles.md) or 
 begin [working with drives](work-with-drives.md)
 

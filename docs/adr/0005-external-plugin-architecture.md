@@ -21,7 +21,7 @@ Users have decided to implement an external plugin architecture using HashiCorp'
 ## Consequences
 
 ### Benefits
-- **Decoupling:** Storage implementations are isolated from the core logic
+- **Decoupling:** Storage implementations isolate from the core logic
 - **Extensibility:** New providers can be added  by dropping a binary into the plugin folder
 - **Language Agnostic:** While primarily targeting Go, the use of gRPC lets users plugins to be written in any language supported by gRPC
 - **Resilience:** A crash in a plugin process doesn't necessarily crash the main CLI tool

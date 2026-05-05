@@ -47,7 +47,7 @@ The resulting binary will be named `odc` in the root of the project
 
 ## Running tests
 
-Confirm your environment is set up correctly by running the project's tests
+Confirm your environment points to up correctly by running the project's tests
 
 ```bash
 # Using just

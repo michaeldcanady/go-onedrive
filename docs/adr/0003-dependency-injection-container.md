@@ -16,18 +16,18 @@ Users implement a centralized **Dependency Injection (DI) Container** pattern, l
 
 - The `Container` interface defines methods to retrieve some application services (for example, `Config()`, `Identity()`, `Profile()`)
 - A concrete implementation of this container is responsible for instantiating and wiring services with their dependencies
-- Services are typically lazily initialized or initialized once at application startup
+- Services are typically  initialized or initialized once at application startup
 
 ## Consequences
 
 ## Benefits
-- **Decoupling:** Services don't need to know how their dependencies are created
+- **Decoupling:** Services don't need to know how their dependencies create
 - **Testability:** The container can be mocked or replaced with a test-specific version, making it easier to inject mock services for unit and integration tests
-- **Single Point of Configuration:** All service wiring logic is centralized in one place
+- **Single Point of Configuration:** All service wiring logic centralizes in one place
 - **Consistency:** Ensures that the same instance of a service uses throughout the application (where appropriate)
 
 ## Trade-offs
-- **Service Locator Risk:** If the container is passed around too broadly, it can devolve into the Service Locator anti-pattern. Users aim to use it primarily at the application entry point and in CLI command setup
+- **Service Locator Risk:** If the container is passed around too , it can devolve into the Service Locator anti-pattern. Users aim to use it primarily at the application entry point and in CLI command setup
 - **Boilerplate:** Adding a new service requires updating the `Container` interface and implementation
 
 ## Links

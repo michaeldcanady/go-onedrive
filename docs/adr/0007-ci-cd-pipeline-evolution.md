@@ -43,7 +43,7 @@ As the project moves to a plugin-based model (for example, `storage-plugin-onedr
 - **Plugin Compatibility Tests**: Create a test suite that verifies the core CLI can load and communicate with plugins using the defined RPC/proto interface
 
 ### 3.5 Opentelemetry integration validation
-- **Span Verification**: Implement a "telemetry smoke test" that runs a CLI command and verifies that the expected OTel spans are produced (using a local collector or OTLP-compatible mock)
+- **Span Verification**: Implement a "telemetry smoke test" that runs a CLI command and verifies that the expected OTel spans produce (using a local collector or OTLP-compatible mock)
 - **Metric Tracking**: Confirm that basic metrics (command execution time, error rates) are consistently reported
 
 ### 3.6 Automation parity (`justfile`)

@@ -1,6 +1,6 @@
 # Developer guide
 
-Welcome to the `odc` developer guide. This section is intended for contributors and anyone interested in understanding the internal workings of the OneDrive CLI
+Welcome to the `odc` developer guide. This section aims for contributors and anyone interested in understanding the internal workings of the OneDrive CLI
 
 ## Overview
 

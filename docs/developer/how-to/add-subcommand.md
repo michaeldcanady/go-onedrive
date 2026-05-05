@@ -43,7 +43,7 @@ type Options struct {
 
 func (o Options) Validate() error {
     if o.Query == "" {
-        return fmt.Errorf("search query is required")
+        return fmt.Errorf("search query requires")
     }
     return nil
 }

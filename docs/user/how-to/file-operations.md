@@ -19,7 +19,7 @@ odc ls /Documents/Projects
 ```
 
 ### Choosing an output format
-You can change how information is displayed using the `--format` (or `-o`) flag
+You can change how information displays using the `--format` (or `-o`) flag
 
 - **short (default):** A simple list of names
 - **long:** Detailed information including size, type, and modification date

@@ -22,7 +22,7 @@ VSA addresses this by:
   directory
 - **Reduced Coupling:** Slices depend on a stable "Core" but are independent 
   of each other
-- **Easier Testing:** Handlers are focused on a single responsibility, which 
+- **Easier Testing:** Handlers focus on a single responsibility, which 
   makes them straightforward to unit test using mocked core services
 
 ## Core principles

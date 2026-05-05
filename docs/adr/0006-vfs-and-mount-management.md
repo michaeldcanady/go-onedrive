@@ -8,7 +8,7 @@ Status: Accepted
 
 ## Context
 
-Users of `odc` need to interact with multiple storage accounts and different types of storage (cloud and local) simultaneously. A unified way to address these different locations is required, similar to how a Unix-like operating system mounts different filesystems into a single global tree
+Users of `odc` need to interact with multiple storage accounts and different types of storage (cloud and local) simultaneously. A unified way to address these different locations requires, similar to how a Unix-like operating system mounts different filesystems into a single global tree
 
 ## Decision
 
@@ -22,7 +22,7 @@ Users have decided to implement a Virtual File System (VFS) layer that manages m
 
 ### Benefits
 - **Unified Interface:** CLI commands (ls, cp, mv) work consistently regardless of whether the target is OneDrive, a local disk, or another plugin-provided storage
-- **Multi-Account Support:** Lets users users to "mount" multiple OneDrive accounts and move files between them 
+- **Multi-Account Support:** Lets users to "mount" multiple OneDrive accounts and move files between them 
 - **Abstraction:** Hides the complexity of different API structures (for example, OneDrive DriveIDs and ItemIDs) behind a familiar path-based hierarchy
 
 ### Trade-offs

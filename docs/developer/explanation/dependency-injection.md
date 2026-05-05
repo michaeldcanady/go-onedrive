@@ -2,7 +2,7 @@
 
 The OneDrive CLI (`odc`) uses a **Dependency Injection (DI)** container to 
 manage the lifecycle and resolution of core services. This ensures that 
-components are loosely coupled, easy to test, and follow a consistent 
+components are  coupled, easy to test, and follow a consistent 
 initialization pattern
 
 ## The container pattern

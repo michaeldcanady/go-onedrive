@@ -1,6 +1,6 @@
 # Automation and scripting
 
-`odc` (OneDrive CLI) is designed to be a first-class citizen in your terminal
+`odc` (OneDrive CLI) designs to be a first-class citizen in your terminal
 workflow. This guide covers the features that make `odc` powerful for
 automation, from machine-readable output to environment-driven configuration
 
@@ -71,7 +71,7 @@ useful in CI/CD pipelines where interactive configuration isn't possible
 
 ## Using correlation ids for diagnostics
 
-Every execution of `odc` is assigned a unique **Correlation ID**. This ID is
+Every execution of `odc` assigns a unique **Correlation ID**. This ID is
 printed to the log file and is essential for tracing a specific execution from
 the CLI through to the Microsoft Graph API
 
