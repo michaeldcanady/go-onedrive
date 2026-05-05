@@ -38,6 +38,7 @@ jobs:
   validate:
     if: github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.action != 'closed')
     uses: ./.github/workflows/_docs-validate.yaml
+
     with:
       ref: ${{ github.event.pull_request.head.sha || inputs.branch }}
 
@@ -49,7 +50,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v6
         with:
-          ref: ${{ inputs.branch || github.event.pull_request.head.sha }}
+          fetch-depth: 0
 
       - name: Setup Docs
         uses: ./.github/actions/setup-docs
