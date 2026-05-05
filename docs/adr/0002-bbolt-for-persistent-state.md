@@ -26,7 +26,7 @@ Users use **bbolt** (`go.etcd.io/bbolt`) as the primary embedded key-value store
 ## Trade-offs
 - **Single Writer:** Only one process can have a write transaction open at a time. This is  acceptable for a CLI tool which is typically run as a single instance per user
 - **No Native Migrations:** Managing schema changes in a key-value store requires manual migration logic
-- **Limited Querying:** Unlike a relational database, complex queries must be implemented in application code by iterating over keys or using secondary indexes
+- **Limited Querying:** Application code must implement complex queries, unlike a relational database. Developers iterate over keys or use secondary indexes.
 
 ## Links
 
