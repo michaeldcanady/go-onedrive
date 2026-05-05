@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1777993413352,
+  "lastUpdate": 1777993985108,
   "repoUrl": "https://github.com/michaeldcanady/go-onedrive",
   "entries": {
     "Go Benchmark": [
@@ -544,6 +544,74 @@ window.BENCHMARK_DATA = {
             "value": 4015,
             "unit": "ns/op",
             "extra": "292996 times\n4 procs"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "name": "michaeldcanady",
+            "username": "michaeldcanady"
+          },
+          "committer": {
+            "name": "michaeldcanady",
+            "username": "michaeldcanady"
+          },
+          "id": "7477151b10e05279e836fdc9002302092d1d0b65",
+          "message": "feat: repository pattern",
+          "timestamp": "2026-05-05T03:49:35Z",
+          "url": "https://github.com/michaeldcanady/go-onedrive/pull/134/commits/7477151b10e05279e836fdc9002302092d1d0b65"
+        },
+        "date": 1777993984172,
+        "tool": "go",
+        "benches": [
+          {
+            "name": "BenchmarkDefaultService_ListDrives (github.com/michaeldcanady/go-onedrive/internal/features/drive/domain)",
+            "value": 180983,
+            "unit": "ns/op",
+            "extra": "6841 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkDefaultService_ResolveDrive (github.com/michaeldcanady/go-onedrive/internal/features/drive/domain)",
+            "value": 31213,
+            "unit": "ns/op",
+            "extra": "37851 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkNewDriveType (github.com/michaeldcanady/go-onedrive/internal/features/drive/domain)",
+            "value": 1.571,
+            "unit": "ns/op",
+            "extra": "761874668 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkVFS_Resolve (github.com/michaeldcanady/go-onedrive/internal/features/fs/domain)",
+            "value": 1309,
+            "unit": "ns/op",
+            "extra": "940791 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkURIFactory_FromString (github.com/michaeldcanady/go-onedrive/internal/features/fs/domain)",
+            "value": 89.16,
+            "unit": "ns/op",
+            "extra": "13401487 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkParseAuthMethod (github.com/michaeldcanady/go-onedrive/internal/features/identity)",
+            "value": 12.5,
+            "unit": "ns/op",
+            "extra": "97077309 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkRegistry_ListProviders (github.com/michaeldcanady/go-onedrive/internal/features/identity)",
+            "value": 242.2,
+            "unit": "ns/op",
+            "extra": "4928683 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkExtractFullIdentityFromToken (github.com/michaeldcanady/go-onedrive/internal/features/identity/providers/microsoft)",
+            "value": 4489,
+            "unit": "ns/op",
+            "extra": "260704 times\n4 procs"
           }
         ]
       }
