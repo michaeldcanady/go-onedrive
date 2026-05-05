@@ -1,20 +1,20 @@
-# Getting Started with odc
+# Getting started with odc
 
 `odc` (OneDrive CLI) is a Unix-style command-line tool designed to interact with
 Microsoft OneDrive. This guide covers how to install the tool, set up your
-first profile, and run your first commands.
+first profile, and run your first commands
 
 ## Prerequisites
 
-Before installing `odc`, ensure your system meets the following requirements:
+Before installing `odc`, confirm your system meets the following requirements:
 
-- **Go:** You must have Go 1.25 or higher installed.
-- **Just:** We recommend installing `just` to automate the build process.
-- **Git:** You'll need Git to clone the repository.
+- **Go:** You must have Go 1.25 or higher installed
+- **Just:** Users recommend installing `just` to automate the build process
+- **Git:** You'll need Git to clone the repository
 
 ## Installation
 
-Currently, the recommended way to install `odc` is to build it from the source.
+Currently, the recommended way to install `odc` is to build it from the source
 
 1.  **Clone the repository:**
     ```bash
@@ -32,17 +32,17 @@ Currently, the recommended way to install `odc` is to build it from the source.
     ./odc --help
     ```
 
-## Terminal-Native Documentation (Man Pages)
+## Terminal-native documentation (man pages)
 
 `odc` can generate traditional Unix man pages for all its commands, allowing
-you to access documentation directly from your terminal without a browser.
+you to access documentation directly from your terminal without a browser
 
 1.  **Generate man pages:**
     ```bash
     just generate-man
     ```
     This creates a `./man` directory containing man pages for all `odc` 
-    commands.
+    commands
 
 2.  **View a man page:**
     You can view a specific page using the `man` command:
@@ -57,29 +57,29 @@ you to access documentation directly from your terminal without a browser.
     ```bash
     sudo cp ./man/*.1 /usr/local/share/man/man1/
     ```
-    After installing, you can simply run `man odc` from anywhere.
+    After installing, you can simply run `man odc` from anywhere
 
 > **Note:** For easier access to the binary, you can move the `odc` binary to 
-> a directory in your `PATH`, such as `/usr/local/bin` or `~/bin`.
+> a directory in your `PATH`, such as `/usr/local/bin` or `~/bin`
 
-## Core Concepts
+## Core concepts
 
 Understanding these two concepts will help you navigate your OneDrive files
-more effectively.
+more 
 
 ### Profiles
-A **profile** represents a single OneDrive account (e.g., your personal account
+A **profile** represents a single OneDrive account (for example, your personal account
 or your work account). `odc` lets you manage multiple profiles and switch
-between them easily.
+between them 
 
 ### Drives
 A **drive** is a storage area within a profile. While your personal OneDrive is
 the default drive, you can also access shared folders, SharePoint libraries,
-and other storage areas as separate drives.
+and other storage areas as separate drives
 
-## Initial Setup
+## Initial setup
 
-Before you can interact with your OneDrive, you must authenticate.
+Before you can interact with your OneDrive, you must authenticate
 
 1.  **Create a profile (optional):**
     By default, `odc` uses a profile named `default`. If you want to use a
@@ -95,28 +95,28 @@ Before you can interact with your OneDrive, you must authenticate.
     ```
     Follow the instructions in your terminal to complete the authentication in
     your web browser. You'll be asked to sign in to your Microsoft account and
-    grant `odc` permission to access your files.
+    grant `odc` permission to access your files
 
-## Your First Commands
+## Your first commands
 
 Now that you've logged in, try these commands to explore your OneDrive:
 
-1.  **List files:** View the contents of your root OneDrive directory.
+1.  **List files:** View the contents of your root OneDrive directory
     ```bash
     ./odc ls
     ```
 
-2.  **Create a folder:** Create a new directory for your projects.
+2.  **Create a folder:** Create a new directory for your projects
     ```bash
     ./odc mkdir /MyNewFolder
     ```
 
-3.  **Upload a file:** Move a local file to your new folder.
+3.  **Upload a file:** Move a local file to your new folder
     ```bash
     ./odc upload local-file.txt /MyNewFolder/remote-file.txt
     ```
 
-Congratulations! You're now set up and ready to use `odc`.
+Congratulations! You're now set up and ready to use `odc`
 
 ## Next steps
 

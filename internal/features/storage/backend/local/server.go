@@ -90,6 +90,13 @@ func (s *Server) Create(stream proto.BackendService_CreateServer) error {
 			accessToken = req.GetAccessToken()
 		}
 		if len(req.GetData()) > 0 {
+			// Ensure capacity for the new data
+			if len(data)+len(req.GetData()) > cap(data) {
+				newCap := len(data) + len(req.GetData())
+				newData := make([]byte, len(data), newCap)
+				copy(newData, data)
+				data = newData
+			}
 			data = append(data, req.GetData()...)
 		}
 	}

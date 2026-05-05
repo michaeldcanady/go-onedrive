@@ -136,21 +136,21 @@ func TestMountService_ThreadSafety(t *testing.T) {
 	wg.Add(iterations * 3)
 
 	for i := 0; i < iterations; i++ {
-		go func(idx int) {
+		go func(_ int) {
 			defer wg.Done()
 			mv := new(mockValidator)
 			mv.On("ProvideOptions").Return([]MountOption{})
-			service.RegisterValidator(fmt.Sprintf("type-%d", idx), mv)
+			service.RegisterValidator(fmt.Sprintf("type-%d", i), mv)
 		}(i)
 
-		go func(idx int) {
+		go func(_ int) {
 			defer wg.Done()
 			service.GetMountOptions()
 		}(i)
 
-		go func(idx int) {
+		go func(_ int) {
 			defer wg.Done()
-			service.GetCompletionProvider(fmt.Sprintf("type-%d", idx))
+			service.GetCompletionProvider(fmt.Sprintf("type-%d", i))
 		}(i)
 	}
 

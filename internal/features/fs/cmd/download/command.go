@@ -1,9 +1,8 @@
 package download
 
 import (
-	"github.com/michaeldcanady/go-onedrive/internal/core/di"
 	cli "github.com/michaeldcanady/go-onedrive/internal/core/cli"
-
+	"github.com/michaeldcanady/go-onedrive/internal/core/di"
 	"github.com/spf13/cobra"
 )
 
@@ -12,14 +11,14 @@ func CreateDownloadCmd(container di.Container) *cobra.Command {
 	var opts Options
 	var c *CommandContext
 
-	l, _ := container.Logger().CreateLogger("drive-download")
+	l, _ := container.Logger().CreateLogger("download")
 	handler := NewCommand(container.FS(), container.URIFactory(), l)
 
 	cmd := &cobra.Command{
-		Use:               "download <remote_path> <local_path>",
-		Short:             "Download files and directories from OneDrive",
+		Use:               "download <source> <destination>",
+		Short:             "Download files and directories",
 		Args:              cobra.ExactArgs(2),
-		ValidArgsFunction: cli.ProviderPathCompletion(container),
+		ValidArgsFunction: cli.ProviderPathCompletion(container.FS(), container.URIFactory(), container.Mounts()),
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			opts.Source = args[0]
 			opts.Destination = args[1]

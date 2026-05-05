@@ -6,7 +6,6 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.21.1
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.13.1
 	github.com/fatih/color v1.19.0
-	github.com/gofrs/flock v0.13.0
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510
 	github.com/google/uuid v1.6.0
 	github.com/hashicorp/go-plugin v1.8.0
@@ -70,3 +69,5 @@ require (
 )
 
 replace github.com/michaeldcanady/go-onedrive/internal/storage/backend/grpc/proto => ./internal/storage/backend/grpc/proto
+
+replace github.com/michaeldcanady/go-onedrive => ./

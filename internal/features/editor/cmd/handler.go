@@ -6,9 +6,9 @@ import (
 	"io"
 	"os"
 
-	fs "github.com/michaeldcanady/go-onedrive/internal/features/fs/domain"
-	"github.com/michaeldcanady/go-onedrive/internal/features/editor/domain"
 	"github.com/michaeldcanady/go-onedrive/internal/core/logger"
+	"github.com/michaeldcanady/go-onedrive/internal/features/editor/domain"
+	fs "github.com/michaeldcanady/go-onedrive/internal/features/fs/domain"
 	pkgfs "github.com/michaeldcanady/go-onedrive/pkg/fs"
 )
 
@@ -98,7 +98,11 @@ func (c *Command) Execute(ctx *CommandContext) error {
 		log.Error("failed to create editor session", logger.Error(err))
 		return fmt.Errorf("failed to create editor session: %w", err)
 	}
-	defer svc.Cleanup(ctx.Ctx, session)
+	defer func() {
+		if err := svc.Cleanup(ctx.Ctx, session); err != nil {
+			log.Error("failed to cleanup editor session", logger.Error(err))
+		}
+	}()
 
 	log.Debug("editor session created",
 		logger.String("id", session.ID),

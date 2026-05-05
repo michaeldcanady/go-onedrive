@@ -17,7 +17,7 @@ builds:
       - CGO_ENABLED=0
     goos:
       - linux
-      #- windows
+      - windows
       - darwin
     goarch:
       - amd64
@@ -34,6 +34,9 @@ archives:
       {{- if .Arm }}v{{ .Arm }}{{ end }}
     format_overrides:
       - formats: ["zip"]
+
+sboms:
+  - artifacts: archive
 
 nfpms:  
   - id: odc-linux

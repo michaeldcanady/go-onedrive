@@ -3,8 +3,8 @@ package ls
 import (
 	"context"
 
-	fs "github.com/michaeldcanady/go-onedrive/internal/features/fs/domain"
 	"github.com/michaeldcanady/go-onedrive/internal/core/logger"
+	fs "github.com/michaeldcanady/go-onedrive/internal/features/fs/domain"
 	formatting "github.com/michaeldcanady/go-onedrive/pkg/format"
 	pkgfs "github.com/michaeldcanady/go-onedrive/pkg/fs"
 )

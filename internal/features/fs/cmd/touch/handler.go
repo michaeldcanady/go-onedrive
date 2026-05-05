@@ -3,8 +3,8 @@ package touch
 import (
 	"fmt"
 
-	fs "github.com/michaeldcanady/go-onedrive/internal/features/fs/domain"
 	"github.com/michaeldcanady/go-onedrive/internal/core/logger"
+	fs "github.com/michaeldcanady/go-onedrive/internal/features/fs/domain"
 )
 
 // Command executes the drive touch operation.

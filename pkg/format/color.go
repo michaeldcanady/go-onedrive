@@ -10,8 +10,6 @@ import (
 var (
 	// Blue color for directories
 	blue = color.New(color.FgBlue, color.Bold)
-	// Default color for files
-	defaultColor = color.New()
 )
 
 // Colorize wraps the given text with ANSI color codes if the writer supports terminal output.

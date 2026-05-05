@@ -125,7 +125,7 @@ func (a *MicrosoftAuthenticator) Authenticate(ctx context.Context, req *proto.Au
 // getOrUpdateCredential and createCredential are helper methods for managing credentials internally.
 // They are kept here for now, as Authenticate still needs to create credentials during the initial flow.
 // This logic might be moved closer to Authorizer logic in a future refactor.
-func (a *MicrosoftAuthenticator) getOrUpdateCredential(ctx context.Context, accountID string, opts identity.LoginOptions) (azcore.TokenCredential, error) {
+func (a *MicrosoftAuthenticator) getOrUpdateCredential(_ context.Context, accountID string, opts identity.LoginOptions) (azcore.TokenCredential, error) {
 	a.mu.RLock()
 	cred, ok := a.creds[accountID]
 	a.mu.RUnlock()

@@ -8,15 +8,6 @@ import (
 	"github.com/michaeldcanady/go-onedrive/internal/features/identity"
 )
 
-// extractIdentityFromToken extracts the identity ID from the access token.
-func extractIdentityFromToken(tokenStr string) (string, error) {
-	ident, err := extractFullIdentityFromToken(tokenStr)
-	if err != nil {
-		return "", err
-	}
-	return ident.Email, nil
-}
-
 // extractFullIdentityFromToken extracts rich identity information from the access token.
 func extractFullIdentityFromToken(tokenStr string) (identity.Account, error) {
 	var ident identity.Account

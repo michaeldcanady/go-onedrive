@@ -1,0 +1,28 @@
+name: ~ Go Tests
+
+on:
+  workflow_call:
+    inputs:
+      go-version:
+        required: true
+        type: string
+      os:
+        required: true
+        type: string
+      tier:
+        required: true
+        type: string
+
+jobs:
+  test:
+    name: ${{ inputs.tier }} Tests (${{ inputs.os }})
+    runs-on: ${{ inputs.os }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+      - name: Setup Environment
+        uses: ./.github/actions/setup-odc
+        with:
+          go-version: ${{ inputs.go-version }}
+      - name: Run tests
+        run: just test-${{ inputs.tier }}

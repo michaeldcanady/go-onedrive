@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	proto "github.com/michaeldcanady/go-onedrive/internal/features/identity/proto"
 	"github.com/michaeldcanady/go-onedrive/internal/core/logger"
+	proto "github.com/michaeldcanady/go-onedrive/internal/features/identity/proto"
 )
 
 // AuthenticateWithProto simulates calling Authenticate and mapping results to proto.

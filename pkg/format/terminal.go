@@ -26,7 +26,11 @@ func NewTerminal() Terminal {
 // IsTerminal determines if the provided writer is connected to an interactive terminal session.
 func (Terminal) IsTerminal(w io.Writer) bool {
 	if f, ok := w.(interface{ Fd() uintptr }); ok {
-		return term.IsTerminal(int(f.Fd()))
+		fd := f.Fd()
+		if fd > uintptr(int(^uint(0)>>1)) {
+			return false
+		}
+		return term.IsTerminal(int(fd))
 	}
 	return false
 }
@@ -39,15 +43,21 @@ func (t Terminal) Width(w io.Writer) int {
 	}
 
 	if f, ok := w.(interface{ Fd() uintptr }); ok {
-		width, _, err := term.GetSize(int(f.Fd()))
-		if err == nil {
-			return width
+		fd := f.Fd()
+		if fd <= uintptr(int(^uint(0)>>1)) {
+			width, _, err := term.GetSize(int(fd))
+			if err == nil {
+				return width
+			}
 		}
 	}
 
 	// Fallback to standard output if the writer's width can't be resolved
-	if width, _, err := term.GetSize(int(os.Stdout.Fd())); err == nil {
-		return width
+	fd := os.Stdout.Fd()
+	if fd <= uintptr(int(^uint(0)>>1)) {
+		if width, _, err := term.GetSize(int(fd)); err == nil {
+			return width
+		}
 	}
 
 	return 80

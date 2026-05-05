@@ -40,12 +40,14 @@ func (r *DefaultResolver) Resolve(ctx context.Context) (string, error) {
 	// 2. Try configuration
 	if r.cfgProvider != nil {
 		if cmd, err := r.cfgProvider.GetEditorCommand(ctx); err == nil && strings.TrimSpace(cmd) != "" {
+			// TODO: probably a good idea to sanitize this some how
 			return cmd, nil
 		}
 	}
 
 	// 3. Try VISUAL
 	if visual, err := r.envSvc.Visual(); err == nil && strings.TrimSpace(visual) != "" {
+		// TODO: maybe a good idea to sanitize all environment vars?
 		return visual, nil
 	}
 

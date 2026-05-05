@@ -39,11 +39,13 @@ func (l *Level) UnmarshalText(text []byte) error {
 
 	// Try parsing as integer for backward compatibility
 	if i, err := strconv.Atoi(s); err == nil {
-		lvl := Level(i)
-		switch lvl {
-		case LevelDebug, LevelInfo, LevelWarn, LevelError:
-			*l = lvl
-			return nil
+		if i >= -128 && i <= 127 {
+			lvl := Level(i)
+			switch lvl {
+			case LevelDebug, LevelInfo, LevelWarn, LevelError:
+				*l = lvl
+				return nil
+			}
 		}
 	}
 

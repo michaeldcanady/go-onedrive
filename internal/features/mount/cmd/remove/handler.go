@@ -32,7 +32,6 @@ func NewCommand(mountSvc MountRemover, uriFactory URIFactory, l logger.Logger) *
 }
 
 func (c *Command) Validate(ctx *CommandContext) error {
-
 	uri, err := c.uriFactory.FromString(ctx.Options.Path)
 	if err != nil {
 		return fmt.Errorf("failed to parse uri %s: %w", ctx.Options.Path, err)

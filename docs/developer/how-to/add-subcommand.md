@@ -1,24 +1,24 @@
-# Adding a New Subcommand
+# Adding a new subcommand
 
 The OneDrive CLI (`odc`) follows a consistent pattern for adding new 
 commands. This guide explains how to create a new vertical slice for a 
-subcommand.
+subcommand
 
-## Overview of a Vertical Slice
+## Overview of a vertical slice
 
 A typical subcommand slice resides in 
 `internal/<feature>/ui/cli/<command>/` and consists of three files:
 
 1.  **`command.go`:** Defines the Cobra command, its flags, and validation 
-    logic.
+    logic
 2.  **`command_cmd.go`:** Contains the `Command` which implements the 
-    business logic for the command.
+    business logic for the command
 3.  **`options.go`:** Defines the options struct for the command and its 
-    validation.
+    validation
 
-## Step-by-Step Guide
+## Step-by-step guide
 
-### 1. Create the Directory Structure
+### 1. Create the directory structure
 
 Create a new directory for your command. For example, if you're adding 
 a `search` command to the `fs` feature:
@@ -27,9 +27,9 @@ a `search` command to the `fs` feature:
 mkdir -p internal/fs/ui/cli/search
 ```
 
-### 2. Define the Options
+### 2. Define the options
 
-In `options.go`, define the parameters your command needs.
+In `options.go`, define the parameters your command needs
 
 ```go
 package search
@@ -43,15 +43,15 @@ type Options struct {
 
 func (o Options) Validate() error {
     if o.Query == "" {
-        return fmt.Errorf("search query is required")
+        return fmt.Errorf("search query requires")
     }
     return nil
 }
 ```
 
-### 3. Create the Command
+### 3. Create the command
 
-In `command_cmd.go`, implement the `Command` and its `Handle` method.
+In `command_cmd.go`, implement the `Command` and its `Handle` method
 
 ```go
 package search
@@ -77,9 +77,9 @@ func (c *Command) Handle(ctx context.Context, opts Options) error {
 }
 ```
 
-### 4. Define the Cobra Command
+### 4. Define the cobra command
 
-In `command.go`, use the `Create<Name>Cmd` pattern.
+In `command.go`, use the `Create<Name>Cmd` pattern
 
 ```go
 package search
@@ -107,10 +107,10 @@ func CreateSearchCmd(container di.Container) *cobra.Command {
 }
 ```
 
-### 5. Register the Command
+### 5. Register the command
 
 Finally, register your new command in the root command in 
-`internal/root/root.go`.
+`internal/root/root.go`
 
 ```go
 rootCmd.AddCommand(
@@ -122,4 +122,4 @@ rootCmd.AddCommand(
 ## Next steps
 
 - **[Architecture Overview](../explanation/architecture.md)**
-- **[Testing Your Changes](testing.md)**
+- **[Testing Your Changes](../recommendations/01-improve-test-coverage.md)**

@@ -3,8 +3,8 @@ package upload
 import (
 	"fmt"
 
-	fs "github.com/michaeldcanady/go-onedrive/internal/features/fs/domain"
 	"github.com/michaeldcanady/go-onedrive/internal/core/logger"
+	fs "github.com/michaeldcanady/go-onedrive/internal/features/fs/domain"
 	pkgfs "github.com/michaeldcanady/go-onedrive/pkg/fs"
 )
 
