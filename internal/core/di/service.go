@@ -82,8 +82,8 @@ func (c *DefaultContainer) initBaseServices() error {
 	if err != nil {
 		return fmt.Errorf("failed to open profile database: %w", err)
 	}
-	profileRepo, err := profile.NewBoltRepository(profileDB)
-	if err != nil {
+	profileRepo := profile.NewBoltRepository(profileDB)
+	if err := profileRepo.Initialize(); err != nil {
 		return fmt.Errorf("failed to initialize profile repository: %w", err)
 	}
 

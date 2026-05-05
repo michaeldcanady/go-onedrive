@@ -17,7 +17,8 @@ func TestBoltRepository(t *testing.T) {
 	defer os.Remove(dbFile)
 	defer db.Close()
 
-	repo, err := NewBoltRepository(db)
+	repo := NewBoltRepository(db)
+	err = repo.Initialize()
 	assert.NoError(t, err)
 
 	ctx := context.Background()

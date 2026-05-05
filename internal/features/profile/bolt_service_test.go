@@ -22,7 +22,8 @@ func TestDefaultService_ActiveProfile(t *testing.T) {
 	assert.NoError(t, err)
 	defer db.Close()
 
-	repo, err := NewBoltRepository(db)
+	repo := NewBoltRepository(db)
+	err = repo.Initialize()
 	assert.NoError(t, err)
 
 	env := &mockEnv{dir: tmpDir}
