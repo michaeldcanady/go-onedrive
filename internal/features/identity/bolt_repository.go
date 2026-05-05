@@ -10,10 +10,12 @@ import (
 )
 
 // BoltRepository implements IdentityRepository using BoltDB.
+// BoltRepository implements IdentityRepository using BoltDB.
 type BoltRepository struct {
 	db *bolt.DB
 }
 
+// NewBoltRepository creates a new instance of BoltRepository.
 const (
 	tokensBucketName = "tokens"
 )
