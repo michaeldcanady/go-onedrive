@@ -3,11 +3,13 @@ package profile
 import (
 	"context"
 	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/michaeldcanady/go-onedrive/internal/core/env"
 	"github.com/michaeldcanady/go-onedrive/internal/core/shared"
 	"github.com/stretchr/testify/assert"
+	bolt "go.etcd.io/bbolt"
 )
 
 func TestDefaultService_ActiveProfile(t *testing.T) {
@@ -15,10 +17,17 @@ func TestDefaultService_ActiveProfile(t *testing.T) {
 	assert.NoError(t, err)
 	defer os.RemoveAll(tmpDir)
 
-	env := &mockEnv{dir: tmpDir}
-	svc, err := NewDefaultService(env)
+	dbFile := filepath.Join(tmpDir, "profiles.db")
+	db, err := bolt.Open(dbFile, 0600, nil)
 	assert.NoError(t, err)
-	defer svc.Close()
+	defer db.Close()
+
+	repo := NewBoltRepository(db)
+	err = repo.Initialize()
+	assert.NoError(t, err)
+
+	env := &mockEnv{dir: tmpDir}
+	svc := NewDefaultService(repo, repo, env)
 
 	ctx := context.Background()
 
@@ -49,9 +58,6 @@ func TestDefaultService_ActiveProfile(t *testing.T) {
 	// let's just verify that ScopeGlobal still works by setting it again.
 	err = svc.SetActive(ctx, "profile1", shared.ScopeGlobal)
 	assert.NoError(t, err)
-	// Wait, SetActive(ScopeGlobal) doesn't clear sessionProfile if it was set.
-	// Actually, DefaultService.SetActive(ScopeSession) sets sessionProfile.
-	// DefaultService.GetActive() checks sessionProfile first.
 }
 
 type mockEnv struct {

@@ -69,15 +69,29 @@ func (c *DefaultContainer) initBaseServices() error {
 
 	c.logger = zap.NewZapService(c.environment)
 
-	profileSvc, err := profile.NewDefaultService(c.environment)
+	// Initialize Storage Service
+	c.storageService = storage.NewDefaultService()
+
+	// Initialize Profile Repositories
+	stateDir, err := c.environment.StateDir()
 	if err != nil {
-		return fmt.Errorf("failed to initialize profile service: %w", err)
+		return fmt.Errorf("failed to get state directory: %w", err)
 	}
+	profileDBPath := filepath.Join(stateDir, "profile.db")
+	profileDB, err := c.storageService.Open(profileDBPath)
+	if err != nil {
+		return fmt.Errorf("failed to open profile database: %w", err)
+	}
+	profileRepo := profile.NewBoltRepository(profileDB)
+	if err := profileRepo.Initialize(); err != nil {
+		return fmt.Errorf("failed to initialize profile repository: %w", err)
+	}
+
+	profileSvc := profile.NewDefaultService(profileRepo, profileRepo, c.environment)
 	if err := profile.Bootstrap(context.Background(), profileSvc); err != nil {
 		return fmt.Errorf("failed to bootstrap profile service: %w", err)
 	}
 	c.profile = profileSvc
-	c.storageService = storage.NewDefaultService()
 
 	return nil
 }

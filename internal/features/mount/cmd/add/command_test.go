@@ -90,8 +90,8 @@ func (m *mockIdentityService) Token(ctx context.Context, p string, req *proto.Ge
 	args := m.Called(ctx, p, req)
 	return args.Get(0).(*proto.GetTokenResponse), args.Error(1)
 }
-func (m *mockIdentityService) GetStore() identity.AccountStore {
-	return m.Called().Get(0).(identity.AccountStore)
+func (m *mockIdentityService) GetStore() identity.IdentityRepository {
+	return m.Called().Get(0).(identity.IdentityRepository)
 }
 func (m *mockIdentityService) GetAccount(ctx context.Context, id string) (*identity.Account, error) {
 	args := m.Called(ctx, id)

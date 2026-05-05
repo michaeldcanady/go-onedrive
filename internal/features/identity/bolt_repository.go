@@ -9,16 +9,30 @@ import (
 	bolt "go.etcd.io/bbolt"
 )
 
+// BoltRepository implements IdentityRepository using BoltDB.
 type BoltRepository struct {
 	db *bolt.DB
 }
 
+const (
+	tokensBucketName = "tokens"
+)
+
+// NewBoltRepository creates a new instance of BoltRepository.
 func NewBoltRepository(db *bolt.DB) *BoltRepository {
 	return &BoltRepository{db: db}
 }
 
+// Initialize ensures the DB schema (tokens bucket) exists.
+func (r *BoltRepository) Initialize() error {
+	return r.db.Update(func(tx *bolt.Tx) error {
+		_, err := tx.CreateBucketIfNotExists([]byte(tokensBucketName))
+		return err
+	})
+}
+
 func (r *BoltRepository) getBucket(tx *bolt.Tx, provider string) (*bolt.Bucket, error) {
-	root, err := tx.CreateBucketIfNotExists([]byte("tokens"))
+	root, err := tx.CreateBucketIfNotExists([]byte(tokensBucketName))
 	if err != nil {
 		return nil, err
 	}
@@ -28,9 +42,9 @@ func (r *BoltRepository) getBucket(tx *bolt.Tx, provider string) (*bolt.Bucket, 
 func (r *BoltRepository) Get(ctx context.Context, provider, identityID string) (AccessToken, error) {
 	var token AccessToken
 	err := r.db.View(func(tx *bolt.Tx) error {
-		b := tx.Bucket([]byte("tokens"))
-		if b == nil {
-			return fmt.Errorf("%w for identity %s: tokens bucket missing", errors.ErrNotFound, identityID)
+		b, err := r.getBucket(tx, provider)
+		if err != nil {
+			return err
 		}
 		pb := b.Bucket([]byte(provider))
 		if pb == nil {
@@ -47,7 +61,7 @@ func (r *BoltRepository) Get(ctx context.Context, provider, identityID string) (
 
 func (r *BoltRepository) Save(ctx context.Context, provider string, token AccessToken) error {
 	return r.db.Update(func(tx *bolt.Tx) error {
-		pb, err := r.getBucket(tx, provider)
+		b, err := r.getBucket(tx, provider)
 		if err != nil {
 			return err
 		}
@@ -56,15 +70,15 @@ func (r *BoltRepository) Save(ctx context.Context, provider string, token Access
 		if err != nil {
 			return err
 		}
-		return pb.Put([]byte(token.AccountID), data)
+		return b.Put([]byte(token.AccountID), data)
 	})
 }
 
 func (r *BoltRepository) Delete(ctx context.Context, provider, AccountID string) error {
 	return r.db.Update(func(tx *bolt.Tx) error {
-		b := tx.Bucket([]byte("tokens"))
-		if b == nil {
-			return nil
+		b, err := r.getBucket(tx, provider)
+		if err != nil {
+			return err
 		}
 		pb := b.Bucket([]byte(provider))
 		if pb == nil {
@@ -77,9 +91,9 @@ func (r *BoltRepository) Delete(ctx context.Context, provider, AccountID string)
 func (r *BoltRepository) List(ctx context.Context, provider string) ([]string, error) {
 	var ids []string
 	err := r.db.View(func(tx *bolt.Tx) error {
-		b := tx.Bucket([]byte("tokens"))
-		if b == nil {
-			return nil
+		b, err := r.getBucket(tx, provider)
+		if err != nil {
+			return err
 		}
 		pb := b.Bucket([]byte(provider))
 		if pb == nil {

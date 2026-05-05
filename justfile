@@ -18,7 +18,7 @@ test-all: test
 
 # Run unit tests (fast, no IO)
 test-unit:
-    go test -v -json ./...
+    go test -v ./...
 
 # Run integration tests (domain interactions, mocks external APIs)
 test-integration:

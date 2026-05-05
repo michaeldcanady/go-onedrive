@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"time"
 
 	bolt "go.etcd.io/bbolt"
 )
@@ -14,38 +13,31 @@ type BoltRepository struct {
 	db *bolt.DB
 }
 
-// NewBoltRepository creates a new instance of BoltRepository and initializes the DB schema.
-func NewBoltRepository(dbPath string) (*BoltRepository, error) {
-	db, err := bolt.Open(dbPath, 0600, &bolt.Options{Timeout: 1 * time.Second})
-	if err != nil {
-		return nil, fmt.Errorf("failed to open BoltDB: %w", err)
-	}
+const (
+	settingsBucketName = "settings"
+	profilesBucketName = "profiles"
+)
 
-	// Ensure buckets are created
-	err = db.Update(func(tx *bolt.Tx) error {
-		if _, err := tx.CreateBucketIfNotExists([]byte("profiles")); err != nil {
+// NewBoltRepository creates a new instance of BoltRepository.
+func NewBoltRepository(db *bolt.DB) *BoltRepository {
+	return &BoltRepository{db: db}
+}
+
+// Initialize ensures the DB schema (required buckets) exists.
+func (r *BoltRepository) Initialize() error {
+	return r.db.Update(func(tx *bolt.Tx) error {
+		if _, err := tx.CreateBucketIfNotExists([]byte(profilesBucketName)); err != nil {
 			return fmt.Errorf("failed to create profiles bucket: %w", err)
 		}
-		if _, err := tx.CreateBucketIfNotExists([]byte("settings")); err != nil {
+		if _, err := tx.CreateBucketIfNotExists([]byte(settingsBucketName)); err != nil {
 			return fmt.Errorf("failed to create settings bucket: %w", err)
 		}
 		return nil
 	})
-	if err != nil {
-		db.Close()
-		return nil, err
-	}
-
-	return &BoltRepository{db: db}, nil
-}
-
-// Close closes the underlying BoltDB database.
-func (r *BoltRepository) Close() error {
-	return r.db.Close()
 }
 
 func (r *BoltRepository) getProfileBucket(tx *bolt.Tx) (*bolt.Bucket, error) {
-	b := tx.Bucket([]byte("profiles"))
+	b := tx.Bucket([]byte(profilesBucketName))
 	if b == nil {
 		return nil, ErrProfilesBucketNotFound
 	}
@@ -53,14 +45,12 @@ func (r *BoltRepository) getProfileBucket(tx *bolt.Tx) (*bolt.Bucket, error) {
 }
 
 func (r *BoltRepository) getSettingsBucket(tx *bolt.Tx) (*bolt.Bucket, error) {
-	b := tx.Bucket([]byte("settings"))
+	b := tx.Bucket([]byte(settingsBucketName))
 	if b == nil {
 		return nil, fmt.Errorf("settings bucket not found")
 	}
 	return b, nil
 }
-
-// --- ProfileRepository Implementation ---
 
 func (r *BoltRepository) Get(ctx context.Context, name string) (Profile, error) {
 	var p Profile
@@ -160,7 +150,7 @@ func (r *BoltRepository) GetSetting(ctx context.Context, key string) (string, er
 
 func (r *BoltRepository) SetSetting(ctx context.Context, key, value string) error {
 	return r.db.Update(func(tx *bolt.Tx) error {
-		b, err := tx.CreateBucketIfNotExists([]byte("settings"))
+		b, err := r.getSettingsBucket(tx)
 		if err != nil {
 			return err
 		}

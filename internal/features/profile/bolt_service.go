@@ -14,7 +14,6 @@ import (
 type DefaultService struct {
 	profileRepo  ProfileRepository
 	settingsRepo SettingsRepository
-	repo         *BoltRepository
 	env          environment.Service
 
 	mu             sync.RWMutex
@@ -22,25 +21,12 @@ type DefaultService struct {
 }
 
 // NewDefaultService initializes a new instance of the DefaultService.
-func NewDefaultService(env environment.Service) (*DefaultService, error) {
-	configDir, err := env.ConfigDir()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get config directory: %w", err)
-	}
-
-	repo, err := NewBoltRepository(fmt.Sprintf("%s/profiles.db", configDir))
-	if err != nil {
-		return nil, err
-	}
-
-	s := &DefaultService{
-		profileRepo:  repo,
-		settingsRepo: repo,
-		repo:         repo,
+func NewDefaultService(profileRepo ProfileRepository, settingsRepo SettingsRepository, env environment.Service) *DefaultService {
+	return &DefaultService{
+		profileRepo:  profileRepo,
+		settingsRepo: settingsRepo,
 		env:          env,
 	}
-
-	return s, nil
 }
 
 // Bootstrap ensures the profile service is correctly initialized with default data.
@@ -60,11 +46,6 @@ func Bootstrap(ctx context.Context, s Service) error {
 	}
 
 	return nil
-}
-
-// Close closes the database connection.
-func (s *DefaultService) Close() error {
-	return s.repo.Close()
 }
 
 // Get returns the profile with the specified name.
