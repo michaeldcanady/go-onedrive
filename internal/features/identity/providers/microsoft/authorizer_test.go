@@ -11,29 +11,29 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-type mockAccountStore struct {
+type mockIdentityRepository struct {
 	mock.Mock
 }
 
-func (m *mockAccountStore) Save(ctx context.Context, provider string, token identity.AccessToken) error {
+func (m *mockIdentityRepository) Save(ctx context.Context, provider string, token identity.AccessToken) error {
 	return m.Called(ctx, provider, token).Error(0)
 }
 
-func (m *mockAccountStore) Get(ctx context.Context, provider string, accountID string) (identity.AccessToken, error) {
+func (m *mockIdentityRepository) Get(ctx context.Context, provider string, accountID string) (identity.AccessToken, error) {
 	args := m.Called(ctx, provider, accountID)
 	return args.Get(0).(identity.AccessToken), args.Error(1)
 }
 
-func (m *mockAccountStore) List(ctx context.Context, provider string) ([]string, error) {
+func (m *mockIdentityRepository) List(ctx context.Context, provider string) ([]string, error) {
 	args := m.Called(ctx, provider)
 	return args.Get(0).([]string), args.Error(1)
 }
 
-func (m *mockAccountStore) Delete(ctx context.Context, provider string, accountID string) error {
+func (m *mockIdentityRepository) Delete(ctx context.Context, provider string, accountID string) error {
 	return m.Called(ctx, provider, accountID).Error(0)
 }
 
-func (m *mockAccountStore) Close() error {
+func (m *mockIdentityRepository) Close() error {
 	return m.Called().Error(0)
 }
 
@@ -44,14 +44,14 @@ func TestMicrosoftAuthorizer_Token(t *testing.T) {
 	tests := []struct {
 		name      string
 		accountID string
-		setup     func(m *mockAccountStore)
+		setup     func(m *mockIdentityRepository)
 		wantErr   bool
 		wantToken string
 	}{
 		{
 			name:      "success",
 			accountID: "user1",
-			setup: func(m *mockAccountStore) {
+			setup: func(m *mockIdentityRepository) {
 				m.On("Get", mock.Anything, "microsoft", "user1").Return(identity.AccessToken{
 					Token:     "test-token",
 					ExpiresAt: now,
@@ -64,7 +64,7 @@ func TestMicrosoftAuthorizer_Token(t *testing.T) {
 		{
 			name:      "store error",
 			accountID: "user1",
-			setup: func(m *mockAccountStore) {
+			setup: func(m *mockIdentityRepository) {
 				m.On("Get", mock.Anything, "microsoft", "user1").Return(identity.AccessToken{}, assert.AnError)
 			},
 			wantErr: true,
@@ -73,7 +73,7 @@ func TestMicrosoftAuthorizer_Token(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mStore := new(mockAccountStore)
+			mStore := new(mockIdentityRepository)
 			tt.setup(mStore)
 
 			auth := NewMicrosoftAuthorizer(mStore)

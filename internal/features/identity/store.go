@@ -4,8 +4,8 @@ import (
 	"context"
 )
 
-// AccountStore defines the persistence interface for access tokens.
-type AccountStore interface {
+// IdentityRepository defines the persistence interface for access tokens.
+type IdentityRepository interface {
 	// Get retrieves a token for a specific provider and identity.
 	Get(ctx context.Context, provider, identityID string) (AccessToken, error)
 	// Save persists a token.

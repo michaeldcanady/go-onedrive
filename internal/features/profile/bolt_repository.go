@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"time"
 
 	bolt "go.etcd.io/bbolt"
 )
@@ -15,14 +14,9 @@ type BoltRepository struct {
 }
 
 // NewBoltRepository creates a new instance of BoltRepository and initializes the DB schema.
-func NewBoltRepository(dbPath string) (*BoltRepository, error) {
-	db, err := bolt.Open(dbPath, 0600, &bolt.Options{Timeout: 1 * time.Second})
-	if err != nil {
-		return nil, fmt.Errorf("failed to open BoltDB: %w", err)
-	}
-
+func NewBoltRepository(db *bolt.DB) (*BoltRepository, error) {
 	// Ensure buckets are created
-	err = db.Update(func(tx *bolt.Tx) error {
+	err := db.Update(func(tx *bolt.Tx) error {
 		if _, err := tx.CreateBucketIfNotExists([]byte("profiles")); err != nil {
 			return fmt.Errorf("failed to create profiles bucket: %w", err)
 		}
@@ -32,16 +26,10 @@ func NewBoltRepository(dbPath string) (*BoltRepository, error) {
 		return nil
 	})
 	if err != nil {
-		db.Close()
 		return nil, err
 	}
 
 	return &BoltRepository{db: db}, nil
-}
-
-// Close closes the underlying BoltDB database.
-func (r *BoltRepository) Close() error {
-	return r.db.Close()
 }
 
 func (r *BoltRepository) getProfileBucket(tx *bolt.Tx) (*bolt.Bucket, error) {

@@ -17,17 +17,8 @@ func TestBoltRepository(t *testing.T) {
 	defer os.Remove(dbFile)
 	defer db.Close()
 
-	// Ensure bucket
-	_ = db.Update(func(tx *bolt.Tx) error {
-		_, _ = tx.CreateBucketIfNotExists([]byte("profiles"))
-		_, _ = tx.CreateBucketIfNotExists([]byte("settings"))
-		return nil
-	})
-	db.Close()
-
-	repo, err := NewBoltRepository(dbFile)
+	repo, err := NewBoltRepository(db)
 	assert.NoError(t, err)
-	defer repo.Close()
 
 	ctx := context.Background()
 	p := Profile{

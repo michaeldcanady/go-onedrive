@@ -10,11 +10,11 @@ import (
 
 // MicrosoftAuthorizer implements the identity.Authorizer interface for Microsoft.
 type MicrosoftAuthorizer struct {
-	store identity.AccountStore
+	store identity.IdentityRepository
 }
 
 // NewMicrosoftAuthorizer initializes a new Microsoft authorizer.
-func NewMicrosoftAuthorizer(store identity.AccountStore) *MicrosoftAuthorizer {
+func NewMicrosoftAuthorizer(store identity.IdentityRepository) *MicrosoftAuthorizer {
 	return &MicrosoftAuthorizer{
 		store: store,
 	}

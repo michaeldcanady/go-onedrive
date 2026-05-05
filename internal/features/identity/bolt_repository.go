@@ -9,10 +9,12 @@ import (
 	bolt "go.etcd.io/bbolt"
 )
 
+// BoltRepository implements IdentityRepository using BoltDB.
 type BoltRepository struct {
 	db *bolt.DB
 }
 
+// NewBoltRepository creates a new instance of BoltRepository.
 func NewBoltRepository(db *bolt.DB) *BoltRepository {
 	return &BoltRepository{db: db}
 }
