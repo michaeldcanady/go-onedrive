@@ -18,6 +18,9 @@ func TestBoltRepository(t *testing.T) {
 	defer db.Close()
 
 	repo := NewBoltRepository(db)
+	err = repo.Initialize()
+	assert.NoError(t, err)
+
 	ctx := context.Background()
 	provider := "microsoft"
 	token := AccessToken{
