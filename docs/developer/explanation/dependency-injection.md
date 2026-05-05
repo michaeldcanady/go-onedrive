@@ -1,11 +1,11 @@
-# Dependency Injection
+# Dependency injection
 
 The OneDrive CLI (`odc`) uses a **Dependency Injection (DI)** container to 
 manage the lifecycle and resolution of core services. This ensures that 
 components are loosely coupled, easy to test, and follow a consistent 
 initialization pattern
 
-## The Container Pattern
+## The container pattern
 
 Instead of components creating their own dependencies or relying on global 
 variables, `odc` employs a central `Container` interface. This container 
@@ -22,13 +22,13 @@ The container provides access to services such as:
 - **Drive:** For drive-specific operations
 - **Mounts:** For managing virtual filesystem mount points
 
-## Why Use DI?
+## Why use DI
 
-Using a DI container offers several benefits for `odc`:
+Using a DI container offers some benefits for `odc`:
 
 - **Decoupling:** Slices and services only know about the interfaces they 
   depend on, not the specific implementations
-- **Testability:** You can easily inject mock implementations of the 
+- **Testability:** You can  inject mock implementations of the 
   container or individual services during unit testing
 - **Lifecycle Management:** The container ensures that services are 
   initialized in the correct order and only when needed (lazy loading where 
@@ -36,9 +36,9 @@ Using a DI container offers several benefits for `odc`:
 - **Consistency:** All parts of the application access shared resources in 
    a uniform way
 
-## How It Works
+## How it works
 
-1. **Definition:** The `Container` interface is defined in `internal/di/`
+1. **Definition:** The `Container` interface defines in `internal/di/`
 2. **Implementation:** A concrete implementation of the container is 
    initialized at the application's entry point (`cmd/odc/main.go`)
 3. **Injection:** The container is passed to the root command and 
@@ -46,7 +46,7 @@ Using a DI container offers several benefits for `odc`:
 4. **Usage:** Slices retrieve the specific services they need from the 
    container
 
-## Implementation Details
+## Implementation details
 
 The core logic for service resolution and wiring resides in:
 

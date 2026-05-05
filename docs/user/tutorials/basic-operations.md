@@ -1,10 +1,10 @@
-# Basic Operations
+# Basic operations
 
 Once you've authenticated, you can start managing your OneDrive files using
 standard Unix-style commands. This tutorial covers the most common file and
 directory operations
 
-## Understanding Paths
+## Understanding paths
 
 When you use `odc`, you specify file and directory locations using paths. `odc`
 supports multiple "providers" (like OneDrive and your local filesystem) and
@@ -23,7 +23,7 @@ uses prefixes to distinguish between them
 > referring to OneDrive items. For local paths, you can use absolute or
 > relative paths after the `local:` prefix
 
-## Listing Files and Directories
+## Listing files and directories
 
 The `ls` command lets you view the contents of a directory
 
@@ -56,7 +56,7 @@ odc ls -o long /Documents
   odc ls --sort modified --desc /Documents
   ```
 
-## Creating Files and Directories
+## Creating files and directories
 
 Use `mkdir` to create directories and `touch` to create empty files or update
 timestamps
@@ -69,7 +69,7 @@ odc mkdir /Work
 odc touch /Work/new_draft.txt
 ```
 
-## Copying and Moving Items
+## Copying and moving items
 
 Use `cp` to copy items and `mv` to move or rename them
 
@@ -84,7 +84,7 @@ odc mv /Work/old_name.txt /Work/new_name.txt
 odc mv /Work/new_name.txt /Documents/
 ```
 
-## Deleting Items
+## Deleting items
 
 Use the `rm` command to delete files or directories
 
@@ -99,10 +99,10 @@ odc rm -r /OldProject
 > **Warning:** Be careful when using `rm -r`. This command permanently deletes
 > the directory and its contents without a confirmation prompt
 
-## Displaying File Content
+## Displaying file content
 
 Use `cat` to display the contents of a text file directly in your terminal
-This is useful for quickly checking the contents of small files
+This is useful for  checking the contents of small files
 
 ```bash
 odc cat /Documents/notes.txt

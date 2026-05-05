@@ -8,7 +8,7 @@ Status: Accepted
 
 ## Context
 
-The `odc` project aims to be a flexible CLI tool capable of interacting with various storage backends beyond OneDrive, such as local filesystems, Google Drive, or S3. To maintain a lean core binary and enable third-party developers to contribute new storage providers without modifying the main codebase or requiring a full recompile, a robust plugin architecture is necessary
+The `odc` project aims to be a flexible CLI tool capable of interacting with some storage backends beyond OneDrive, such as local filesystems, Google Drive, or S3. To maintain a lean core binary and enable third-party developers to contribute new storage providers without modifying the main codebase or requiring a full recompile, a robust plugin architecture is necessary
 
 ## Decision
 
@@ -22,7 +22,7 @@ Users have decided to implement an external plugin architecture using HashiCorp'
 
 ### Benefits
 - **Decoupling:** Storage implementations are isolated from the core logic
-- **Extensibility:** New providers can be added easily by dropping a binary into the plugin folder
+- **Extensibility:** New providers can be added  by dropping a binary into the plugin folder
 - **Language Agnostic:** While primarily targeting Go, the use of gRPC allows plugins to be written in any language supported by gRPC
 - **Resilience:** A crash in a plugin process doesn't necessarily crash the main CLI tool
 

@@ -1,4 +1,4 @@
-# Developer Setup
+# Developer setup
 
 This guide provides step-by-step instructions for setting up your local 
 development environment for the OneDrive CLI (`odc`)
@@ -12,7 +12,7 @@ Before you begin, ensure you have the following installed on your machine:
 - **Git:** For version control
 - **An IDE:** Users recommend **VS Code** with the **Go** extension
 
-## Getting the Source Code
+## Getting the source code
 
 1.  **Fork the repository** on GitHub
 2.  **Clone your fork** to your local machine:
@@ -22,7 +22,7 @@ git clone https://github.com/<your-username>/go-onedrive.git
 cd go-onedrive
 ```
 
-## Installing Dependencies
+## Installing dependencies
 
 Install the required Go dependencies using the following command:
 
@@ -30,34 +30,34 @@ Install the required Go dependencies using the following command:
 go get ./..
 ```
 
-## Building the Application
+## Building the application
 
 You can build the `odc` binary using `just` or the standard `go build` 
 command
 
 ```bash
-# Using Just
+# Using just
 just build
 
-# Using Go directly
+# Using go directly
 go build -o odc ./cmd/odc/main.go
 ```
 
 The resulting binary will be named `odc` in the root of the project
 
-## Running Tests
+## Running tests
 
 Ensure your environment is set up correctly by running the project's tests
 
 ```bash
-# Using Just
+# Using just
 just test
 
-# Using Go directly
+# Using go directly
 go test ./..
 ```
 
-## Developing with DevContainers
+## Developing with devcontainers
 
 The easiest way to get started is by using the provided **VS Code 
 DevContainer**. This environment comes pre-configured with all the 

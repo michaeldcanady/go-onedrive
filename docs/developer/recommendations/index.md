@@ -1,4 +1,4 @@
-# Recommendations for Improving the go-onedrive Codebase
+# Recommendations for improving the go-OneDrive codebase
 
 The following plans outline a series of recommendations for improving the maintainability, testability, and architectural consistency of the `go-onedrive` (odc) project. These plans are ordered based on their overall value and impact on the project's long-term health
 

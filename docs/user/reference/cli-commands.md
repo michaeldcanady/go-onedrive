@@ -1,9 +1,9 @@
-# CLI Commands Reference
+# Cli commands reference
 
 This page provides a detailed reference for all `odc` commands, their flags, and
 the path syntax used throughout the application
 
-## Path Syntax
+## Path syntax
 
 `odc` supports multiple storage providers and mount points through path
 prefixes
@@ -18,7 +18,7 @@ prefixes
 - **Mount points:** Use a mount point name as a prefix to target a specific
   drive directly (for example, `work:/Reports/january.pdf`)
 
-## Standard Filesystem Commands
+## Standard filesystem commands
 
 ### `ls` - List files and directories
 List the contents of a directory
@@ -84,7 +84,7 @@ Print the content of a file to your terminal
 
 ---
 
-## Data Transfer and Editing
+## Data transfer and editing
 
 ### `upload` - Upload local files
 Transfer a file or directory from your local machine to OneDrive. This is a
@@ -112,7 +112,7 @@ editor, and automatically upload it back when you save and exit
 
 ---
 
-## Authentication and Profile Management
+## Authentication and profile management
 
 ### `auth` - Manage authentication
 Manage your authentication session for the active profile
@@ -139,7 +139,7 @@ Profiles allow you to switch between multiple OneDrive accounts
 
 ---
 
-## Drive Discovery
+## Drive discovery
 
 ### `storage-discovery` - discover drives
 Discover available OneDrive drives and shared libraries
@@ -152,7 +152,7 @@ Discover available OneDrive drives and shared libraries
 
 ---
 
-## Mount Management
+## Mount management
 
 ### `mount` - Manage mount points
 Map OneDrive drives or local directories to paths in the virtual filesystem
@@ -168,7 +168,7 @@ Map OneDrive drives or local directories to paths in the virtual filesystem
 
 ---
 
-## Configuration and Utilities
+## Configuration and utilities
 
 ### `config` - Manage settings
 Directly manage configuration keys for the active profile

@@ -1,4 +1,4 @@
-# Getting Started with odc
+# Getting started with odc
 
 `odc` (OneDrive CLI) is a Unix-style command-line tool designed to interact with
 Microsoft OneDrive. This guide covers how to install the tool, set up your
@@ -32,7 +32,7 @@ Currently, the recommended way to install `odc` is to build it from the source
     ./odc --help
     ```
 
-## Terminal-Native Documentation (Man Pages)
+## Terminal-native documentation (man pages)
 
 `odc` can generate traditional Unix man pages for all its commands, allowing
 you to access documentation directly from your terminal without a browser
@@ -62,22 +62,22 @@ you to access documentation directly from your terminal without a browser
 > **Note:** For easier access to the binary, you can move the `odc` binary to 
 > a directory in your `PATH`, such as `/usr/local/bin` or `~/bin`
 
-## Core Concepts
+## Core concepts
 
 Understanding these two concepts will help you navigate your OneDrive files
-more effectively
+more 
 
 ### Profiles
 A **profile** represents a single OneDrive account (for example, your personal account
 or your work account). `odc` lets you manage multiple profiles and switch
-between them easily
+between them 
 
 ### Drives
 A **drive** is a storage area within a profile. While your personal OneDrive is
 the default drive, you can also access shared folders, SharePoint libraries,
 and other storage areas as separate drives
 
-## Initial Setup
+## Initial setup
 
 Before you can interact with your OneDrive, you must authenticate
 
@@ -97,7 +97,7 @@ Before you can interact with your OneDrive, you must authenticate
     your web browser. You'll be asked to sign in to your Microsoft account and
     grant `odc` permission to access your files
 
-## Your First Commands
+## Your first commands
 
 Now that you've logged in, try these commands to explore your OneDrive:
 

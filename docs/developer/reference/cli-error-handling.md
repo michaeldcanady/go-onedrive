@@ -1,4 +1,4 @@
-# Error Handling
+# Error handling
 
 This document describes the error handling patterns and practices used in `odc`
 
@@ -6,12 +6,12 @@ This document describes the error handling patterns and practices used in `odc`
 
 `odc` uses a structured approach to error handling to provide meaningful
 feedback to users and robust error recovery within the application. Errors
-are categorized into domain-level errors and are handled consistently
+are categorized into domain-level errors and handle consistently
 across the codebase
 
-## Standard Error Variables
+## Standard error variables
 
-The `internal/features/errors` package defines several standard error variables that
+The `internal/features/errors` package defines some standard error variables that
 represent common failure scenarios:
 
 - **`ErrNotFound`**: Indicates an item (file or folder) wasn't found
@@ -26,7 +26,7 @@ represent common failure scenarios:
 - **`ErrTransient`**: Indicates a temporary error that can be retried
 - **`ErrInvalidRequest`**: Indicates a malformed request
 
-## Domain Error Pattern
+## Domain error pattern
 
 The `DomainError` struct provides additional context to errors, including the
 type of error, the original error, and relevant metadata like `DriveID` and
@@ -49,13 +49,13 @@ type DomainError struct {
 - **`Is(target error)`**: Reports whether the error or its kind matches the 
   target
 
-## Error Wrapping and Checking
+## Error wrapping and checking
 
 When an error occurs, it should be wrapped with context if possible. Use
 `fmt.Errorf` with the `%w` verb for standard wrapping, or create a
 `DomainError` for domain-specific context
 
-### Checking Errors
+### Checking errors
 
 Always use `errors.Is` and `errors.As` for checking errors to ensure compatibility
 with wrapped errors
@@ -71,7 +71,7 @@ if errors.As(err, &domainErr) {
 }
 ```
 
-## Best Practices
+## Best practices
 
 - **Wrap with context**: Always provide enough context to understand where and
   why the error occurred

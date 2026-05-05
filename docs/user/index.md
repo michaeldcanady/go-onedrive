@@ -10,7 +10,7 @@ Whether you're a developer looking to integrate OneDrive into your scripts, a
 power user who prefers the terminal, or a newcomer wanting a simpler way to
 manage cloud files, `odc` offers the tools you need to be productive
 
-## Why use odc?
+## Why use odc
 
 If you spend your time in the terminal, switching to a web browser to manage
 your OneDrive files can be disruptive. `odc` bridges this gap, letting you stay
@@ -20,7 +20,7 @@ filesystem
 - **Familiar interface:** Use commands you already know, like `ls`, `mkdir`, and
   `rm`
 - **Power and flexibility:** Manage multiple accounts (profiles) and switch
-  between different drives easily
+  between different drives 
 - **Automation ready:** Integrated JSON output and environment variable support
   make it perfect for scripting and CI/CD pipelines
 - **Native editing:** Edit your cloud files directly using your favorite local
@@ -30,15 +30,15 @@ filesystem
 
 Select the starting point that best matches your goals and experience level
 
-### New to odc?
-Start here to get up and running quickly and learn the basics
+### New to odc
+Start here to get up and running  and learn the basics
 
 - **[Getting started](tutorials/getting-started.md):** Install `odc`, set up
   your first profile, and log in to your account
 - **[Basic operations](tutorials/basic-operations.md):** Learn the essential
   commands for listing, creating, and moving files
 
-### Existing user?
+### Existing user
 Deepen your understanding and explore more advanced features to streamline your
 workflow
 
@@ -49,7 +49,7 @@ workflow
 - **[File operations](how-to/file-operations.md):** Master powerful flags for
   filtering, sorting, and managing your files efficiently
 
-### Power user?
+### Power user
 Push the boundaries and integrate `odc` into your professional and creative
 workflows
 

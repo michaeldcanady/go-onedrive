@@ -2,14 +2,14 @@
 
 The OneDrive CLI (`odc`) provides a flexible and modular system for managing 
 authentication and identity. It's designed to support multiple 
-authentication methods and is built to be easily extensible for different 
+authentication methods and builds to be  extendable for different 
 identity providers
 
-## Core Concepts
+## Core concepts
 
-The authentication system is built around several key components:
+The authentication system builds around some key components:
 
-- **Identity Providers:** These represent the cloud services (like 
+- **Identity Providers:** These represent cloud services (like 
   Microsoft OneDrive) that `odc` interacts with
 - **Authenticators:** These handle the logic for a specific identity 
   provider. They're responsible for performing the authentication flow and 
@@ -22,7 +22,7 @@ The authentication system is built around several key components:
     - **Client Secret:** For service principal authentication
     - **Environment:** Retrieves credentials from environment variables
 
-## How Authentication Works
+## How authentication works
 
 1. **Initialization:** The application initializes the identity provider 
    registry, which contains the supported providers (currently 
@@ -36,7 +36,7 @@ The authentication system is built around several key components:
 5. **Persistence:** The token is cached securely for future use by the 
    active profile
 
-## The Identity Registry
+## The identity registry
 
 `odc` uses a registry pattern to manage identity providers. This allows the 
 application to resolve the correct authenticator based on the configuration 

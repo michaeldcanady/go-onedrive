@@ -1,8 +1,8 @@
-# Transfer Files
+# Transfer files
 
 Transferring files and directories between your local machine and OneDrive
 is a core function of `odc`. Whether you're backing up local data or
-retrieving work from the cloud, the `upload` and `download` commands
+retrieving work from cloud, the `upload` and `download` commands
 provide a simple and powerful way to manage your data
 
 ## Upload to OneDrive
@@ -48,14 +48,14 @@ odc download "/Documents/Meeting Notes.md"
 ```
 
 ### Download a directory recursively
-To download a remote directory and all of its contents, use the `-r`
+To download a remote directory and all its contents, use the `-r`
 (or `--recursive`) flag
 
 ```bash
 odc download -r /RemoteFolder/ ./LocalCopy/
 ```
 
-## Best Practices for Data Transfer
+## Best practices for data transfer
 
 - **Large transfers:** For  large folders or thousands of small files,
   use the `-r` flag with caution. Ensure you have a stable internet connection

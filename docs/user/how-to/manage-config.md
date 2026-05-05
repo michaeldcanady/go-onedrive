@@ -48,7 +48,7 @@ The following keys are available for the `microsoft` provider:
 | `auth.method`        | Default auth method (`interactive`, `device-code`).|
 | `auth.redirect_uri`  | The URI used for interactive browser login.     |
 
-## Configuration Schema
+## Configuration schema
 
 If you prefer to edit your configuration manually, users provide a JSON schema 
 to ensure your `config.yaml` is valid. You can use this schema in editors like 

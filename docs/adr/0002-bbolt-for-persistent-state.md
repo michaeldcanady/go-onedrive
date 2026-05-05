@@ -1,4 +1,4 @@
-# 2. Use bbolt for Local Persistent State
+# 2. Use bbolt for local persistent state
 
 Date: 2025-05-14
 
@@ -24,7 +24,7 @@ Users use **bbolt** (`go.etcd.io/bbolt`) as the primary embedded key-value store
 - **Stability:** `bbolt` (a fork of BoltDB) is widely used and well-tested in the Go ecosystem (for example, in etcd)
 
 ## Trade-offs
-- **Single Writer:** Only one process can have a write transaction open at a time. This is generally acceptable for a CLI tool which is typically run as a single instance per user
+- **Single Writer:** Only one process can have a write transaction open at a time. This is  acceptable for a CLI tool which is typically run as a single instance per user
 - **No Native Migrations:** Managing schema changes in a key-value store requires manual migration logic
 - **Limited Querying:** Unlike a relational database, complex queries must be implemented in application code by iterating over keys or using secondary indexes
 

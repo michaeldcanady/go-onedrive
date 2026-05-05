@@ -1,4 +1,4 @@
-# Domain Interfaces
+# Domain interfaces
 
 This document outlines the core domain interfaces that define the behavior and
 interactions within `odc`
@@ -10,7 +10,7 @@ services (like OneDrive, Local File System, or Mock providers) from the core
 application logic. This approach facilitates testing, extensibility, and
 maintenance
 
-## Filesystem Service
+## Filesystem service
 
 The Filesystem Service is the primary interface for all file and directory
 operations
@@ -66,7 +66,7 @@ Defines operations for higher-level filesystem management and item manipulation
 
 ---
 
-## Drive Service
+## Drive service
 
 The Drive Service manages OneDrive drive-specific operations
 
@@ -81,7 +81,7 @@ The Drive Service manages OneDrive drive-specific operations
 
 ---
 
-## Other Key Interfaces
+## Other key interfaces
 
 - **`identity.Authenticator`**: Manages user authentication and token retrieval
 - **`profile.Service`**: Handles user profiles and their associated configurations

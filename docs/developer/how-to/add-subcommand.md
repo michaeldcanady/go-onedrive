@@ -1,10 +1,10 @@
-# Adding a New Subcommand
+# Adding a new subcommand
 
 The OneDrive CLI (`odc`) follows a consistent pattern for adding new 
 commands. This guide explains how to create a new vertical slice for a 
 subcommand
 
-## Overview of a Vertical Slice
+## Overview of a vertical slice
 
 A typical subcommand slice resides in 
 `internal/<feature>/ui/cli/<command>/` and consists of three files:
@@ -16,9 +16,9 @@ A typical subcommand slice resides in
 3.  **`options.go`:** Defines the options struct for the command and its 
     validation
 
-## Step-by-Step Guide
+## Step-by-step guide
 
-### 1. Create the Directory Structure
+### 1. Create the directory structure
 
 Create a new directory for your command. For example, if you're adding 
 a `search` command to the `fs` feature:
@@ -27,7 +27,7 @@ a `search` command to the `fs` feature:
 mkdir -p internal/fs/ui/cli/search
 ```
 
-### 2. Define the Options
+### 2. Define the options
 
 In `options.go`, define the parameters your command needs
 
@@ -49,7 +49,7 @@ func (o Options) Validate() error {
 }
 ```
 
-### 3. Create the Command
+### 3. Create the command
 
 In `command_cmd.go`, implement the `Command` and its `Handle` method
 
@@ -77,7 +77,7 @@ func (c *Command) Handle(ctx context.Context, opts Options) error {
 }
 ```
 
-### 4. Define the Cobra Command
+### 4. Define the cobra command
 
 In `command.go`, use the `Create<Name>Cmd` pattern
 
@@ -107,7 +107,7 @@ func CreateSearchCmd(container di.Container) *cobra.Command {
 }
 ```
 
-### 5. Register the Command
+### 5. Register the command
 
 Finally, register your new command in the root command in 
 `internal/root/root.go`

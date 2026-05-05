@@ -1,9 +1,9 @@
-# Recommendation: Consistently Apply Domain Errors
+# Recommendation: consistently apply domain errors
 
 ## Goal
 Standardize error handling across the application by ensuring all services return domain-specific errors
 
-## Current State
+## Current state
 - `internal/features/errors` contains custom error types (`DomainError`), but their usage is inconsistent across the codebase
 - Many services return raw errors or `fmt.Errorf` without wrapping them in domain-specific kinds (for example, `ErrNotFound`, `ErrUnauthorized`)
 
@@ -11,7 +11,7 @@ Standardize error handling across the application by ensuring all services retur
 - **Medium**: Improves the predictability of error handling for callers
 - Enables more refined error reporting to the user (for example, distinguishing between a file not found and a permission error)
 
-## Implementation Plan
+## Implementation plan
 1.  **Define Error Kinds**: Audit the existing error kinds in `internal/features/errors` and add any missing ones (for example, `ErrDriveNotFound`, `ErrInvalidProfile`)
 2.  **Audit Service Returns**: Systematic check of all service methods in `internal/` to ensure errors are mapped or wrapped into `DomainError`
 3.  **Standardize Mapping**: Use common error mapping helpers for frequent external errors (for example, from the Microsoft Graph SDK)

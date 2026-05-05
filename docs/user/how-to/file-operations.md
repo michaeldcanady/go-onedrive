@@ -1,11 +1,11 @@
-# Manage Files and Folders
+# Manage files and folders
 
 `odc` provides a set of standard filesystem commands that let you manage files
 and directories in your OneDrive as if they were on your local machine. This
 guide explores how to use these commands to organize and navigate your cloud
-storage effectively
+storage 
 
-## Listing Files and Directories
+## Listing files and directories
 
 The `ls` command is the primary tool for viewing the contents of your OneDrive
 By default, it lists the root directory of your active drive
@@ -36,7 +36,7 @@ odc ls -o tree /Projects
 ```
 
 ### Sorting and filtering
-Customize the order and visibility of your files to find what you need quickly
+Customize the order and visibility of your files to find what you need 
 
 - **Sort by field:** Use `--sort` to order by `name`, `size`, or `modified`
 - **Reverse order:** Add the `--desc` flag to sort in descending order
@@ -62,7 +62,7 @@ To see all files in subdirectories, use the `--recursive` (or `-r`) flag
 odc ls -r -o tree /Projects/MyApp
 ```
 
-## Creating Items
+## Creating items
 
 ### Create a directory
 Use the `mkdir` command to create new folders
@@ -79,7 +79,7 @@ initializing log files or placeholders
 odc touch /Documents/notes.txt
 ```
 
-## Organizing Items
+## Organizing items
 
 ### Move and rename
 The `mv` command lets you rename items or move them to a different folder
@@ -99,7 +99,7 @@ Use the `cp` command to create a copy of a file in a new location
 odc cp template.docx /Projects/Proposal.docx
 ```
 
-## Removing Items
+## Removing items
 
 Use the `rm` command to delete files or directories
 

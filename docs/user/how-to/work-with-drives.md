@@ -1,11 +1,11 @@
-# Work with Drives
+# Work with drives
 
 In `odc`, a drive represents a specific storage location within your account
 This can be your personal OneDrive, a shared library, or a SharePoint site
 `odc` makes it easy to discover available drives and mount them to your
 virtual filesystem for easy access
 
-## Discover Available Drives
+## Discover available drives
 
 To see all the drives that your account has access to, use the
 `storage-discovery list` command. This is often the first step when you're
@@ -21,7 +21,7 @@ marked with an asterisk (*)
 > **Note:** `drive` is an alias for `storage-discovery`, so you can also use
 > `odc drive list`
 
-## Get Personal Drive Details
+## Get personal drive details
 
 To view information about your primary personal OneDrive drive, use the
 `storage-discovery get` command
@@ -32,7 +32,7 @@ odc storage-discovery get
 
 This returns the name and ID of your personal drive
 
-## Manage Mount Points
+## Manage mount points
 
 Mount points allow you to map a specific OneDrive drive or local directory to
 a path in your virtual filesystem. This provides a consistent way to access
@@ -58,7 +58,7 @@ odc mount add /work --type onedrive --drive-id [DRIVE_ID]
 
 Now you can access this drive using the `/work` path or the `work:` prefix
 
-### Using Mount Points in Paths
+### Using mount points in paths
 Once you've added a mount point, you can use it as a prefix or an absolute
 path in any command
 

@@ -1,11 +1,11 @@
-# Design document: CI/CD pipeline and automation evolution
+# Design document: ci/cd pipeline and automation evolution
 
 ## 1. Introduction
 This document outlines the strategy for enhancing the CI/CD pipelines and automation scripts for the `go-onedrive` (odc) project. The goal is to improve security, ensure performance stability, and support the upcoming transition to a plugin-based architecture with OpenTelemetry integration
 
 ## 2. Current state assessment
 
-### 2.1 Existing Infrastructure
+### 2.1 Existing infrastructure
 - **CI/CD**: GitHub Actions for testing, linting, and releases
 - **Release Management**: Release Please and GoReleaser
 - **Automation**: `justfile` for basic build and documentation tasks
@@ -18,7 +18,7 @@ This document outlines the strategy for enhancing the CI/CD pipelines and automa
 - **Plugin Support**: Pipeline isn't yet configured to handle multi-binary plugin builds
 - **Telemetry**: No validation of OpenTelemetry instrumentation
 
-## 3. Proposed Improvements
+## 3. Proposed improvements
 
 ### 3.1 Security guardrails
 Users will implement a "Security-First" approach by adding the following to the CI pipeline:
@@ -32,17 +32,17 @@ Users will implement a "Security-First" approach by adding the following to the 
 - **Regression Detection**: Use `github-action-benchmark` to store results and provide visual feedback on performance changes over time
 - **Performance Thresholds**: Define critical paths (for example, VFS resolution) and fail builds if performance degrades beyond a set percentage
 
-### 3.3 Enhanced E2E and multi-platform validation
+### 3.3 Enhanced e2e and multi-platform validation
 - **Scenario Testing**: Develop a suite of E2E tests using a mock server (or a test OneDrive account with secrets) that mimics real-world usage
 - **Smoke Tests for Packages**: Add a job to validate that the `.deb`, `.rpm`, and `.apk` packages produced by GoReleaser can be installed and run basic commands in a containerized environment
 - **Windows Release Restoration**: Re-enable and validate Windows builds in `.goreleaser.yaml`
 
 ### 3.4 Support for plugin-based architecture
 As the project moves to a plugin-based model (for example, `storage-plugin-onedrive`):
-- **Matrix Builds for Plugins**: Update the build job to iterate over all directories in `cmd/` to ensure all plugins are built and tested
+- **Matrix Builds for Plugins**: Update the build job to iterate over all directories in `cmd/` to ensure all plugins build and tested
 - **Plugin Compatibility Tests**: Create a test suite that verifies the core CLI can load and communicate with plugins using the defined RPC/proto interface
 
-### 3.5 OpenTelemetry integration validation
+### 3.5 Opentelemetry integration validation
 - **Span Verification**: Implement a "telemetry smoke test" that runs a CLI command and verifies that the expected OTel spans are produced (using a local collector or OTLP-compatible mock)
 - **Metric Tracking**: Ensure that basic metrics (command execution time, error rates) are consistently reported
 
@@ -53,23 +53,23 @@ Update the `justfile` to include commands that mirror CI steps, allowing develop
 - `just bench`: Runs benchmarks locally
 - `just test-all`: Runs unit, integration, and E2E tests
 
-### 3.7 Documentation Integrity
+### 3.7 Documentation integrity
 - **Man Page Validation**: Add a CI step to ensure that `just generate-man` succeeds and doesn't produce empty files
 - **MkDocs Build Check**: Integrate `just generate-docs` into the PR workflow to prevent documentation build regressions
 
 ## 4. Implementation roadmap
 
-### Phase 1: Security and automation hardening (immediate)
+### Phase 1: security and automation hardening (immediate)
 - Update `justfile` with `lint`, `secure`, and `test-all`
 - Add `govulncheck` and `gitleaks` to `go.yaml`
 - Enable SBOM generation in `.goreleaser.yaml`
 
-### Phase 2: Performance and package validation (short-term)
+### Phase 2: performance and package validation (short-term)
 - Implement `github-action-benchmark` in CI
 - Add containerized smoke tests for Linux packages
 - Restore Windows builds in GoReleaser
 
-### Phase 3: Plugin and telemetry support (mid-term)
+### Phase 3: plugin and telemetry support (mid-term)
 - Refactor CI to support multi-plugin builds
 - Add E2E scenario tests for plugin interactions
 - Integrate OTel span validation in CI

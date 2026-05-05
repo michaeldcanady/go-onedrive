@@ -1,11 +1,11 @@
-# Architecture Overview
+# Architecture overview
 
-The OneDrive CLI (`odc`) is built using a **Vertical Slice Architecture** (VSA)
+The OneDrive CLI (`odc`) builds using a **Vertical Slice Architecture** (VSA)
 This design focuses on organizing code by features rather than traditional
 technical layers. This approach ensures that each command is self-contained, 
 making the codebase easier to maintain, test, and extend
 
-## Why Vertical Slice Architecture?
+## Why vertical slice architecture
 
 In traditional layered architectures, a single feature (like `upload`) might be 
 spread across multiple packages: `ui`, `application`, `domain`, and 
@@ -25,11 +25,11 @@ VSA addresses this by:
 - **Easier Testing:** Handlers are focused on a single responsibility, which 
   makes them straightforward to unit test using mocked core services
 
-## Core Principles
+## Core principles
 
 `odc` follows these fundamental architectural principles:
 
-- **Organization by Feature:** Code is grouped by what the system does (for example, 
+- **Organization by Feature:** Code groups by what the system does (for example, 
   "Login," "List Files") rather than its technical role
 - **Self-Contained Slices:** Each slice contains the entry point (Cobra 
   command), the business logic (Command), and the specific options
@@ -39,9 +39,9 @@ VSA addresses this by:
 - **Dependency Injection:** Services are wired in a central container and 
   passed to slices, ensuring decoupling and testability
 
-## Project Structure
+## Project structure
 
-The project is organized to support these principles:
+The project organizes to support these principles:
 
 - **`cmd/odc/`:** The entry point of the application
 - **`internal/`:** Contains the shared core services and the vertical slices

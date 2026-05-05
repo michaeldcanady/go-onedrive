@@ -24,12 +24,12 @@ Shared infrastructure and utilities are kept in `internal/core/` or `pkg/`
 
 ## Benefits
 - **Improved Cohesion:** All code related to a specific feature is located in one place
-- **Reduced Coupling:** Features are largely independent, making it harder for changes in one feature to break another
+- **Reduced Coupling:** Features are  independent, making it harder for changes in one feature to break another
 - **Scalability:** New features can be added by creating a new directory under `internal/features/` without cluttering existing layers
 - **Easier Navigation:** Developers can find everything they need for a feature within a single directory tree
 
 ## Trade-offs
-- **Potential Duplication:** Existing a risk of duplicating small utility logic between slices if not properly extracted to `pkg/`
+- **Potential Duplication:** Existing a risk of duplicating small utility logic between slices if not  extracted to `pkg/`
 - **Architectural Discipline:** Requires discipline to ensure features don't start depending on each other's internal implementation details rather than their public interfaces
 
 ## Links
