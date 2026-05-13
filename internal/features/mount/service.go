@@ -2,22 +2,44 @@ package mount
 
 import (
 	"context"
+	"fmt"
+
+	"github.com/michaeldcanady/go-onedrive/internal/core/logger"
 )
 
-// Service provides methods for managing virtual filesystem mount points.
-type Service interface {
-	// ListMounts retrieves all configured mount points.
-	ListMounts(ctx context.Context) ([]MountConfig, error)
-	// AddMount adds or updates a mount point in the configuration.
-	AddMount(ctx context.Context, m MountConfig) error
-	// RemoveMount removes a mount point from the configuration.
-	RemoveMount(ctx context.Context, path string) error
-	// RegisterValidator registers a validator for a given mount type.
-	RegisterValidator(mountType string, v OptionValidator)
-	// RegisterCompletionProvider registers a completion provider for a given mount type.
-	RegisterCompletionProvider(mountType string, p CompletionProvider)
-	// GetCompletionProvider retrieves a registered completion provider.
-	GetCompletionProvider(mountType string) (CompletionProvider, bool)
-	// GetMountOptions retrieves all registered mount options.
-	GetMountOptions() map[string][]MountOption
+type mountService struct {
+	repo   Repository
+	logger logger.Service
+}
+
+// NewMountService returns a new [Service] initialized with the provided repository.
+func NewMountService(repo Repository, l logger.Service) Service {
+	return &mountService{
+		repo:   repo,
+		logger: l,
+	}
+}
+
+func (s *mountService) Add(ctx context.Context, m *Mount) error {
+	if err := s.repo.Save(m); err != nil {
+		return fmt.Errorf("failed to save mount: %w", err)
+	}
+	s.logger.Info("mount added", "path", m.Path, "type", m.Type)
+	return nil
+}
+
+func (s *mountService) List(ctx context.Context) ([]*Mount, error) {
+	return s.repo.List()
+}
+
+func (s *mountService) Remove(ctx context.Context, path string) error {
+	if err := s.repo.Delete(path); err != nil {
+		return fmt.Errorf("failed to delete mount: %w", err)
+	}
+	s.logger.Info("mount removed", "path", path)
+	return nil
+}
+
+func (s *mountService) Get(ctx context.Context, path string) (*Mount, error) {
+	return s.repo.Get(path)
 }

@@ -1,55 +1,32 @@
-package formatting
+package format
 
-import "strings"
+import "io"
 
-type Format int32
+// Format represents a supported output presentation style.
+type Format string
 
 const (
-	FormatUnknown Format = iota
-	FormatJSON
-	FormatYAML
-	FormatLong
-	FormatShort
-	FormatTable
-	FormatTree
+	// FormatTable renders data as a human-readable ASCII table.
+	FormatTable Format = "table"
+	// FormatJSON renders data as a machine-readable JSON object.
+	FormatJSON Format = "json"
+	// FormatYAML renders data as a machine-readable YAML document.
+	FormatYAML Format = "yaml"
+	// FormatValue renders a single raw value, omitting any formatting or headers.
+	FormatValue Format = "value"
+	// FormatShort renders a simplified view of the data, typically just names or IDs.
+	FormatShort Format = "short"
 )
 
-// String returns the string representation of the format.
-func (dt Format) String() string {
-	switch dt {
-	case FormatJSON:
-		return "json"
-	case FormatYAML:
-		return "yaml"
-	case FormatLong:
-		return "long"
-	case FormatShort:
-		return "short"
-	case FormatTable:
-		return "table"
-	case FormatTree:
-		return "tree"
-	default:
-		return "unknown"
-	}
+// Formatter defines the interface for rendering domain data to an [io.Writer].
+type Formatter interface {
+	// Format writes the provided data to the writer in the specific presentation style.
+	Format(w io.Writer, data any) error
 }
 
-// NewFormat converts a string to its corresponding Format.
-func NewFormat(s string) Format {
-	switch strings.ToLower(s) {
-	case "json":
-		return FormatJSON
-	case "yaml":
-		return FormatYAML
-	case "long":
-		return FormatLong
-	case "short":
-		return FormatShort
-	case "table":
-		return FormatTable
-	case "tree":
-		return FormatTree
-	default:
-		return FormatUnknown
-	}
+// Factory coordinates the creation and selection of [Formatter] instances based on user request.
+type Factory interface {
+	// Get returns the formatter matching the specified [Format].
+	// If the format is unknown, a default formatter (typically [FormatShort]) is returned.
+	Get(f Format) Formatter
 }

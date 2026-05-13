@@ -6,8 +6,12 @@ export DOC_PATH := "."
 export BINARY_NAME := "odc"
 
 # Generate code
-generate:
+generate: generate-cli
     go generate ./...
+
+# Generate CLI boilerplate from specs
+generate-cli:
+    go run ./cmd/spec-gen/main.go
 
 # Run all tests
 test:
@@ -44,13 +48,29 @@ test-smoke: build
 lint:
     golangci-lint run ./...
 
+# Lint a specific package (optimized for hooks)
+lint-pkg pkg:
+    golangci-lint run {{pkg}}
+
 # Run security checks
 secure:
     govulncheck ./...
 
 # Build the odc binary
-build: generate
+build: build-cli build-plugins
+
+# Build the odc cli
+build-cli: generate
     go build -o {{BINARY_NAME}} ./cmd/odc/
+
+# Build all storage and identity plugins
+build-plugins: generate
+    mkdir -p bin/plugins
+    go build -o bin/plugins/storage-onedrive ./cmd/storage-plugin-onedrive/
+    go build -o bin/plugins/storage-local ./cmd/storage-plugin-local/
+    go build -o bin/plugins/storage-googledrive ./cmd/storage-plugin-googledrive/
+    go build -o bin/plugins/identity-azure ./cmd/identity-plugin-azure/
+    go build -o bin/plugins/identity-google ./cmd/identity-plugin-google/
 
 # Run the odc binary
 run *args: build

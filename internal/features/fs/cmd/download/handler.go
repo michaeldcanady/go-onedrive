@@ -1,94 +1,47 @@
 package download
 
 import (
-	"context"
 	"fmt"
-
-	"github.com/michaeldcanady/go-onedrive/internal/core/logger"
-	fs "github.com/michaeldcanady/go-onedrive/internal/features/fs/domain"
-	pkgfs "github.com/michaeldcanady/go-onedrive/pkg/fs"
+	"io"
+	"os"
 )
 
-// Logger defines the interface required for logging within the download command.
-type Logger interface {
-	Debug(msg string, fields ...logger.Field)
-	Error(msg string, fields ...logger.Field)
-	Info(msg string, fields ...logger.Field)
-	With(fields ...logger.Field) logger.Logger
-	WithContext(ctx context.Context) logger.Logger
-}
-
-type Manager interface {
-	Copy(ctx context.Context, src *pkgfs.URI, dst *pkgfs.URI, opts pkgfs.CopyOptions) error
-}
-
-// URIFactory defines the interface for creating URIs.
-type URIFactory interface {
-	FromString(s string) (*fs.URI, error)
-}
-
-// Command executes the drive download operation.
-type Command struct {
-	manager    Manager
-	uriFactory URIFactory
-	log        Logger
-}
-
-// NewCommand initializes a new instance of the drive download Command.
-func NewCommand(m fs.Service, f *fs.URIFactory, l Logger) *Command {
-	return &Command{
-		manager:    m,
-		uriFactory: f,
-		log:        l,
-	}
-}
-
-// Validate prepares and validates the options for the download operation.
+// Validate performs initial validation of the command options.
 func (c *Command) Validate(ctx *CommandContext) error {
-	// Resolve URIs using the factory
-	sourceURI, err := c.uriFactory.FromString(ctx.Options.Source)
-	if err != nil {
-		return fmt.Errorf("invalid source path: %w", err)
+	if ctx.Options.Source == "" {
+		return fmt.Errorf("source path is required")
 	}
-	ctx.SourceURI = sourceURI
-
-	destinationURI, err := c.uriFactory.FromString(ctx.Options.Destination)
-	if err != nil {
-		return fmt.Errorf("invalid destination path: %w", err)
+	if ctx.Options.Destination == "" {
+		return fmt.Errorf("destination path is required")
 	}
-	ctx.DestinationURI = destinationURI
-
-	return ctx.Options.Validate()
-}
-
-// Execute downloads files and directories from OneDrive to the local filesystem.
-func (c *Command) Execute(ctx *CommandContext) error {
-	log := c.log.WithContext(ctx.Ctx).With(
-		logger.String("source", ctx.SourceURI.String()),
-		logger.String("destination", ctx.DestinationURI.String()),
-		logger.Bool("recursive", ctx.Options.Recursive),
-	)
-
-	log.Info("starting download operation")
-
-	// Download is essentially a Copy from remote to local.
-	cpOpts := pkgfs.CopyOptions{
-		Recursive: ctx.Options.Recursive,
-		Overwrite: true,
-	}
-
-	log.Debug("delegating to filesystem manager for download (copy)")
-	if err := c.manager.Copy(ctx.Ctx, ctx.SourceURI, ctx.DestinationURI, cpOpts); err != nil {
-		log.Error("download failed", logger.Error(err))
-		return fmt.Errorf("failed to download %s to %s: %w", ctx.SourceURI, ctx.DestinationURI, err)
-	}
-
-	log.Info("download completed successfully")
 	return nil
 }
 
-// Finalize performs any necessary cleanup after the download operation.
+// Resolve performs argument resolution.
+func (c *Command) Resolve(ctx *CommandContext) error {
+	return c.BaseResolve(ctx)
+}
+
+// Execute performs the core business logic of the command.
+func (c *Command) Execute(ctx *CommandContext) error {
+	reader, err := c.fS.Read(ctx.Ctx, ctx.Options.Source)
+	if err != nil {
+		return err
+	}
+	defer reader.Close()
+
+	f, err := os.Create(ctx.Options.Destination)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	_, err = io.Copy(f, reader)
+	return err
+}
+
+// Finalize performs any cleanup or final output formatting.
 func (c *Command) Finalize(ctx *CommandContext) error {
-	fmt.Fprintf(ctx.Options.Stdout, "Downloaded %s to %s\n", ctx.SourceURI, ctx.DestinationURI)
+	fmt.Printf("Downloaded %s to %s\n", ctx.Options.Source, ctx.Options.Destination)
 	return nil
 }

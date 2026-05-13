@@ -74,10 +74,42 @@ Before the first release, ensure the following are configured:
     - Create a Personal Access Token (PAT) with `repo` scope.
     - Add `WINGET_GITHUB_TOKEN` to GitHub Secrets.
 
+## Design Principles & Coding Standards
+
+To ensure the project remains maintainable, performant, and easy to understand, all contributions must adhere to the following principles:
+
+- **Concurrency & Cancellation:**
+    - All services and long-running operations MUST accept and respect `context.Context` for cancellation and timeouts.
+    - All CLI commands and domain services MUST be thread-safe. Avoid global state; use synchronization primitives (e.g., `sync.Mutex`, `atomic`) when shared state is unavoidable.
+- **Dependency Management:**
+    - **Avoid Hard-Dependencies:** Depend on interfaces rather than concrete implementations (e.g., use an internal `logger.Service` interface instead of directly passing `*zap.Logger` around).
+    - **Interfaces In, Real Types Out:** Functions should generally accept interfaces to allow for mocking/testing and return concrete types (structs or pointers to structs) for clarity and performance.
+    - **Interface Scoping & Locality:**
+        - **Small & Local:** Prefer smaller, more local interfaces. "The bigger the interface, the weaker the abstraction."
+        - **Consumer-Defined:** Ideally, packages should depend on interfaces they define locally that external packages happen to match, rather than depending on large, globally defined interfaces.
+        - **Hierarchy:** Use local small -> local large -> global small -> global large as the hierarchy of preference.
+- **Code Structure & Readability:**
+    - **Human Comprehension First:** Focus on readability and clear intent. Code is read more often than it is written.
+    - **Logical Grouping:** Break types into their own files. Group functions logically within files to keep them focused and appropriately sized.
+    - **Modern Patterns:** Adhere to modern Go design patterns (e.g., functional options for configuration, table-driven tests).
+- **Domain Integrity:**
+    - Maintain the **Domain-First Access Pattern** (see ADR 0004). The UI layer (commands) must never bypass domain services to access persistence or external APIs.
+- **Error Handling and Panic Recovery:**
+    - **Explicit Error Handling:** Errors must NEVER be ignored. Every function call that returns an error must have that error checked and handled appropriately.
+    - **Idiomatic Error Context:** Follow standard Go philosophies for error handling: wrap errors with context using `%w`, return errors early (guard clauses), and only handle an error once.
+    - **Panic Usage:** Panics should be used sparingly and ONLY for truly exceptional, unrecoverable states (e.g., programmer errors).
+    - **Graceful Recovery:** All panics MUST be recovered at appropriate boundaries (e.g., command entry points, plugin boundaries, or within long-running goroutines). The application and its plugins must never crash due to an unhandled panic. They should perform a graceful exit, logging the incident and ensuring state integrity.
+
 ## Development Conventions
 
+- **Spec-Driven Development:** CLI commands are defined in Markdown files under `@specs/commands/` using YAML frontmatter.
+    - **Workflow:** 
+        1. Define or update the command specification in `@specs/commands/*.md`.
+        2. Run `just generate` to produce the `command.go` and `options.go` boilerplate.
+        3. Implement the business logic in `handler.go`.
+    - **Automation:** The `spec-gen` tool (`cmd/spec-gen/`) manages the wiring between Cobra and the domain services, ensuring consistency across all feature slices.
 - **Go Version:** Go 1.25+ (as specified in `go.mod`).
-- **Error Handling:** Prefer wrapping errors with `%w` and using package-level error variables.
+- **Error Handling:** Adhere to the mandates in [Design Principles & Coding Standards](#design-principles--coding-standards) regarding explicit error handling and panic recovery.
 - **Logging:** Utilize the structured logging abstraction provided by `internal/features/logger`.
 - **Formatting:** Adhere to Go standards; run `go fmt ./...` before committing.
 - **Linting:** Run `golangci-lint run` to ensure code quality.
@@ -96,4 +128,3 @@ Before the first release, ensure the following are configured:
 
 - **Default Output:** Logs are directed to a file (`./logs/app.log`) by default.
 - **Directory:** The `./logs` directory must exist for logging to function correctly. Ensure it is created before running the application.
-

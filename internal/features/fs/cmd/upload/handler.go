@@ -2,76 +2,38 @@ package upload
 
 import (
 	"fmt"
-
-	"github.com/michaeldcanady/go-onedrive/internal/core/logger"
-	fs "github.com/michaeldcanady/go-onedrive/internal/features/fs/domain"
-	pkgfs "github.com/michaeldcanady/go-onedrive/pkg/fs"
+	"os"
 )
 
-// Command executes the drive upload operation.
-type Command struct {
-	manager    fs.Service
-	uriFactory *fs.URIFactory
-	log        logger.Logger
-}
-
-// NewCommand initializes a new instance of the drive upload Command.
-func NewCommand(m fs.Service, f *fs.URIFactory, l logger.Logger) *Command {
-	return &Command{
-		manager:    m,
-		uriFactory: f,
-		log:        l,
-	}
-}
-
-// Validate prepares and validates the options for the upload operation.
+// Validate performs initial validation of the command options.
 func (c *Command) Validate(ctx *CommandContext) error {
-	log := c.log.WithContext(ctx.Ctx)
-
-	// Resolve URIs using the factory
-	sourceURI, err := c.uriFactory.FromString(ctx.Options.Source)
-	if err != nil {
-		log.Error("invalid source uri", logger.String("uri", ctx.Options.Source), logger.Error(err))
-		return fmt.Errorf("invalid source path: %w", err)
+	if ctx.Options.Source == "" {
+		return fmt.Errorf("source path is required")
 	}
-	ctx.Options.SourceURI = sourceURI
-
-	destinationURI, err := c.uriFactory.FromString(ctx.Options.Destination)
-	if err != nil {
-		log.Error("invalid destination uri", logger.String("uri", ctx.Options.Destination), logger.Error(err))
-		return fmt.Errorf("invalid destination path: %w", err)
+	if ctx.Options.Destination == "" {
+		return fmt.Errorf("destination path is required")
 	}
-	ctx.Options.DestinationURI = destinationURI
-
 	return nil
 }
 
-// Execute uploads files and directories from the local filesystem to OneDrive.
+// Resolve performs argument resolution.
+func (c *Command) Resolve(ctx *CommandContext) error {
+	return c.BaseResolve(ctx)
+}
+
+// Execute performs the core business logic of the command.
 func (c *Command) Execute(ctx *CommandContext) error {
-	log := c.log.WithContext(ctx.Ctx)
-
-	log.Info("starting upload operation", logger.String("source", ctx.Options.SourceURI.String()),
-		logger.String("destination", ctx.Options.DestinationURI.String()),
-		logger.Bool("recursive", ctx.Options.Recursive))
-
-	// Upload is essentially a Copy from local to remote.
-	cpOpts := pkgfs.CopyOptions{
-		Recursive: ctx.Options.Recursive,
-		Overwrite: true,
+	f, err := os.Open(ctx.Options.Source)
+	if err != nil {
+		return err
 	}
+	defer f.Close()
 
-	log.Debug("delegating to filesystem manager for upload (copy)")
-	if err := c.manager.Copy(ctx.Ctx, ctx.Options.SourceURI, ctx.Options.DestinationURI, cpOpts); err != nil {
-		log.Error("upload failed", logger.Error(err))
-		return fmt.Errorf("failed to upload %s to %s: %w", ctx.Options.SourceURI, ctx.Options.DestinationURI, err)
-	}
-
-	log.Info("upload completed successfully")
-	return nil
+	return c.fS.Write(ctx.Ctx, ctx.Options.Destination, f)
 }
 
-// Finalize performs any necessary cleanup after the upload operation.
+// Finalize performs any cleanup or final output formatting.
 func (c *Command) Finalize(ctx *CommandContext) error {
-	_, _ = fmt.Fprintf(ctx.Options.Stdout, "Uploaded %s to %s\n", ctx.Options.SourceURI, ctx.Options.DestinationURI)
+	fmt.Printf("Uploaded %s to %s\n", ctx.Options.Source, ctx.Options.Destination)
 	return nil
 }

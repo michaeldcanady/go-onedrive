@@ -1,121 +1,121 @@
 package identity
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 
-	"github.com/michaeldcanady/go-onedrive/internal/core/errors"
-	bolt "go.etcd.io/bbolt"
+	"go.etcd.io/bbolt"
 )
 
-// BoltRepository implements IdentityRepository using BoltDB.
-// BoltRepository implements IdentityRepository using BoltDB.
-type BoltRepository struct {
-	db *bolt.DB
-}
-
-// NewBoltRepository creates a new instance of BoltRepository.
-const (
-	tokensBucketName = "tokens"
+var (
+	identitiesBucket = []byte("identities")
+	tokensBucket     = []byte("tokens")
 )
 
-// NewBoltRepository creates a new instance of BoltRepository.
-func NewBoltRepository(db *bolt.DB) *BoltRepository {
-	return &BoltRepository{db: db}
+type boltRepository struct {
+	db *bbolt.DB
 }
 
-// Initialize ensures the DB schema (tokens bucket) exists.
-func (r *BoltRepository) Initialize() error {
-	return r.db.Update(func(tx *bolt.Tx) error {
-		_, err := tx.CreateBucketIfNotExists([]byte(tokensBucketName))
+// NewBoltRepository creates a new bbolt-based identity repository.
+func NewBoltRepository(db *bbolt.DB) (Repository, error) {
+	err := db.Update(func(tx *bbolt.Tx) error {
+		_, err := tx.CreateBucketIfNotExists(identitiesBucket)
+		if err != nil {
+			return err
+		}
+		_, err = tx.CreateBucketIfNotExists(tokensBucket)
 		return err
 	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to initialize identity buckets: %w", err)
+	}
+
+	return &boltRepository{db: db}, nil
 }
 
-// getProviderBucket returns the bucket for a specific provider.
-func (r *BoltRepository) getProviderBucket(tx *bolt.Tx, provider string) (*bolt.Bucket, error) {
-	root := tx.Bucket([]byte(tokensBucketName))
-	if root == nil {
-		if tx.Writable() {
-			var err error
-			root, err = tx.CreateBucketIfNotExists([]byte(tokensBucketName))
-			if err != nil {
-				return nil, err
-			}
-		} else {
-			return nil, fmt.Errorf("tokens bucket missing")
-		}
-	}
-	if tx.Writable() {
-		return root.CreateBucketIfNotExists([]byte(provider))
-	}
-	return root.Bucket([]byte(provider)), nil
-}
-
-func (r *BoltRepository) Get(ctx context.Context, provider, identityID string) (AccessToken, error) {
-	var token AccessToken
-	err := r.db.View(func(tx *bolt.Tx) error {
-		b, err := r.getProviderBucket(tx, provider)
+func (r *boltRepository) SaveIdentity(i *Identity) error {
+	return r.db.Update(func(tx *bbolt.Tx) error {
+		b := tx.Bucket(identitiesBucket)
+		data, err := json.Marshal(i)
 		if err != nil {
 			return err
 		}
-		if b == nil {
-			return fmt.Errorf("%w: provider bucket %s missing", errors.ErrNotFound, provider)
-		}
-		data := b.Get([]byte(identityID))
-		if data == nil {
-			return fmt.Errorf("%w for identity %s in provider %s", errors.ErrNotFound, identityID, provider)
-		}
-		return json.Unmarshal(data, &token)
-	})
-	return token, err
-}
-
-func (r *BoltRepository) Save(ctx context.Context, provider string, token AccessToken) error {
-	return r.db.Update(func(tx *bolt.Tx) error {
-		b, err := r.getProviderBucket(tx, provider)
-		if err != nil {
-			return err
-		}
-		// nolint:gosec // G117 // allowed
-		data, err := json.Marshal(token)
-		if err != nil {
-			return fmt.Errorf("failed to marshal token: %w", err)
-		}
-		return b.Put([]byte(token.AccountID), data)
+		return b.Put([]byte(i.ID), data)
 	})
 }
 
-func (r *BoltRepository) Delete(ctx context.Context, provider, AccountID string) error {
-	return r.db.Update(func(tx *bolt.Tx) error {
-		b, err := r.getProviderBucket(tx, provider)
-		if err != nil {
-			return err
-		}
-		if b == nil {
+func (r *boltRepository) GetIdentity(id string) (*Identity, error) {
+	var i Identity
+	err := r.db.View(func(tx *bbolt.Tx) error {
+		b := tx.Bucket(identitiesBucket)
+		v := b.Get([]byte(id))
+		if v == nil {
 			return nil
 		}
-		return b.Delete([]byte(AccountID))
+		return json.Unmarshal(v, &i)
 	})
+	if i.ID == "" {
+		return nil, nil
+	}
+	return &i, err
 }
 
-func (r *BoltRepository) List(ctx context.Context, provider string) ([]string, error) {
-	var ids []string
-	err := r.db.View(func(tx *bolt.Tx) error {
-		b, err := r.getProviderBucket(tx, provider)
-		if err != nil {
-			return err
-		}
-		if b == nil {
-			return nil
-		}
+func (r *boltRepository) ListIdentities() ([]*Identity, error) {
+	var identities []*Identity
+	err := r.db.View(func(tx *bbolt.Tx) error {
+		b := tx.Bucket(identitiesBucket)
 		return b.ForEach(func(k, v []byte) error {
-			if v != nil {
-				ids = append(ids, string(k))
+			var i Identity
+			if err := json.Unmarshal(v, &i); err != nil {
+				return err
 			}
+			identities = append(identities, &i)
 			return nil
 		})
 	})
-	return ids, err
+	return identities, err
+}
+
+func (r *boltRepository) DeleteIdentity(id string) error {
+	return r.db.Update(func(tx *bbolt.Tx) error {
+		b := tx.Bucket(identitiesBucket)
+		return b.Delete([]byte(id))
+	})
+}
+
+func (r *boltRepository) SaveToken(provider string, identityID string, t *Token) error {
+	key := fmt.Sprintf("%s:%s", provider, identityID)
+	return r.db.Update(func(tx *bbolt.Tx) error {
+		b := tx.Bucket(tokensBucket)
+		data, err := json.Marshal(t)
+		if err != nil {
+			return err
+		}
+		return b.Put([]byte(key), data)
+	})
+}
+
+func (r *boltRepository) GetToken(provider string, identityID string) (*Token, error) {
+	key := fmt.Sprintf("%s:%s", provider, identityID)
+	var t Token
+	err := r.db.View(func(tx *bbolt.Tx) error {
+		b := tx.Bucket(tokensBucket)
+		v := b.Get([]byte(key))
+		if v == nil {
+			return nil
+		}
+		return json.Unmarshal(v, &t)
+	})
+	if t.AccessToken == "" {
+		return nil, nil
+	}
+	return &t, err
+}
+
+func (r *boltRepository) DeleteToken(provider string, identityID string) error {
+	key := fmt.Sprintf("%s:%s", provider, identityID)
+	return r.db.Update(func(tx *bbolt.Tx) error {
+		b := tx.Bucket(tokensBucket)
+		return b.Delete([]byte(key))
+	})
 }

@@ -1,0 +1,130 @@
+syntax = "proto3";
+
+package storage;
+
+option go_package = "github.com/michaeldcanady/go-onedrive/internal/features/plugins/proto/storage";
+
+service StorageService {
+  rpc List(ListRequest) returns (ListResponse);
+  rpc Stat(StatRequest) returns (StatResponse);
+  rpc Mkdir(MkdirRequest) returns (MkdirResponse);
+  rpc Read(ReadRequest) returns (stream ReadResponse);
+  rpc Write(stream WriteRequest) returns (WriteResponse);
+  rpc Delete(DeleteRequest) returns (DeleteResponse);
+  rpc Move(MoveRequest) returns (MoveResponse);
+  rpc ListDrives(ListDrivesRequest) returns (ListDrivesResponse);
+  rpc GetDrive(GetDriveRequest) returns (GetDriveResponse);
+  rpc GetMetadata(MetadataRequest) returns (MetadataResponse);
+}
+
+message MetadataRequest {}
+
+message MetadataResponse {
+  string name = 1;
+  string type = 2;
+  repeated string supported_providers = 3;
+}
+
+message ListDrivesRequest {
+  map<string, string> options = 1;
+}
+
+message ListDrivesResponse {
+  repeated Drive drives = 1;
+}
+
+message GetDriveRequest {
+  string drive_id = 1;
+  map<string, string> options = 2;
+}
+
+message GetDriveResponse {
+  Drive drive = 1;
+}
+
+message Drive {
+  string id = 1;
+  string name = 2;
+  string type = 3;
+}
+
+message StatRequest {
+  string path = 1;
+  map<string, string> options = 2;
+}
+
+message StatResponse {
+  Node node = 1;
+}
+
+message MkdirRequest {
+  string path = 1;
+  map<string, string> options = 2;
+}
+
+message MkdirResponse {
+  Node node = 1;
+}
+
+message ListRequest {
+  string path = 1;
+  map<string, string> options = 2;
+}
+
+message ListResponse {
+  repeated Node nodes = 1;
+}
+
+message ReadRequest {
+  string path = 1;
+  map<string, string> options = 2;
+}
+
+message ReadResponse {
+  bytes chunk = 1;
+}
+
+message WriteRequest {
+  string path = 1;
+  bytes chunk = 2;
+  map<string, string> options = 3;
+}
+
+message WriteResponse {
+  Node node = 1;
+}
+
+message DeleteRequest {
+  string path = 1;
+  map<string, string> options = 2;
+}
+
+message DeleteResponse {
+  bool success = 1;
+}
+
+message MoveRequest {
+  string source = 1;
+  string destination = 2;
+  map<string, string> options = 3;
+}
+
+message MoveResponse {
+  Node node = 1;
+}
+
+message Node {
+  string id = 1;
+  string name = 2;
+  string path = 3;
+  NodeType type = 4;
+  int64 size = 5;
+  int64 modified_at = 6;
+  string etag = 7;
+  string ctag = 8;
+}
+
+enum NodeType {
+  FILE = 0;
+  DIRECTORY = 1;
+}

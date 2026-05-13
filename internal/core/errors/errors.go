@@ -1,3 +1,4 @@
+// Package errors provides common error variables and utilities for error handling throughout the application.
 package errors
 
 import (
@@ -5,55 +6,36 @@ import (
 	"fmt"
 )
 
+// Common error variables used for consistent error reporting across domain boundaries.
 var (
-	// ErrNotFound indicates the item (file or folder) was not found.
-	ErrNotFound = errors.New("not found")
-	// ErrNotFolder indicates the specified item is not a folder.
-	ErrNotFolder = errors.New("not a folder")
-	// ErrUnauthorized indicates the user is not authenticated.
-	ErrUnauthorized = errors.New("unauthorized")
-	// ErrForbidden indicates the user is authenticated but does not have
-	// permission for the operation.
-	ErrForbidden = errors.New("forbidden")
-	// ErrConflict indicates the operation failed because of a resource conflict,
-	// such as a file with the same name.
-	ErrConflict = errors.New("conflict")
-	// ErrInternal indicates an unexpected internal error.
-	ErrInternal = errors.New("internal error")
-	// ErrPrecondition indicates a precondition (like ETag) check failed.
-	ErrPrecondition = errors.New("precondition error")
-	// ErrTransient indicates a temporary error that can be retried.
-	ErrTransient = errors.New("transient")
-	// ErrInvalidRequest indicates the request was malformed.
-	ErrInvalidRequest = errors.New("invalid request")
+	ErrNotFound         = errors.New("not found")
+	ErrAlreadyExists    = errors.New("already exists")
+	ErrUnauthorized     = errors.New("unauthorized")
+	ErrPermissionDenied = errors.New("permission denied")
+	ErrInternal         = errors.New("internal error")
+	ErrInvalidInput     = errors.New("invalid input")
+	ErrInvalidPath      = errors.New("invalid path")
+	ErrNotEmpty         = errors.New("not empty")
+	ErrUnavailable      = errors.New("unavailable")
 )
 
-// DomainError represents a domain-level error with additional context.
-type DomainError struct {
-	Kind    error
-	Err     error
-	DriveID string
-	Path    string
-}
-
-// Error returns the error message string.
-func (e *DomainError) Error() string {
-	msg := e.Kind.Error()
-	if e.Err != nil {
-		msg = fmt.Sprintf("%v: %v", e.Kind, e.Err)
+// Wrap returns an error with the provided message prepended to the original error's message.
+// It returns nil if the provided error is nil.
+func Wrap(err error, message string) error {
+	if err == nil {
+		return nil
 	}
-	if e.DriveID != "" || e.Path != "" {
-		msg = fmt.Sprintf("%s (DriveID: %s, Path: %s)", msg, e.DriveID, e.Path)
-	}
-	return msg
+	return fmt.Errorf("%s: %w", message, err)
 }
 
-// Unwrap returns the underlying error.
-func (e *DomainError) Unwrap() error {
-	return e.Err
+// Is reports whether any error in the chain matches the target.
+// It is a wrapper around the standard library's [errors.Is].
+func Is(err, target error) bool {
+	return errors.Is(err, target)
 }
 
-// Is reports whether the error matches the target.
-func (e *DomainError) Is(target error) bool {
-	return e.Kind == target || errors.Is(e.Err, target)
+// As finds the first error in the chain that matches the target and sets target to that error value.
+// It is a wrapper around the standard library's [errors.As].
+func As(err error, target any) bool {
+	return errors.As(err, target)
 }

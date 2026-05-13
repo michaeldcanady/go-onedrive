@@ -1,0 +1,20 @@
+{
+  "$schema": "https://raw.githubusercontent.com/google-gemini/gemini-cli/main/schemas/settings.schema.json",
+  "hooksConfig": {
+    "enabled": true
+  },
+  "hooks": {
+    "AfterTool": [
+      {
+        "matcher": "write_file|replace",
+        "hooks": [
+          {
+            "name": "go-linter",
+            "type": "command",
+            "command": "./.gemini/hooks/lint.sh"
+          }
+        ]
+      }
+    ]
+  }
+}
