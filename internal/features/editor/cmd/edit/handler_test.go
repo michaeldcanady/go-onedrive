@@ -164,7 +164,7 @@ func TestExecute(t *testing.T) {
 
 			mvfs.On("Write", ctx, path, mock.Anything, expectedOpts).Return(tt.writeError)
 
-			cmd := NewCommand(mvfs, nil, meditor, mlog, mlog)
+			cmd := NewCommand(mvfs, nil, meditor, mlog, mlog, nil)
 			opts := Options{
 				Path:  path,
 				Force: tt.force,

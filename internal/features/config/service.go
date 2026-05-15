@@ -44,16 +44,15 @@ func (s *configService) Get(key string) (any, error) {
 		return nil, err
 	}
 
-	val, _, err := s.traverse(config, key, false)
-	if err != nil || val == nil {
-		// Fallback to defaults
-		val, _, err = s.traverse(s.defaults, key, false)
-		if err != nil || val == nil {
-			return nil, fmt.Errorf("key not found: %s", key)
-		}
+	if val := s.getValue(config, key); val != nil {
+		return val, nil
 	}
 
-	return val, nil
+	if val := s.getValue(s.defaults, key); val != nil {
+		return val, nil
+	}
+
+	return nil, fmt.Errorf("key not found: %s", key)
 }
 
 func (s *configService) Set(key string, value string) error {
@@ -62,18 +61,9 @@ func (s *configService) Set(key string, value string) error {
 		return err
 	}
 
-	_, _, err = s.traverse(config, key, true)
-	if err != nil {
+	if err := s.setValue(config, key, value); err != nil {
 		return err
 	}
-
-	// Traversal only gets us to the map containing the key, we still need to set it
-	// Actually, let's refine traverse to return the leaf map and the last part of the key
-	m, lastPart, err := s.traverse(config, key, true)
-	if err != nil {
-		return err
-	}
-	m[lastPart] = value
 
 	return s.repo.Save(config)
 }
@@ -110,10 +100,11 @@ func (s *configService) getValue(config map[string]any, key string) any {
 	return m[lastPart]
 }
 
-func (s *configService) setValue(config map[string]any, key string, value any) {
+func (s *configService) setValue(config map[string]any, key string, value any) error {
 	m, lastPart, err := s.traverse(config, key, true)
 	if err != nil {
-		return
+		return err
 	}
 	m[lastPart] = value
+	return nil
 }
