@@ -4,10 +4,10 @@ package edit
 import (
 	"context"
 	"fmt"
-	"github.com/michaeldcanady/go-onedrive/internal/features/editor"
-	"github.com/michaeldcanady/go-onedrive/internal/core/logger"
 	"github.com/michaeldcanady/go-onedrive/internal/features/vfs"
 	"github.com/michaeldcanady/go-onedrive/internal/features/profile"
+	"github.com/michaeldcanady/go-onedrive/internal/features/editor"
+	"github.com/michaeldcanady/go-onedrive/internal/core/logger"
 	"github.com/michaeldcanady/go-onedrive/internal/core/resolver"
 )
 

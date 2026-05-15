@@ -63,8 +63,9 @@ import (
 var (
 	pluginsDir string
 	rootCmd    = &cobra.Command{
-		Use:   "odc",
-		Short: "OneDrive CLI",
+		Use:     "odc",
+		Short:   "OneDrive CLI",
+		Version: "0.1.0-dev",
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
 			requestID := uuid.New().String()
 			ctx := logger.WithRequestID(cmd.Context(), requestID)

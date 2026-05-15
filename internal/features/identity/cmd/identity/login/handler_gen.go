@@ -3,10 +3,10 @@ package login
 
 import (
 	"context"
-	"github.com/michaeldcanady/go-onedrive/internal/features/config"
 	"github.com/michaeldcanady/go-onedrive/internal/features/identity"
 	"github.com/michaeldcanady/go-onedrive/internal/features/profile"
 	"github.com/michaeldcanady/go-onedrive/internal/core/logger"
+	"github.com/michaeldcanady/go-onedrive/internal/features/config"
 	"github.com/michaeldcanady/go-onedrive/internal/core/resolver"
 )
 

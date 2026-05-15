@@ -3,9 +3,9 @@ package get
 
 import (
 	"context"
+	"github.com/michaeldcanady/go-onedrive/internal/features/config"
 	"github.com/michaeldcanady/go-onedrive/pkg/format"
 	"github.com/michaeldcanady/go-onedrive/internal/core/logger"
-	"github.com/michaeldcanady/go-onedrive/internal/features/config"
 	"github.com/michaeldcanady/go-onedrive/internal/core/resolver"
 )
 
