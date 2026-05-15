@@ -7,9 +7,9 @@ import (
 
 // Options encapsulates all user-provided arguments and flags for the command.
 type Options struct {
-	Path string // The path to the file to be edited.
+	Path   string // The path to the file to be edited.
 	Editor string // Editor to use (overrides config and environment)
-	Force bool // Force upload even if the remote file has changed
+	Force  bool   // Force upload even if the remote file has changed
 
 	// Stdout receives standard output messages.
 	Stdout io.Writer

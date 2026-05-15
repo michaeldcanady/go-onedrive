@@ -7,9 +7,9 @@ import (
 
 // Options encapsulates all user-provided arguments and flags for the command.
 type Options struct {
-	Source string // The path to the item to copy.
+	Source      string // The path to the item to copy.
 	Destination string // The path where the item should be copied.
-	Recursive bool // Copy directories recursively
+	Recursive   bool   // Copy directories recursively
 
 	// Stdout receives standard output messages.
 	Stdout io.Writer

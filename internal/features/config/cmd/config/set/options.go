@@ -7,7 +7,7 @@ import (
 
 // Options encapsulates all user-provided arguments and flags for the command.
 type Options struct {
-	Key string // The configuration key to update.
+	Key   string // The configuration key to update.
 	Value string // The new value for the configuration setting.
 
 	// Stdout receives standard output messages.

@@ -141,7 +141,9 @@ func (p *GoogleDriveStoragePlugin) Write(stream storage_proto.StorageService_Wri
 	pr, pw := io.Pipe()
 	go func() {
 		defer pw.Close()
-		pw.Write(req.Chunk)
+		if _, err := pw.Write(req.Chunk); err != nil {
+			return
+		}
 		for {
 			m, err := stream.Recv()
 			if err == io.EOF {
@@ -150,7 +152,9 @@ func (p *GoogleDriveStoragePlugin) Write(stream storage_proto.StorageService_Wri
 			if err != nil {
 				return
 			}
-			pw.Write(m.Chunk)
+			if _, err := pw.Write(m.Chunk); err != nil {
+				return
+			}
 		}
 	}()
 

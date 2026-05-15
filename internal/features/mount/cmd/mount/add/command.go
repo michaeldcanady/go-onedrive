@@ -13,7 +13,7 @@ func CreateAddCmd(container di.Container) *cobra.Command {
 	var c *CommandContext
 
 	l := container.Logger().With("command", "mount-add")
-	
+
 	// Create the handler using the generated factory
 	var handler Handler = NewCommand(
 		container.Mounts(),
@@ -59,7 +59,7 @@ func CreateAddCmd(container di.Container) *cobra.Command {
 		},
 	}
 	cmd.Flags().StringVar(&opts.IdentityProvider, "identity-provider", "azure", "The identity provider to use (e.g., azure, google)")
-	cmd.Flags().StringSliceVar(&opts.Option, "option", []string{ }, "Provider-specific options in key=value format (repeatable)")
+	cmd.Flags().StringSliceVar(&opts.Option, "option", []string{}, "Provider-specific options in key=value format (repeatable)")
 
 	return cmd
 }

@@ -7,8 +7,8 @@ import (
 
 // Options encapsulates all user-provided arguments and flags for the command.
 type Options struct {
-	Id string // The specific account to logout (optional)
-	Force bool // Clear all cached credentials for the profile
+	Id    string // The specific account to logout (optional)
+	Force bool   // Clear all cached credentials for the profile
 
 	// Stdout receives standard output messages.
 	Stdout io.Writer

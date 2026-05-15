@@ -13,7 +13,7 @@ func CreateListCmd(container di.Container) *cobra.Command {
 	var c *CommandContext
 
 	l := container.Logger().With("command", "identity-list")
-	
+
 	// Create the handler using the generated factory
 	var handler Handler = NewCommand(
 		container.Identity(),
@@ -27,7 +27,7 @@ func CreateListCmd(container di.Container) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "list [flags]",
 		Short: "List all authenticated identities",
-		Long:  `List all authenticated identities managed by the host.
+		Long: `List all authenticated identities managed by the host.
 This includes identities from all configured identity providers.
 `,
 		PreRunE: func(cmd *cobra.Command, args []string) error {

@@ -13,7 +13,7 @@ func CreateLogoutCmd(container di.Container) *cobra.Command {
 	var c *CommandContext
 
 	l := container.Logger().With("command", "identity-logout")
-	
+
 	// Create the handler using the generated factory
 	var handler Handler = NewCommand(
 		container.Identity(),

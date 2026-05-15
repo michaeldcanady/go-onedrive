@@ -11,6 +11,8 @@ import (
 	"text/template"
 
 	"github.com/adrg/frontmatter"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 )
 
 type Dependency struct {
@@ -115,20 +117,6 @@ func getImports(spec Spec) []string {
 	return res
 }
 
-func baseUsage(usage string) string {
-	parts := strings.Split(usage, " ")
-	for _, part := range parts {
-		if part == "odc" {
-			// Find the command name which follows 'odc' (and potentially parent commands)
-			// Actually, we can just skip everything until the command name itself
-			// But it's easier to just find the index of the command name
-		}
-	}
-	// Simple heuristic: find the first part that isn't 'odc' or a parent command
-	// For now, let's just return the part after the last command name
-	return usage // Placeholder, I'll implement a better one
-}
-
 func getBaseUsage(spec Spec) string {
 	usage := spec.Usage
 	if spec.Parent != "" {
@@ -154,7 +142,9 @@ func needsFmt(spec Spec) bool {
 }
 
 var funcMap = template.FuncMap{
-	"title":         strings.Title,
+	"title": func(s string) string {
+		return cases.Title(language.English).String(s)
+	},
 	"pascal":        pascal,
 	"camel":         camel,
 	"getDependency": getDependency,
@@ -245,7 +235,7 @@ func generateCommand(spec Spec) error {
 			return fmt.Errorf("error executing template %s: %w", t.Name, err)
 		}
 
-		err = os.WriteFile(outputPath, buf.Bytes(), 0644)
+		err = os.WriteFile(outputPath, buf.Bytes(), 0600)
 		if err != nil {
 			return fmt.Errorf("error writing to %s: %w", outputPath, err)
 		}

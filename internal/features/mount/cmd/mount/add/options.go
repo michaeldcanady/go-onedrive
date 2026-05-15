@@ -7,11 +7,11 @@ import (
 
 // Options encapsulates all user-provided arguments and flags for the command.
 type Options struct {
-	Path string // The path where the mount point will be created.
-	Type string // The type of storage backend (e.g., local, onedrive, googledrive).
-	IdentityId string // The identity to use for the mount point.
-	IdentityProvider string // The identity provider to use (e.g., azure, google)
-	Option []string // Provider-specific options in key=value format (repeatable)
+	Path             string   // The path where the mount point will be created.
+	Type             string   // The type of storage backend (e.g., local, onedrive, googledrive).
+	IdentityId       string   // The identity to use for the mount point.
+	IdentityProvider string   // The identity provider to use (e.g., azure, google)
+	Option           []string // Provider-specific options in key=value format (repeatable)
 
 	// Stdout receives standard output messages.
 	Stdout io.Writer

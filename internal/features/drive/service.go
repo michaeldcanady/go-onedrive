@@ -30,7 +30,6 @@ func NewDriveService(repo Repository, pm plugins.Manager, is IdentityService, ts
 }
 
 func (s *DriveService) List(ctx context.Context, identityID string) ([]*Drive, error) {
-
 	l := logger.WithContext(s.logger, ctx)
 
 	// 1. Discover storage plugins

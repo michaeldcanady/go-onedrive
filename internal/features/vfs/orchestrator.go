@@ -104,7 +104,7 @@ func (o *orchestrator) prepare(ctx context.Context, path string) (storage_proto.
 		return nil, "", nil, err
 	}
 
-	client, err := o.getBackend(ctx, m)
+	client, err := o.getBackend(m)
 	if err != nil {
 		return nil, "", nil, err
 	}
@@ -127,7 +127,7 @@ func (o *orchestrator) Move(ctx context.Context, src, dst string) error {
 
 	if srcM.Path == dstM.Path {
 		// Same mount, try native move
-		client, err := o.getBackend(ctx, srcM)
+		client, err := o.getBackend(srcM)
 		if err != nil {
 			return err
 		}
@@ -280,7 +280,7 @@ func (o *orchestrator) resolvePath(ctx context.Context, p string) (*mount.Mount,
 	return bestMatch, relPath, nil
 }
 
-func (o *orchestrator) getBackend(ctx context.Context, m *mount.Mount) (storage_proto.StorageServiceClient, error) {
+func (o *orchestrator) getBackend(m *mount.Mount) (storage_proto.StorageServiceClient, error) {
 	pluginName := fmt.Sprintf("storage-%s", m.Type)
 	return o.plugins.GetStoragePlugin(pluginName)
 }

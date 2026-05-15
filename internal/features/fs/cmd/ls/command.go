@@ -13,7 +13,7 @@ func CreateLsCmd(container di.Container) *cobra.Command {
 	var c *CommandContext
 
 	l := container.Logger().With("command", "ls")
-	
+
 	// Create the handler using the generated factory
 	var handler Handler = NewCommand(
 		container.VFS(),
@@ -57,7 +57,7 @@ func CreateLsCmd(container di.Container) *cobra.Command {
 	cmd.Flags().StringVarP(&opts.Format, "format", "o", "short", "Output format (short, long, json, yaml, tree, table)")
 	cmd.Flags().BoolVarP(&opts.Recursive, "recursive", "r", false, "List items recursively")
 	cmd.Flags().BoolVarP(&opts.All, "all", "a", false, "Show hidden items")
-	cmd.Flags().StringSliceVar(&opts.Sort, "sort", []string{"name" }, "Sort items by field (name, size, modified)")
+	cmd.Flags().StringSliceVar(&opts.Sort, "sort", []string{"name"}, "Sort items by field (name, size, modified)")
 	cmd.Flags().BoolVar(&opts.Desc, "desc", false, "Sort in descending order")
 
 	return cmd

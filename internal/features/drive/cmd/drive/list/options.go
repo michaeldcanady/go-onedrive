@@ -7,9 +7,9 @@ import (
 
 // Options encapsulates all user-provided arguments and flags for the command.
 type Options struct {
-	Id string // The specific identity (email or alias) to list drives for
+	Id     string // The specific identity (email or alias) to list drives for
 	Format string // Output format (table, json, yaml)
-	All bool // Show all drives, including those not currently mounted
+	All    bool   // Show all drives, including those not currently mounted
 
 	// Stdout receives standard output messages.
 	Stdout io.Writer

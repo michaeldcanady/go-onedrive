@@ -26,7 +26,13 @@ func (s *editorService) Open(ctx context.Context, path string) error {
 		editor = "vi" // Fallback
 	}
 
-	cmd := exec.CommandContext(ctx, editor, path)
+	executable, err := exec.LookPath(editor)
+	if err != nil {
+		return err
+	}
+
+	// nolint:gosec
+	cmd := exec.CommandContext(ctx, executable, path)
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr

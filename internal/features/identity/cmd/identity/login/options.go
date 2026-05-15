@@ -7,16 +7,16 @@ import (
 
 // Options encapsulates all user-provided arguments and flags for the command.
 type Options struct {
-	Provider string // The identity provider to use (e.g., azure, google)
-	Id string // The specific identity (email) to authenticate
-	Alias string // An optional human-friendly name for this identity
-	ShowToken bool // Display the access token after login
-	Force bool // Force re-authentication even if a valid profile exists
-	Method string // Authentication method (interactive, device-code, client-secret, environment)
-	TenantId string // Azure AD tenant ID (Azure only)
-	ClientId string // Client ID for the application
+	Provider     string // The identity provider to use (e.g., azure, google)
+	Id           string // The specific identity (email) to authenticate
+	Alias        string // An optional human-friendly name for this identity
+	ShowToken    bool   // Display the access token after login
+	Force        bool   // Force re-authentication even if a valid profile exists
+	Method       string // Authentication method (interactive, device-code, client-secret, environment)
+	TenantId     string // Azure AD tenant ID (Azure only)
+	ClientId     string // Client ID for the application
 	ClientSecret string // Client secret for the application
-	Scopes string // Comma-separated list of scopes to request
+	Scopes       string // Comma-separated list of scopes to request
 
 	// Stdout receives standard output messages.
 	Stdout io.Writer

@@ -125,21 +125,30 @@ func (p *GoogleIdentityPlugin) loginInteractive(stream identity_proto.IdentityPl
 		config.RedirectURL = "http://" + l.Addr().String()
 
 		codeChan := make(chan string, 1)
-		s := &http.Server{Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			code := r.URL.Query().Get("code")
-			if code == "" {
-				return
+		s := &http.Server{
+			Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				code := r.URL.Query().Get("code")
+				if code == "" {
+					return
+				}
+				select {
+				case codeChan <- code:
+					fmt.Fprintln(w, "Login successful! You can close this window.")
+				default:
+				}
+			}),
+			ReadHeaderTimeout: 10 * time.Second,
+		}
+		go func() {
+			// nolint:staticcheck
+			if err := s.Serve(l); err != nil && err != http.ErrServerClosed {
+				// We can't return an error from a goroutine, but we can log it
+				// Since we don't have a logger here yet, we'll just ignore it as the timeout will catch it
 			}
-			select {
-			case codeChan <- code:
-				fmt.Fprintln(w, "Login successful! You can close this window.")
-			default:
-			}
-		})}
-		go s.Serve(l)
+		}()
 		defer s.Close()
 
-		p.interact(stream, &identity_proto.InteractionRequest{Action: &identity_proto.InteractionRequest_OpenUrl{OpenUrl: &identity_proto.OpenUrlRequest{Url: config.AuthCodeURL(mustState(), oauth2.AccessTypeOffline)}}})
+		_ = p.interact(stream, &identity_proto.InteractionRequest{Action: &identity_proto.InteractionRequest_OpenUrl{OpenUrl: &identity_proto.OpenUrlRequest{Url: config.AuthCodeURL(mustState(), oauth2.AccessTypeOffline)}}})
 		select {
 		case code := <-codeChan:
 			return config.Exchange(stream.Context(), code)
@@ -149,10 +158,12 @@ func (p *GoogleIdentityPlugin) loginInteractive(stream identity_proto.IdentityPl
 	}
 
 	config.RedirectURL = redirect
-	p.interact(stream, &identity_proto.InteractionRequest{Action: &identity_proto.InteractionRequest_DisplayMessage{DisplayMessage: &identity_proto.DisplayMessageRequest{Message: "URL: " + config.AuthCodeURL(mustState(), oauth2.AccessTypeOffline)}}})
+	_ = p.interact(stream, &identity_proto.InteractionRequest{Action: &identity_proto.InteractionRequest_DisplayMessage{DisplayMessage: &identity_proto.DisplayMessageRequest{Message: "URL: " + config.AuthCodeURL(mustState(), oauth2.AccessTypeOffline)}}})
 	fmt.Fprint(os.Stderr, "Code: ")
 	var code string
-	fmt.Scan(&code)
+	if _, err := fmt.Scan(&code); err != nil {
+		return nil, err
+	}
 	return config.Exchange(stream.Context(), code)
 }
 
@@ -163,7 +174,7 @@ func (p *GoogleIdentityPlugin) loginDevice(stream identity_proto.IdentityPlugin_
 	}
 
 	msg := fmt.Sprintf("To sign in, use a web browser to open the page %s and enter the code %s to authenticate.", da.VerificationURI, da.UserCode)
-	p.interact(stream, &identity_proto.InteractionRequest{Action: &identity_proto.InteractionRequest_DisplayMessage{DisplayMessage: &identity_proto.DisplayMessageRequest{Message: msg}}})
+	_ = p.interact(stream, &identity_proto.InteractionRequest{Action: &identity_proto.InteractionRequest_DisplayMessage{DisplayMessage: &identity_proto.DisplayMessageRequest{Message: msg}}})
 
 	return config.DeviceAccessToken(stream.Context(), da)
 }

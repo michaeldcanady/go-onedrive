@@ -44,9 +44,9 @@ type cachedPlugin struct {
 }
 
 type pluginManager struct {
-	config  config.Service
-	logger  logger.Service
-	repo    Repository
+	config config.Service
+	logger logger.Service
+	repo   Repository
 
 	mu      sync.Mutex
 	plugins map[string]*cachedPlugin
@@ -61,7 +61,6 @@ func NewPluginManager(cs config.Service, l logger.Service, repo Repository) Mana
 		plugins: make(map[string]*cachedPlugin),
 	}
 }
-
 
 func (m *pluginManager) GetStoragePlugin(name string) (storage_proto.StorageServiceClient, error) {
 	return &storageProxy{manager: m, name: name}, nil

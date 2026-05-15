@@ -4,10 +4,10 @@ package logout
 import (
 	"context"
 	"fmt"
-	"github.com/michaeldcanady/go-onedrive/internal/features/identity"
-	"github.com/michaeldcanady/go-onedrive/internal/features/profile"
 	"github.com/michaeldcanady/go-onedrive/internal/core/logger"
 	"github.com/michaeldcanady/go-onedrive/internal/core/resolver"
+	"github.com/michaeldcanady/go-onedrive/internal/features/identity"
+	"github.com/michaeldcanady/go-onedrive/internal/features/profile"
 )
 
 // CommandContext carries the execution state and parsed options for a command.
@@ -34,10 +34,10 @@ type Handler interface {
 // Command provides a base implementation for command handlers, injected with required services.
 type Command struct {
 	identity identity.Service
-	token identity.TokenService
-	profile profile.Service
-	logger logger.Service
-	l logger.Service
+	token    identity.TokenService
+	profile  profile.Service
+	logger   logger.Service
+	l        logger.Service
 	resolver resolver.Service
 }
 
@@ -52,10 +52,10 @@ func NewCommand(
 ) *Command {
 	return &Command{
 		identity: identity,
-		token: token,
-		profile: profile,
-		logger: logger,
-		l: l,
+		token:    token,
+		profile:  profile,
+		logger:   logger,
+		l:        l,
 		resolver: r,
 	}
 }

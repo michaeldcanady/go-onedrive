@@ -4,12 +4,12 @@ package list
 import (
 	"context"
 	"fmt"
+	"github.com/michaeldcanady/go-onedrive/internal/core/logger"
+	"github.com/michaeldcanady/go-onedrive/internal/core/resolver"
+	"github.com/michaeldcanady/go-onedrive/internal/features/drive"
 	"github.com/michaeldcanady/go-onedrive/internal/features/mount"
 	"github.com/michaeldcanady/go-onedrive/internal/features/profile"
 	"github.com/michaeldcanady/go-onedrive/pkg/format"
-	"github.com/michaeldcanady/go-onedrive/internal/core/logger"
-	"github.com/michaeldcanady/go-onedrive/internal/features/drive"
-	"github.com/michaeldcanady/go-onedrive/internal/core/resolver"
 )
 
 // CommandContext carries the execution state and parsed options for a command.
@@ -35,14 +35,14 @@ type Handler interface {
 
 // Command provides a base implementation for command handlers, injected with required services.
 type Command struct {
-	drive drive.Service
-	mount mount.Service
-	mounts mount.Service
-	profile profile.Service
+	drive     drive.Service
+	mount     mount.Service
+	mounts    mount.Service
+	profile   profile.Service
 	formatter format.Factory
-	logger logger.Service
-	l logger.Service
-	resolver resolver.Service
+	logger    logger.Service
+	l         logger.Service
+	resolver  resolver.Service
 }
 
 // NewCommand creates a new instance of the list command handler.
@@ -57,14 +57,14 @@ func NewCommand(
 	r resolver.Service,
 ) *Command {
 	return &Command{
-		drive: drive,
-		mount: mount,
-		mounts: mounts,
-		profile: profile,
+		drive:     drive,
+		mount:     mount,
+		mounts:    mounts,
+		profile:   profile,
 		formatter: formatter,
-		logger: logger,
-		l: l,
-		resolver: r,
+		logger:    logger,
+		l:         l,
+		resolver:  r,
 	}
 }
 

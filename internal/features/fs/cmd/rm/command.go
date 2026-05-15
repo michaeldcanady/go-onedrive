@@ -13,7 +13,7 @@ func CreateRmCmd(container di.Container) *cobra.Command {
 	var c *CommandContext
 
 	l := container.Logger().With("command", "rm")
-	
+
 	// Create the handler using the generated factory
 	var handler Handler = NewCommand(
 		container.VFS(),

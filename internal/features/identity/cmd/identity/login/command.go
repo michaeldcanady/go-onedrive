@@ -13,7 +13,7 @@ func CreateLoginCmd(container di.Container) *cobra.Command {
 	var c *CommandContext
 
 	l := container.Logger().With("command", "identity-login")
-	
+
 	// Create the handler using the generated factory
 	var handler Handler = NewCommand(
 		container.Config(),
@@ -28,7 +28,7 @@ func CreateLoginCmd(container di.Container) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "login [flags]",
 		Short: "Authenticate with an identity provider",
-		Long:  `Authenticate with a cloud provider (Azure, Google) using various methods (Interactive, Device Code, Service Principal).
+		Long: `Authenticate with a cloud provider (Azure, Google) using various methods (Interactive, Device Code, Service Principal).
 You can specify the provider and method via flags or in your configuration.
 `,
 		PreRunE: func(cmd *cobra.Command, args []string) error {

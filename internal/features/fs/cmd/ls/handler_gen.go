@@ -4,11 +4,11 @@ package ls
 import (
 	"context"
 	"fmt"
-	"github.com/michaeldcanady/go-onedrive/pkg/format"
 	"github.com/michaeldcanady/go-onedrive/internal/core/logger"
-	"github.com/michaeldcanady/go-onedrive/internal/features/vfs"
-	"github.com/michaeldcanady/go-onedrive/internal/features/profile"
 	"github.com/michaeldcanady/go-onedrive/internal/core/resolver"
+	"github.com/michaeldcanady/go-onedrive/internal/features/profile"
+	"github.com/michaeldcanady/go-onedrive/internal/features/vfs"
+	"github.com/michaeldcanady/go-onedrive/pkg/format"
 )
 
 // CommandContext carries the execution state and parsed options for a command.
@@ -34,12 +34,12 @@ type Handler interface {
 
 // Command provides a base implementation for command handlers, injected with required services.
 type Command struct {
-	fS vfs.VFS
-	profile profile.Service
+	fS        vfs.VFS
+	profile   profile.Service
 	formatter format.Factory
-	logger logger.Service
-	l logger.Service
-	resolver resolver.Service
+	logger    logger.Service
+	l         logger.Service
+	resolver  resolver.Service
 }
 
 // NewCommand creates a new instance of the ls command handler.
@@ -52,12 +52,12 @@ func NewCommand(
 	r resolver.Service,
 ) *Command {
 	return &Command{
-		fS: fS,
-		profile: profile,
+		fS:        fS,
+		profile:   profile,
 		formatter: formatter,
-		logger: logger,
-		l: l,
-		resolver: r,
+		logger:    logger,
+		l:         l,
+		resolver:  r,
 	}
 }
 

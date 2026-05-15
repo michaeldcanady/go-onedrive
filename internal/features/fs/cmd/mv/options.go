@@ -7,7 +7,7 @@ import (
 
 // Options encapsulates all user-provided arguments and flags for the command.
 type Options struct {
-	Source string // The current path of the item.
+	Source      string // The current path of the item.
 	Destination string // The new path of the item.
 
 	// Stdout receives standard output messages.

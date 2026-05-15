@@ -94,10 +94,10 @@ func NewContainer(
 	}
 }
 
-func (c *container) Logger() logger.Service             { return c.logger }
+func (c *container) Logger() logger.Service                   { return c.logger }
 func (c *container) Storage() storage.Service[storage.BoltDB] { return c.storage }
-func (c *container) Config() config.Service             { return c.config }
-func (c *container) Profile() profile.Service { return c.profile }
+func (c *container) Config() config.Service                   { return c.config }
+func (c *container) Profile() profile.Service                 { return c.profile }
 
 func (c *container) PluginManager() plugins.Manager { return c.pluginManager }
 func (c *container) VFS() vfs.VFS                   { return c.vfs }

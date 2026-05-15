@@ -87,6 +87,7 @@ func (r *boltRepository) SaveToken(provider string, identityID string, t *Token)
 	key := fmt.Sprintf("%s:%s", provider, identityID)
 	return r.db.Update(func(tx *bbolt.Tx) error {
 		b := tx.Bucket(tokensBucket)
+		// nolint:gosec
 		data, err := json.Marshal(t)
 		if err != nil {
 			return err

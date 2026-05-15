@@ -7,7 +7,7 @@ import (
 
 // Options encapsulates all user-provided arguments and flags for the command.
 type Options struct {
-	Key string // The configuration key to retrieve (e.g., auth.provider, logging.level).
+	Key    string // The configuration key to retrieve (e.g., auth.provider, logging.level).
 	Format string // Output format (value, json, yaml)
 
 	// Stdout receives standard output messages.

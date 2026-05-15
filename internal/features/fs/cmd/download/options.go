@@ -7,9 +7,9 @@ import (
 
 // Options encapsulates all user-provided arguments and flags for the command.
 type Options struct {
-	Source string // The remote path on OneDrive.
+	Source      string // The remote path on OneDrive.
 	Destination string // The local path where the item should be downloaded.
-	Recursive bool // Download directories recursively
+	Recursive   bool   // Download directories recursively
 
 	// Stdout receives standard output messages.
 	Stdout io.Writer

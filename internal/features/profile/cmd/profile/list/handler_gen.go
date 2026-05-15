@@ -3,10 +3,10 @@ package list
 
 import (
 	"context"
-	"github.com/michaeldcanady/go-onedrive/internal/features/profile"
-	"github.com/michaeldcanady/go-onedrive/pkg/format"
 	"github.com/michaeldcanady/go-onedrive/internal/core/logger"
 	"github.com/michaeldcanady/go-onedrive/internal/core/resolver"
+	"github.com/michaeldcanady/go-onedrive/internal/features/profile"
+	"github.com/michaeldcanady/go-onedrive/pkg/format"
 )
 
 // CommandContext carries the execution state and parsed options for a command.
@@ -32,11 +32,11 @@ type Handler interface {
 
 // Command provides a base implementation for command handlers, injected with required services.
 type Command struct {
-	profile profile.Service
+	profile   profile.Service
 	formatter format.Factory
-	logger logger.Service
-	l logger.Service
-	resolver resolver.Service
+	logger    logger.Service
+	l         logger.Service
+	resolver  resolver.Service
 }
 
 // NewCommand creates a new instance of the list command handler.
@@ -48,11 +48,11 @@ func NewCommand(
 	r resolver.Service,
 ) *Command {
 	return &Command{
-		profile: profile,
+		profile:   profile,
 		formatter: formatter,
-		logger: logger,
-		l: l,
-		resolver: r,
+		logger:    logger,
+		l:         l,
+		resolver:  r,
 	}
 }
 

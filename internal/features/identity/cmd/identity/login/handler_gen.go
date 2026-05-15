@@ -3,11 +3,11 @@ package login
 
 import (
 	"context"
+	"github.com/michaeldcanady/go-onedrive/internal/core/logger"
+	"github.com/michaeldcanady/go-onedrive/internal/core/resolver"
+	"github.com/michaeldcanady/go-onedrive/internal/features/config"
 	"github.com/michaeldcanady/go-onedrive/internal/features/identity"
 	"github.com/michaeldcanady/go-onedrive/internal/features/profile"
-	"github.com/michaeldcanady/go-onedrive/internal/core/logger"
-	"github.com/michaeldcanady/go-onedrive/internal/features/config"
-	"github.com/michaeldcanady/go-onedrive/internal/core/resolver"
 )
 
 // CommandContext carries the execution state and parsed options for a command.
@@ -33,12 +33,12 @@ type Handler interface {
 
 // Command provides a base implementation for command handlers, injected with required services.
 type Command struct {
-	config config.Service
+	config   config.Service
 	identity identity.Service
-	token identity.TokenService
-	profile profile.Service
-	logger logger.Service
-	l logger.Service
+	token    identity.TokenService
+	profile  profile.Service
+	logger   logger.Service
+	l        logger.Service
 	resolver resolver.Service
 }
 
@@ -53,12 +53,12 @@ func NewCommand(
 	r resolver.Service,
 ) *Command {
 	return &Command{
-		config: config,
+		config:   config,
 		identity: identity,
-		token: token,
-		profile: profile,
-		logger: logger,
-		l: l,
+		token:    token,
+		profile:  profile,
+		logger:   logger,
+		l:        l,
 		resolver: r,
 	}
 }

@@ -4,10 +4,10 @@ package mkdir
 import (
 	"context"
 	"fmt"
-	"github.com/michaeldcanady/go-onedrive/internal/features/profile"
 	"github.com/michaeldcanady/go-onedrive/internal/core/logger"
-	"github.com/michaeldcanady/go-onedrive/internal/features/vfs"
 	"github.com/michaeldcanady/go-onedrive/internal/core/resolver"
+	"github.com/michaeldcanady/go-onedrive/internal/features/profile"
+	"github.com/michaeldcanady/go-onedrive/internal/features/vfs"
 )
 
 // CommandContext carries the execution state and parsed options for a command.
@@ -33,10 +33,10 @@ type Handler interface {
 
 // Command provides a base implementation for command handlers, injected with required services.
 type Command struct {
-	fS vfs.VFS
-	profile profile.Service
-	logger logger.Service
-	l logger.Service
+	fS       vfs.VFS
+	profile  profile.Service
+	logger   logger.Service
+	l        logger.Service
 	resolver resolver.Service
 }
 
@@ -49,10 +49,10 @@ func NewCommand(
 	r resolver.Service,
 ) *Command {
 	return &Command{
-		fS: fS,
-		profile: profile,
-		logger: logger,
-		l: l,
+		fS:       fS,
+		profile:  profile,
+		logger:   logger,
+		l:        l,
 		resolver: r,
 	}
 }

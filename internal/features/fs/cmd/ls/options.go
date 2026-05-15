@@ -7,12 +7,12 @@ import (
 
 // Options encapsulates all user-provided arguments and flags for the command.
 type Options struct {
-	Path string // The path to the directory to list (defaults to the current working directory).
-	Format string // Output format (short, long, json, yaml, tree, table)
-	Recursive bool // List items recursively
-	All bool // Show hidden items
-	Sort []string // Sort items by field (name, size, modified)
-	Desc bool // Sort in descending order
+	Path      string   // The path to the directory to list (defaults to the current working directory).
+	Format    string   // Output format (short, long, json, yaml, tree, table)
+	Recursive bool     // List items recursively
+	All       bool     // Show hidden items
+	Sort      []string // Sort items by field (name, size, modified)
+	Desc      bool     // Sort in descending order
 
 	// Stdout receives standard output messages.
 	Stdout io.Writer

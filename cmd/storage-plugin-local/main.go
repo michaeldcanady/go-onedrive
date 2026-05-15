@@ -84,13 +84,17 @@ func (p *LocalStoragePlugin) Write(stream storage_proto.StorageService_WriteServ
 		return err
 	}
 	full := p.getPath(req.Options, req.Path)
-	os.MkdirAll(filepath.Dir(full), 0755)
+	if err := os.MkdirAll(filepath.Dir(full), 0755); err != nil {
+		return err
+	}
 	f, err := os.Create(full)
 	if err != nil {
 		return err
 	}
 	defer f.Close()
-	f.Write(req.Chunk)
+	if _, err := f.Write(req.Chunk); err != nil {
+		return err
+	}
 	for {
 		m, err := stream.Recv()
 		if err == io.EOF {
@@ -99,7 +103,9 @@ func (p *LocalStoragePlugin) Write(stream storage_proto.StorageService_WriteServ
 		if err != nil {
 			return err
 		}
-		f.Write(m.Chunk)
+		if _, err := f.Write(m.Chunk); err != nil {
+			return err
+		}
 	}
 	info, _ := os.Stat(full)
 	return stream.SendAndClose(&storage_proto.WriteResponse{Node: p.toProtoNode(info, req.Path)})
@@ -114,7 +120,9 @@ func (p *LocalStoragePlugin) Delete(ctx context.Context, req *storage_proto.Dele
 
 func (p *LocalStoragePlugin) Move(ctx context.Context, req *storage_proto.MoveRequest) (*storage_proto.MoveResponse, error) {
 	src, dst := p.getPath(req.Options, req.Source), p.getPath(req.Options, req.Destination)
-	os.MkdirAll(filepath.Dir(dst), 0755)
+	if err := os.MkdirAll(filepath.Dir(dst), 0755); err != nil {
+		return nil, err
+	}
 	if err := os.Rename(src, dst); err != nil {
 		return nil, err
 	}

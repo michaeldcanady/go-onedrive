@@ -3,9 +3,9 @@ package set
 
 import (
 	"context"
-	"github.com/michaeldcanady/go-onedrive/internal/features/config"
 	"github.com/michaeldcanady/go-onedrive/internal/core/logger"
 	"github.com/michaeldcanady/go-onedrive/internal/core/resolver"
+	"github.com/michaeldcanady/go-onedrive/internal/features/config"
 )
 
 // CommandContext carries the execution state and parsed options for a command.
@@ -31,9 +31,9 @@ type Handler interface {
 
 // Command provides a base implementation for command handlers, injected with required services.
 type Command struct {
-	config config.Service
-	logger logger.Service
-	l logger.Service
+	config   config.Service
+	logger   logger.Service
+	l        logger.Service
 	resolver resolver.Service
 }
 
@@ -45,9 +45,9 @@ func NewCommand(
 	r resolver.Service,
 ) *Command {
 	return &Command{
-		config: config,
-		logger: logger,
-		l: l,
+		config:   config,
+		logger:   logger,
+		l:        l,
 		resolver: r,
 	}
 }

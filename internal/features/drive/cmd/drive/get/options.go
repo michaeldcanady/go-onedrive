@@ -8,7 +8,7 @@ import (
 // Options encapsulates all user-provided arguments and flags for the command.
 type Options struct {
 	DriveRef string // The identifier for the drive, which can be its ID or name.
-	Id string // The specific identity (email or alias) to get the personal drive for
+	Id       string // The specific identity (email or alias) to get the personal drive for
 
 	// Stdout receives standard output messages.
 	Stdout io.Writer

@@ -13,7 +13,7 @@ func CreateCpCmd(container di.Container) *cobra.Command {
 	var c *CommandContext
 
 	l := container.Logger().With("command", "cp")
-	
+
 	// Create the handler using the generated factory
 	var handler Handler = NewCommand(
 		container.VFS(),
