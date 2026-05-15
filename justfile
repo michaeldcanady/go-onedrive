@@ -33,8 +33,9 @@ test-functional:
     go test -v -run Functional ./...
 
 # Run performance benchmarks
-test-perf:
-    go test -v -bench=. -run=^$ ./...
+test_perf:
+    go test -v -bench=. -benchmem -run=^$ ./...
+
 
 # Run E2E tests (binary against environment)
 test-e2e: build
