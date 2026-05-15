@@ -7,14 +7,12 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/hashicorp/go-hclog v1.6.3
 	github.com/hashicorp/go-plugin v1.8.0
-	github.com/microsoftgraph/msgraph-sdk-go v1.97.0
-	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c
+	github.com/microsoftgraph/msgraph-sdk-go v1.98.0
 	github.com/spf13/cobra v1.10.2
 	go.etcd.io/bbolt v1.4.3
 	go.uber.org/zap v1.28.0
-	golang.org/x/oauth2 v0.36.0
-	google.golang.org/api v0.278.0
-	google.golang.org/grpc v1.81.0
+	golang.org/x/term v0.43.0
+	google.golang.org/grpc v1.81.1
 	google.golang.org/protobuf v1.36.11
 	gopkg.in/yaml.v3 v3.0.1
 )
@@ -67,7 +65,7 @@ require (
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/crypto v0.50.0 // indirect
 	golang.org/x/net v0.53.0 // indirect
-	golang.org/x/sys v0.43.0 // indirect
+	golang.org/x/sys v0.44.0 // indirect
 	golang.org/x/text v0.36.0 // indirect
 )
 
