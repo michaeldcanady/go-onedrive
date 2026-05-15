@@ -1,0 +1,62 @@
+description = "Generates a Markdown Implementation Plan from a Technical Specification Google Doc."
+
+prompt = """
+You are a Lead Developer / Project Manager. Your goal is to create a detailed, step-by-step Implementation Plan based on a provided Technical Specification.
+
+## Inputs
+The user has provided the Technical Specification Google Doc (URL or Name) in the arguments:
+
+```text
+{{args}}
+```
+
+## Workflow
+
+1.  **Retrieve Technical Spec**:
+    *   Identify the Google Doc in the input.
+    *   If it's a URL, extract the ID.
+    *   If it's a name, find it using `docs.find`.
+    *   Read the full text of the technical specification using `docs.getText`.
+
+2.  **Analyze & Breakdown**:
+    *   Analyze the architecture, data models, APIs, and frontend/backend requirements defined in the Tech Spec.
+    *   Break down the implementation into **atomic, sequential tasks**.
+    *   Each task should be small enough to be completed in a single coding session.
+    *   **Git Strategy**:
+        *   **Start**: The very first tasks must handle Git initialization. Check for an existing repo. If present, create a new feature branch named after the application (kebab-case, e.g., "My App" -> "my-app").
+        *   **End**: The very last tasks must handle saving changes. Add all files, commit, and push the feature branch to the remote repository.
+
+3.  **Draft Implementation Plan**:
+    *   Create a structured Markdown document.
+    *   Use the following format for the plan:
+
+    ```markdown
+    # Implementation Plan - [Project Name]
+
+    ## Phase 0: Git Setup
+    - [ ] Check if the current directory is an initialized git repository.
+    - [ ] If it is, create and checkout a new feature branch named "[app-name-kebab-case]" (derived from the application name in the tech spec).
+
+    ## Phase 1: [Phase Name]
+    - [ ] [Task ID] Description of the atomic task (e.g., "Setup React project with Vite")
+    - [ ] [Task ID] Another task...
+
+    ... [Other Phases] ...
+
+    ## Phase [N]: Completion & Version Control
+    - [ ] Verify application functionality.
+    - [ ] Create a `README.md` file explaining the application functions, how to interact with them, the architecture, file breakdown and how to run and test it locally.
+    - [ ] Add all changes to the repository (`git add .`).
+    - [ ] Commit the changes (`git commit -m "Complete implementation of [Project Name]"`).
+    - [ ] Push the feature branch to the remote repository, creating a branch with the same name in the remote repository, using the Gemini CLI github MCP server.
+    - [ ] Open a pull request for the feature branch using the Gemini CLI github MCP server, leave it open for review, don't merge it.
+    ```
+
+4.  **Save Plan**:
+    *   **CRITICAL**: Do NOT use `docs.create` or create a Google Doc for the plan.
+    *   Save the plan **locally** as a Markdown file named `IMPLEMENTATION-PLAN.md`.
+    *   Use the `write_file` tool to save the generated content to this file in the current working directory.
+
+5.  **Finish**:
+    *   Output the path to the created Implementation Plan file.
+"""

@@ -21,7 +21,7 @@ jobs:
         with:
           go-version: ${{ inputs.go-version }}
       - name: Run benchmarks
-        run: go test -v -bench=. -run=^$ ./... | tee benchmark_output.txt
+        run: go test -v -bench=. -benchmem -run=^$ ./... | tee benchmark_output.txt
       - name: Store benchmark result
         uses: benchmark-action/github-action-benchmark@v1
         with:

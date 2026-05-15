@@ -1,0 +1,104 @@
+syntax = "proto3";
+
+package identity;
+
+option go_package = "github.com/michaeldcanady/go-onedrive/internal/features/plugins/proto/identity";
+
+service IdentityPlugin {
+  rpc Login(stream LoginRequest) returns (stream LoginResponse);
+  rpc Refresh(RefreshRequest) returns (RefreshResponse);
+  rpc ListIdentities(ListIdentitiesRequest) returns (ListIdentitiesResponse);
+  rpc Logout(LogoutRequest) returns (LogoutResponse);
+  rpc GetMetadata(MetadataRequest) returns (MetadataResponse);
+}
+
+message MetadataRequest {}
+
+message MetadataResponse {
+  string name = 1;
+  string type = 2;
+  repeated string supported_providers = 3;
+}
+
+message LoginRequest {
+  oneof payload {
+    Config config = 1;
+    InteractionResponse interaction_response = 2;
+  }
+}
+
+message Config {
+  map<string, string> options = 1;
+}
+
+message LoginResponse {
+  oneof payload {
+    InteractionRequest interaction_request = 1;
+    LoginResult result = 2;
+  }
+}
+
+message LoginResult {
+  AccessToken token = 1;
+  Identity identity = 2;
+}
+
+message InteractionRequest {
+  oneof action {
+    OpenUrlRequest open_url = 1;
+    DisplayMessageRequest display_message = 2;
+  }
+}
+
+message OpenUrlRequest {
+  string url = 1;
+}
+
+message DisplayMessageRequest {
+  string message = 1;
+}
+
+message InteractionResponse {
+  string error = 1;
+}
+
+message RefreshRequest {
+  string refresh_token = 1;
+  map<string, string> options = 2;
+}
+
+message RefreshResponse {
+  AccessToken token = 1;
+}
+
+message ListIdentitiesRequest {
+  map<string, string> options = 1;
+}
+
+message ListIdentitiesResponse {
+  repeated Identity identities = 1;
+}
+
+message LogoutRequest {
+  string identity_id = 1;
+  map<string, string> options = 2;
+}
+
+message LogoutResponse {
+  bool success = 1;
+}
+
+message AccessToken {
+  string access_token = 1;
+  string refresh_token = 2;
+  int64 expires_at = 3;
+  repeated string scopes = 4;
+}
+
+message Identity {
+  string id = 1;
+  string display_name = 2;
+  string email = 3;
+  string provider = 4;
+  map<string, string> metadata = 5;
+}

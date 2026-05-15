@@ -1,0 +1,7 @@
+identity:
+  azure:
+    client_id: "6b1e6ec0-ad93-4175-a0e0-84c02e13f206"
+    tenant_id: "common"
+    redirect_uri: "http://localhost:8400"
+core:
+  vfs_cwd: "/"

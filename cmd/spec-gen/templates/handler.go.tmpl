@@ -1,0 +1,21 @@
+package {{.Name}}
+
+// Validate ensures that the provided options are semantically correct.
+func (c *Command) Validate(ctx *CommandContext) error {
+	return nil
+}
+
+// Resolve translates user input into domain entities using the [resolver.Service].
+func (c *Command) Resolve(ctx *CommandContext) error {
+	return c.BaseResolve(ctx)
+}
+
+// Execute performs the primary business logic of the "{{.Name}}" command.
+func (c *Command) Execute(ctx *CommandContext) error {
+	return nil
+}
+
+// Finalize performs post-execution tasks such as output formatting or resource cleanup.
+func (c *Command) Finalize(ctx *CommandContext) error {
+	return nil
+}

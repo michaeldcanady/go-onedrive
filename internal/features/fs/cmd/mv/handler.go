@@ -1,77 +1,32 @@
 package mv
 
 import (
-	"context"
 	"fmt"
-
-	"github.com/michaeldcanady/go-onedrive/internal/core/logger"
-	fs "github.com/michaeldcanady/go-onedrive/internal/features/fs/domain"
 )
 
-// Logger defines the interface required for logging within the mv command.
-type Logger interface {
-	Debug(msg string, fields ...logger.Field)
-	Error(msg string, fields ...logger.Field)
-	Info(msg string, fields ...logger.Field)
-	With(fields ...logger.Field) logger.Logger
-	WithContext(ctx context.Context) logger.Logger
-}
-
-// Command executes the drive mv operation.
-type Command struct {
-	manager    fs.Service
-	uriFactory *fs.URIFactory
-	log        Logger
-}
-
-// NewCommand initializes a new instance of the drive mv Command.
-func NewCommand(m fs.Service, f *fs.URIFactory, l Logger) *Command {
-	return &Command{
-		manager:    m,
-		uriFactory: f,
-		log:        l,
-	}
-}
-
-// Validate prepares and validates the options for the move operation.
+// Validate performs initial validation of the command options.
 func (c *Command) Validate(ctx *CommandContext) error {
-	// Resolve URIs using the factory
-	sourceURI, err := c.uriFactory.FromString(ctx.Options.Source)
-	if err != nil {
-		return fmt.Errorf("invalid source path: %w", err)
+	if ctx.Options.Source == "" {
+		return fmt.Errorf("source path is required")
 	}
-	ctx.Options.SourceURI = sourceURI
-
-	destinationURI, err := c.uriFactory.FromString(ctx.Options.Destination)
-	if err != nil {
-		return fmt.Errorf("invalid destination path: %w", err)
+	if ctx.Options.Destination == "" {
+		return fmt.Errorf("destination path is required")
 	}
-	ctx.Options.DestinationURI = destinationURI
-
-	return ctx.Options.Validate()
-}
-
-// Execute moves an item from the source to the destination.
-func (c *Command) Execute(ctx *CommandContext) error {
-	log := c.log.WithContext(ctx.Ctx).With(
-		logger.String("source", ctx.Options.SourceURI.String()),
-		logger.String("destination", ctx.Options.DestinationURI.String()),
-	)
-
-	log.Info("starting move operation")
-
-	log.Debug("delegating to filesystem manager for move")
-	if err := c.manager.Move(ctx.Ctx, ctx.Options.SourceURI, ctx.Options.DestinationURI); err != nil {
-		log.Error("move failed", logger.Error(err))
-		return fmt.Errorf("failed to move %s to %s: %w", ctx.Options.SourceURI, ctx.Options.DestinationURI, err)
-	}
-
-	log.Info("move completed successfully")
 	return nil
 }
 
-// Finalize performs any necessary cleanup after the move operation.
+// Resolve performs argument resolution.
+func (c *Command) Resolve(ctx *CommandContext) error {
+	return c.BaseResolve(ctx)
+}
+
+// Execute performs the core business logic of the command.
+func (c *Command) Execute(ctx *CommandContext) error {
+	return c.fS.Move(ctx.Ctx, ctx.Options.Source, ctx.Options.Destination)
+}
+
+// Finalize performs any cleanup or final output formatting.
 func (c *Command) Finalize(ctx *CommandContext) error {
-	fmt.Fprintf(ctx.Options.Stdout, "Moved %s to %s\n", ctx.Options.SourceURI, ctx.Options.DestinationURI)
+	fmt.Printf("Moved %s to %s\n", ctx.Options.Source, ctx.Options.Destination)
 	return nil
 }
