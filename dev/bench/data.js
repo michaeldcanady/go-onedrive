@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1778004587307,
+  "lastUpdate": 1778862289973,
   "repoUrl": "https://github.com/michaeldcanady/go-onedrive",
   "entries": {
     "Go Benchmark": [
@@ -680,6 +680,74 @@ window.BENCHMARK_DATA = {
             "value": 4142,
             "unit": "ns/op",
             "extra": "285044 times\n4 procs"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "name": "michaeldcanady",
+            "username": "michaeldcanady"
+          },
+          "committer": {
+            "name": "michaeldcanady",
+            "username": "michaeldcanady"
+          },
+          "id": "036f5513b6852f26b313760ac93298db5197bd9e",
+          "message": "feat: plugin architecture",
+          "timestamp": "2026-05-15T01:45:41Z",
+          "url": "https://github.com/michaeldcanady/go-onedrive/pull/139/commits/036f5513b6852f26b313760ac93298db5197bd9e"
+        },
+        "date": 1778862288794,
+        "tool": "go",
+        "benches": [
+          {
+            "name": "BenchmarkFormatters/JSON",
+            "value": 1827,
+            "unit": "ns/op\t     952 B/op\t      20 allocs/op",
+            "extra": "630728 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFormatters/JSON - ns/op",
+            "value": 1827,
+            "unit": "ns/op",
+            "extra": "630728 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFormatters/JSON - B/op",
+            "value": 952,
+            "unit": "B/op",
+            "extra": "630728 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFormatters/JSON - allocs/op",
+            "value": 20,
+            "unit": "allocs/op",
+            "extra": "630728 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFormatters/YAML",
+            "value": 8063,
+            "unit": "ns/op\t   16920 B/op\t      60 allocs/op",
+            "extra": "150963 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFormatters/YAML - ns/op",
+            "value": 8063,
+            "unit": "ns/op",
+            "extra": "150963 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFormatters/YAML - B/op",
+            "value": 16920,
+            "unit": "B/op",
+            "extra": "150963 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFormatters/YAML - allocs/op",
+            "value": 60,
+            "unit": "allocs/op",
+            "extra": "150963 times\n4 procs"
           }
         ]
       }
