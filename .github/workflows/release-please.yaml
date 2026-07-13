@@ -40,7 +40,7 @@ jobs:
     steps:
       - id: release
         name: Run prerelease release-please
-        uses: googleapis/release-please-action@v4
+        uses: googleapis/release-please-action@v5
         with:
           config-file: ".github/prerelease-config.json"
           manifest-file: ".github/prerelease-manifest.json"
@@ -67,7 +67,7 @@ jobs:
           echo "Tagged a prerelease: ${{ needs.prerelease-prep.outputs.tag_name }}"
 
       - name: Run release release-please
-        uses: googleapis/release-please-action@v4
+        uses: googleapis/release-please-action@v5
         with:
           config-file: ".github/release-config.json"
           manifest-file: ".github/release-manifest.json"
