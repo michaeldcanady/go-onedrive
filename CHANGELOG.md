@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.2.0-alpha.1](https://github.com/michaeldcanady/go-onedrive/compare/v0.2.0-alpha...v0.2.0-alpha.1) (2026-05-15)
+
+
+### Features
+
+* **fs:** uri factory ([#122](https://github.com/michaeldcanady/go-onedrive/issues/122)) ([198b750](https://github.com/michaeldcanady/go-onedrive/commit/198b7504440db332a96827331134df9d5e1d226b))
+* plugin architecture ([#139](https://github.com/michaeldcanady/go-onedrive/issues/139)) ([e7edb93](https://github.com/michaeldcanady/go-onedrive/commit/e7edb93cd9f06f2ccbc0cf129e34638d844cecd1))
+* redesign drive management and access design ([#126](https://github.com/michaeldcanady/go-onedrive/issues/126)) ([a1cf13d](https://github.com/michaeldcanady/go-onedrive/commit/a1cf13dd6252393ae42077d2622afc600c42b7f9))
+* repository pattern ([#134](https://github.com/michaeldcanady/go-onedrive/issues/134)) ([1603e6c](https://github.com/michaeldcanady/go-onedrive/commit/1603e6c6bd72504da3582fc406f8c0659352bbdb))
+* repository pattern ([#135](https://github.com/michaeldcanady/go-onedrive/issues/135)) ([7f8b3cf](https://github.com/michaeldcanady/go-onedrive/commit/7f8b3cf9d5bca2fff9ec15470c2391fadf5c2855))
+* sort spec ([#121](https://github.com/michaeldcanady/go-onedrive/issues/121)) ([e966c5e](https://github.com/michaeldcanady/go-onedrive/commit/e966c5e4f7661d0ddb78ddd306f32d1ee959e845))
+* **spec:** add filter spec ([#120](https://github.com/michaeldcanady/go-onedrive/issues/120)) ([fa7ce0e](https://github.com/michaeldcanady/go-onedrive/commit/fa7ce0ec152d51dcfb0c97bea3d7af84d2ad44e3))
+* validation policy ([#127](https://github.com/michaeldcanady/go-onedrive/issues/127)) ([8c4d96e](https://github.com/michaeldcanady/go-onedrive/commit/8c4d96eb9bcdece4d1151ff436c473e28370addf))
+
 ## [0.2.0-alpha](https://github.com/michaeldcanady/go-onedrive/compare/v0.1.0...v0.2.0-alpha) (2026-04-07)
 
 
