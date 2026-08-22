@@ -44,7 +44,7 @@ jobs:
       code: ${{ steps.filter.outputs.any_changed }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
       - name: Changed Files
         uses: tj-actions/changed-files@v47.0.6
         id: filter
