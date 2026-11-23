@@ -136,6 +136,8 @@ github.com/microsoft/kiota-abstractions-go v1.12.0 h1:ukQ/Q1+IbV45p+4Ynvnd5/N2WK
 github.com/microsoft/kiota-abstractions-go v1.12.0/go.mod h1:/F3nXKnU9udY8ZQ1A8FFgr5OoBXlruUGZ3jgrBCQ0tc=
 github.com/microsoft/kiota-abstractions-go v1.12.1 h1:W4Zh9hCyqWZNWlHMh1+G8u1IsRsF3r43EUKxOOH6l1g=
 github.com/microsoft/kiota-abstractions-go v1.12.1/go.mod h1:/F3nXKnU9udY8ZQ1A8FFgr5OoBXlruUGZ3jgrBCQ0tc=
+github.com/microsoft/kiota-abstractions-go v1.12.2 h1:S/hzFcyUn+UKFG9yuy3/q3emVkoEhlfqgf2yXj6Gzps=
+github.com/microsoft/kiota-abstractions-go v1.12.2/go.mod h1:bKor5TRJSK9odtjA8/YjV/7mmwqHz/0UBnwZME9Gt04=
 github.com/microsoft/kiota-authentication-azure-go v1.3.1 h1:AGta92S6IL1E6ZMDb8YYB7NVNTIFUakbtLKUdY5RTuw=
 github.com/microsoft/kiota-authentication-azure-go v1.3.1/go.mod h1:26zylt2/KfKwEWZSnwHaMxaArpbyN/CuzkbotdYXF0g=
 github.com/microsoft/kiota-http-go v1.5.6 h1:KBdk7sxWYXZnRRExLjIcNt4I7LoOfh/XQJWWid4zBKE=
@@ -190,6 +192,8 @@ github.com/std-uritemplate/std-uritemplate/go/v2 v2.0.8 h1:gMBdYMTHt2mmTdXW8YfvR
 github.com/std-uritemplate/std-uritemplate/go/v2 v2.0.8/go.mod h1:Z5KcoM0YLC7INlNhEezeIZ0TZNYf7WSNO0Lvah4DSeQ=
 github.com/std-uritemplate/std-uritemplate/go/v2 v2.0.12 h1:wxCxe+V5vu01YFrFgKj22gViqn8Yj4i9d9ecvdHvTGU=
 github.com/std-uritemplate/std-uritemplate/go/v2 v2.0.12/go.mod h1:Z5KcoM0YLC7INlNhEezeIZ0TZNYf7WSNO0Lvah4DSeQ=
+github.com/std-uritemplate/std-uritemplate/go/v2 v2.0.13 h1:EvUlEJUuES5kbLhkXqvRQ63CfGcQDoW7n0G1bCY4cuo=
+github.com/std-uritemplate/std-uritemplate/go/v2 v2.0.13/go.mod h1:Z5KcoM0YLC7INlNhEezeIZ0TZNYf7WSNO0Lvah4DSeQ=
 github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=
 github.com/stretchr/objx v0.5.2 h1:xuMeJ0Sdp5ZMRXx/aWO6RZxdr3beISkG5/G/aIRr3pY=
 github.com/stretchr/objx v0.5.2/go.mod h1:FRsXN1f5AsAjCGJKqEizvkpNtU+EGNCLh3NxZ/8L+MA=
